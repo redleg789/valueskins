@@ -1,0 +1,26 @@
+{
+  "name": "valueskins",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The creator economy infrastructure platform",
+  "scripts": {
+    "dev": "npm run dev --prefix ./frontend",
+    "build": "npm run build --prefix ./frontend",
+    "start": "npm run start --prefix ./frontend",
+    "lint": "npm run lint --prefix ./frontend",
+    "install:all": "npm install && npm install --prefix ./frontend",
+    "clean": "rm -rf frontend/node_modules frontend/.next && npm cache clean --force"
+  },
+  "workspaces": [
+    "frontend",
+    "contracts",
+    "backend"
+  ],
+  "keywords": [
+    "creator-economy",
+    "blockchain",
+    "reputation",
+    "verification",
+    "equity"
+  ]
+}
