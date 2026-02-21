@@ -1,0 +1,25 @@
+[workspace]
+resolver = "2"
+members = [
+    "api_gateway",
+    "auth_service",
+    "persona_service",
+    "social_service",
+    "shared",
+    "indexer",
+    "analytics_service",
+    "recommendation_service",
+    "ai_service",
+    "brand_api",
+    "referral_service",
+    "marketplace_service",
+    "waitlist_service",
+    "notification_service",
+    "communities_service",
+    "credential_service",
+    "matching_service",
+    "settings_service",
+    "linkedin_service",
+    "platform_service",
+]
+

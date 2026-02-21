@@ -1,0 +1,102 @@
+use actix_web::{
+    dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform},
+    Error, HttpMessage, HttpResponse,
+    body::EitherBody,
+};
+use futures_util::future::LocalBoxFuture;
+use std::{future::{ready, Ready}, rc::Rc};
+use auth_service::token::TokenManager;
+use shared::logging::middleware::LogUserId;
+
+/// JWT Authentication Middleware
+pub struct JwtAuth {
+    token_manager: Rc<TokenManager>,
+}
+
+impl JwtAuth {
+    pub fn new(token_manager: TokenManager) -> Self {
+        Self {
+            token_manager: Rc::new(token_manager),
+        }
+    }
+}
+
+impl<S, B> Transform<S, ServiceRequest> for JwtAuth
+where
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
+    S::Future: 'static,
+    B: 'static,
+{
+    type Response = ServiceResponse<EitherBody<B>>;
+    type Error = Error;
+    type Transform = JwtAuthMiddleware<S>;
+    type InitError = ();
+    type Future = Ready<Result<Self::Transform, Self::InitError>>;
+
+    fn new_transform(&self, service: S) -> Self::Future {
+        ready(Ok(JwtAuthMiddleware {
+            service: Rc::new(service),
+            token_manager: self.token_manager.clone(),
+        }))
+    }
+}
+
+pub struct JwtAuthMiddleware<S> {
+    service: Rc<S>,
+    token_manager: Rc<TokenManager>,
+}
+
+impl<S, B> Service<ServiceRequest> for JwtAuthMiddleware<S>
+where
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
+    S::Future: 'static,
+    B: 'static,
+{
+    type Response = ServiceResponse<EitherBody<B>>;
+    type Error = Error;
+    type Future = LocalBoxFuture<'static, Result<Self::Response, Self::Error>>;
+
+    forward_ready!(service);
+
+    fn call(&self, req: ServiceRequest) -> Self::Future {
+        let service = self.service.clone();
+        let token_manager = self.token_manager.clone();
+
+        Box::pin(async move {
+            // Extract Authorization header
+            let auth_header = req
+                .headers()
+                .get("Authorization")
+                .and_then(|h| h.to_str().ok());
+
+            let token = match auth_header {
+                Some(header) if header.starts_with("Bearer ") => {
+                    header.strip_prefix("Bearer ").unwrap()
+                }
+                _ => {
+                    let response = HttpResponse::Unauthorized()
+                        .json(serde_json::json!({ "error": "Missing or invalid Authorization header" }));
+                    return Ok(req.into_response(response).map_into_right_body());
+                }
+            };
+
+            // Verify token and store full claims in request extensions
+            match token_manager.validate_token(token) {
+                Ok(claims) => {
+                    // Inject user ID for the logging middleware (decoupled from auth_service)
+                    req.extensions_mut().insert(LogUserId(claims.sub.clone()));
+                    req.extensions_mut().insert(claims);
+                }
+                Err(_) => {
+                    let response = HttpResponse::Unauthorized()
+                        .json(serde_json::json!({ "error": "Invalid or expired token" }));
+                    return Ok(req.into_response(response).map_into_right_body());
+                }
+            }
+
+            // Continue to handler
+            let res = service.call(req).await?;
+            Ok(res.map_into_left_body())
+        })
+    }
+}

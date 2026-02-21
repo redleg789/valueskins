@@ -1,0 +1,448 @@
+mod handlers;
+mod middleware;
+
+use actix_cors::Cors;
+use actix_governor::{Governor, GovernorConfigBuilder};
+use actix_web::{web, App, HttpServer, HttpResponse, Responder};
+use dotenv::dotenv;
+use shared::db::get_db_pool;
+use shared::logging;
+use std::env;
+
+// Service Imports
+use auth_service::token::TokenManager;
+use social_service::service::SocialService;
+use analytics_service::service::AnalyticsService;
+use recommendation_service::service::RecommendationService;
+
+// Modular Monolith Handler Imports
+use waitlist_service::handlers as waitlist_handlers;
+use referral_service::handlers as referral_handlers;
+use marketplace_service::handlers as marketplace_handlers;
+use marketplace_service::interest_handlers as interest_handlers;
+use brand_api::handlers as brand_handlers;
+use notification_service::handlers as notification_handlers;
+use notification_service::email::EmailService;
+use communities_service::handlers as community_handlers;
+use credential_service::handlers as credential_handlers;
+use matching_service::handlers as matching_handlers;
+use settings_service::handlers as settings_handlers;
+use linkedin_service::handlers as linkedin_handlers;
+use platform_service::handlers as platform_handlers;
+
+use crate::middleware::auth::JwtAuth;
+use crate::middleware::rate_limit::{TieredRateLimiter, TierLimits};
+
+async fn health_check() -> impl Responder {
+    HttpResponse::Ok().json(serde_json::json!({ "status": "ok", "service": "Valueskins API" }))
+}
+
+async fn health_ready(pool: web::Data<PgPool>) -> impl Responder {
+    // Readiness check: verify database connectivity
+    match sqlx::query("SELECT 1")
+        .fetch_one(pool.get_ref())
+        .await
+    {
+        Ok(_) => HttpResponse::Ok().json(serde_json::json!({
+            "status": "ready",
+            "service": "Valueskins API",
+            "database": "connected"
+        })),
+        Err(e) => {
+            tracing::error!("Readiness check failed: database connection error: {:?}", e);
+            HttpResponse::ServiceUnavailable().json(serde_json::json!({
+                "status": "not_ready",
+                "service": "Valueskins API",
+                "database": "disconnected",
+                "error": "database connection failed"
+            }))
+        }
+    }
+}
+
+#[actix_web::main]
+async fn main() -> std::io::Result<()> {
+    dotenv().ok();
+
+    // Initialize structured JSON logging with correlation ID support
+    logging::init::init("api-gateway");
+
+    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    let jwt_secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set — refusing to start with default secret");
+    let allowed_origins = env::var("ALLOWED_ORIGINS")
+        .unwrap_or_else(|_| "http://localhost:3000,http://localhost:3001".to_string());
+
+    tracing::info!("Connecting to database...");
+    let pool = match get_db_pool(&database_url).await {
+        Ok(pool) => {
+            tracing::info!("Database connected successfully.");
+            pool
+        }
+        Err(e) => {
+            tracing::error!(error = %e, "Failed to connect to database");
+            std::process::exit(1);
+        }
+    };
+
+    // Initialize services
+    let social_service = SocialService::new(pool.clone());
+    let analytics_service = AnalyticsService::new(pool.clone());
+    let recommendation_service = RecommendationService::new(pool.clone());
+
+    let email_service = EmailService::new(
+        &env::var("SMTP_HOST").unwrap_or_else(|_| "smtp.example.com".to_string()),
+        &env::var("SMTP_USER").unwrap_or_else(|_| "user".to_string()),
+        &env::var("SMTP_PASS").unwrap_or_else(|_| "pass".to_string()),
+        &env::var("SMTP_FROM").unwrap_or_else(|_| "noreply@valueskins.io".to_string()),
+    );
+
+    // Rate limiter: 60 requests per minute per IP
+    let governor_conf = GovernorConfigBuilder::default()
+        .per_second(1)
+        .burst_size(60)
+        .finish()
+        .unwrap();
+
+    // Wrap in Data for sharing across request handlers
+    let pool_data = web::Data::new(pool);
+    let token_data = web::Data::new(TokenManager::new(&jwt_secret));
+    let social_data = web::Data::new(social_service);
+    let analytics_data = web::Data::new(analytics_service);
+    let recommendation_data = web::Data::new(recommendation_service);
+    let email_data = web::Data::new(email_service);
+
+    // Clone jwt_secret for middleware creation inside HttpServer closure
+    let jwt_secret_clone = jwt_secret.clone();
+
+    tracing::info!("Starting Valueskins API at http://0.0.0.0:8080");
+
+    HttpServer::new(move || {
+        let origins_clone = allowed_origins.clone();
+        let cors = Cors::default()
+            .allowed_origin_fn(move |origin, _req_head| {
+                let origins: Vec<&str> = origins_clone.split(',').collect();
+                origins.iter().any(|o| origin.as_bytes() == o.as_bytes())
+            })
+            .allowed_methods(vec!["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+            .allowed_headers(vec!["Authorization", "Content-Type", "X-API-Key"])
+            .max_age(3600);
+
+        // Create JWT middleware (needs a new TokenManager per factory call)
+        let jwt_auth = JwtAuth::new(TokenManager::new(&jwt_secret_clone));
+
+        // Tiered rate limiter: applies different limits per user/API-key tier
+        // after JWT is parsed (JWT middleware injects Claims into extensions).
+        // Applied inside the App so it runs after auth resolves the tier.
+        let tiered_limiter = TieredRateLimiter::new(TierLimits::default());
+
+        App::new()
+            .wrap(cors)
+            .wrap(Governor::new(&governor_conf))
+            .wrap(tiered_limiter)
+            // Structured request logging: every request gets a correlation ID,
+            // method/path/status/duration logged as JSON to stdout
+            .wrap(logging::middleware::RequestLogger::new("api-gateway"))
+            .app_data(pool_data.clone())
+            .app_data(token_data.clone())
+            .app_data(social_data.clone())
+            .app_data(analytics_data.clone())
+            .app_data(recommendation_data.clone())
+            .app_data(email_data.clone())
+
+            // === PUBLIC ROUTES (no auth required) ===
+            .route("/health", web::get().to(health_check))
+            .route("/health/live", web::get().to(health_check))
+            .route("/health/ready", web::get().to(health_ready))
+
+            .service(
+                web::scope("/auth")
+                    .route("/login", web::post().to(handlers::auth::login))
+            )
+
+            // Waitlist is public (pre-launch signups)
+            .service(
+                web::scope("/waitlist")
+                    .route("/join", web::post().to(waitlist_handlers::join_waitlist))
+                    .route("/position", web::get().to(waitlist_handlers::get_position))
+                    .route("/stats", web::get().to(waitlist_handlers::get_stats))
+            )
+
+            // Public Brand API (uses API keys, not JWT)
+            .service(
+                web::scope("/api/v1")
+                    .route("/verify/batch", web::post().to(brand_handlers::batch_verify))
+                    .route("/verify/{persona_id}/{profession_id}", web::get().to(brand_handlers::verify_creator))
+                    .route("/creators", web::get().to(brand_handlers::search_creators))
+                    .route("/badge/{persona_id}/{profession_id}", web::get().to(brand_handlers::get_badge))
+                    .route("/badge/{persona_id}/{profession_id}.svg", web::get().to(brand_handlers::get_badge_svg))
+                    .route("/usage", web::get().to(brand_handlers::get_usage_stats))
+                    .route("/professions", web::get().to(brand_handlers::list_professions))
+            )
+
+            // Referral code validation is public
+            .service(
+                web::scope("/referrals/validate")
+                    .route("/{code}", web::get().to(referral_handlers::validate_code))
+            )
+
+            // Creator Interest Signups (public — for acquisition/traction)
+            .service(
+                web::scope("/interest")
+                    .route("/signup", web::post().to(interest_handlers::create_interest_signup))
+                    .route("/signup/{id}", web::get().to(interest_handlers::get_interest_signup))
+            )
+
+            // === PROTECTED ROUTES (JWT required) ===
+            .service(
+                web::scope("")
+                    .wrap(jwt_auth)
+
+                    // Personas
+                    .service(
+                        web::scope("/personas")
+                            .route("", web::get().to(handlers::persona::get_personas))
+                            .route("/{id}", web::get().to(handlers::persona::get_persona))
+                            .route("/{id}/skins", web::get().to(handlers::persona::get_persona_skins))
+                            .route("/{id}/trust", web::get().to(marketplace_handlers::get_trust_score))
+                    )
+
+                    // Referrals (authenticated)
+                    .service(
+                        web::scope("/referrals")
+                            .route("/codes", web::post().to(referral_handlers::create_code))
+                            .route("/record", web::post().to(referral_handlers::record_referral))
+                            .route("/stats/{id}", web::get().to(referral_handlers::get_stats))
+                            .route("/leaderboard", web::get().to(referral_handlers::get_leaderboard))
+                    )
+
+                    // Marketplace (authenticated — requires ValueSkin)
+                    .service(
+                        web::scope("/marketplace")
+                            .route("/opportunities", web::get().to(marketplace_handlers::list_opportunities))
+                            .route("/opportunities", web::post().to(marketplace_handlers::create_opportunity))
+                            .route("/opportunities/{id}", web::get().to(marketplace_handlers::get_opportunity))
+                            .route("/applications", web::post().to(marketplace_handlers::apply_to_opportunity))
+                            .route("/applications/mine", web::get().to(marketplace_handlers::get_my_applications))
+                            .route("/stats", web::get().to(marketplace_handlers::get_stats))
+                            // Discovery throttle: brand scans a creator profile
+                            .route("/scan/{persona_id}", web::post().to(marketplace_handlers::scan_creator))
+                    )
+
+                    // Deal Rooms — private negotiation between brand and creator
+                    .service(
+                        web::scope("/deal-rooms")
+                            .route("", web::post().to(marketplace_handlers::open_deal_room))
+                            .route("", web::get().to(marketplace_handlers::list_deal_rooms))
+                            .route("/{id}/offers", web::post().to(marketplace_handlers::make_offer))
+                            .route("/{id}/soft-hold", web::post().to(marketplace_handlers::create_soft_hold))
+                            .route("/{id}/checklist", web::get().to(marketplace_handlers::get_checklist))
+                            .route("/{id}/escrow", web::post().to(marketplace_handlers::create_escrow_stages))
+                            .route("/{id}/repeat", web::post().to(marketplace_handlers::repeat_collab))
+                    )
+
+                    // Offer round responses
+                    .service(
+                        web::scope("/offers")
+                            .route("/{id}/respond", web::post().to(marketplace_handlers::respond_to_offer))
+                    )
+
+                    // Creator self-management
+                    .service(
+                        web::scope("/creators/me")
+                            .route("/price-band", web::post().to(marketplace_handlers::set_price_band))
+                            .route("/auto-escalation", web::post().to(marketplace_handlers::set_auto_escalation))
+                            .route("/energy", web::post().to(marketplace_handlers::set_energy_state))
+                            .route("/deliverables", web::post().to(marketplace_handlers::upload_deliverable))
+                            .route("/calendar", web::post().to(marketplace_handlers::set_calendar_slot))
+                            .route("/barter", web::get().to(marketplace_handlers::get_barter_preference))
+                            .route("/barter", web::post().to(marketplace_handlers::set_barter_preference))
+                            .route("/valueskins/{id}/hide", web::post().to(marketplace_handlers::hide_valueskin))
+                            .route("/valueskins/{id}/unhide", web::post().to(marketplace_handlers::unhide_valueskin))
+                            .route("/valueskins/{id}", web::delete().to(marketplace_handlers::delete_valueskin))
+                    )
+
+                    // Barter discovery (for brands)
+                    .service(
+                        web::scope("/creators")
+                            .route("/barter-willing", web::get().to(marketplace_handlers::list_barter_willing_creators))
+                    )
+
+                    // Testimonials
+                    .service(
+                        web::scope("/testimonials")
+                            .route("", web::post().to(marketplace_handlers::submit_testimonial))
+                    )
+
+                    // Communities
+                    .service(
+                        web::scope("/communities")
+                            .route("", web::post().to(community_handlers::create_community))
+                            .route("", web::get().to(community_handlers::list_communities))
+                            .route("/{id}", web::get().to(community_handlers::get_community))
+                            .route("/{id}/join", web::post().to(community_handlers::join_community))
+                            .route("/{id}/leave", web::post().to(community_handlers::leave_community))
+                            .route("/{id}/members", web::get().to(community_handlers::list_members))
+                            .route("/{id}/posts", web::post().to(community_handlers::create_post))
+                            .route("/{id}/posts", web::get().to(community_handlers::list_posts))
+                            .route("/posts/{id}/like", web::post().to(community_handlers::like_post))
+                            .route("/posts/{id}/unlike", web::post().to(community_handlers::unlike_post))
+                            .route("/admin/pricing", web::post().to(community_handlers::set_pricing))
+                            .route("/admin/pricing", web::get().to(community_handlers::get_pricing))
+                    )
+
+                    // Credentials & Identity Verification
+                    .service(
+                        web::scope("/credentials")
+                            .route("", web::post().to(credential_handlers::link_credential))
+                            .route("", web::get().to(credential_handlers::list_credentials))
+                            .route("/profile/{user_id}", web::get().to(credential_handlers::get_verification_profile))
+                    )
+                    .service(
+                        web::scope("/identity")
+                            .route("", web::post().to(credential_handlers::link_identity))
+                            .route("", web::get().to(credential_handlers::list_identity_proofs))
+                    )
+
+                    // ValuSkin-Based Matching — creators and brands match ONLY on shared profession
+                    .service(
+                        web::scope("/matching")
+                            .route("/creators", web::get().to(matching_handlers::discover_creators))
+                            .route("/opportunities", web::get().to(matching_handlers::discover_opportunities))
+                            .route("/opportunities/{id}/requirements", web::post().to(matching_handlers::set_requirements))
+                            .route("/opportunities/{id}/requirements", web::get().to(matching_handlers::get_requirements))
+                            .route("/audit", web::get().to(matching_handlers::get_audit_log))
+                    )
+
+                    // User Settings (barter preference, energy, price band, etc.)
+                    .service(
+                        web::scope("/settings")
+                            .route("", web::get().to(settings_handlers::get_settings))
+                            .route("", web::patch().to(settings_handlers::update_settings))
+                    )
+
+                    // LinkedIn — profile linking, connections, recommendations, community invitations
+                    .service(
+                        web::scope("/linkedin")
+                            .route("", web::post().to(linkedin_handlers::link_profile))
+                            .route("", web::get().to(linkedin_handlers::get_profile))
+                            .route("/visibility", web::post().to(linkedin_handlers::set_visibility))
+                            .route("/unlink", web::post().to(linkedin_handlers::unlink_profile))
+                            .route("/connections", web::get().to(linkedin_handlers::list_connections))
+                            .route("/connections/request", web::post().to(linkedin_handlers::send_connection_request))
+                            .route("/connections/respond", web::post().to(linkedin_handlers::respond_to_connection))
+                            .route("/connections/shared", web::get().to(linkedin_handlers::list_connections_with_shared_skins))
+                            .route("/connections/pending", web::get().to(linkedin_handlers::list_pending_requests))
+                            .route("/recommendations", web::post().to(linkedin_handlers::give_recommendation))
+                            .route("/recommendations/{user_id}", web::get().to(linkedin_handlers::get_recommendations))
+                            .route("/invitations", web::post().to(linkedin_handlers::invite_to_community))
+                            .route("/invitations", web::get().to(linkedin_handlers::list_pending_invitations))
+                            .route("/invitations/{id}/respond", web::post().to(linkedin_handlers::respond_to_invitation))
+                    )
+
+                    // Platform Settings — C-Suite advantage + campaign gating configuration
+                    .service(
+                        web::scope("/admin/platform")
+                            .route("/{platform_id}/csuite-settings", web::get().to(platform_handlers::get_csuite_settings))
+                            .route("/{platform_id}/csuite-settings", web::post().to(platform_handlers::update_csuite_settings))
+                    )
+
+                    // Persona Titles — C-Suite title management
+                    .service(
+                        web::scope("/personas/{persona_id}/titles")
+                            .route("", web::post().to(platform_handlers::add_title))
+                            .route("", web::get().to(platform_handlers::list_titles))
+                            .route("/{title_id}/verify", web::post().to(platform_handlers::verify_title))
+                            .route("/{title_id}", web::delete().to(platform_handlers::remove_title))
+                    )
+
+                    // Title Audit Log
+                    .service(
+                        web::scope("/personas/{persona_id}/titles/audit")
+                            .route("", web::get().to(platform_handlers::get_title_audit_log))
+                    )
+
+                    // Brand management (authenticated brand users)
+                    .service(
+                        web::scope("/brands")
+                            .route("/opportunities/{id}/applications", web::get().to(marketplace_handlers::get_opportunity_applications))
+                            .route("/applications/accept", web::post().to(marketplace_handlers::accept_application))
+                            .route("/deals/complete", web::post().to(marketplace_handlers::complete_deal))
+                            // Brand verification (self-serve)
+                            .route("/verify", web::post().to(marketplace_handlers::submit_brand_verification))
+                            .route("/verify", web::get().to(marketplace_handlers::get_brand_verification_status))
+                    )
+
+                    // GDPR Data Deletion (user self-service)
+                    .service(
+                        web::scope("/users/me/data-deletion")
+                            .route("", web::post().to(marketplace_handlers::request_data_deletion))
+                            .route("", web::get().to(marketplace_handlers::get_deletion_status))
+                            .route("", web::delete().to(marketplace_handlers::cancel_data_deletion))
+                    )
+
+                    // Creator completeness
+                    .service(
+                        web::scope("/creators/me/completeness")
+                            .route("", web::get().to(marketplace_handlers::get_my_completeness))
+                    )
+                    .service(
+                        web::scope("/creators/{user_id}/completeness")
+                            .route("", web::get().to(marketplace_handlers::get_creator_completeness))
+                    )
+
+                    // Payout history (creator)
+                    .service(
+                        web::scope("/creators/me/payouts")
+                            .route("", web::get().to(marketplace_handlers::get_my_payouts))
+                    )
+
+                    // Admin: brand verification queue, payout reconciliation, interest signups
+                    .service(
+                        web::scope("/admin")
+                            .route("/brands/verify", web::get().to(marketplace_handlers::admin_list_brand_verifications))
+                            .route("/brands/{user_id}/verify", web::post().to(marketplace_handlers::admin_review_brand_verification))
+                            .route("/payouts", web::post().to(marketplace_handlers::create_payout))
+                            .route("/payouts/reconciliation", web::get().to(marketplace_handlers::admin_payout_reconciliation))
+                            // Creator Interest Signup Management
+                            .route("/interest/signups", web::get().to(interest_handlers::list_interest_signups))
+                            .route("/interest/stats", web::get().to(interest_handlers::get_interest_stats))
+                            .route("/interest/signups/{id}/contact", web::post().to(interest_handlers::contact_interest_signup))
+                            .route("/interest/signups/{id}/convert", web::post().to(interest_handlers::convert_interest_signup))
+                            .route("/interest/signups/{id}/reject", web::post().to(interest_handlers::reject_interest_signup))
+                    )
+
+                    // Notifications
+                    .service(
+                        web::scope("/notifications")
+                            .route("/send", web::post().to(notification_handlers::send_notification))
+                    )
+
+                    // Social
+                    .service(
+                        web::scope("/social")
+                            .route("/posts", web::post().to(handlers::social::create_post))
+                    )
+
+                    // AI Scoring
+                    .service(
+                        web::scope("/ai")
+                            .route("/score", web::post().to(handlers::ai::get_score))
+                    )
+
+                    // Analytics
+                    .service(
+                        web::scope("/analytics")
+                            .route("/events", web::post().to(handlers::analytics::log_event))
+                    )
+
+                    // Recommendations
+                    .service(
+                        web::scope("/recommendations")
+                            .route("/brands", web::get().to(handlers::recommendation::get_matching_brands))
+                    )
+            )
+    })
+    .bind(("0.0.0.0", 8080))?
+    .run()
+    .await
+}

@@ -1,0 +1,86 @@
+//! Prometheus metrics — Four Golden Signals
+//! Latency, Traffic, Errors, Saturation tracked per endpoint
+
+use actix_web::{dev, Error, HttpResponse};
+use actix_web::middleware::ErrorHandlerResponse;
+use std::sync::OnceLock;
+use std::collections::HashMap;
+use std::sync::Mutex;
+use std::time::Instant;
+
+/// Lightweight metrics collector that exports Prometheus text format
+/// In production, use the prometheus crate — this is the integration shape
+pub struct MetricsCollector {
+    /// request_count{method, path, status}
+    request_counts: Mutex<HashMap<(String, String, u16), u64>>,
+    /// request_duration_seconds{method, path} — histogram buckets
+    request_durations: Mutex<Vec<(String, String, f64)>>,
+    /// active_connections gauge
+    active_connections: std::sync::atomic::AtomicI64,
+}
+
+static METRICS: OnceLock<MetricsCollector> = OnceLock::new();
+
+impl MetricsCollector {
+    pub fn global() -> &'static MetricsCollector {
+        METRICS.get_or_init(|| MetricsCollector {
+            request_counts: Mutex::new(HashMap::new()),
+            request_durations: Mutex::new(Vec::new()),
+            active_connections: std::sync::atomic::AtomicI64::new(0),
+        })
+    }
+
+    pub fn record_request(&self, method: &str, path: &str, status: u16, duration_secs: f64) {
+        let key = (method.to_string(), path.to_string(), status);
+        if let Ok(mut counts) = self.request_counts.lock() {
+            *counts.entry(key).or_insert(0) += 1;
+        }
+        if let Ok(mut durations) = self.request_durations.lock() {
+            durations.push((method.to_string(), path.to_string(), duration_secs));
+            // Keep bounded to prevent memory leak
+            if durations.len() > 100_000 {
+                durations.drain(..50_000);
+            }
+        }
+    }
+
+    pub fn inc_connections(&self) {
+        self.active_connections.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    }
+
+    pub fn dec_connections(&self) {
+        self.active_connections.fetch_sub(1, std::sync::atomic::Ordering::Relaxed);
+    }
+
+    /// Render Prometheus text exposition format
+    pub fn render(&self) -> String {
+        let mut out = String::with_capacity(4096);
+
+        // Request counts
+        out.push_str("# HELP http_requests_total Total HTTP requests\n");
+        out.push_str("# TYPE http_requests_total counter\n");
+        if let Ok(counts) = self.request_counts.lock() {
+            for ((method, path, status), count) in counts.iter() {
+                out.push_str(&format!(
+                    "http_requests_total{{method=\"{}\",path=\"{}\",status=\"{}\"}} {}\n",
+                    method, path, status, count
+                ));
+            }
+        }
+
+        // Active connections (saturation signal)
+        let conns = self.active_connections.load(std::sync::atomic::Ordering::Relaxed);
+        out.push_str("# HELP http_active_connections Current active connections\n");
+        out.push_str("# TYPE http_active_connections gauge\n");
+        out.push_str(&format!("http_active_connections {}\n", conns));
+
+        out
+    }
+}
+
+/// Actix handler: GET /metrics
+pub async fn metrics_handler() -> HttpResponse {
+    HttpResponse::Ok()
+        .content_type("text/plain; version=0.0.4")
+        .body(MetricsCollector::global().render())
+}
