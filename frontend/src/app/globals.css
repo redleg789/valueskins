@@ -1,0 +1,337 @@
+/* ========================================
+   Valueskins — Instagram Dark Theme
+   Production-grade CSS foundation
+   ======================================== */
+
+:root {
+  /* Instagram Dark Palette */
+  --ig-bg: #000000;
+  --ig-surface: #000000;
+  --ig-elevated: #121212;
+  --ig-card: #1c1c1e;
+  --ig-card-hover: #242426;
+  --ig-separator: #262626;
+  --ig-separator-light: #363636;
+  --ig-text-primary: #f5f5f5;
+  --ig-text-secondary: #a8a8a8;
+  --ig-text-tertiary: #737373;
+  --ig-text-link: #e0f1ff;
+  --ig-blue: #0095f6;
+  --ig-blue-hover: #1877f2;
+  --ig-red: #ed4956;
+  --ig-green: #58c322;
+
+  /* Valueskins Brand */
+  --vs-violet: #8b5cf6;
+  --vs-violet-dim: rgba(139, 92, 246, 0.15);
+  --vs-violet-glow: rgba(139, 92, 246, 0.4);
+  --vs-pink: #ec4899;
+  --vs-gradient: linear-gradient(135deg, #8b5cf6, #ec4899);
+  --vs-gradient-warm: linear-gradient(135deg, #f59e0b, #ef4444);
+  --vs-gradient-cool: linear-gradient(135deg, #0ea5e9, #8b5cf6);
+
+  /* Typography */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Helvetica, Arial, sans-serif;
+
+  /* Spacing (4px grid) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* Radii */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 24px;
+  --radius-full: 9999px;
+}
+
+/* ── Reset & Base ───────────────────────── */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: var(--font-sans);
+  color: var(--ig-text-primary);
+  background: var(--ig-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  line-height: 1.4;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: inherit;
+  -webkit-appearance: none;
+}
+
+input,
+select,
+textarea {
+  font-family: inherit;
+  -webkit-appearance: none;
+  outline: none;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+/* ── Scrollbar ──────────────────────────── */
+
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+/* ── Animations ─────────────────────────── */
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInScale {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes heartBeat {
+  0% { transform: scale(1); }
+  15% { transform: scale(1.3); }
+  30% { transform: scale(1); }
+  45% { transform: scale(1.15); }
+  60% { transform: scale(1); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes storyRing {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ── Utility Classes ────────────────────── */
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.4s ease-out forwards;
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 2.5px solid var(--ig-separator);
+  border-top-color: var(--vs-violet);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--ig-card) 25%,
+    var(--ig-card-hover) 50%,
+    var(--ig-card) 75%
+  );
+  background-size: 400% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: var(--radius-md);
+}
+
+.story-ring {
+  background: conic-gradient(
+    from 0deg,
+    #f09433, #e6683c, #dc2743, #cc2366,
+    #bc1888, #8b5cf6, #0095f6,
+    #f09433
+  );
+  padding: 2.5px;
+  border-radius: 50%;
+}
+
+.story-ring-inner {
+  background: var(--ig-bg);
+  padding: 2px;
+  border-radius: 50%;
+}
+
+/* ── Button Styles ──────────────────────── */
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: 8px 16px;
+  background: var(--ig-blue);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  transition: background 0.15s ease;
+  min-height: 32px;
+}
+
+.btn-primary:active {
+  background: var(--ig-blue-hover);
+  transform: scale(0.98);
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: 8px 16px;
+  background: var(--ig-card);
+  color: var(--ig-text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  transition: background 0.15s ease;
+  min-height: 32px;
+}
+
+.btn-secondary:active {
+  background: var(--ig-card-hover);
+}
+
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: 7px 16px;
+  background: transparent;
+  color: var(--ig-text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  border: 1px solid var(--ig-separator);
+  border-radius: var(--radius-md);
+  transition: background 0.15s ease;
+  min-height: 32px;
+}
+
+.btn-outline:active {
+  background: var(--ig-card);
+}
+
+/* ── Input Styles ───────────────────────── */
+
+.input-search {
+  width: 100%;
+  padding: 8px 16px 8px 36px;
+  background: var(--ig-card);
+  border: none;
+  border-radius: var(--radius-md);
+  color: var(--ig-text-primary);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.input-search::placeholder {
+  color: var(--ig-text-tertiary);
+}
+
+/* ── Card Styles ────────────────────────── */
+
+.card {
+  background: var(--ig-card);
+  border: 1px solid var(--ig-separator);
+  border-radius: var(--radius-lg);
+}
+
+.card-elevated {
+  background: var(--ig-elevated);
+  border: 1px solid var(--ig-separator);
+  border-radius: var(--radius-lg);
+}
+
+/* ── Chip/Tag ───────────────────────────── */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 16px;
+  border-radius: var(--radius-full);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.chip-active {
+  background: var(--ig-text-primary);
+  color: var(--ig-bg);
+}
+
+.chip-inactive {
+  background: transparent;
+  color: var(--ig-text-primary);
+  border: 1px solid var(--ig-separator);
+}
+
+/* ── Level Badge Colors ─────────────────── */
+
+.level-1 { color: #a8a8a8; }
+.level-2 { color: #58c322; }
+.level-3 { color: #0095f6; }
+.level-4 { color: #a855f7; }
+.level-5 { color: #f59e0b; }
+
+.level-bg-1 { background: rgba(168, 168, 168, 0.12); }
+.level-bg-2 { background: rgba(88, 195, 34, 0.12); }
+.level-bg-3 { background: rgba(0, 149, 246, 0.12); }
+.level-bg-4 { background: rgba(168, 85, 247, 0.12); }
+.level-bg-5 { background: rgba(245, 158, 11, 0.12); }
