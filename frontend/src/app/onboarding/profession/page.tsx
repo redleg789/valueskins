@@ -227,7 +227,7 @@ export default function ProfessionSelectionPage() {
             </p>
           </div>
 
-          <Link href="/onboarding/attributes" style={{ textDecoration: 'none', width: '100%', display: 'block' }}>
+          <Link href="/store" style={{ textDecoration: 'none', width: '100%', display: 'block' }}>
             <button
               onClick={() => {
                 localStorage.setItem('valueskins_profession', selectedProfession.id);
