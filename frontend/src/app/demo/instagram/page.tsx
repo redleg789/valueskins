@@ -52,6 +52,11 @@ const BRAND_MARKETPLACE_CREATORS = [
     audienceAgeRange: '25-34', audienceLocation: 'USA', audienceLang: 'English',
     dealTypes: ['Paid', 'Equity', 'Barter'], openToDeals: true,
     ndaOk: true, usageRightsOk: true,
+    dealCompletionRate: 97, incomeTier: '50k+', isFirstDeal: false,
+    rateCard: { reel: '$4,500', story: '$1,200', post: '$2,800' },
+    exclusivitySlotFree: true, revisionLimit: 2, usageRightsDays: 90,
+    availableFrom: 'Now', contractMode: 'both',
+    portfolio: ['TechFlow collab — 2.1M views', 'CloudBase integration — 890K views'],
   },
   {
     name: 'Priya Sharma', handle: '@priya_designs', valueSkin: 'UX/UI Designer',
@@ -61,6 +66,11 @@ const BRAND_MARKETPLACE_CREATORS = [
     audienceAgeRange: '18-24', audienceLocation: 'India', audienceLang: 'English',
     dealTypes: ['Paid', 'Revenue Share'], openToDeals: true,
     ndaOk: true, usageRightsOk: false,
+    dealCompletionRate: 91, incomeTier: '100k+', isFirstDeal: false,
+    rateCard: { reel: '$6,000', story: '$1,800', post: '$4,000' },
+    exclusivitySlotFree: false, revisionLimit: 3, usageRightsDays: 60,
+    availableFrom: 'Mar 15', contractMode: 'long-term',
+    portfolio: ['Figma design showcase — 3.4M views', 'Framer landing page — 1.2M views'],
   },
   {
     name: 'Marcus Chen', handle: '@marcus_fitness', valueSkin: 'Fitness Coach',
@@ -70,6 +80,11 @@ const BRAND_MARKETPLACE_CREATORS = [
     audienceAgeRange: '18-24', audienceLocation: 'USA', audienceLang: 'English',
     dealTypes: ['Paid', 'Gifted Product', 'Barter', 'Ambassador'], openToDeals: true,
     ndaOk: false, usageRightsOk: true,
+    dealCompletionRate: 88, incomeTier: '10k+', isFirstDeal: false,
+    rateCard: { reel: '$3,200', story: '$800', post: '$1,800' },
+    exclusivitySlotFree: true, revisionLimit: 2, usageRightsDays: 30,
+    availableFrom: 'Now', contractMode: 'one-off',
+    portfolio: ['Nike Training series — 4.1M views', 'MyProtein review — 980K views'],
   },
 ];
 
@@ -329,6 +344,43 @@ export default function InstagramDemoPage() {
   const [filterDealType, setFilterDealType] = useState<string | null>(null);
   const [filterResponseMax, setFilterResponseMax] = useState<number | null>(null);
   const [showAudienceFilters, setShowAudienceFilters] = useState(false);
+
+  // Rate card
+  const [rateCard, setRateCard] = useState({ reel: '4500', story: '1200', post: '2800', podcast: '3500', live: '6000' });
+  const [creatorAvailableFrom, setCreatorAvailableFrom] = useState('2026-03-01');
+  const [creatorMaxActiveDeals, setCreatorMaxActiveDeals] = useState(3);
+  const [contractMode, setContractMode] = useState<'one-off' | 'long-term' | 'both'>('both');
+  const [dealCompletionRate] = useState(94);
+  const [verifiedIncomeTier] = useState<'starter' | '10k+' | '50k+' | '100k+'>('50k+');
+  const [isFirstDealOpen, setIsFirstDealOpen] = useState(false);
+  const [showRateCard, setShowRateCard] = useState(false);
+  const [showPortfolio, setShowPortfolio] = useState(false);
+  const [usageRightsDays, setUsageRightsDays] = useState(90);
+  const [exclusivityUntil, setExclusivityUntil] = useState('');
+  const [revisionLimit, setRevisionLimit] = useState(2);
+  const [savedDealTemplates, setSavedDealTemplates] = useState([
+    { id: 1, name: 'Q2 Standard Review', type: 'Product Review', deliverables: '2x Reels, 3x Stories', budget: '4000' },
+  ]);
+  const [savedSearches, setSavedSearches] = useState([
+    { id: 1, label: 'Fitness Coach, 18-24, USA', profession: 'Fitness Coach', age: '18-24', loc: 'USA' },
+  ]);
+  // Admin feature flags
+  const [adminShowRateCard, setAdminShowRateCard] = useState(true);
+  const [adminShowPortfolio, setAdminShowPortfolio] = useState(true);
+  const [adminShowDealCompletion, setAdminShowDealCompletion] = useState(true);
+  const [adminShowIncomeTier, setAdminShowIncomeTier] = useState(true);
+  const [adminShowFirstDealBadge, setAdminShowFirstDealBadge] = useState(true);
+  const [adminShowExclusivitySignal, setAdminShowExclusivitySignal] = useState(true);
+  const [adminShowRevisionLimit, setAdminShowRevisionLimit] = useState(true);
+  const [adminShowUsageRightsDuration, setAdminShowUsageRightsDuration] = useState(true);
+  const [adminShowAvailabilityCalendar, setAdminShowAvailabilityCalendar] = useState(true);
+  const [adminShowSavedSearches, setAdminShowSavedSearches] = useState(true);
+  const [adminShowDealTemplates, setAdminShowDealTemplates] = useState(true);
+  const [adminShowSimilarCreators, setAdminShowSimilarCreators] = useState(true);
+  const [adminShowBrandTrackRecord, setAdminShowBrandTrackRecord] = useState(true);
+  const [adminShowMutualRating, setAdminShowMutualRating] = useState(true);
+  const [adminAllowLongTermContracts, setAdminAllowLongTermContracts] = useState(true);
+  const [adminSavedFeaturesTab, setAdminSavedFeaturesTab] = useState(false);
 
   const [metrics, setMetrics] = useState({
     followers: 1243000, engagement: 6.8, dealsCompleted: 47,
@@ -1152,6 +1204,41 @@ export default function InstagramDemoPage() {
                       </div>
                     </div>
 
+                    {/* Saved Searches */}
+                    {adminShowSavedSearches && savedSearches.length > 0 && (
+                      <div style={{ marginBottom: '14px' }}>
+                        <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', marginBottom: '6px' }}>Saved Searches</div>
+                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                          {savedSearches.map(s => (
+                            <button key={s.id} onClick={() => { setBrandSearchMode('profession'); setBrandSearchQuery(s.profession); setFilterAudienceAge(s.age); setFilterAudienceLoc(s.loc); }}
+                              style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '5px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', background: `${C.primary}15`, color: C.primary, border: `1px solid ${C.primary}40` }}>
+                              🔖 {s.label}
+                              <span onClick={e => { e.stopPropagation(); setSavedSearches(prev => prev.filter(x => x.id !== s.id)); }} style={{ marginLeft: '2px', color: C.textMuted, fontSize: '12px' }}>×</span>
+                            </button>
+                          ))}
+                          <button onClick={() => { const label = `${brandSearchQuery || 'Any'}, ${filterAudienceAge || 'Any age'}, ${filterAudienceLoc || 'Any loc'}`; setSavedSearches(prev => [...prev, { id: Date.now(), label, profession: brandSearchQuery, age: filterAudienceAge ?? '', loc: filterAudienceLoc }]); }}
+                            style={{ padding: '5px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', background: 'transparent', color: C.textMuted, border: `1px solid ${C.border}` }}>
+                            + Save current search
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Deal Templates */}
+                    {adminShowDealTemplates && savedDealTemplates.length > 0 && (
+                      <div style={{ marginBottom: '14px' }}>
+                        <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', marginBottom: '6px' }}>Deal Templates</div>
+                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                          {savedDealTemplates.map(t => (
+                            <button key={t.id} onClick={() => { setBrandBriefTitle(t.name); setBrandBriefDeliverables(t.deliverables); setBrandBudget(t.budget); setBrandCampaignType(t.type); }}
+                              style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '5px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', background: 'rgba(230,81,0,0.08)', color: '#E65100', border: '1px solid rgba(230,81,0,0.25)' }}>
+                              📋 {t.name}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     {/* Search Bar */}
                     <div style={{ marginBottom: '16px' }}>
                       <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
@@ -1419,13 +1506,70 @@ export default function InstagramDemoPage() {
                             </span>
                           </div>
                           {/* Deal types + NDA/rights row */}
-                          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '10px' }}>
+                          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '8px' }}>
                             {creator.dealTypes.map(dt => (
                               <span key={dt} style={{ fontSize: '9px', fontWeight: 700, padding: '2px 6px', borderRadius: '8px', background: 'rgba(16,185,129,0.08)', color: '#10b981', border: '1px solid rgba(16,185,129,0.2)', textTransform: 'uppercase' }}>{dt}</span>
                             ))}
                             {creator.ndaOk && <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 6px', borderRadius: '8px', background: 'rgba(139,92,246,0.08)', color: '#8b5cf6', border: '1px solid rgba(139,92,246,0.2)', textTransform: 'uppercase' }}>NDA ✓</span>}
                             {creator.usageRightsOk && <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 6px', borderRadius: '8px', background: 'rgba(139,92,246,0.08)', color: '#8b5cf6', border: '1px solid rgba(139,92,246,0.2)', textTransform: 'uppercase' }}>Usage Rights ✓</span>}
                           </div>
+
+                          {/* Rate card */}
+                          {adminShowRateCard && (
+                            <div style={{ background: C.bg, borderRadius: '7px', padding: '8px 10px', marginBottom: '8px', border: `1px solid ${C.border}` }}>
+                              <div style={{ fontSize: '9px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', marginBottom: '5px' }}>Rate Card</div>
+                              <div style={{ display: 'flex', gap: '6px' }}>
+                                {Object.entries(creator.rateCard).map(([fmt, price]) => (
+                                  <div key={fmt} style={{ flex: 1, textAlign: 'center', padding: '4px', background: C.card, borderRadius: '5px' }}>
+                                    <div style={{ fontSize: '11px', fontWeight: 700, color: C.text }}>{price}</div>
+                                    <div style={{ fontSize: '8px', color: C.textMuted, textTransform: 'capitalize' }}>{fmt}</div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Trust signals row */}
+                          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                            {adminShowDealCompletion && (
+                              <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 7px', borderRadius: '8px',
+                                background: creator.dealCompletionRate >= 90 ? 'rgba(34,197,94,0.1)' : 'rgba(245,158,11,0.1)',
+                                color: creator.dealCompletionRate >= 90 ? '#22c55e' : '#f59e0b',
+                                border: `1px solid ${creator.dealCompletionRate >= 90 ? 'rgba(34,197,94,0.25)' : 'rgba(245,158,11,0.25)'}`,
+                              }}>{creator.dealCompletionRate}% completion</span>
+                            )}
+                            {adminShowIncomeTier && (
+                              <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 7px', borderRadius: '8px', background: 'rgba(0,102,204,0.08)', color: C.primary, border: `1px solid rgba(0,102,204,0.2)` }}>
+                                💰 ${creator.incomeTier} earned
+                              </span>
+                            )}
+                            {adminShowAvailabilityCalendar && (
+                              <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 7px', borderRadius: '8px',
+                                background: creator.availableFrom === 'Now' ? 'rgba(34,197,94,0.08)' : 'rgba(100,100,100,0.08)',
+                                color: creator.availableFrom === 'Now' ? '#22c55e' : C.textSecondary,
+                                border: `1px solid ${creator.availableFrom === 'Now' ? 'rgba(34,197,94,0.2)' : C.border}`,
+                              }}>📅 {creator.availableFrom === 'Now' ? 'Available now' : `From ${creator.availableFrom}`}</span>
+                            )}
+                            {adminShowExclusivitySignal && !creator.exclusivitySlotFree && (
+                              <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 7px', borderRadius: '8px', background: 'rgba(239,68,68,0.08)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)' }}>🔒 Exclusivity taken</span>
+                            )}
+                            {adminShowRevisionLimit && (
+                              <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 7px', borderRadius: '8px', background: 'rgba(100,100,100,0.08)', color: C.textSecondary, border: `1px solid ${C.border}` }}>{creator.revisionLimit} revisions</span>
+                            )}
+                            {adminShowUsageRightsDuration && (
+                              <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 7px', borderRadius: '8px', background: 'rgba(139,92,246,0.08)', color: '#8b5cf6', border: '1px solid rgba(139,92,246,0.2)' }}>{creator.usageRightsDays}d rights</span>
+                            )}
+                          </div>
+
+                          {/* Portfolio samples */}
+                          {adminShowPortfolio && (
+                            <div style={{ marginBottom: '8px' }}>
+                              <div style={{ fontSize: '9px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', marginBottom: '4px' }}>Portfolio</div>
+                              {creator.portfolio.map((p, pi) => (
+                                <div key={pi} style={{ fontSize: '10px', color: C.textSecondary, padding: '3px 0', borderTop: pi > 0 ? `1px solid ${C.border}` : 'none' }}>▶ {p}</div>
+                              ))}
+                            </div>
+                          )}
 
                           {/* Platform safety status bar */}
                           <div style={{ display: 'flex', gap: '5px', marginBottom: '8px', flexWrap: 'wrap' }}>
@@ -1774,6 +1918,27 @@ export default function InstagramDemoPage() {
                         </div>
                       );
                     })}
+
+                          {/* Similar Creators */}
+                          {adminShowSimilarCreators && results.length > 0 && (
+                            <div style={{ marginTop: '8px', padding: '12px 14px', background: C.card, border: `1px solid ${C.border}`, borderRadius: '10px' }}>
+                              <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', marginBottom: '8px' }}>Similar Creators</div>
+                              <div style={{ fontSize: '11px', color: C.textSecondary, marginBottom: '8px' }}>Based on your most-viewed creator this session:</div>
+                              {BRAND_MARKETPLACE_CREATORS.filter((_, idx) => idx !== 0).slice(0, 2).map((c, si) => {
+                                const b = PROFESSION_BADGES[c.valueSkin];
+                                return (
+                                  <div key={si} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '7px 0', borderTop: si > 0 ? `1px solid ${C.border}` : 'none' }}>
+                                    <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${c.name.replace(/\s/g,'')}`} alt={c.name} style={{ width: '32px', height: '32px', borderRadius: '50%', background: C.surfaceAlt }} />
+                                    <div style={{ flex: 1 }}>
+                                      <div style={{ fontSize: '12px', fontWeight: 700, color: C.text }}>{c.name}</div>
+                                      <div style={{ fontSize: '10px', color: C.textSecondary }}>{c.valueSkin} · {c.followers} · {c.engagement}</div>
+                                    </div>
+                                    <span style={{ fontSize: '9px', fontWeight: 700, color: b?.color ?? C.primary, background: `${b?.color ?? C.primary}15`, padding: '2px 6px', borderRadius: '6px' }}>{c.matchScore}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
                         </>
                       );
                     })()}
@@ -2629,6 +2794,56 @@ export default function InstagramDemoPage() {
                   {safetyOffPlatformBlock && <>• Off-platform contact requests auto-flagged<br/></>}
                 </div>
               </div>
+
+              {/* ── FEATURE FLAGS ───────────────────────────────── */}
+              <div style={{ padding: '20px', borderTop: `1px solid ${C.border}` }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+                    <div style={{ fontSize: '13px', fontWeight: 700, color: C.text }}>Feature Flags</div>
+                  </div>
+                  <span style={{ fontSize: '10px', color: C.textMuted }}>Toggle any feature platform-wide</span>
+                </div>
+                <div style={{ fontSize: '11px', color: C.textSecondary, marginBottom: '16px' }}>
+                  All features are on by default. Turn off to hide from all creators and brands instantly.
+                </div>
+
+                {([
+                  { label: 'Rate Card', desc: 'Per-format pricing (Reel/Story/Post) visible on creator cards', value: adminShowRateCard, set: setAdminShowRateCard },
+                  { label: 'Availability Calendar', desc: 'Creator "available from" date shown on cards and in search', value: adminShowAvailabilityCalendar, set: setAdminShowAvailabilityCalendar },
+                  { label: 'Portfolio Samples', desc: 'Past brand work visible on creator cards', value: adminShowPortfolio, set: setAdminShowPortfolio },
+                  { label: 'Deal Completion Rate', desc: 'Creator % of started deals finished — penalises ghosting', value: adminShowDealCompletion, set: setAdminShowDealCompletion },
+                  { label: 'Verified Income Tier', desc: 'Trust badge showing lifetime earnings tier ($10K+, $50K+, etc)', value: adminShowIncomeTier, set: setAdminShowIncomeTier },
+                  { label: 'First-Deal Badge', desc: 'Badge shown on creators open to discounted first collaboration', value: adminShowFirstDealBadge, set: setAdminShowFirstDealBadge },
+                  { label: 'Exclusivity Slot Signal', desc: 'Shows "Slot taken until [date]" when creator is exclusive with a brand', value: adminShowExclusivitySignal, set: setAdminShowExclusivitySignal },
+                  { label: 'Revision Limit Display', desc: 'Number of revisions included shown upfront on creator cards', value: adminShowRevisionLimit, set: setAdminShowRevisionLimit },
+                  { label: 'Usage Rights Duration', desc: 'Days of usage rights shown before deal accepted', value: adminShowUsageRightsDuration, set: setAdminShowUsageRightsDuration },
+                  { label: 'Brand Track Record', desc: 'Brand deals completed + avg payment time + creator ratings of brand', value: adminShowBrandTrackRecord, set: setAdminShowBrandTrackRecord },
+                  { label: 'Mutual Rating System', desc: 'Both parties rate each other after deal close', value: adminShowMutualRating, set: setAdminShowMutualRating },
+                  { label: 'Deal Templates', desc: 'Brands can save and reuse campaign brief templates', value: adminShowDealTemplates, set: setAdminShowDealTemplates },
+                  { label: 'Saved Searches', desc: 'Brands get notified when a matching creator joins', value: adminShowSavedSearches, set: setAdminShowSavedSearches },
+                  { label: 'Similar Creators', desc: 'Suggest creators similar to ones a brand already worked with', value: adminShowSimilarCreators, set: setAdminShowSimilarCreators },
+                  { label: 'Long-Term Contracts', desc: 'Multi-month ambassador deals with recurring escrow milestones', value: adminAllowLongTermContracts, set: setAdminAllowLongTermContracts },
+                ] as const).map(({ label, desc, value, set }) => (
+                  <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '10px 0', borderTop: `1px solid ${C.border}` }}>
+                    <div style={{ flex: 1, paddingRight: '12px' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 700, color: value ? C.text : C.textMuted }}>{label}</div>
+                      <div style={{ fontSize: '10px', color: C.textMuted, marginTop: '1px' }}>{desc}</div>
+                    </div>
+                    <button onClick={() => set((p: boolean) => !p)}
+                      style={{ width: '40px', height: '22px', borderRadius: '11px', border: 'none', backgroundColor: value ? C.primary : 'rgba(255,255,255,0.1)', cursor: 'pointer', position: 'relative', flexShrink: 0, transition: 'background-color 0.2s' }}>
+                      <div style={{ width: '18px', height: '18px', borderRadius: '50%', backgroundColor: '#fff', position: 'absolute', top: '2px', left: value ? '20px' : '2px', transition: 'left 0.2s' }} />
+                    </button>
+                  </div>
+                ))}
+
+                <button
+                  onClick={() => { setAdminSavedFeaturesTab(true); setTimeout(() => setAdminSavedFeaturesTab(false), 3000); }}
+                  style={{ width: '100%', marginTop: '16px', padding: '11px', background: C.primary, border: 'none', borderRadius: '8px', color: '#fff', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}
+                >
+                  {adminSavedFeaturesTab ? '✅ Feature flags saved' : 'Save Feature Flags'}
+                </button>
+              </div>
             </>
           )}
 
@@ -3104,6 +3319,128 @@ export default function InstagramDemoPage() {
                     </div>
                   )}
                 </div>
+
+                {/* ── RATE CARD ──────────────────────────────────── */}
+                {adminShowRateCard && (() => {
+                  const open = creatorSettingsOpen === ('ratecard' as any);
+                  return (
+                    <div style={{ marginBottom: '16px' }}>
+                      <button onClick={() => setCreatorSettingsOpen(open ? null : 'ratecard' as any)} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: C.card, border: `1px solid ${C.border}`, borderRadius: open ? '10px 10px 0 0' : '10px', padding: '12px 14px', cursor: 'pointer', color: C.text }}>
+                        <span style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.textMuted }}>Rate Card</span>
+                        <span style={{ fontSize: '14px', color: C.textMuted }}>{open ? '▲' : '▼'}</span>
+                      </button>
+                      {open && (
+                        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderTop: 'none', borderRadius: '0 0 10px 10px', padding: '14px' }}>
+                          <div style={{ fontSize: '10px', color: C.textSecondary, marginBottom: '10px' }}>Set your price per content format. These are shown to brands before they send a proposal.</div>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginBottom: '10px' }}>
+                            {(Object.keys(rateCard) as Array<keyof typeof rateCard>).map(fmt => (
+                              <div key={fmt}>
+                                <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, marginBottom: '4px', textTransform: 'capitalize' }}>{fmt}</div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                                  <span style={{ color: C.textSecondary, fontSize: '12px' }}>$</span>
+                                  <input type="number" value={rateCard[fmt]} onChange={e => setRateCard(prev => ({ ...prev, [fmt]: e.target.value }))}
+                                    style={{ width: '100%', padding: '6px 7px', background: C.bg, border: `1px solid ${C.border}`, borderRadius: '7px', color: C.text, fontSize: '12px', boxSizing: 'border-box' as const }} />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                            <div>
+                              <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, marginBottom: '4px', textTransform: 'uppercase' }}>Contract Mode</div>
+                              <div style={{ display: 'flex', gap: '4px' }}>
+                                {(['one-off', 'long-term', 'both'] as const).map(m => (
+                                  <button key={m} onClick={() => setContractMode(m)} style={{ flex: 1, padding: '5px 3px', borderRadius: '6px', fontSize: '10px', fontWeight: 600, cursor: 'pointer', textTransform: 'capitalize',
+                                    background: contractMode === m ? `${C.primary}20` : C.bg, color: contractMode === m ? C.primary : C.textSecondary, border: `1px solid ${contractMode === m ? C.primary : C.border}` }}>{m}</button>
+                                ))}
+                              </div>
+                            </div>
+                            <div>
+                              <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, marginBottom: '4px', textTransform: 'uppercase' }}>Max Active Deals</div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <button onClick={() => setCreatorMaxActiveDeals(Math.max(1, creatorMaxActiveDeals - 1))} style={{ width: '24px', height: '24px', borderRadius: '4px', border: `1px solid ${C.border}`, background: C.bg, color: C.text, cursor: 'pointer', fontWeight: 700 }}>−</button>
+                                <span style={{ fontSize: '14px', fontWeight: 800, color: C.primary, minWidth: '20px', textAlign: 'center' }}>{creatorMaxActiveDeals}</span>
+                                <button onClick={() => setCreatorMaxActiveDeals(Math.min(20, creatorMaxActiveDeals + 1))} style={{ width: '24px', height: '24px', borderRadius: '4px', border: `1px solid ${C.border}`, background: C.bg, color: C.text, cursor: 'pointer', fontWeight: 700 }}>+</button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* ── AVAILABILITY CALENDAR ──────────────────────── */}
+                {adminShowAvailabilityCalendar && (() => {
+                  const open = creatorSettingsOpen === ('availability' as any);
+                  return (
+                    <div style={{ marginBottom: '16px' }}>
+                      <button onClick={() => setCreatorSettingsOpen(open ? null : 'availability' as any)} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: C.card, border: `1px solid ${C.border}`, borderRadius: open ? '10px 10px 0 0' : '10px', padding: '12px 14px', cursor: 'pointer', color: C.text }}>
+                        <span style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.textMuted }}>Availability Calendar</span>
+                        <span style={{ fontSize: '14px', color: C.textMuted }}>{open ? '▲' : '▼'}</span>
+                      </button>
+                      {open && (
+                        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderTop: 'none', borderRadius: '0 0 10px 10px', padding: '14px' }}>
+                          <div style={{ marginBottom: '10px' }}>
+                            <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, marginBottom: '4px', textTransform: 'uppercase' }}>Available for new deals from</div>
+                            <input type="date" value={creatorAvailableFrom} onChange={e => setCreatorAvailableFrom(e.target.value)}
+                              style={{ width: '100%', padding: '7px 9px', background: C.bg, border: `1px solid ${C.border}`, borderRadius: '7px', color: C.text, fontSize: '12px', boxSizing: 'border-box' as const }} />
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderTop: `1px solid ${C.border}` }}>
+                            <div>
+                              <div style={{ fontSize: '12px', fontWeight: 600, color: C.text }}>Open to first-deal (discounted collab)</div>
+                              <div style={{ fontSize: '10px', color: C.textSecondary }}>Badge shown to brands — signals you'll do a discounted first collab to build your record</div>
+                            </div>
+                            <button onClick={() => setIsFirstDealOpen(p => !p)} style={{ width: '40px', height: '22px', borderRadius: '11px', border: 'none', backgroundColor: isFirstDealOpen ? C.primary : 'rgba(255,255,255,0.12)', cursor: 'pointer', position: 'relative', flexShrink: 0, transition: 'background-color 0.2s' }}>
+                              <div style={{ width: '18px', height: '18px', borderRadius: '50%', backgroundColor: '#fff', position: 'absolute', top: '2px', left: isFirstDealOpen ? '20px' : '2px', transition: 'left 0.2s' }} />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* ── DEAL STRUCTURE DEFAULTS ────────────────────── */}
+                {(() => {
+                  const open = creatorSettingsOpen === ('dealstructure' as any);
+                  return (
+                    <div style={{ marginBottom: '16px' }}>
+                      <button onClick={() => setCreatorSettingsOpen(open ? null : 'dealstructure' as any)} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: C.card, border: `1px solid ${C.border}`, borderRadius: open ? '10px 10px 0 0' : '10px', padding: '12px 14px', cursor: 'pointer', color: C.text }}>
+                        <span style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.textMuted }}>Deal Structure Defaults</span>
+                        <span style={{ fontSize: '14px', color: C.textMuted }}>{open ? '▲' : '▼'}</span>
+                      </button>
+                      {open && (
+                        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderTop: 'none', borderRadius: '0 0 10px 10px', padding: '14px' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
+                            <div>
+                              <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, marginBottom: '4px', textTransform: 'uppercase' }}>Revision Limit</div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <button onClick={() => setRevisionLimit(Math.max(0, revisionLimit - 1))} style={{ width: '24px', height: '24px', borderRadius: '4px', border: `1px solid ${C.border}`, background: C.bg, color: C.text, cursor: 'pointer', fontWeight: 700 }}>−</button>
+                                <span style={{ fontSize: '14px', fontWeight: 800, color: C.primary, minWidth: '20px', textAlign: 'center' }}>{revisionLimit}</span>
+                                <button onClick={() => setRevisionLimit(Math.min(10, revisionLimit + 1))} style={{ width: '24px', height: '24px', borderRadius: '4px', border: `1px solid ${C.border}`, background: C.bg, color: C.text, cursor: 'pointer', fontWeight: 700 }}>+</button>
+                              </div>
+                            </div>
+                            <div>
+                              <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, marginBottom: '4px', textTransform: 'uppercase' }}>Usage Rights (days)</div>
+                              <div style={{ display: 'flex', gap: '4px' }}>
+                                {[30, 60, 90, 180].map(d => (
+                                  <button key={d} onClick={() => setUsageRightsDays(d)} style={{ flex: 1, padding: '5px 2px', borderRadius: '5px', fontSize: '10px', fontWeight: 600, cursor: 'pointer',
+                                    background: usageRightsDays === d ? `${C.primary}20` : C.bg, color: usageRightsDays === d ? C.primary : C.textMuted, border: `1px solid ${usageRightsDays === d ? C.primary : C.border}` }}>{d}</button>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, marginBottom: '4px', textTransform: 'uppercase' }}>Exclusivity locked until</div>
+                            <input type="date" value={exclusivityUntil} onChange={e => setExclusivityUntil(e.target.value)} placeholder="Leave blank if not exclusive"
+                              style={{ width: '100%', padding: '7px 9px', background: C.bg, border: `1px solid ${exclusivityUntil ? '#ef4444' : C.border}`, borderRadius: '7px', color: C.text, fontSize: '12px', boxSizing: 'border-box' as const }} />
+                            {exclusivityUntil && <div style={{ fontSize: '10px', color: '#ef4444', marginTop: '3px' }}>🔒 Brands will see "Exclusivity taken until {exclusivityUntil}"</div>}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 <div style={{ padding: '14px', background: 'rgba(0,102,204,0.06)', borderRadius: '10px', textAlign: 'center', marginBottom: '24px' }}>
                   <div style={{ fontSize: '11px', color: C.textSecondary, lineHeight: 1.5 }}>
