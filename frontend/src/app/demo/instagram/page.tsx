@@ -293,6 +293,23 @@ export default function InstagramDemoPage() {
   const [credentials, setCredentials] = useState([{ platform: 'github', handle: '@alex' }]);
   const [identityProofs, setIdentityProofs] = useState<Array<{platform: string; handle: string; verified: boolean}>>([]);
   const [resolvedFraudSignals, setResolvedFraudSignals] = useState<number[]>([]);
+  // Safety system — Meta admin controls
+  const [safetyDmRateLimit, setSafetyDmRateLimit] = useState(10);
+  const [safetyMinBrandTrust, setSafetyMinBrandTrust] = useState(3);
+  const [safetyRequireVerifiedBrand, setSafetyRequireVerifiedBrand] = useState(true);
+  const [safetyRequireBrief, setSafetyRequireBrief] = useState(true);
+  const [safetyReportThreshold, setSafetyReportThreshold] = useState(3);
+  const [safetyRecontactCooldown, setSafetyRecontactCooldown] = useState(30);
+  const [safetyProposalFormOnly, setSafetyProposalFormOnly] = useState(true);
+  const [safetyOffPlatformBlock, setSafetyOffPlatformBlock] = useState(true);
+  const [safetyNewBrandWarmIntro, setSafetyNewBrandWarmIntro] = useState(true);
+  const [safetyNewBrandDealCount, setSafetyNewBrandDealCount] = useState(0);
+  const [savedSafetyToast, setSavedSafetyToast] = useState(false);
+  // Creator-side safety controls
+  const [creatorDealOnlyMode, setCreatorDealOnlyMode] = useState(true);
+  const [creatorAllowedNiches, setCreatorAllowedNiches] = useState<string[]>([]);
+  const [creatorBlockedBrands, setCreatorBlockedBrands] = useState<string[]>([]);
+  const [creatorShowSafetySettings, setCreatorShowSafetySettings] = useState(false);
   const [activeDisputeStage, setActiveDisputeStage] = useState<number | null>(null);
   const [disputeReason, setDisputeReason] = useState('');
   const [disputeEvidenceUrls, setDisputeEvidenceUrls] = useState<string[]>(['']);
@@ -1410,6 +1427,19 @@ export default function InstagramDemoPage() {
                             {creator.usageRightsOk && <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 6px', borderRadius: '8px', background: 'rgba(139,92,246,0.08)', color: '#8b5cf6', border: '1px solid rgba(139,92,246,0.2)', textTransform: 'uppercase' }}>Usage Rights ✓</span>}
                           </div>
 
+                          {/* Platform safety status bar */}
+                          <div style={{ display: 'flex', gap: '5px', marginBottom: '8px', flexWrap: 'wrap' }}>
+                            {safetyRequireVerifiedBrand && (
+                              <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 7px', borderRadius: '8px', background: 'rgba(16,185,129,0.08)', color: '#10b981', border: '1px solid rgba(16,185,129,0.2)' }}>✓ VERIFIED BRAND</span>
+                            )}
+                            {safetyRequireBrief && (
+                              <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 7px', borderRadius: '8px', background: 'rgba(0,102,204,0.08)', color: C.primary, border: `1px solid rgba(0,102,204,0.2)` }}>BRIEF REQUIRED</span>
+                            )}
+                            <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 7px', borderRadius: '8px', background: 'rgba(245,158,11,0.08)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.2)' }}>
+                              MAX {safetyDmRateLimit}/DAY
+                            </span>
+                          </div>
+
                           {!isNegotiating ? (
                             <button
                               onClick={() => { setNegotiatingCreator(i); setBrandDealPhase('brief'); setBrandBriefTitle(''); setBrandBriefDeliverables(''); setBrandBudget('4000'); setBrandDealIntent('campaign'); }}
@@ -2438,6 +2468,167 @@ export default function InstagramDemoPage() {
                   </button>
                 </div>
               </div>
+
+              {/* ── CREATOR SAFETY CONTROLS ─────────────────────── */}
+              <div style={{ padding: '20px', borderTop: `1px solid ${C.border}` }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                  <div style={{ fontSize: '13px', fontWeight: 700, color: C.text }}>Creator Safety Controls</div>
+                </div>
+                <div style={{ fontSize: '11px', color: C.textSecondary, marginBottom: '18px', lineHeight: 1.5 }}>
+                  Platform-level rules enforced on all outreach. Creators cannot override these — they set the floor. Brands that violate are throttled or suspended.
+                </div>
+
+                {/* DM / Proposal Rate Limit */}
+                <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: '10px', padding: '14px 16px', marginBottom: '10px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                    <div>
+                      <div style={{ fontSize: '13px', fontWeight: 700, color: C.text }}>Brand Outreach Rate Limit</div>
+                      <div style={{ fontSize: '11px', color: C.textSecondary, marginTop: '2px' }}>Max proposals a brand can send per day across all creators</div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <button onClick={() => setSafetyDmRateLimit(Math.max(1, safetyDmRateLimit - 1))} style={{ width: '24px', height: '24px', borderRadius: '4px', border: `1px solid ${C.border}`, background: C.bg, color: C.text, cursor: 'pointer', fontSize: '14px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>−</button>
+                      <span style={{ fontSize: '16px', fontWeight: 800, color: C.primary, minWidth: '28px', textAlign: 'center' }}>{safetyDmRateLimit}</span>
+                      <button onClick={() => setSafetyDmRateLimit(Math.min(100, safetyDmRateLimit + 1))} style={{ width: '24px', height: '24px', borderRadius: '4px', border: `1px solid ${C.border}`, background: C.bg, color: C.text, cursor: 'pointer', fontSize: '14px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
+                    </div>
+                  </div>
+                  <input type="range" min={1} max={50} value={safetyDmRateLimit} onChange={e => setSafetyDmRateLimit(Number(e.target.value))} style={{ width: '100%', accentColor: C.primary }} />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: C.textMuted, marginTop: '2px' }}>
+                    <span>1 (strict)</span><span>25 (standard)</span><span>50 (open)</span>
+                  </div>
+                </div>
+
+                {/* Re-contact cooldown */}
+                <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: '10px', padding: '14px 16px', marginBottom: '10px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ fontSize: '13px', fontWeight: 700, color: C.text }}>Re-contact Cooldown</div>
+                      <div style={{ fontSize: '11px', color: C.textSecondary, marginTop: '2px' }}>Days a brand is blocked from re-contacting a creator after decline</div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      {[7, 14, 30, 60, 90].map(d => (
+                        <button key={d} onClick={() => setSafetyRecontactCooldown(d)}
+                          style={{ padding: '4px 7px', borderRadius: '5px', fontSize: '11px', fontWeight: 600, cursor: 'pointer',
+                            background: safetyRecontactCooldown === d ? `${C.primary}20` : C.bg,
+                            color: safetyRecontactCooldown === d ? C.primary : C.textMuted,
+                            border: `1px solid ${safetyRecontactCooldown === d ? C.primary : C.border}`,
+                          }}>{d}d</button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Report-to-throttle threshold */}
+                <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: '10px', padding: '14px 16px', marginBottom: '10px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ fontSize: '13px', fontWeight: 700, color: C.text }}>Auto-Throttle Threshold</div>
+                      <div style={{ fontSize: '11px', color: C.textSecondary, marginTop: '2px' }}>Reports needed from creators before brand outreach is auto-suspended</div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      {[1, 2, 3, 5, 10].map(n => (
+                        <button key={n} onClick={() => setSafetyReportThreshold(n)}
+                          style={{ padding: '4px 7px', borderRadius: '5px', fontSize: '11px', fontWeight: 600, cursor: 'pointer',
+                            background: safetyReportThreshold === n ? 'rgba(239,68,68,0.15)' : C.bg,
+                            color: safetyReportThreshold === n ? '#ef4444' : C.textMuted,
+                            border: `1px solid ${safetyReportThreshold === n ? '#ef4444' : C.border}`,
+                          }}>{n}</button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Min brand trust score to contact */}
+                <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: '10px', padding: '14px 16px', marginBottom: '10px' }}>
+                  <div style={{ fontSize: '13px', fontWeight: 700, color: C.text, marginBottom: '4px' }}>Minimum Brand Trust Score to Contact</div>
+                  <div style={{ fontSize: '11px', color: C.textSecondary, marginBottom: '10px' }}>Brands below this score see creator profiles but cannot initiate contact</div>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    {[1, 2, 3, 4, 5].map(n => (
+                      <button key={n} onClick={() => setSafetyMinBrandTrust(n)}
+                        style={{ flex: 1, padding: '8px 4px', borderRadius: '7px', fontSize: '12px', fontWeight: 700, cursor: 'pointer',
+                          background: safetyMinBrandTrust === n ? `${C.primary}20` : C.bg,
+                          color: safetyMinBrandTrust === n ? C.primary : C.textMuted,
+                          border: `1px solid ${safetyMinBrandTrust === n ? C.primary : C.border}`,
+                        }}>{'★'.repeat(n)}</button>
+                    ))}
+                  </div>
+                  <div style={{ fontSize: '10px', color: C.textMuted, marginTop: '6px', textAlign: 'center' }}>
+                    Current: min {safetyMinBrandTrust}★ — brands below are read-only
+                  </div>
+                </div>
+
+                {/* New brand warm intro threshold */}
+                <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: '10px', padding: '14px 16px', marginBottom: '10px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <div>
+                      <div style={{ fontSize: '13px', fontWeight: 700, color: C.text }}>New Brand Warm Intro Gate</div>
+                      <div style={{ fontSize: '11px', color: C.textSecondary, marginTop: '2px' }}>Brands with fewer than N completed deals must be vouched before cold outreach</div>
+                    </div>
+                    <button onClick={() => setSafetyNewBrandWarmIntro(p => !p)}
+                      style={{ width: '44px', height: '24px', borderRadius: '12px', border: 'none', backgroundColor: safetyNewBrandWarmIntro ? C.primary : 'rgba(255,255,255,0.15)', cursor: 'pointer', position: 'relative', flexShrink: 0, transition: 'background-color 0.2s' }}>
+                      <div style={{ width: '20px', height: '20px', borderRadius: '50%', backgroundColor: '#fff', position: 'absolute', top: '2px', left: safetyNewBrandWarmIntro ? '22px' : '2px', transition: 'left 0.2s' }} />
+                    </button>
+                  </div>
+                  {safetyNewBrandWarmIntro && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '11px', color: C.textSecondary }}>Gate brands with fewer than</span>
+                      <div style={{ display: 'flex', gap: '4px' }}>
+                        {[0, 1, 3, 5, 10].map(n => (
+                          <button key={n} onClick={() => setSafetyNewBrandDealCount(n)}
+                            style={{ padding: '3px 7px', borderRadius: '5px', fontSize: '11px', fontWeight: 600, cursor: 'pointer',
+                              background: safetyNewBrandDealCount === n ? `${C.primary}20` : C.bg,
+                              color: safetyNewBrandDealCount === n ? C.primary : C.textMuted,
+                              border: `1px solid ${safetyNewBrandDealCount === n ? C.primary : C.border}`,
+                            }}>{n}</button>
+                        ))}
+                      </div>
+                      <span style={{ fontSize: '11px', color: C.textSecondary }}>completed deals</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Toggle switches row */}
+                <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: '10px', padding: '14px 16px', marginBottom: '16px' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '12px' }}>Platform-Wide Enforcement</div>
+                  {([
+                    { label: 'Require verified Brand ValuSkin to contact', desc: 'Unverified brands cannot initiate any outreach', value: safetyRequireVerifiedBrand, set: setSafetyRequireVerifiedBrand },
+                    { label: 'Proposal form required (no free-text cold DMs)', desc: 'All contact must be a structured brief — not a message', value: safetyRequireBrief, set: setSafetyRequireBrief },
+                    { label: 'Block off-platform contact requests', desc: 'Auto-flag messages asking for phone/email/WhatsApp', value: safetyOffPlatformBlock, set: setSafetyOffPlatformBlock },
+                  ] as const).map(({ label, desc, value, set }) => (
+                    <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '8px 0', borderTop: `1px solid ${C.border}` }}>
+                      <div style={{ flex: 1, paddingRight: '12px' }}>
+                        <div style={{ fontSize: '12px', fontWeight: 600, color: C.text }}>{label}</div>
+                        <div style={{ fontSize: '10px', color: C.textSecondary, marginTop: '1px' }}>{desc}</div>
+                      </div>
+                      <button onClick={() => set((p: boolean) => !p)}
+                        style={{ width: '40px', height: '22px', borderRadius: '11px', border: 'none', backgroundColor: value ? C.primary : 'rgba(255,255,255,0.12)', cursor: 'pointer', position: 'relative', flexShrink: 0, transition: 'background-color 0.2s' }}>
+                        <div style={{ width: '18px', height: '18px', borderRadius: '50%', backgroundColor: '#fff', position: 'absolute', top: '2px', left: value ? '20px' : '2px', transition: 'left 0.2s' }} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Save button */}
+                <button
+                  onClick={() => { setSavedSafetyToast(true); setTimeout(() => setSavedSafetyToast(false), 3000); }}
+                  style={{ width: '100%', padding: '12px', background: C.primary, border: 'none', borderRadius: '8px', color: '#fff', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}
+                >
+                  {savedSafetyToast ? '✅ Safety settings saved' : 'Save Safety Settings'}
+                </button>
+
+                {/* Live policy summary */}
+                <div style={{ marginTop: '12px', padding: '12px 14px', background: 'rgba(0,102,204,0.05)', border: `1px solid rgba(0,102,204,0.15)`, borderRadius: '8px', fontSize: '11px', color: C.textSecondary, lineHeight: 1.7 }}>
+                  <strong style={{ color: C.text, display: 'block', marginBottom: '4px' }}>Current Policy Summary</strong>
+                  • Brands can send max <strong style={{ color: C.text }}>{safetyDmRateLimit}</strong> proposals/day<br/>
+                  • Declined brand locked out for <strong style={{ color: C.text }}>{safetyRecontactCooldown} days</strong><br/>
+                  • Auto-suspended after <strong style={{ color: C.text }}>{safetyReportThreshold}</strong> creator report{safetyReportThreshold !== 1 ? 's' : ''}<br/>
+                  • Minimum brand trust to contact: <strong style={{ color: C.text }}>{'★'.repeat(safetyMinBrandTrust)}</strong><br/>
+                  {safetyNewBrandWarmIntro && <>• Brands with &lt;{safetyNewBrandDealCount} deals need warm intro<br/></>}
+                  {safetyRequireVerifiedBrand && <>• Verified Brand ValuSkin required<br/></>}
+                  {safetyRequireBrief && <>• Proposal form mandatory — no cold DMs<br/></>}
+                  {safetyOffPlatformBlock && <>• Off-platform contact requests auto-flagged<br/></>}
+                </div>
+              </div>
             </>
           )}
 
@@ -2836,6 +3027,83 @@ export default function InstagramDemoPage() {
                     </div>
                   );
                 })()}
+
+                {/* ── INBOX & SAFETY ─────────────────────────── */}
+                <div style={{ marginBottom: '16px' }}>
+                  <button onClick={() => setCreatorShowSafetySettings(p => !p)} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: C.card, border: `1px solid ${creatorDealOnlyMode ? C.primary : C.border}`, borderRadius: creatorShowSafetySettings ? '10px 10px 0 0' : '10px', padding: '12px 14px', cursor: 'pointer', color: C.text }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={creatorDealOnlyMode ? C.primary : C.textMuted} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                      <span style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: creatorDealOnlyMode ? C.primary : C.textMuted }}>Inbox & Safety</span>
+                      {creatorDealOnlyMode && <span style={{ fontSize: '9px', fontWeight: 700, color: '#fff', background: C.primary, padding: '1px 6px', borderRadius: '8px' }}>DEAL-ONLY ON</span>}
+                    </div>
+                    <span style={{ fontSize: '14px', color: C.textMuted }}>{creatorShowSafetySettings ? '▲' : '▼'}</span>
+                  </button>
+                  {creatorShowSafetySettings && (
+                    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderTop: 'none', borderRadius: '0 0 10px 10px', padding: '14px' }}>
+
+                      {/* Deal-Only Mode — primary toggle */}
+                      <div style={{ padding: '12px', background: creatorDealOnlyMode ? 'rgba(0,102,204,0.07)' : C.bg, border: `1px solid ${creatorDealOnlyMode ? C.primary : C.border}`, borderRadius: '8px', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
+                        <div>
+                          <div style={{ fontSize: '13px', fontWeight: 700, color: C.text }}>Deal-Only Mode</div>
+                          <div style={{ fontSize: '11px', color: C.textSecondary, marginTop: '2px', lineHeight: 1.4 }}>
+                            Only structured brand proposals reach you. Free-text messages are blocked entirely. Brands must fill a campaign brief to contact you.
+                          </div>
+                        </div>
+                        <button onClick={() => setCreatorDealOnlyMode(p => !p)}
+                          style={{ width: '44px', height: '24px', borderRadius: '12px', border: 'none', backgroundColor: creatorDealOnlyMode ? C.primary : 'rgba(255,255,255,0.15)', cursor: 'pointer', position: 'relative', flexShrink: 0, transition: 'background-color 0.2s' }}>
+                          <div style={{ width: '20px', height: '20px', borderRadius: '50%', backgroundColor: '#fff', position: 'absolute', top: '2px', left: creatorDealOnlyMode ? '22px' : '2px', transition: 'left 0.2s' }} />
+                        </button>
+                      </div>
+
+                      {/* Filter by brand niche */}
+                      <div style={{ marginBottom: '12px' }}>
+                        <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, marginBottom: '6px', textTransform: 'uppercase' }}>Only accept proposals from these brand niches</div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                          {['Tech', 'Fashion', 'Finance', 'Health', 'Food', 'Gaming', 'Travel', 'Beauty', 'Fitness', 'Education'].map(n => {
+                            const active = creatorAllowedNiches.includes(n);
+                            return (
+                              <button key={n} onClick={() => setCreatorAllowedNiches(prev => active ? prev.filter(x => x !== n) : [...prev, n])}
+                                style={{ padding: '3px 9px', borderRadius: '12px', fontSize: '11px', cursor: 'pointer', fontWeight: 600,
+                                  background: active ? `${C.primary}20` : C.bg,
+                                  color: active ? C.primary : C.textSecondary,
+                                  border: `1px solid ${active ? C.primary : C.border}`,
+                                }}>{n}</button>
+                            );
+                          })}
+                        </div>
+                        {creatorAllowedNiches.length === 0 && (
+                          <div style={{ fontSize: '10px', color: C.textMuted, marginTop: '4px' }}>None selected = all niches allowed</div>
+                        )}
+                      </div>
+
+                      {/* Blocked brands */}
+                      <div style={{ marginBottom: '4px' }}>
+                        <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, marginBottom: '6px', textTransform: 'uppercase' }}>Blocked Brands</div>
+                        {creatorBlockedBrands.length === 0 ? (
+                          <div style={{ fontSize: '11px', color: C.textMuted, padding: '8px', background: C.bg, borderRadius: '7px', textAlign: 'center' }}>No brands blocked</div>
+                        ) : (
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                            {creatorBlockedBrands.map(b => (
+                              <span key={b} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '3px 8px', borderRadius: '12px', fontSize: '11px', background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)' }}>
+                                {b}
+                                <button onClick={() => setCreatorBlockedBrands(prev => prev.filter(x => x !== b))} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '12px', padding: 0, lineHeight: 1 }}>×</button>
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        <button onClick={() => { const name = prompt('Block brand name:'); if (name?.trim()) setCreatorBlockedBrands(prev => [...prev, name.trim()]); }}
+                          style={{ marginTop: '6px', padding: '5px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, background: 'transparent', border: `1px solid ${C.border}`, color: C.textSecondary, cursor: 'pointer' }}>
+                          + Block a brand
+                        </button>
+                      </div>
+
+                      {/* Info bar */}
+                      <div style={{ marginTop: '12px', padding: '9px 11px', background: 'rgba(0,102,204,0.05)', borderRadius: '7px', fontSize: '10px', color: C.textSecondary, lineHeight: 1.6 }}>
+                        Platform-level limits set by Meta also apply and cannot be turned off by you. These are your <em>personal</em> controls on top.
+                      </div>
+                    </div>
+                  )}
+                </div>
 
                 <div style={{ padding: '14px', background: 'rgba(0,102,204,0.06)', borderRadius: '10px', textAlign: 'center', marginBottom: '24px' }}>
                   <div style={{ fontSize: '11px', color: C.textSecondary, lineHeight: 1.5 }}>
