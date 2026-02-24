@@ -466,6 +466,55 @@ export interface ScoringResult {
     };
 }
 
+export interface CreatorAttributes {
+    // Location & availability
+    location_city: string | null;
+    location_country: string | null;
+    timezone: string | null;
+    availability_hours: string | null;          // e.g. "9am-6pm"
+    willing_to_relocate: boolean;
+    willing_to_travel: boolean;
+    willing_to_appear_at_events: boolean;
+
+    // Identity
+    age: number | null;
+    gender: string | null;                      // 'male' | 'female' | 'non_binary' | 'prefer_not_to_say'
+    ethnicity: string | null;                   // optional, for representation matching
+    languages_spoken: string[];
+    content_language: string | null;
+
+    // Audience
+    audience_age_range: string | null;          // e.g. "18-24"
+    audience_gender_split: string | null;       // e.g. "60% female"
+    audience_location_primary: string | null;
+    audience_authenticity_score: number | null; // 0-100
+    engagement_rate: number | null;             // percentage
+    primary_platform: string | null;
+    cross_platform_reach: number | null;        // total followers across all platforms
+
+    // Content
+    content_niche: string[];
+    content_format: string[];                   // 'video' | 'photo' | 'text' | 'podcast' | 'live'
+    posting_frequency: string | null;           // e.g. "3x/week"
+
+    // Deal preferences (all 'preferred' by default, brands can mark non-negotiable)
+    deal_type_preference: string[];             // 'gifted' | 'paid' | 'equity'
+    min_deal_size_usd: number | null;
+    response_time_hours: number | null;
+    exclusivity_available: boolean;
+    willing_to_sign_nda: boolean;
+    willing_to_sign_usage_rights: boolean;
+    on_camera_willing: boolean;
+    product_preference: string | null;          // 'physical' | 'digital' | 'both'
+
+    // Trust & history
+    brand_safety_score: number | null;          // 0-100
+    past_brand_categories: string[];
+    collaboration_history: boolean;             // has worked with other creators
+    verification_status: boolean;
+    content_rights_owned: boolean;
+}
+
 export interface CreatorProfile {
     id: number;
     display_name: string;
@@ -477,6 +526,7 @@ export interface CreatorProfile {
     profession: string | null;
     connected_platforms: string[];
     badges: string[];
+    attributes: CreatorAttributes | null;
     stats: {
         total_earnings: string;
         completed_deals: number;

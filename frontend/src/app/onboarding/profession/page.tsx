@@ -227,10 +227,9 @@ export default function ProfessionSelectionPage() {
             </p>
           </div>
 
-          <Link href="/store" style={{ textDecoration: 'none', width: '100%', display: 'block' }}>
+          <Link href="/onboarding/attributes" style={{ textDecoration: 'none', width: '100%', display: 'block' }}>
             <button
               onClick={() => {
-                // Save profession selection
                 localStorage.setItem('valueskins_profession', selectedProfession.id);
               }}
               style={{
@@ -246,7 +245,7 @@ export default function ProfessionSelectionPage() {
                 transition: 'all 0.2s ease',
               }}
             >
-              Select & Continue to Store
+              Select & Continue
             </button>
           </Link>
         </div>
