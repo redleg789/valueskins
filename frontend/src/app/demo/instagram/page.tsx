@@ -44,9 +44,33 @@ const PROFESSIONS = {
 };
 
 const BRAND_MARKETPLACE_CREATORS = [
-  { name: 'Alex Rivera', handle: '@alex_codes', valueSkin: 'Software Engineer', followers: '890K', engagement: '7.2%', rate: '$4,500', matchScore: '96%', featured: true, willingToBarter: true },
-  { name: 'Priya Sharma', handle: '@priya_designs', valueSkin: 'UX/UI Designer', followers: '1.2M', engagement: '5.8%', rate: '$6,000', matchScore: '91%', featured: false, willingToBarter: false },
-  { name: 'Marcus Chen', handle: '@marcus_fitness', valueSkin: 'Fitness Coach', followers: '650K', engagement: '8.1%', rate: '$3,200', matchScore: '84%', featured: false, willingToBarter: true },
+  {
+    name: 'Alex Rivera', handle: '@alex_codes', valueSkin: 'Software Engineer',
+    followers: '890K', engagement: '7.2%', rate: '$4,500', matchScore: '96%',
+    featured: true, willingToBarter: true,
+    timezone: 'UTC-5 (EST)', responseTimeHrs: 4, minDealUsd: 2000,
+    audienceAgeRange: '25-34', audienceLocation: 'USA', audienceLang: 'English',
+    dealTypes: ['Paid', 'Equity', 'Barter'], openToDeals: true,
+    ndaOk: true, usageRightsOk: true,
+  },
+  {
+    name: 'Priya Sharma', handle: '@priya_designs', valueSkin: 'UX/UI Designer',
+    followers: '1.2M', engagement: '5.8%', rate: '$6,000', matchScore: '91%',
+    featured: false, willingToBarter: false,
+    timezone: 'UTC+5:30 (IST)', responseTimeHrs: 12, minDealUsd: 4000,
+    audienceAgeRange: '18-24', audienceLocation: 'India', audienceLang: 'English',
+    dealTypes: ['Paid', 'Revenue Share'], openToDeals: true,
+    ndaOk: true, usageRightsOk: false,
+  },
+  {
+    name: 'Marcus Chen', handle: '@marcus_fitness', valueSkin: 'Fitness Coach',
+    followers: '650K', engagement: '8.1%', rate: '$3,200', matchScore: '84%',
+    featured: false, willingToBarter: true,
+    timezone: 'UTC-8 (PST)', responseTimeHrs: 24, minDealUsd: 500,
+    audienceAgeRange: '18-24', audienceLocation: 'USA', audienceLang: 'English',
+    dealTypes: ['Paid', 'Gifted Product', 'Barter', 'Ambassador'], openToDeals: true,
+    ndaOk: false, usageRightsOk: true,
+  },
 ];
 
 const BRAND_CATEGORIES: Record<string, { name: string; subCategories: string[] }> = {
@@ -281,6 +305,13 @@ export default function InstagramDemoPage() {
   const [brandFieldFilter, setBrandFieldFilter] = useState<string | null>(null);
   const [brandSearchQuery, setBrandSearchQuery] = useState('');
   const [brandSearchMode, setBrandSearchMode] = useState<'profession' | 'name' | 'general'>('profession');
+  const [filterAudienceAge, setFilterAudienceAge] = useState<string | null>(null);
+  const [filterAudienceLang, setFilterAudienceLang] = useState<string | null>(null);
+  const [filterAudienceLoc, setFilterAudienceLoc] = useState('');
+  const [filterMinDeal, setFilterMinDeal] = useState('');
+  const [filterDealType, setFilterDealType] = useState<string | null>(null);
+  const [filterResponseMax, setFilterResponseMax] = useState<number | null>(null);
+  const [showAudienceFilters, setShowAudienceFilters] = useState(false);
 
   const [metrics, setMetrics] = useState({
     followers: 1243000, engagement: 6.8, dealsCompleted: 47,
@@ -1176,6 +1207,85 @@ export default function InstagramDemoPage() {
                       </div>
                     </div>
 
+                    {/* Advanced Audience & Deal Filters */}
+                    <div style={{ marginBottom: '14px' }}>
+                      <button onClick={() => setShowAudienceFilters(p => !p)} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: C.card, border: `1px solid ${C.border}`, borderRadius: showAudienceFilters ? '10px 10px 0 0' : '10px', padding: '9px 14px', cursor: 'pointer', color: C.textSecondary, fontSize: '11px', fontWeight: 700 }}>
+                        <span style={{ textTransform: 'uppercase', letterSpacing: '0.6px' }}>Audience & Deal Filters</span>
+                        <span>{showAudienceFilters ? '▲' : '▼'}</span>
+                      </button>
+                      {showAudienceFilters && (
+                        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderTop: 'none', borderRadius: '0 0 10px 10px', padding: '12px' }}>
+                          {/* Audience Age Range */}
+                          <div style={{ marginBottom: '10px' }}>
+                            <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, marginBottom: '6px', textTransform: 'uppercase' }}>Audience Age Range</div>
+                            <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
+                              {[null, '13-17', '18-24', '25-34', '35-44', '45-54', '55+'].map(a => (
+                                <button key={a ?? 'all'} onClick={() => setFilterAudienceAge(a)}
+                                  style={{ padding: '4px 9px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, cursor: 'pointer',
+                                    background: filterAudienceAge === a ? `${C.primary}25` : C.bg,
+                                    color: filterAudienceAge === a ? C.primary : C.textSecondary,
+                                    border: `1px solid ${filterAudienceAge === a ? C.primary : C.border}`,
+                                  }}>{a ?? 'Any'}</button>
+                              ))}
+                            </div>
+                          </div>
+                          {/* Audience Language */}
+                          <div style={{ marginBottom: '10px' }}>
+                            <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, marginBottom: '6px', textTransform: 'uppercase' }}>Audience Language</div>
+                            <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
+                              {[null, 'English', 'Spanish', 'Hindi', 'Portuguese', 'Arabic', 'Mandarin'].map(l => (
+                                <button key={l ?? 'all'} onClick={() => setFilterAudienceLang(l)}
+                                  style={{ padding: '4px 9px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, cursor: 'pointer',
+                                    background: filterAudienceLang === l ? `${C.primary}25` : C.bg,
+                                    color: filterAudienceLang === l ? C.primary : C.textSecondary,
+                                    border: `1px solid ${filterAudienceLang === l ? C.primary : C.border}`,
+                                  }}>{l ?? 'Any'}</button>
+                              ))}
+                            </div>
+                          </div>
+                          {/* Audience Location + Min Deal side by side */}
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
+                            <div>
+                              <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, marginBottom: '4px', textTransform: 'uppercase' }}>Audience Location</div>
+                              <input value={filterAudienceLoc} onChange={e => setFilterAudienceLoc(e.target.value)} placeholder="e.g. USA" style={{ width: '100%', padding: '7px 9px', background: C.bg, border: `1px solid ${C.border}`, borderRadius: '7px', color: C.text, fontSize: '12px', boxSizing: 'border-box' as const, outline: 'none' }} />
+                            </div>
+                            <div>
+                              <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, marginBottom: '4px', textTransform: 'uppercase' }}>Min Deal Size (USD)</div>
+                              <input value={filterMinDeal} onChange={e => setFilterMinDeal(e.target.value)} type="number" placeholder="e.g. 1000" style={{ width: '100%', padding: '7px 9px', background: C.bg, border: `1px solid ${C.border}`, borderRadius: '7px', color: C.text, fontSize: '12px', boxSizing: 'border-box' as const, outline: 'none' }} />
+                            </div>
+                          </div>
+                          {/* Deal Type */}
+                          <div style={{ marginBottom: '10px' }}>
+                            <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, marginBottom: '6px', textTransform: 'uppercase' }}>Deal Type</div>
+                            <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
+                              {[null, 'Paid', 'Gifted Product', 'Equity', 'Barter', 'Revenue Share', 'Ambassador'].map(d => (
+                                <button key={d ?? 'all'} onClick={() => setFilterDealType(d)}
+                                  style={{ padding: '4px 9px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, cursor: 'pointer',
+                                    background: filterDealType === d ? `${C.primary}25` : C.bg,
+                                    color: filterDealType === d ? C.primary : C.textSecondary,
+                                    border: `1px solid ${filterDealType === d ? C.primary : C.border}`,
+                                  }}>{d ?? 'Any'}</button>
+                              ))}
+                            </div>
+                          </div>
+                          {/* Response Time Max */}
+                          <div>
+                            <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, marginBottom: '6px', textTransform: 'uppercase' }}>Max Response Time</div>
+                            <div style={{ display: 'flex', gap: '5px' }}>
+                              {[null, 4, 12, 24, 48].map(h => (
+                                <button key={h ?? 'any'} onClick={() => setFilterResponseMax(h)}
+                                  style={{ flex: 1, padding: '5px 4px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, cursor: 'pointer',
+                                    background: filterResponseMax === h ? `${C.primary}25` : C.bg,
+                                    color: filterResponseMax === h ? C.primary : C.textSecondary,
+                                    border: `1px solid ${filterResponseMax === h ? C.primary : C.border}`,
+                                  }}>{h ? `≤${h}h` : 'Any'}</button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                       <div style={{ fontSize: '12px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.6px' }}>
                         {brandFieldFilter ? `Creators with ${brandFieldFilter} ValuSkin` : 'All Creators'}
@@ -1197,7 +1307,13 @@ export default function InstagramDemoPage() {
                       const q = brandSearchQuery.trim().toLowerCase();
                       let results = BRAND_MARKETPLACE_CREATORS.filter(c =>
                         (!filterBarterOnly || c.willingToBarter) &&
-                        (!brandFieldFilter || c.valueSkin === brandFieldFilter)
+                        (!brandFieldFilter || c.valueSkin === brandFieldFilter) &&
+                        (!filterAudienceAge || c.audienceAgeRange === filterAudienceAge) &&
+                        (!filterAudienceLang || c.audienceLang === filterAudienceLang) &&
+                        (!filterAudienceLoc.trim() || c.audienceLocation.toLowerCase().includes(filterAudienceLoc.trim().toLowerCase())) &&
+                        (!filterMinDeal || c.minDealUsd >= Number(filterMinDeal)) &&
+                        (!filterDealType || c.dealTypes.includes(filterDealType)) &&
+                        (!filterResponseMax || c.responseTimeHrs <= filterResponseMax)
                       );
                       if (q) {
                         if (brandSearchMode === 'profession') {
@@ -1256,17 +1372,42 @@ export default function InstagramDemoPage() {
                               <div style={{ fontSize: '10px', color: C.textMuted }}>match</div>
                             </div>
                           </div>
-                          {/* Public stats — NO rate shown */}
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '12px' }}>
+                          {/* Public stats */}
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '5px', marginBottom: '10px' }}>
                             {[
                               { label: 'Followers', value: creator.followers },
                               { label: 'Engagement', value: creator.engagement },
+                              { label: 'Responds', value: `≤${creator.responseTimeHrs}h` },
+                              { label: 'Min Deal', value: `$${(creator.minDealUsd / 1000).toFixed(creator.minDealUsd < 1000 ? 0 : 1)}K` },
                             ].map(stat => (
-                              <div key={stat.label} style={{ textAlign: 'center', padding: '6px', background: C.surfaceAlt, borderRadius: '6px' }}>
-                                <div style={{ fontSize: '13px', fontWeight: 700, color: C.text }}>{stat.value}</div>
-                                <div style={{ fontSize: '9px', color: C.textMuted, textTransform: 'uppercase', fontWeight: 600 }}>{stat.label}</div>
+                              <div key={stat.label} style={{ textAlign: 'center', padding: '5px 3px', background: C.surfaceAlt, borderRadius: '6px' }}>
+                                <div style={{ fontSize: '12px', fontWeight: 700, color: C.text }}>{stat.value}</div>
+                                <div style={{ fontSize: '8px', color: C.textMuted, textTransform: 'uppercase', fontWeight: 600 }}>{stat.label}</div>
                               </div>
                             ))}
+                          </div>
+                          {/* Audience & Deal meta row */}
+                          <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                            <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '10px', background: 'rgba(0,102,204,0.08)', color: C.primary, border: `1px solid rgba(0,102,204,0.2)` }}>
+                              🌍 {creator.audienceLocation}
+                            </span>
+                            <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '10px', background: 'rgba(0,102,204,0.08)', color: C.primary, border: `1px solid rgba(0,102,204,0.2)` }}>
+                              👥 {creator.audienceAgeRange}
+                            </span>
+                            <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '10px', background: 'rgba(0,102,204,0.08)', color: C.primary, border: `1px solid rgba(0,102,204,0.2)` }}>
+                              💬 {creator.audienceLang}
+                            </span>
+                            <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '10px', background: 'rgba(100,100,100,0.1)', color: C.textSecondary, border: `1px solid ${C.border}` }}>
+                              🕐 {creator.timezone}
+                            </span>
+                          </div>
+                          {/* Deal types + NDA/rights row */}
+                          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '10px' }}>
+                            {creator.dealTypes.map(dt => (
+                              <span key={dt} style={{ fontSize: '9px', fontWeight: 700, padding: '2px 6px', borderRadius: '8px', background: 'rgba(16,185,129,0.08)', color: '#10b981', border: '1px solid rgba(16,185,129,0.2)', textTransform: 'uppercase' }}>{dt}</span>
+                            ))}
+                            {creator.ndaOk && <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 6px', borderRadius: '8px', background: 'rgba(139,92,246,0.08)', color: '#8b5cf6', border: '1px solid rgba(139,92,246,0.2)', textTransform: 'uppercase' }}>NDA ✓</span>}
+                            {creator.usageRightsOk && <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 6px', borderRadius: '8px', background: 'rgba(139,92,246,0.08)', color: '#8b5cf6', border: '1px solid rgba(139,92,246,0.2)', textTransform: 'uppercase' }}>Usage Rights ✓</span>}
                           </div>
 
                           {!isNegotiating ? (
@@ -2649,6 +2790,13 @@ export default function InstagramDemoPage() {
                             <div><div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, marginBottom: '4px', textTransform: 'uppercase' }}>Primary Location</div><input placeholder="USA" style={{ width: '100%', padding: '7px 9px', background: C.bg, border: `1px solid ${C.border}`, borderRadius: '7px', color: C.text, fontSize: '12px', boxSizing: 'border-box' as const }} /></div>
                           </div>
                           <div><div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, marginBottom: '4px', textTransform: 'uppercase' }}>Primary Platform</div><input placeholder="Instagram" style={{ width: '100%', padding: '7px 9px', background: C.bg, border: `1px solid ${C.border}`, borderRadius: '7px', color: C.text, fontSize: '12px', boxSizing: 'border-box' as const }} /></div>
+                          <div style={{ marginTop: '10px' }}><div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, marginBottom: '6px', textTransform: 'uppercase' }}>Audience Language</div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                              {['English','Spanish','French','Hindi','Portuguese','Arabic','Mandarin','German','Japanese','Korean'].map(l => (
+                                <span key={l} style={{ padding: '3px 8px', borderRadius: '12px', fontSize: '11px', background: C.bg, border: `1px solid ${C.border}`, color: C.textSecondary, cursor: 'pointer' }}>{l}</span>
+                              ))}
+                            </div>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -2666,10 +2814,10 @@ export default function InstagramDemoPage() {
                       </button>
                       {open && (
                         <div style={{ background: C.card, border: `1px solid ${C.border}`, borderTop: 'none', borderRadius: '0 0 10px 10px', padding: '14px' }}>
-                          <div style={{ marginBottom: '10px' }}><div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, marginBottom: '6px', textTransform: 'uppercase' }}>Deal Type</div>
-                            <div style={{ display: 'flex', gap: '6px' }}>
-                              {['Paid','Gifted','Equity'].map(d => (
-                                <span key={d} style={{ flex: 1, textAlign: 'center', padding: '6px', borderRadius: '8px', fontSize: '12px', background: C.bg, border: `1px solid ${C.border}`, color: C.textSecondary, cursor: 'pointer' }}>{d}</span>
+                          <div style={{ marginBottom: '10px' }}><div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, marginBottom: '6px', textTransform: 'uppercase' }}>Deal Type (select all that apply)</div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                              {['Paid','Gifted Product','Equity','Barter','Revenue Share','Ambassador','Licensing'].map(d => (
+                                <span key={d} style={{ padding: '4px 10px', borderRadius: '10px', fontSize: '11px', background: C.bg, border: `1px solid ${C.border}`, color: C.textSecondary, cursor: 'pointer' }}>{d}</span>
                               ))}
                             </div>
                           </div>
