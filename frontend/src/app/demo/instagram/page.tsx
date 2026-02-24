@@ -279,6 +279,8 @@ export default function InstagramDemoPage() {
 
   // Brand field filter — which ValuSkin profession the brand wants to target
   const [brandFieldFilter, setBrandFieldFilter] = useState<string | null>(null);
+  const [brandSearchQuery, setBrandSearchQuery] = useState('');
+  const [brandSearchMode, setBrandSearchMode] = useState<'profession' | 'name' | 'general'>('profession');
 
   const [metrics, setMetrics] = useState({
     followers: 1243000, engagement: 6.8, dealsCompleted: 47,
@@ -1102,6 +1104,40 @@ export default function InstagramDemoPage() {
                       </div>
                     </div>
 
+                    {/* Search Bar */}
+                    <div style={{ marginBottom: '16px' }}>
+                      <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
+                        {(['profession', 'name', 'general'] as const).map(mode => (
+                          <button key={mode} onClick={() => { setBrandSearchMode(mode); setBrandSearchQuery(''); }}
+                            style={{ flex: 1, padding: '6px', borderRadius: '8px', fontSize: '11px', fontWeight: 700, cursor: 'pointer', textTransform: 'capitalize',
+                              background: brandSearchMode === mode ? C.primary : C.card,
+                              color: brandSearchMode === mode ? '#fff' : C.textSecondary,
+                              border: `1px solid ${brandSearchMode === mode ? C.primary : C.border}`,
+                            }}>{mode}</button>
+                        ))}
+                      </div>
+                      <div style={{ position: 'relative' }}>
+                        <input
+                          value={brandSearchQuery}
+                          onChange={e => setBrandSearchQuery(e.target.value)}
+                          placeholder={
+                            brandSearchMode === 'profession' ? 'Search by profession (e.g. Piano Player, Fitness Coach...)' :
+                            brandSearchMode === 'name' ? 'Search by creator name or handle...' :
+                            'Search creators, professions, or handles...'
+                          }
+                          style={{ width: '100%', padding: '10px 36px 10px 12px', background: C.card, border: `1px solid ${brandSearchQuery ? C.primary : C.border}`, borderRadius: '10px', color: C.text, fontSize: '13px', boxSizing: 'border-box' as const, outline: 'none' }}
+                        />
+                        {brandSearchQuery && (
+                          <button onClick={() => setBrandSearchQuery('')} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: C.textMuted, cursor: 'pointer', fontSize: '16px' }}>×</button>
+                        )}
+                      </div>
+                      {brandSearchQuery && brandSearchMode === 'profession' && (
+                        <div style={{ marginTop: '6px', padding: '8px 10px', background: 'rgba(0,102,204,0.06)', borderRadius: '8px', fontSize: '11px', color: C.textSecondary }}>
+                          Showing exact <strong style={{ color: C.text }}>{brandSearchQuery}</strong> matches first, then related professions
+                        </div>
+                      )}
+                    </div>
+
                     {/* Which Field — profession filter */}
                     <div style={{ marginBottom: '16px' }}>
                       <div style={{ fontSize: '12px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '8px' }}>Which Field (Required ValuSkin)</div>
@@ -1157,13 +1193,39 @@ export default function InstagramDemoPage() {
                         {filterBarterOnly ? 'Barter Only' : 'Show All'}
                       </button>
                     </div>
-                    {BRAND_MARKETPLACE_CREATORS.filter(c => (!filterBarterOnly || c.willingToBarter) && (!brandFieldFilter || c.valueSkin === brandFieldFilter)).length === 0 && (
-                      <div style={{ textAlign: 'center', padding: '30px 20px', color: C.textMuted }}>
-                        <div style={{ fontSize: '14px', marginBottom: '4px' }}>No creators found with {brandFieldFilter} ValuSkin</div>
-                        <div style={{ fontSize: '11px' }}>Try selecting a different field or clear the filter.</div>
-                      </div>
-                    )}
-                    {BRAND_MARKETPLACE_CREATORS.filter(c => (!filterBarterOnly || c.willingToBarter) && (!brandFieldFilter || c.valueSkin === brandFieldFilter)).map((creator, i) => {
+                    {(() => {
+                      const q = brandSearchQuery.trim().toLowerCase();
+                      let results = BRAND_MARKETPLACE_CREATORS.filter(c =>
+                        (!filterBarterOnly || c.willingToBarter) &&
+                        (!brandFieldFilter || c.valueSkin === brandFieldFilter)
+                      );
+                      if (q) {
+                        if (brandSearchMode === 'profession') {
+                          // Exact matches first, then partial, then related (same category words)
+                          const exact = results.filter(c => c.valueSkin.toLowerCase() === q);
+                          const partial = results.filter(c => c.valueSkin.toLowerCase().includes(q) && c.valueSkin.toLowerCase() !== q);
+                          const related = results.filter(c => !c.valueSkin.toLowerCase().includes(q) && q.split(' ').some(word => c.valueSkin.toLowerCase().includes(word)));
+                          results = [...exact, ...partial, ...related];
+                        } else if (brandSearchMode === 'name') {
+                          results = results.filter(c => c.name.toLowerCase().includes(q) || c.handle.toLowerCase().includes(q));
+                        } else {
+                          // General: name, handle, profession — exact skin match first
+                          const exact = results.filter(c => c.valueSkin.toLowerCase() === q);
+                          const rest = results.filter(c => c.valueSkin.toLowerCase() !== q && (
+                            c.name.toLowerCase().includes(q) || c.handle.toLowerCase().includes(q) || c.valueSkin.toLowerCase().includes(q)
+                          ));
+                          results = [...exact, ...rest];
+                        }
+                      }
+                      return (
+                        <>
+                          {results.length === 0 && (
+                            <div style={{ textAlign: 'center', padding: '30px 20px', color: C.textMuted }}>
+                              <div style={{ fontSize: '14px', marginBottom: '4px' }}>No creators found</div>
+                              <div style={{ fontSize: '11px' }}>Try a different search term or clear filters.</div>
+                            </div>
+                          )}
+                          {results.map((creator, i) => {
                       const badge = PROFESSION_BADGES[creator.valueSkin];
                       const abbr = badge?.abbreviation ?? creator.valueSkin.split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0, 3);
                       const badgeColor = badge?.color ?? C.primary;
@@ -1541,6 +1603,9 @@ export default function InstagramDemoPage() {
                         </div>
                       );
                     })}
+                        </>
+                      );
+                    })()}
                   </div>
                 </>
               )}
