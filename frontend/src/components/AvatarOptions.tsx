@@ -651,7 +651,7 @@ export function ProfilePhotoWithLongPress({
           src={avatarUrl} alt={displayName} draggable={false}
           style={{
             width: `${size}px`, height: `${size}px`, borderRadius: '50%',
-            border: hasAnyValueSkin ? '2px solid #0066CC' : '2px solid #333',
+            border: '2px solid #333',
             objectFit: 'cover',
           }}
         />

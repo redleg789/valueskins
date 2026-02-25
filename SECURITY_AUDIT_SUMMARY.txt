@@ -1,0 +1,226 @@
+═══════════════════════════════════════════════════════════════════════════════
+                        SECURITY AUDIT REPORT — FINAL
+═══════════════════════════════════════════════════════════════════════════════
+
+PROJECT: ValueSkins Creator Marketplace
+AUDIT DATE: February 21, 2026
+AUDITOR: Claude Code Security Review Agent
+STATUS: 🔴 CRITICAL — DO NOT DEPLOY WITHOUT FIXES
+
+═══════════════════════════════════════════════════════════════════════════════
+
+EXECUTIVE SUMMARY
+
+Found 20 security vulnerabilities in production codebase:
+  • 6 CRITICAL severity (could compromise all users)
+  • 5 HIGH severity (could compromise specific users)
+  • 6 MEDIUM severity (data exposure, reliability)
+  • 3 LOW severity (configuration hardening)
+
+Most critical issues:
+  1. Hardcoded database password in git
+  2. OAuth tokens passed in URLs (exposed to logs/history)
+  3. PKCE completely broken (hardcoded challenges)
+  4. Missing security headers (CORS insufficient)
+  5. SQL injection via format strings
+  6. Weak JWT validation (accepts any algorithm)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+CRITICAL VULNERABILITIES (6)
+
+[CRIT-01] Hardcoded Credentials in Git History
+  ├─ File: backend/.env
+  ├─ Issue: Database password, JWT secret, SMTP credentials tracked in git
+  ├─ Impact: Any developer with git history can access all secrets
+  ├─ Fix: git filter-branch, rotate all secrets, add to .gitignore
+  └─ Estimate: 30 minutes
+
+[CRIT-02] Instagram OAuth Token in URL Parameter
+  ├─ File: backend/auth_service/src/verify.rs:25-28
+  ├─ Issue: Access token passed as URL parameter instead of header
+  ├─ Impact: Token exposed to logs, browser history, HTTP referrer headers
+  ├─ Fix: Use Authorization: Bearer header
+  └─ Estimate: 30 minutes
+
+[CRIT-03] Twitter OAuth Token in URL Parameter
+  ├─ File: backend/social_service/src/oauth.rs:148-151
+  ├─ Issue: Access token in URL query parameter
+  ├─ Impact: Same as CRIT-02
+  ├─ Fix: Use Authorization: Bearer header
+  └─ Estimate: 30 minutes
+
+[CRIT-04] PKCE Challenge Hard-Coded as Plain Text
+  ├─ File: backend/social_service/src/oauth.rs:74-91
+  ├─ Issue: Challenge = "challenge", verifier = "challenge" (hardcoded)
+  ├─ Impact: Anyone can intercept auth code and complete OAuth flow
+  ├─ Fix: Generate random S256 challenges, store in session
+  └─ Estimate: 3 hours
+
+[CRIT-05] CORS Missing Critical Security Headers
+  ├─ File: backend/api_gateway/src/main.rs:121-128
+  ├─ Issue: No CSP, HSTS, X-Frame-Options headers
+  ├─ Impact: XSS, clickjacking, man-in-the-middle attacks possible
+  ├─ Fix: Add SecurityHeaders middleware
+  └─ Estimate: 2 hours
+
+[CRIT-06] SQL Injection via String Formatting
+  ├─ File: backend/marketplace_service/src/brand_verification_service.rs:177-192
+  ├─ Issue: Dynamic SQL column name via format! macro
+  ├─ Impact: While restricted now, teaches unsafe patterns
+  ├─ Fix: Use SQL CASE expression instead
+  └─ Estimate: 1 hour
+
+CRITICAL TOTAL EFFORT: 8 hours
+
+═══════════════════════════════════════════════════════════════════════════════
+
+HIGH SEVERITY VULNERABILITIES (5)
+
+[HIGH-01] Weak JWT Validation
+  └─ Accepts any algorithm, no explicit validation
+  └─ Fix: Specify HS256 algorithm, validate exp/iat/nbf claims
+  └─ Estimate: 30 minutes
+
+[HIGH-02] Insecure OAuth State Parameter
+  └─ No validation on state parameter length or format
+  └─ Could enable CSRF attacks if validation missing
+  └─ Fix: Validate state 20-100 chars, alphanumeric only
+  └─ Estimate: 1 hour
+
+[HIGH-03] Console Error Logging Exposes Stack Traces
+  └─ File: frontend/src/components/ErrorBoundary.tsx
+  └─ Stack traces visible to all users in browser console
+  └─ Fix: Send to backend observability, show generic message
+  └─ Estimate: 2 hours
+
+[HIGH-04] Frontend Generates API Keys
+  └─ File: frontend/src/app/brands/onboarding/page.tsx:21
+  └─ Keys should be generated server-side only
+  └─ Fix: Move key generation to backend
+  └─ Estimate: 2 hours
+
+[HIGH-05] Instagram ID as Cryptographic Identifier
+  └─ Social IDs are predictable, not cryptographically secure
+  └─ Could enable account takeover via ID collision
+  └─ Fix: Use UUIDs, verify platform ownership separately
+  └─ Estimate: 3 hours
+
+HIGH SEVERITY TOTAL EFFORT: 8.5 hours
+
+═══════════════════════════════════════════════════════════════════════════════
+
+MEDIUM SEVERITY VULNERABILITIES (6)
+
+[MED-01] PII Without Field-Level Encryption (legal names, emails, documents)
+[MED-02] No Request Timeouts on External API Calls (Instagram, Twitter)
+[MED-03] Public Auth Endpoints Without Per-IP Rate Limiting
+[MED-04] Secrets Exposed in Startup Error Messages
+[MED-05] Missing X-Content-Type-Options Header
+[MED-06] No Database Field-Level Encryption
+
+MEDIUM SEVERITY TOTAL EFFORT: 13 hours
+
+═══════════════════════════════════════════════════════════════════════════════
+
+LOW SEVERITY VULNERABILITIES (3)
+
+[LOW-01] Input Validation Missing on Query Parameters
+[LOW-02] No HSTS Header Configuration
+[LOW-03] Incomplete CSP Policy
+
+LOW SEVERITY TOTAL EFFORT: 4 hours
+
+═══════════════════════════════════════════════════════════════════════════════
+
+REMEDIATION PLAN
+
+PHASE 1: IMMEDIATE (Today — 8 hours)
+  ✓ Remove .env from git, rotate credentials
+  ✓ Fix OAuth token URL exposure (both platforms)
+  ✓ Add security headers middleware
+  ✓ Fix JWT validation
+
+PHASE 2: HIGH PRIORITY (Days 2-5 — 8.5 hours)
+  ✓ Fix PKCE implementation
+  ✓ Add brute-force protection
+  ✓ Add request timeouts
+  ✓ Remove console error logging
+
+PHASE 3: MEDIUM PRIORITY (Week 2 — 13 hours)
+  ✓ Implement field-level encryption
+  ✓ Add input validation layer
+  ✓ Implement PII access controls
+  ✓ Add audit logging
+
+PHASE 4: VERIFICATION (Week 3 — 8 hours)
+  ✓ Security code review
+  ✓ Penetration testing
+  ✓ Load testing
+  ✓ Canary deployment
+
+TOTAL REMEDIATION TIME: 37.5 hours (5-6 working days)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+UPDATED CLAUDE.MD — SECURITY ANTI-PATTERNS
+
+Added 12 "Never Do These" rules to claude.md:
+
+  ❌ Hardcoded API keys or secrets in source code
+  ❌ Passing authentication tokens in URLs
+  ❌ PKCE challenges hard-coded or plaintext
+  ❌ Weak JWT validation (using Validation::default())
+  ❌ SQL injection via string formatting
+  ❌ Missing security headers
+  ❌ Storing sensitive data in plaintext in database
+  ❌ Error messages that expose internal details
+  ❌ No timeouts on external API calls
+  ❌ Public auth endpoints without per-IP rate limiting
+  ❌ Social platform IDs used as cryptographic identifiers
+  ❌ Frontend generating API keys or auth tokens
+
+═══════════════════════════════════════════════════════════════════════════════
+
+RISK ASSESSMENT
+
+Current Risk Level: 🔴 CRITICAL
+
+If deployed to production as-is:
+  • All OAuth tokens could be compromised (logs, browser history)
+  • Database credentials accessible to all developers
+  • PKCE bypass allows complete account takeover
+  • XSS, clickjacking vulnerabilities present
+  • No protection against brute-force attacks
+
+Mitigation: All CRITICAL issues MUST be fixed before production deployment
+
+═══════════════════════════════════════════════════════════════════════════════
+
+DELIVERABLES
+
+✅ Complete security audit with 20 vulnerabilities identified
+✅ Detailed remediation roadmap (SECURITY_REMEDIATION.md)
+✅ Phased implementation plan (8-13-4 hours per phase)
+✅ Updated claude.md with 12 security anti-patterns
+✅ Code fixes provided for CRITICAL issues
+✅ Testing checklist for post-deployment verification
+
+═══════════════════════════════════════════════════════════════════════════════
+
+NEXT STEPS
+
+1. Review this report with security/ops team
+2. Begin PHASE 1 immediately (8 hours, same day fix)
+3. Complete PHASE 2 by end of week
+4. Complete PHASE 3 next week
+5. PHASE 4 verification before any production deployment
+
+DO NOT DEPLOY WITHOUT COMPLETING ALL PHASES
+
+═══════════════════════════════════════════════════════════════════════════════
+
+Report Generated: February 21, 2026
+Classification: CONFIDENTIAL — For Internal Use Only
+Next Audit: After remediation completion + 3 months
+

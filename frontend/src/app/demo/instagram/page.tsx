@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useLevelConfig, useReputationConfig } from '@/lib/useConfigStorage';
 import {
@@ -198,6 +198,13 @@ const MOCK_REPUTATION = {
 
 export default function InstagramDemoPage() {
   const [activeView, setActiveView] = useState<'profile' | 'mim' | 'store' | 'admin' | 'communities' | 'settings'>('profile');
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
   const [activeTab, setActiveTab] = useState('posts');
   const [isFollowing, setIsFollowing] = useState(false);
   const [likedPosts, setLikedPosts] = useState<number[]>([]);
@@ -489,12 +496,12 @@ export default function InstagramDemoPage() {
     : [];
 
   return (
-    <div style={{ background: C.bg, minHeight: '100vh', display: 'flex', color: C.text, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' }}>
+    <div style={{ background: C.bg, minHeight: '100vh', display: 'flex', color: C.text, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif', overflowX: 'hidden' }}>
 
       {/* Level-Up Modal */}
       {showLevelUpModal && (
         <div style={{ position:'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.8)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:99999 }}>
-          <div style={{ background:C.surface, borderRadius:'16px', padding:'32px 24px', maxWidth:'360px', width:'90%', border:`1px solid ${C.border}`, textAlign:'center' }}>
+          <div style={{ background:C.surface, borderRadius:'16px', padding:'32px 24px', maxWidth:'360px', width:'95vw', maxHeight:'90vh', overflowY:'auto', border:`1px solid ${C.border}`, textAlign:'center' }}>
             <div style={{ width:'48px', height:'48px', borderRadius:'50%', background:'rgba(0,102,204,0.12)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 16px' }}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
             </div>
@@ -542,31 +549,33 @@ export default function InstagramDemoPage() {
         </div>
       )}
 
-      {/* Left Sidebar */}
-      <div style={{ width: '280px', borderRight: `1px solid ${C.border}`, padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px', height: '100vh', overflowY: 'auto', position: 'sticky', top: 0, background: C.surface }}>
-        <Link href="/" style={{ textDecoration: 'none' }}>
-          <div style={{ fontSize: '24px', fontWeight: 'bold', color: C.text, marginBottom: '20px', cursor: 'pointer' }}>Instagram</div>
-        </Link>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-          <NavItem label="Home" active={false} onClick={() => {}} />
-          <NavItem label="Explore" active={false} onClick={() => {}} />
-          <NavItem label="Messages" active={false} onClick={() => {}} />
-          <NavItem label="Notifications" active={false} onClick={() => {}} />
-          <NavItem label="Create" active={false} onClick={() => {}} />
-          <NavItem label="Profile" active={activeView === 'profile'} onClick={() => setActiveView('profile')} />
-          <div style={{ height: '1px', background: C.border, margin: '12px 0' }} />
-          <NavItem label="Marketplace" active={activeView === 'mim'} onClick={() => { setMarketplaceRole('none'); setActiveView('mim'); }} />
-          <NavItem label="Communities" active={activeView === 'communities'} onClick={() => { setActiveCommunity(null); setActiveView('communities'); }} />
-          <NavItem label="Store" active={activeView === 'store'} onClick={() => setActiveView('store')} />
-          <NavItem label="Settings" active={activeView === 'settings'} onClick={() => setActiveView('settings')} />
-          <div style={{ height: '1px', background: C.border, margin: '12px 0' }} />
-          <NavItem label="Admin Panel" active={activeView === 'admin'} onClick={() => setActiveView('admin')} />
+      {/* Left Sidebar — desktop only */}
+      {!isMobile && (
+        <div style={{ width: '280px', borderRight: `1px solid ${C.border}`, padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px', height: '100vh', overflowY: 'auto', position: 'sticky', top: 0, background: C.surface, flexShrink: 0 }}>
+          <Link href="/" style={{ textDecoration: 'none' }}>
+            <div style={{ fontSize: '24px', fontWeight: 'bold', color: C.text, marginBottom: '20px', cursor: 'pointer' }}>Instagram</div>
+          </Link>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <NavItem label="Home" active={false} onClick={() => {}} />
+            <NavItem label="Explore" active={false} onClick={() => {}} />
+            <NavItem label="Messages" active={false} onClick={() => {}} />
+            <NavItem label="Notifications" active={false} onClick={() => {}} />
+            <NavItem label="Create" active={false} onClick={() => {}} />
+            <NavItem label="Profile" active={activeView === 'profile'} onClick={() => setActiveView('profile')} />
+            <div style={{ height: '1px', background: C.border, margin: '12px 0' }} />
+            <NavItem label="Marketplace" active={activeView === 'mim'} onClick={() => { setMarketplaceRole('none'); setActiveView('mim'); }} />
+            <NavItem label="Communities" active={activeView === 'communities'} onClick={() => { setActiveCommunity(null); setActiveView('communities'); }} />
+            <NavItem label="Store" active={activeView === 'store'} onClick={() => setActiveView('store')} />
+            <NavItem label="Settings" active={activeView === 'settings'} onClick={() => setActiveView('settings')} />
+            <div style={{ height: '1px', background: C.border, margin: '12px 0' }} />
+            <NavItem label="Admin Panel" active={activeView === 'admin'} onClick={() => setActiveView('admin')} />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Main Content */}
-      <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-        <div style={{ width: '100%', maxWidth: '600px', borderLeft: `1px solid ${C.border}`, borderRight: `1px solid ${C.border}`, background: C.bg }}>
+      <div style={{ flex: 1, display: 'flex', justifyContent: 'center', overflowX: 'hidden', paddingBottom: isMobile ? '60px' : 0 }}>
+        <div style={{ width: '100%', maxWidth: '600px', borderLeft: isMobile ? 'none' : `1px solid ${C.border}`, borderRight: isMobile ? 'none' : `1px solid ${C.border}`, background: C.bg, overflowX: 'hidden' }}>
 
           {/* ── PROFILE VIEW ──────────────────────────────────── */}
           {activeView === 'profile' && (
@@ -575,9 +584,9 @@ export default function InstagramDemoPage() {
               <div style={{
                 height: '60px', borderBottom: `1px solid ${C.border}`,
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                fontWeight: 'bold', fontSize: '16px', position: 'sticky', top: 0,
+                fontWeight: 'bold', fontSize: isMobile ? '14px' : '16px', position: 'sticky', top: 0,
                 background: 'rgba(10,10,10,0.92)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
-                zIndex: 10, padding: '0 20px',
+                zIndex: 10, padding: '0 16px',
               }}>
                 <span>saketh_eth</span>
                 <button
@@ -599,26 +608,26 @@ export default function InstagramDemoPage() {
               )}
 
               {/* Profile Info */}
-              <div style={{ padding: '20px' }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '24px' }}>
+              <div style={{ padding: isMobile ? '12px' : '20px' }}>
+                <div style={{ display: 'flex', alignItems: isMobile ? 'center' : 'flex-start', flexDirection: isMobile ? 'column' : 'row', marginBottom: '24px', gap: isMobile ? '12px' : 0 }}>
                   {/* Profile photo */}
-                  <div style={{ marginRight: '40px', flexShrink: 0 }}>
+                  <div style={{ marginRight: isMobile ? 0 : '40px', flexShrink: 0 }}>
                     <ProfilePhotoWithLongPress
                       showValueskinAvatar={valueskinAvatarEnabled}
                       level={currentLevel}
                       valueSkins={valueSkins}
                       avatarUrl="https://api.dicebear.com/7.x/avataaars/svg?seed=Saketh"
                       displayName="Saketh Velamuri"
-                      size={86}
+                      size={isMobile ? 72 : 86}
                       onValueSkinsChange={setValueSkins}
                     />
                   </div>
 
                   {/* Stats */}
-                  <div style={{ flex: 1 }}>
+                  <div style={{ flex: 1, width: isMobile ? '100%' : 'auto' }}>
                     {/* Name + up to 3 stickers (each clickable → About Me) */}
-                    <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
-                      <h2 style={{ fontSize: '20px', fontWeight: 'bold', margin: 0, color: C.text }}>
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', alignItems: 'center', flexWrap: 'wrap', justifyContent: isMobile ? 'center' : 'flex-start' }}>
+                      <h2 style={{ fontSize: isMobile ? '16px' : '20px', fontWeight: 'bold', margin: 0, color: C.text }}>
                         Saketh Velamuri
                       </h2>
                       {/* ValueSkin stickers with context menu (right-click) */}
@@ -645,7 +654,7 @@ export default function InstagramDemoPage() {
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', gap: '20px', marginBottom: '20px', fontSize: '14px' }}>
+                    <div style={{ display: 'flex', gap: isMobile ? '16px' : '20px', marginBottom: '20px', fontSize: isMobile ? '13px' : '14px', justifyContent: isMobile ? 'center' : 'flex-start' }}>
                       <button onClick={() => setShowMetricsModal(true)} style={{ background: 'none', border: 'none', color: C.text, padding: 0, cursor: 'pointer', textAlign: 'center' }}>
                         <strong>{(metrics.followers / 1000).toFixed(0)}k</strong>
                         <div style={{ fontSize: '12px', color: C.textSecondary }}>followers</div>
@@ -654,19 +663,21 @@ export default function InstagramDemoPage() {
                       <div style={{ textAlign: 'center' }}><strong>450</strong><div style={{ fontSize: '12px', color: C.textSecondary }}>following</div></div>
                     </div>
 
-                    <button
-                      onClick={handleFollow}
-                      style={{ background: isFollowing ? C.surfaceAlt : C.primary, border: `1px solid ${isFollowing ? C.borderLight : C.primary}`, borderRadius: '8px', color: '#fff', padding: '8px 24px', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}
-                    >
-                      {isFollowing ? 'Following' : 'Follow'}
-                    </button>
+                    <div style={{ display: 'flex', justifyContent: isMobile ? 'center' : 'flex-start' }}>
+                      <button
+                        onClick={handleFollow}
+                        style={{ background: isFollowing ? C.surfaceAlt : C.primary, border: `1px solid ${isFollowing ? C.borderLight : C.primary}`, borderRadius: '8px', color: '#fff', padding: '8px 24px', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}
+                      >
+                        {isFollowing ? 'Following' : 'Follow'}
+                      </button>
+                    </div>
                   </div>
                 </div>
 
                 {/* Bio */}
-                <div style={{ marginBottom: '16px' }}>
+                <div style={{ marginBottom: '16px', textAlign: isMobile ? 'center' : 'left' }}>
                   <div style={{ fontWeight: '600', marginBottom: '4px', color: C.text }}>Saketh Velamuri</div>
-                  <div style={{ color: C.textSecondary, fontSize: '14px', lineHeight: '1.5' }}>
+                  <div style={{ color: C.textSecondary, fontSize: isMobile ? '12px' : '14px', lineHeight: '1.5' }}>
                     Building the decentralized reputation layer{'\n'}Full Stack Engineer @ Valueskins{'\n'}Minting my career on-chain
                   </div>
                 </div>
@@ -1028,7 +1039,7 @@ export default function InstagramDemoPage() {
                       <h2 style={{ fontSize: '20px', fontWeight: 700, color: C.text, marginBottom: '6px' }}>How do you want to enter?</h2>
                       <p style={{ fontSize: '13px', color: C.textSecondary }}>Choose your role to see relevant opportunities</p>
                     </div>
-                    <div style={{ display: 'flex', gap: '16px' }}>
+                    <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
                       {([
                         { role: 'creator' as const, title: 'Login as Creator', desc: 'Find brand deals matched to your ValueSkins', icon: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2' },
                         { role: 'brand' as const, title: 'Login as Brand', desc: 'Find creators for your campaigns', icon: 'M22 12h-4l-3 9L9 3l-3 9H2' },
@@ -1426,7 +1437,7 @@ export default function InstagramDemoPage() {
                     {/* New Campaign Creator Modal */}
                     {showCampaignCreator && (
                       <div style={{ position:'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.75)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:9999 }}>
-                        <div style={{ background:C.surface, borderRadius:'16px', padding:'24px', maxWidth:'480px', width:'90%', maxHeight:'85vh', overflowY:'auto', border:`1px solid ${C.border}`, position:'relative' }}>
+                        <div style={{ background:C.surface, borderRadius:'16px', padding:'24px', maxWidth:'480px', width:'95vw', maxHeight:'90vh', overflowY:'auto', border:`1px solid ${C.border}`, position:'relative' }}>
                           <button onClick={() => setShowCampaignCreator(false)} style={{ position:'absolute', top:'16px', right:'16px', background:'none', border:'none', color:C.textMuted, fontSize:'22px', cursor:'pointer', lineHeight:1 }}>x</button>
                           <div style={{ fontSize:'16px', fontWeight:700, color:C.text, marginBottom:'16px' }}>Create Campaign</div>
                           {[
@@ -4261,6 +4272,43 @@ export default function InstagramDemoPage() {
           }}
         />
       )}
+
+      {/* Mobile Bottom Tab Bar */}
+      {isMobile && (
+        <div style={{
+          position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 200,
+          background: C.surface, borderTop: `1px solid ${C.border}`,
+          display: 'flex', alignItems: 'stretch',
+        }}>
+          {([
+            { label: 'Profile', view: 'profile' as const },
+            { label: 'Market', view: 'mim' as const },
+            { label: 'Store', view: 'store' as const },
+            { label: 'Community', view: 'communities' as const },
+            { label: 'Settings', view: 'settings' as const },
+          ]).map(({ label, view }) => (
+            <button
+              key={view}
+              onClick={() => {
+                if (view === 'mim') { setMarketplaceRole('none'); }
+                if (view === 'communities') { setActiveCommunity(null); }
+                setActiveView(view);
+              }}
+              style={{
+                flex: 1, minHeight: '44px', background: 'none', border: 'none',
+                color: activeView === view ? C.primary : C.textMuted,
+                fontSize: '10px', fontWeight: activeView === view ? 700 : 500,
+                cursor: 'pointer', display: 'flex', flexDirection: 'column',
+                alignItems: 'center', justifyContent: 'center', gap: '2px',
+                padding: '6px 2px',
+              }}
+            >
+              <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: activeView === view ? C.primary : 'transparent' }} />
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -4375,7 +4423,7 @@ function SkinManagementModal({ slot, onClose, valueSkins, hiddenSkins, onHide, o
 function Modal({ onClose, children }: { onClose: () => void; children: React.ReactNode }) {
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-      <div style={{ background: C.surface, borderRadius: '16px', padding: '24px', maxWidth: '500px', width: '90%', maxHeight: '80vh', overflowY: 'auto', position: 'relative', border: `1px solid ${C.border}` }}>
+      <div style={{ background: C.surface, borderRadius: '16px', padding: '24px', maxWidth: '500px', width: '95vw', maxHeight: '90vh', overflowY: 'auto', position: 'relative', border: `1px solid ${C.border}` }}>
         <button onClick={onClose} style={{ position: 'absolute', top: '16px', right: '16px', background: 'none', border: 'none', color: C.textMuted, fontSize: '24px', cursor: 'pointer', lineHeight: 1 }}>×</button>
         {children}
       </div>
