@@ -36,39 +36,73 @@ export interface ProfessionBadge {
   label: string;
   abbreviation: string;
   color: string;
+  stickerImage?: string;
 }
 
 // ─── Profession Definitions ───────────────────────────────────────────
 
 export const PROFESSION_BADGES: Record<string, ProfessionBadge> = {
-  'Software Engineer':    { id: 'swe',  label: 'Software Engineer',    abbreviation: 'SWE', color: '#0066CC' },
-  'Data Scientist':       { id: 'ds',   label: 'Data Scientist',       abbreviation: 'DS',  color: '#4A90E2' },
-  'Product Manager':      { id: 'pm',   label: 'Product Manager',      abbreviation: 'PM',  color: '#1A73E8' },
-  'DevOps Engineer':      { id: 'dev',  label: 'DevOps Engineer',      abbreviation: 'DEV', color: '#5F27CD' },
-  'UX/UI Designer':       { id: 'ux',   label: 'UX/UI Designer',       abbreviation: 'UX',  color: '#D63384' },
-  'Actor':                { id: 'act',  label: 'Actor',                abbreviation: 'ACT', color: '#E65100' },
-  'Musician':             { id: 'mus',  label: 'Musician',             abbreviation: 'MUS', color: '#C62828' },
-  'Doctor':               { id: 'md',   label: 'Doctor',               abbreviation: 'MD',  color: '#00897B' },
-  'Surgeon':              { id: 'srg',  label: 'Surgeon',              abbreviation: 'SRG', color: '#00695C' },
-  'Nurse':                { id: 'rn',   label: 'Nurse',                abbreviation: 'RN',  color: '#26A69A' },
-  'Lawyer':               { id: 'jd',   label: 'Lawyer',               abbreviation: 'JD',  color: '#1A237E' },
-  'CEO':                  { id: 'ceo',  label: 'CEO',                  abbreviation: 'CEO', color: '#263238' },
-  'Entrepreneur':         { id: 'ent',  label: 'Entrepreneur',         abbreviation: 'ENT', color: '#37474F' },
-  'Teacher':              { id: 'edu',  label: 'Teacher',              abbreviation: 'EDU', color: '#1565C0' },
-  'Professor':            { id: 'prof', label: 'Professor',            abbreviation: 'PRF', color: '#0D47A1' },
-  'Graphic Designer':     { id: 'gd',   label: 'Graphic Designer',     abbreviation: 'GD',  color: '#AD1457' },
-  'Digital Artist':       { id: 'art',  label: 'Digital Artist',       abbreviation: 'ART', color: '#880E4F' },
-  'Chef':                 { id: 'chf',  label: 'Chef',                 abbreviation: 'CHF', color: '#E65100' },
-  'Professional Athlete': { id: 'ath',  label: 'Professional Athlete', abbreviation: 'ATH', color: '#2E7D32' },
-  'Fitness Coach':        { id: 'fit',  label: 'Fitness Coach',        abbreviation: 'FIT', color: '#388E3C' },
-  'Commercial Pilot':     { id: 'cpl',  label: 'Commercial Pilot',     abbreviation: 'CPL', color: '#01579B' },
-  'Real Estate Agent':    { id: 'rea',  label: 'Real Estate Agent',    abbreviation: 'REA', color: '#4E342E' },
-  'Financial Advisor':    { id: 'fin',  label: 'Financial Advisor',    abbreviation: 'FIN', color: '#006064' },
-  'Consultant':           { id: 'con',  label: 'Consultant',           abbreviation: 'CON', color: '#BF360C' },
-  'Photographer':         { id: 'pht',  label: 'Photographer',         abbreviation: 'PHT', color: '#455A64' },
-  'AI/ML Specialist':     { id: 'ai',   label: 'AI/ML Specialist',     abbreviation: 'AI',  color: '#311B92' },
-  'Crypto Analyst':       { id: 'web3', label: 'Crypto Analyst',       abbreviation: 'W3',  color: '#4A148C' },
-  'Investment Banker':    { id: 'ib',   label: 'Investment Banker',    abbreviation: 'IB',  color: '#1B5E20' },
+  'Software Engineer':      { id: 'swe',  label: 'Software Engineer',      abbreviation: 'SWE', color: '#0066CC', stickerImage: '/stickers/software-engineer.png' },
+  'Data Scientist':         { id: 'ds',   label: 'Data Scientist',         abbreviation: 'DS',  color: '#4A90E2', stickerImage: '/stickers/data-scientist.png' },
+  'Product Manager':        { id: 'pm',   label: 'Product Manager',        abbreviation: 'PM',  color: '#1A73E8', stickerImage: '/stickers/product-manager.png' },
+  'DevOps Engineer':        { id: 'dev',  label: 'DevOps Engineer',        abbreviation: 'DEV', color: '#5F27CD', stickerImage: '/stickers/devops-engineer.png' },
+  'UX/UI Designer':         { id: 'ux',   label: 'UX/UI Designer',         abbreviation: 'UX',  color: '#D63384', stickerImage: '/stickers/ux-designer.png' },
+  'Actor':                  { id: 'act',  label: 'Actor',                  abbreviation: 'ACT', color: '#E65100', stickerImage: '/stickers/actor.png' },
+  'Comedian':               { id: 'cmd',  label: 'Comedian',               abbreviation: 'COM', color: '#FF6F00', stickerImage: '/stickers/comedian.png' },
+  'Musician':               { id: 'mus',  label: 'Musician',               abbreviation: 'MUS', color: '#C62828', stickerImage: '/stickers/musician.png' },
+  'Producer':               { id: 'prd',  label: 'Producer',               abbreviation: 'PRD', color: '#AD1457', stickerImage: '/stickers/producer.png' },
+  'Director':               { id: 'dir',  label: 'Director',               abbreviation: 'DIR', color: '#6A1B9A', stickerImage: '/stickers/director.png' },
+  'Screenwriter':           { id: 'sw',   label: 'Screenwriter',           abbreviation: 'SCW', color: '#4527A0', stickerImage: '/stickers/screenwriter.png' },
+  'Animator':               { id: 'anm',  label: 'Animator',               abbreviation: 'ANM', color: '#283593', stickerImage: '/stickers/animator.png' },
+  'Voice Actor':            { id: 'va',   label: 'Voice Actor',            abbreviation: 'VA',  color: '#1565C0', stickerImage: '/stickers/voice-actor.png' },
+  'Doctor':                 { id: 'md',   label: 'Doctor',                 abbreviation: 'MD',  color: '#00897B', stickerImage: '/stickers/doctor.png' },
+  'Surgeon':                { id: 'srg',  label: 'Surgeon',                abbreviation: 'SRG', color: '#00695C', stickerImage: '/stickers/surgeon.png' },
+  'Nurse':                  { id: 'rn',   label: 'Nurse',                  abbreviation: 'RN',  color: '#26A69A', stickerImage: '/stickers/nurse.png' },
+  'Pharmacist':             { id: 'rx',   label: 'Pharmacist',             abbreviation: 'RX',  color: '#00838F', stickerImage: '/stickers/pharmacist.png' },
+  'Therapist':              { id: 'thp',  label: 'Therapist',              abbreviation: 'THP', color: '#558B2F', stickerImage: '/stickers/therapist.png' },
+  'Nutritionist':           { id: 'nut',  label: 'Nutritionist',           abbreviation: 'NUT', color: '#2E7D32', stickerImage: '/stickers/nutritionist.png' },
+  'Lawyer':                 { id: 'jd',   label: 'Lawyer',                 abbreviation: 'JD',  color: '#1A237E', stickerImage: '/stickers/lawyer.png' },
+  'Attorney':               { id: 'atty', label: 'Attorney',               abbreviation: 'ATY', color: '#283593', stickerImage: '/stickers/attorney.png' },
+  'Judge':                  { id: 'jdg',  label: 'Judge',                  abbreviation: 'JDG', color: '#1A237E', stickerImage: '/stickers/judge.png' },
+  'Corporate Lawyer':       { id: 'claw', label: 'Corporate Lawyer',       abbreviation: 'CLW', color: '#311B92', stickerImage: '/stickers/corporate-lawyer.png' },
+  'CEO':                    { id: 'ceo',  label: 'CEO',                    abbreviation: 'CEO', color: '#263238', stickerImage: '/stickers/ceo.png' },
+  'Entrepreneur':           { id: 'ent',  label: 'Entrepreneur',           abbreviation: 'ENT', color: '#37474F' },
+  'Tech Entrepreneur':      { id: 'tent', label: 'Tech Entrepreneur',      abbreviation: 'TEC', color: '#263238', stickerImage: '/stickers/tech-entrepreneur.png' },
+  'Operations Manager':     { id: 'ops',  label: 'Operations Manager',     abbreviation: 'OPS', color: '#37474F', stickerImage: '/stickers/operations-manager.png' },
+  'Consultant':             { id: 'con',  label: 'Consultant',             abbreviation: 'CON', color: '#BF360C', stickerImage: '/stickers/consultant.png' },
+  'Teacher':                { id: 'edu',  label: 'Teacher',                abbreviation: 'EDU', color: '#1565C0', stickerImage: '/stickers/teacher.png' },
+  'Professor':              { id: 'prof', label: 'Professor',              abbreviation: 'PRF', color: '#0D47A1', stickerImage: '/stickers/professor.png' },
+  'Tutor':                  { id: 'tut',  label: 'Tutor',                  abbreviation: 'TUT', color: '#1565C0', stickerImage: '/stickers/tutor.png' },
+  'Graphic Designer':       { id: 'gd',   label: 'Graphic Designer',       abbreviation: 'GD',  color: '#AD1457', stickerImage: '/stickers/graphic-designer.png' },
+  'Digital Artist':         { id: 'art',  label: 'Digital Artist',         abbreviation: 'ART', color: '#880E4F', stickerImage: '/stickers/digital-artist.png' },
+  'Illustrator':            { id: 'ill',  label: 'Illustrator',            abbreviation: 'ILL', color: '#6A1B9A', stickerImage: '/stickers/illustrator.png' },
+  'Photographer':           { id: 'pht',  label: 'Photographer',           abbreviation: 'PHT', color: '#455A64', stickerImage: '/stickers/photographer.png' },
+  'Chef':                   { id: 'chf',  label: 'Chef',                   abbreviation: 'CHF', color: '#E65100', stickerImage: '/stickers/chef.png' },
+  'Pastry Chef':            { id: 'pchf', label: 'Pastry Chef',            abbreviation: 'PST', color: '#E64A19', stickerImage: '/stickers/pastry-chef.png' },
+  'Food Critic':            { id: 'fc',   label: 'Food Critic',            abbreviation: 'FC',  color: '#BF360C', stickerImage: '/stickers/food-critic.png' },
+  'Food Photographer':      { id: 'fpht', label: 'Food Photographer',      abbreviation: 'FPH', color: '#6D4C41', stickerImage: '/stickers/food-photographer.png' },
+  'Restaurant Owner':       { id: 'rest', label: 'Restaurant Owner',       abbreviation: 'RST', color: '#4E342E', stickerImage: '/stickers/restaurant-owner.png' },
+  'Sommelier':              { id: 'som',  label: 'Sommelier',              abbreviation: 'SOM', color: '#880E4F', stickerImage: '/stickers/sommelier.png' },
+  'Professional Athlete':   { id: 'ath',  label: 'Professional Athlete',   abbreviation: 'ATH', color: '#2E7D32' },
+  'Fitness Coach':          { id: 'fit',  label: 'Fitness Coach',          abbreviation: 'FIT', color: '#388E3C', stickerImage: '/stickers/fitness-coach.png' },
+  'Yoga Instructor':        { id: 'yog',  label: 'Yoga Instructor',        abbreviation: 'YOG', color: '#558B2F', stickerImage: '/stickers/yoga-instructor.png' },
+  'Sports Manager':         { id: 'spm',  label: 'Sports Manager',         abbreviation: 'SPM', color: '#1B5E20', stickerImage: '/stickers/sports-manager.png' },
+  'Commercial Pilot':       { id: 'cpl',  label: 'Commercial Pilot',       abbreviation: 'CPL', color: '#01579B', stickerImage: '/stickers/commercial-pilot.png' },
+  'Air Traffic Controller': { id: 'atc',  label: 'Air Traffic Controller', abbreviation: 'ATC', color: '#0277BD', stickerImage: '/stickers/air-traffic-controller.png' },
+  'Aircraft Engineer':      { id: 'ace',  label: 'Aircraft Engineer',      abbreviation: 'ACE', color: '#01579B', stickerImage: '/stickers/aircraft-engineer.png' },
+  'Aviation Student':       { id: 'avs',  label: 'Aviation Student',       abbreviation: 'AVS', color: '#0288D1', stickerImage: '/stickers/aviation-student.png' },
+  'Cabin Crew Manager':     { id: 'ccm',  label: 'Cabin Crew Manager',     abbreviation: 'CCM', color: '#0277BD', stickerImage: '/stickers/cabin-crew-manager.png' },
+  'Real Estate Agent':      { id: 'rea',  label: 'Real Estate Agent',      abbreviation: 'REA', color: '#4E342E', stickerImage: '/stickers/real-estate-agent.png' },
+  'Real Estate Developer':  { id: 'red',  label: 'Real Estate Developer',  abbreviation: 'RED', color: '#3E2723', stickerImage: '/stickers/real-estate-developer.png' },
+  'Financial Advisor':      { id: 'fin',  label: 'Financial Advisor',      abbreviation: 'FIN', color: '#006064', stickerImage: '/stickers/financial-advisor.png' },
+  'Trader':                 { id: 'trd',  label: 'Trader',                 abbreviation: 'TRD', color: '#1B5E20', stickerImage: '/stickers/trader.png' },
+  'Investment Banker':      { id: 'ib',   label: 'Investment Banker',      abbreviation: 'IB',  color: '#1B5E20', stickerImage: '/stickers/investment-banker.png' },
+  'Crypto Analyst':         { id: 'web3', label: 'Crypto Analyst',         abbreviation: 'W3',  color: '#4A148C', stickerImage: '/stickers/crypto-analyst.png' },
+  'Finance Student':        { id: 'fins', label: 'Finance Student',        abbreviation: 'FST', color: '#006064', stickerImage: '/stickers/finance-student.png' },
+  'AI/ML Specialist':       { id: 'ai',   label: 'AI/ML Specialist',       abbreviation: 'AI',  color: '#311B92', stickerImage: '/stickers/ai-ml-specialist.png' },
+  'Security Researcher':    { id: 'sec',  label: 'Security Researcher',    abbreviation: 'SEC', color: '#B71C1C', stickerImage: '/stickers/security-researcher.png' },
+  'EdTech Creator':         { id: 'etc',  label: 'EdTech Creator',         abbreviation: 'ETC', color: '#1A237E', stickerImage: '/stickers/edtech-creator.png' },
+  'Culinary Student':       { id: 'cust', label: 'Culinary Student',       abbreviation: 'CUS', color: '#E65100', stickerImage: '/stickers/culinary-student.png' },
 };
 
 // ─── Default About Me text per profession ────────────────────────────
@@ -145,20 +179,36 @@ export function ProfessionSticker({
           flexShrink: 0,
         }}
       >
-        {/* Badge chip */}
-        <div style={{
-          width: `${dim}px`,
-          height: `${dim}px`,
-          borderRadius: '6px',
-          background: badge.color,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}>
-          <span style={{ color: '#fff', fontSize, fontWeight: 700, letterSpacing: '-0.3px', lineHeight: 1 }}>
-            {badge.abbreviation}
-          </span>
-        </div>
+        {/* Badge chip — pixel art sticker if available, else colored abbreviation */}
+        {badge.stickerImage ? (
+          <img
+            src={badge.stickerImage}
+            alt={badge.label}
+            draggable={false}
+            style={{
+              width: `${dim}px`,
+              height: `${dim}px`,
+              borderRadius: '6px',
+              imageRendering: 'pixelated',
+              display: 'block',
+              flexShrink: 0,
+            }}
+          />
+        ) : (
+          <div style={{
+            width: `${dim}px`,
+            height: `${dim}px`,
+            borderRadius: '6px',
+            background: badge.color,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            <span style={{ color: '#fff', fontSize, fontWeight: 700, letterSpacing: '-0.3px', lineHeight: 1 }}>
+              {badge.abbreviation}
+            </span>
+          </div>
+        )}
       </div>
 
       {showPanel && (
@@ -314,15 +364,24 @@ function AboutMePanel({
               {/* Slot header */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
                 {slotBadge && (
-                  <div style={{
-                    width: '28px', height: '28px', borderRadius: '7px',
-                    background: slotBadge.color,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                  }}>
-                    <span style={{ color: '#fff', fontSize: '8px', fontWeight: 700 }}>
-                      {slotBadge.abbreviation}
-                    </span>
-                  </div>
+                  slotBadge.stickerImage ? (
+                    <img
+                      src={slotBadge.stickerImage}
+                      alt={slotBadge.label}
+                      draggable={false}
+                      style={{ width: '28px', height: '28px', borderRadius: '7px', imageRendering: 'pixelated', flexShrink: 0 }}
+                    />
+                  ) : (
+                    <div style={{
+                      width: '28px', height: '28px', borderRadius: '7px',
+                      background: slotBadge.color,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                    }}>
+                      <span style={{ color: '#fff', fontSize: '8px', fontWeight: 700 }}>
+                        {slotBadge.abbreviation}
+                      </span>
+                    </div>
+                  )
                 )}
                 <div>
                   <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: SLOT_COLORS[s] }}>
