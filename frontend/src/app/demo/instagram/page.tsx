@@ -382,6 +382,32 @@ export default function InstagramDemoPage() {
   const [adminAllowLongTermContracts, setAdminAllowLongTermContracts] = useState(true);
   const [adminSavedFeaturesTab, setAdminSavedFeaturesTab] = useState(false);
 
+  // Gap 1-5 state
+  const [marketplaceTab, setMarketplaceTab] = useState<'creators' | 'campaigns' | 'applications'>('creators');
+  const [campaigns, setCampaigns] = useState<Array<{id:number;brandProfession:string;title:string;description:string;requiredProfessions:string[];budget:string;deadline:string;status:'open'|'closed';applicants:number;}>>([
+    { id:1, brandProfession:'Software Engineer', title:'React Expert for SaaS Launch', description:'We need an authentic Software Engineer to demo our dev tool to a tech audience. 2x Reels.', requiredProfessions:['Software Engineer','Data Scientist'], budget:'5000', deadline:'2026-03-15', status:'open' as const, applicants:3 },
+    { id:2, brandProfession:'UX/UI Designer', title:'Mobile App Design Review', description:'UI/UX designer to review and showcase our new mobile app. 1x Reel, 3x Stories.', requiredProfessions:['UX/UI Designer','Product Manager'], budget:'4500', deadline:'2026-03-20', status:'open' as const, applicants:1 },
+    { id:3, brandProfession:'Fitness Coach', title:'Spring Fitness Challenge', description:'Fitness coach to lead a 7-day challenge campaign. 3x Reels.', requiredProfessions:['Fitness Coach','Nutritionist'], budget:'3800', deadline:'2026-04-01', status:'open' as const, applicants:2 },
+  ]);
+  const [myApplications, setMyApplications] = useState<Array<{id:number;campaignId:number;campaignTitle:string;creatorProfession:string;status:'pending'|'accepted'|'rejected';appliedAt:string;}>>([]);
+  const [showCampaignCreator, setShowCampaignCreator] = useState(false);
+  const [newCampaignTitle, setNewCampaignTitle] = useState('');
+  const [newCampaignDesc, setNewCampaignDesc] = useState('');
+  const [newCampaignBudget, setNewCampaignBudget] = useState('');
+  const [newCampaignDeadline, setNewCampaignDeadline] = useState('');
+  const [newCampaignProfessions, setNewCampaignProfessions] = useState<string[]>([]);
+  // Gap 4: deal lifecycle
+  type CreatorDealLifecycle = 'checklist'|'deliverables'|'submitted'|'approved';
+  type BrandApprovalPhase = 'accepted'|'reviewing'|'approved';
+  const [creatorDealLifecycle, setCreatorDealLifecycle] = useState<CreatorDealLifecycle>('checklist');
+  const [brandApprovalPhase, setBrandApprovalPhase] = useState<BrandApprovalPhase>('accepted');
+  const [dealUploadSimulated, setDealUploadSimulated] = useState(false);
+  const [completedDeals, setCompletedDeals] = useState<Array<{id:number;brand:string;amount:number;completedAt:string;deliverable:string;}>>([]);
+  // Gap 5: level-up
+  const [showLevelUpModal, setShowLevelUpModal] = useState(false);
+  const [levelUpFrom, setLevelUpFrom] = useState(1);
+  const [levelUpTo, setLevelUpTo] = useState(2);
+
   const [metrics, setMetrics] = useState({
     followers: 1243000, engagement: 6.8, dealsCompleted: 47,
     avgDealValue: 85000, onTimeRate: 99, brandRating: 4.87,
@@ -426,6 +452,25 @@ export default function InstagramDemoPage() {
     setTimeout(() => setPurchaseToast(null), 3000);
   };
 
+  const handleDealComplete = (earnedAmount: number, brandName: string, deliverable: string) => {
+    const updatedMetrics = {
+      ...metrics,
+      dealsCompleted: metrics.dealsCompleted + 1,
+      avgDealValue: Math.round((metrics.avgDealValue * metrics.dealsCompleted + earnedAmount * 100) / (metrics.dealsCompleted + 1)),
+    };
+    setMetrics(updatedMetrics);
+    const newLevel = levelsLoaded ? calculateLevel(updatedMetrics, levels) : currentLevel;
+    setCompletedDeals(prev => [...prev, { id: Date.now(), brand: brandName, amount: earnedAmount, completedAt: new Date().toLocaleDateString(), deliverable }]);
+    if (newLevel > currentLevel) {
+      setLevelUpFrom(currentLevel);
+      setLevelUpTo(newLevel);
+      setShowLevelUpModal(true);
+    } else {
+      setPurchaseToast('Deal complete — earnings added to your balance');
+      setTimeout(() => setPurchaseToast(null), 3000);
+    }
+  };
+
   // Which professions are already assigned (to show status in store)
   const assignedProfessions = new Set(
     Object.values(valueSkins).map(e => e?.profession).filter(Boolean) as string[]
@@ -445,6 +490,42 @@ export default function InstagramDemoPage() {
 
   return (
     <div style={{ background: C.bg, minHeight: '100vh', display: 'flex', color: C.text, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' }}>
+
+      {/* Level-Up Modal */}
+      {showLevelUpModal && (
+        <div style={{ position:'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.8)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:99999 }}>
+          <div style={{ background:C.surface, borderRadius:'16px', padding:'32px 24px', maxWidth:'360px', width:'90%', border:`1px solid ${C.border}`, textAlign:'center' }}>
+            <div style={{ width:'48px', height:'48px', borderRadius:'50%', background:'rgba(0,102,204,0.12)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 16px' }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+            </div>
+            <div style={{ fontSize:'20px', fontWeight:800, color:C.text, marginBottom:'6px' }}>Level Up</div>
+            <div style={{ fontSize:'13px', color:C.textSecondary, marginBottom:'20px' }}>You completed a deal and levelled up your reputation.</div>
+            <div style={{ display:'flex', justifyContent:'center', gap:'16px', marginBottom:'20px' }}>
+              <div style={{ textAlign:'center' }}>
+                <div style={{ fontSize:'11px', color:C.textMuted, marginBottom:'4px', textTransform:'uppercase', letterSpacing:'0.5px' }}>Previous</div>
+                <div style={{ fontSize:'24px', fontWeight:800, color:C.textSecondary }}>L{levelUpFrom}</div>
+              </div>
+              <div style={{ display:'flex', alignItems:'center', color:C.primary, fontSize:'20px', fontWeight:700 }}>&rarr;</div>
+              <div style={{ textAlign:'center' }}>
+                <div style={{ fontSize:'11px', color:C.textMuted, marginBottom:'4px', textTransform:'uppercase', letterSpacing:'0.5px' }}>New</div>
+                <div style={{ fontSize:'24px', fontWeight:800, color:C.primary }}>L{levelUpTo}</div>
+              </div>
+            </div>
+            <div style={{ background:C.surfaceAlt, borderRadius:'10px', padding:'12px 14px', marginBottom:'20px', textAlign:'left' }}>
+              <div style={{ fontSize:'11px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', marginBottom:'8px' }}>Benefits of Level {levelUpTo}</div>
+              {['Access to premium brands', '+15% rate negotiation power', 'Featured in top creators', 'Priority support'].map((b,i) => (
+                <div key={i} style={{ fontSize:'12px', color:C.text, padding:'4px 0', display:'flex', alignItems:'center', gap:'6px' }}>
+                  <div style={{ width:'4px', height:'4px', borderRadius:'50%', background:C.primary, flexShrink:0 }} />
+                  {b}
+                </div>
+              ))}
+            </div>
+            <button onClick={() => { setShowLevelUpModal(false); setPurchaseToast('Deal complete — earnings added to your balance'); setTimeout(() => setPurchaseToast(null), 3000); }} style={{ width:'100%', background:C.primary, border:'none', borderRadius:'8px', padding:'11px', color:'#fff', fontWeight:700, fontSize:'14px', cursor:'pointer' }}>
+              Continue
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Toast */}
       {purchaseToast && (
@@ -655,7 +736,7 @@ export default function InstagramDemoPage() {
 
               {/* Tabs */}
               <div style={{ borderTop: `1px solid ${C.border}`, display: 'flex' }}>
-                {['posts', 'reels', 'tagged', 'insights'].map((tab) => (
+                {['posts', 'reels', 'tagged', 'insights', 'deals'].map((tab) => (
                   <div key={tab} onClick={() => setActiveTab(tab)} style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', height: '44px', borderTop: activeTab === tab ? `2px solid ${tab === 'insights' ? C.primary : C.text}` : '2px solid transparent', color: activeTab === tab ? (tab === 'insights' ? C.primary : C.text) : C.textMuted, cursor: 'pointer', fontWeight: activeTab === tab ? '600' : 'normal', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                     {tab}
                   </div>
@@ -663,7 +744,7 @@ export default function InstagramDemoPage() {
               </div>
 
               {/* Post Grid — shown for posts/reels/tagged */}
-              {activeTab !== 'insights' && (
+              {activeTab !== 'insights' && activeTab !== 'deals' && (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1px', background: C.border }}>
                   {[...Array(9)].map((_, i) => (
                     <div key={i} onClick={() => toggleLike(i)} style={{ aspectRatio: '1/1', background: C.surface, position: 'relative', cursor: 'pointer', overflow: 'hidden' }}>
@@ -675,6 +756,37 @@ export default function InstagramDemoPage() {
                       )}
                     </div>
                   ))}
+                </div>
+              )}
+
+              {/* Deals Tab Content */}
+              {activeTab === 'deals' && (
+                <div style={{ padding:'20px' }}>
+                  <div style={{ fontSize:'13px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.6px', marginBottom:'14px' }}>Completed Deals</div>
+                  {completedDeals.length === 0 ? (
+                    <div style={{ textAlign:'center', padding:'40px 20px', color:C.textMuted }}>
+                      <div style={{ fontSize:'14px', marginBottom:'4px' }}>No completed deals yet</div>
+                      <div style={{ fontSize:'12px' }}>Complete a deal in the Marketplace to see it here.</div>
+                    </div>
+                  ) : (
+                    completedDeals.map((deal, i) => (
+                      <div key={i} style={{ background:C.card, borderRadius:'10px', padding:'14px', marginBottom:'10px', border:`1px solid ${C.border}` }}>
+                        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'6px' }}>
+                          <span style={{ fontSize:'13px', fontWeight:700, color:C.text }}>{deal.brand}</span>
+                          <span style={{ fontSize:'14px', fontWeight:800, color:'#2E7D32' }}>${deal.amount.toLocaleString()}</span>
+                        </div>
+                        <div style={{ fontSize:'11px', color:C.textSecondary, marginBottom:'4px' }}>{deal.deliverable}</div>
+                        <div style={{ display:'flex', justifyContent:'space-between' }}>
+                          <span style={{ fontSize:'10px', color:C.textMuted }}>Completed {deal.completedAt}</span>
+                          <span style={{ fontSize:'10px', fontWeight:700, color:'#2E7D32', background:'rgba(46,125,50,0.1)', padding:'2px 8px', borderRadius:'6px' }}>Approved</span>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                  <div style={{ marginTop:'16px', padding:'12px', background:'rgba(0,102,204,0.05)', borderRadius:'8px', border:`1px solid rgba(0,102,204,0.1)` }}>
+                    <div style={{ fontSize:'11px', fontWeight:700, color:C.text, marginBottom:'2px' }}>Total earned: ${completedDeals.reduce((s,d) => s+d.amount, 0).toLocaleString()}</div>
+                    <div style={{ fontSize:'11px', color:C.textSecondary }}>{completedDeals.length} deal{completedDeals.length !== 1 ? 's' : ''} completed</div>
+                  </div>
                 </div>
               )}
 
@@ -729,6 +841,7 @@ export default function InstagramDemoPage() {
 
                     {/* Trust level row */}
                     {visibleInsights.trustLevel && (
+                      <>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '12px', padding: '8px 10px', background: 'rgba(0,102,204,0.06)', borderRadius: '8px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -746,6 +859,12 @@ export default function InstagramDemoPage() {
                         </div>
                         <span style={{ fontSize: '12px', fontWeight: 700, color: C.primary }}>Level {currentLevel}</span>
                       </div>
+                      {currentLevel < 5 && (
+                        <div style={{ marginTop:'6px', fontSize:'11px', color:C.textMuted, textAlign:'center' }}>
+                          Complete more deals to reach Level {currentLevel + 1}
+                        </div>
+                      )}
+                      </>
                     )}
                   </div>
 
@@ -948,14 +1067,22 @@ export default function InstagramDemoPage() {
               {/* Layer 3a: Creator Marketplace */}
               {hasValueSkin && marketplaceRole === 'creator' && (
                 <>
-                  <div style={{ height: '60px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: '20px', paddingRight: '20px', fontWeight: 'bold', fontSize: '16px', background: C.surface }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      Marketplace
-                      <span style={{ fontSize: '11px', fontWeight: 600, color: '#2E7D32', background: 'rgba(46,125,50,0.1)', padding: '3px 8px', borderRadius: '6px' }}>Creator</span>
+                  <div style={{ borderBottom: `1px solid ${C.border}`, background: C.surface }}>
+                    <div style={{ height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: '20px', paddingRight: '20px', fontWeight: 'bold', fontSize: '16px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        Marketplace
+                        <span style={{ fontSize: '11px', fontWeight: 600, color: '#2E7D32', background: 'rgba(46,125,50,0.1)', padding: '3px 8px', borderRadius: '6px' }}>Creator</span>
+                      </div>
+                      <button onClick={() => { setMarketplaceRole('none'); setSelectedMarketplaceSkin(null); setNegotiatingOpp(null); setDealRoomPhase('brief'); }} style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: '6px', padding: '4px 10px', fontSize: '11px', color: C.textSecondary, cursor: 'pointer' }}>Switch Role</button>
                     </div>
-                    <button onClick={() => { setMarketplaceRole('none'); setSelectedMarketplaceSkin(null); setNegotiatingOpp(null); }} style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: '6px', padding: '4px 10px', fontSize: '11px', color: C.textSecondary, cursor: 'pointer' }}>Switch Role</button>
+                    <div style={{ display:'flex', padding:'0 20px', gap:'4px' }}>
+                      {(['opportunities','campaigns','applications'] as const).map(t => (
+                        <button key={t} onClick={() => setMarketplaceTab(t as any)} style={{ padding:'8px 14px', borderRadius:'6px 6px 0 0', fontSize:'12px', fontWeight:600, cursor:'pointer', background:marketplaceTab===t?C.bg:'none', color:marketplaceTab===t?C.primary:C.textSecondary, border:`1px solid ${marketplaceTab===t?C.border:'transparent'}`, borderBottom:marketplaceTab===t?`1px solid ${C.bg}`:'none', textTransform:'capitalize' }}>{t}</button>
+                      ))}
+                    </div>
                   </div>
-                  <div style={{ padding: '20px' }}>
+                  <div style={{ padding: '16px' }}>
+                    {marketplaceTab !== 'campaigns' && marketplaceTab !== 'applications' && (<>
                     {/* ValueSkin selector */}
                     <div style={{ marginBottom: '20px' }}>
                       <div style={{ fontSize: '12px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '10px' }}>Browse as</div>
@@ -1077,7 +1204,13 @@ export default function InstagramDemoPage() {
                                     )}
                                   </div>
 
-                                  {/* Brand's intent (declared before room opened) */}
+                                  {/* Brand identity + intent */}
+                                  {brandValueSkin && (
+                                    <div style={{ background:'rgba(230,81,0,0.06)', border:'1px solid rgba(230,81,0,0.15)', borderRadius:'8px', padding:'8px 12px', marginBottom:'10px', fontSize:'11px', color:C.textSecondary }}>
+                                      Brand identity: <strong style={{ color:C.text }}>{brandValueSkin}</strong>
+                                      {opp && (() => { const myProfs = Object.values(valueSkins).map(v=>v?.profession).filter(Boolean) as string[]; return myProfs.includes(brandValueSkin) ? <span style={{ marginLeft:'8px', color:'#2E7D32', fontWeight:700 }}>Matched</span> : <span style={{ marginLeft:'8px', color:'#E65100', fontWeight:700 }}>No shared ValueSkin</span>; })()}
+                                    </div>
+                                  )}
                                   <div style={{ fontSize: '11px', color: C.textMuted, marginBottom: '10px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                                     <span style={{ background: C.bg, padding: '2px 8px', borderRadius: '4px', border: `1px solid ${C.border}` }}>Intent: <strong style={{ color: C.text }}>Campaign</strong></span>
                                     <span style={{ background: C.bg, padding: '2px 8px', borderRadius: '4px', border: `1px solid ${C.border}` }}>Type: <strong style={{ color: C.text }}>{brandCampaignType}</strong></span>
@@ -1164,13 +1297,62 @@ export default function InstagramDemoPage() {
                                           {item.req && <span style={{ fontSize: '9px', color: C.primary, fontWeight: 700, textTransform: 'uppercase' }}>Required</span>}
                                         </div>
                                       ))}
-                                      <button onClick={() => { setNegotiatingOpp(null); setPurchaseToast('Deal finalised — proof-of-work upload unlocked'); setTimeout(() => setPurchaseToast(null), 3000); }} style={{ width: '100%', background: C.primary, border: 'none', padding: '10px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px', marginTop: '12px' }}>
+                                      <button onClick={() => { setDealRoomPhase('softhold'); setCreatorDealLifecycle('deliverables'); }} style={{ width: '100%', background: C.primary, border: 'none', padding: '10px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px', marginTop: '12px' }}>
                                         Confirm &amp; Finalise Deal
                                       </button>
                                     </>
                                   )}
 
-                                  {!['offer','counter','accepted','checklist'].includes(dealRoomPhase) && (
+                                  {dealRoomPhase === 'softhold' && creatorDealLifecycle === 'deliverables' && (
+                                    <>
+                                      <div style={{ fontSize:'11px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.6px', marginBottom:'10px' }}>Upload Deliverables</div>
+                                      <div style={{ background:C.bg, borderRadius:'8px', padding:'12px', border:`1px solid ${C.border}`, marginBottom:'12px' }}>
+                                        <div style={{ fontSize:'12px', fontWeight:600, color:C.text, marginBottom:'4px' }}>Deliverable: 1 x Instagram Reel</div>
+                                        <div style={{ fontSize:'11px', color:C.textMuted }}>Format: MP4, max 50MB</div>
+                                      </div>
+                                      <div style={{ background:'rgba(46,125,50,0.06)', border:'1px solid rgba(46,125,50,0.2)', borderRadius:'8px', padding:'10px', marginBottom:'12px', fontSize:'11px', color:C.textSecondary }}>
+                                        Brand payment on-hold: ${parseInt(dealCounterAmount || '5000').toLocaleString()} — released on approval
+                                      </div>
+                                      {!dealUploadSimulated ? (
+                                        <button onClick={() => { setDealUploadSimulated(true); setCreatorDealLifecycle('submitted'); }} style={{ width:'100%', background:C.primary, border:'none', padding:'10px', borderRadius:'8px', color:'#fff', fontWeight:600, cursor:'pointer', fontSize:'13px' }}>
+                                          Simulate Upload
+                                        </button>
+                                      ) : null}
+                                    </>
+                                  )}
+
+                                  {dealRoomPhase === 'softhold' && creatorDealLifecycle === 'submitted' && (
+                                    <>
+                                      <div style={{ background:'rgba(0,102,204,0.06)', border:`1px solid rgba(0,102,204,0.2)`, borderRadius:'8px', padding:'12px', marginBottom:'12px' }}>
+                                        <div style={{ fontSize:'13px', fontWeight:700, color:C.text, marginBottom:'4px' }}>Deliverable Submitted</div>
+                                        <div style={{ fontSize:'11px', color:C.textSecondary }}>Waiting for brand approval — typically within 48h.</div>
+                                      </div>
+                                      <button onClick={() => { setCreatorDealLifecycle('approved'); handleDealComplete(parseInt(dealCounterAmount || '5000'), 'Brand', '1x Instagram Reel'); }} style={{ width:'100%', background:'none', border:`1px solid ${C.border}`, padding:'8px', borderRadius:'8px', color:C.textMuted, fontSize:'11px', cursor:'pointer' }}>
+                                        Simulate: Brand approved
+                                      </button>
+                                    </>
+                                  )}
+
+                                  {dealRoomPhase === 'softhold' && creatorDealLifecycle === 'approved' && (
+                                    <>
+                                      <div style={{ textAlign:'center', padding:'12px 0' }}>
+                                        <div style={{ width:'40px', height:'40px', borderRadius:'50%', background:'rgba(46,125,50,0.1)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 10px' }}>
+                                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2E7D32" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                                        </div>
+                                        <div style={{ fontSize:'15px', fontWeight:700, color:C.text, marginBottom:'4px' }}>Deal Complete</div>
+                                        <div style={{ fontSize:'12px', color:C.textSecondary, marginBottom:'16px' }}>Your deliverable was approved.</div>
+                                        <div style={{ background:'rgba(46,125,50,0.06)', border:'1px solid rgba(46,125,50,0.2)', borderRadius:'8px', padding:'12px', marginBottom:'14px' }}>
+                                          <div style={{ fontSize:'11px', color:C.textMuted, marginBottom:'2px' }}>Earnings</div>
+                                          <div style={{ fontSize:'22px', fontWeight:800, color:'#2E7D32' }}>${parseInt(dealCounterAmount || '5000').toLocaleString()}</div>
+                                        </div>
+                                        <button onClick={() => { setNegotiatingOpp(null); setDealRoomPhase('brief'); setCreatorDealLifecycle('checklist'); setDealUploadSimulated(false); }} style={{ width:'100%', background:C.primary, border:'none', padding:'10px', borderRadius:'8px', color:'#fff', fontWeight:600, cursor:'pointer', fontSize:'13px' }}>
+                                          Withdraw to Bank
+                                        </button>
+                                      </div>
+                                    </>
+                                  )}
+
+                                  {!['offer','counter','accepted','checklist','softhold'].includes(dealRoomPhase) && (
                                     <button onClick={() => setNegotiatingOpp(null)} style={{ width: '100%', background: 'none', border: `1px solid ${C.border}`, padding: '8px', borderRadius: '8px', color: C.textSecondary, cursor: 'pointer', fontSize: '12px' }}>Close</button>
                                   )}
                                 </div>
@@ -1180,6 +1362,61 @@ export default function InstagramDemoPage() {
                         })}
                       </>
                     )}
+                    </>)}
+
+                    {marketplaceTab === 'campaigns' && (
+                      <div>
+                        <div style={{ fontSize:'12px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.6px', marginBottom:'14px' }}>Open Campaigns</div>
+                        {campaigns.filter(c=>c.status==='open').length === 0 ? (
+                          <div style={{ textAlign:'center', padding:'40px 20px', color:C.textMuted }}>No open campaigns available.</div>
+                        ) : campaigns.filter(c=>c.status==='open').map((c,i) => {
+                          const myProfs = Object.values(valueSkins).map(v=>v?.profession).filter(Boolean) as string[];
+                          const canApply = c.requiredProfessions.some(p => myProfs.includes(p));
+                          const alreadyApplied = myApplications.some(a=>a.campaignId===c.id);
+                          const matchingProf = myProfs.find(p=>c.requiredProfessions.includes(p)) ?? '';
+                          return (
+                            <div key={i} style={{ background:C.card, borderRadius:'12px', padding:'14px', marginBottom:'10px', border:`1px solid ${canApply?'rgba(0,102,204,0.25)':C.border}`, opacity:canApply?1:0.6 }}>
+                              <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'6px' }}>
+                                <span style={{ fontSize:'13px', fontWeight:700, color:C.text }}>{c.title}</span>
+                                <span style={{ fontSize:'12px', fontWeight:700, color:'#2E7D32' }}>${parseInt(c.budget).toLocaleString()}</span>
+                              </div>
+                              <div style={{ fontSize:'11px', color:C.textSecondary, marginBottom:'8px', lineHeight:1.4 }}>{c.description}</div>
+                              <div style={{ display:'flex', gap:'6px', flexWrap:'wrap', marginBottom:'8px' }}>
+                                {c.requiredProfessions.map(p => <span key={p} style={{ fontSize:'10px', fontWeight:600, color:myProfs.includes(p)?C.primary:C.textMuted, background:myProfs.includes(p)?`${C.primary}12`:C.surfaceAlt, padding:'2px 7px', borderRadius:'6px', border:`1px solid ${myProfs.includes(p)?`${C.primary}30`:C.border}` }}>{p}</span>)}
+                              </div>
+                              {c.deadline && <div style={{ fontSize:'10px', color:C.textMuted, marginBottom:'8px' }}>Deadline: {c.deadline}</div>}
+                              {canApply && !alreadyApplied && (
+                                <button onClick={() => { setMyApplications(prev=>[...prev,{id:Date.now(),campaignId:c.id,campaignTitle:c.title,creatorProfession:matchingProf,status:'pending' as const,appliedAt:new Date().toLocaleDateString()}]); setPurchaseToast('Application sent'); setTimeout(()=>setPurchaseToast(null),3000); setMarketplaceTab('applications' as any); }} style={{ width:'100%', background:C.primary, border:'none', borderRadius:'8px', padding:'9px', fontSize:'13px', fontWeight:600, color:'#fff', cursor:'pointer' }}>
+                                  Apply
+                                </button>
+                              )}
+                              {alreadyApplied && <div style={{ textAlign:'center', fontSize:'12px', color:'#2E7D32', fontWeight:600, padding:'8px', background:'rgba(46,125,50,0.06)', borderRadius:'8px' }}>Applied</div>}
+                              {!canApply && <div style={{ textAlign:'center', fontSize:'12px', color:C.textMuted, padding:'8px', background:C.surfaceAlt, borderRadius:'8px' }}>Requires: {c.requiredProfessions.join(' or ')} — get that ValueSkin to apply</div>}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {marketplaceTab === 'applications' && (
+                      <div>
+                        <div style={{ fontSize:'12px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.6px', marginBottom:'14px' }}>My Applications</div>
+                        {myApplications.length === 0 ? (
+                          <div style={{ textAlign:'center', padding:'40px 20px', color:C.textMuted }}>
+                            <div style={{ fontSize:'14px', marginBottom:'4px' }}>No applications yet</div>
+                            <div style={{ fontSize:'12px' }}>Browse the Campaigns tab to apply to open campaigns.</div>
+                          </div>
+                        ) : myApplications.map((app,i) => (
+                          <div key={i} style={{ background:C.card, borderRadius:'12px', padding:'14px', marginBottom:'10px', border:`1px solid ${C.border}` }}>
+                            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'6px' }}>
+                              <span style={{ fontSize:'13px', fontWeight:700, color:C.text }}>{app.campaignTitle}</span>
+                              <span style={{ fontSize:'10px', fontWeight:700, color:app.status==='pending'?'#f59e0b':app.status==='accepted'?'#2E7D32':'#ef4444', background:app.status==='pending'?'rgba(245,158,11,0.1)':app.status==='accepted'?'rgba(46,125,50,0.1)':'rgba(239,68,68,0.1)', padding:'2px 8px', borderRadius:'6px', textTransform:'uppercase' }}>{app.status}</span>
+                            </div>
+                            <div style={{ fontSize:'11px', color:C.textSecondary }}>Applied as {app.creatorProfession} · {app.appliedAt}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </>
               )}
@@ -1187,14 +1424,91 @@ export default function InstagramDemoPage() {
               {/* Layer 3b: Brand Marketplace */}
               {hasValueSkin && marketplaceRole === 'brand' && (
                 <>
-                  <div style={{ height: '60px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: '20px', paddingRight: '20px', fontWeight: 'bold', fontSize: '16px', background: C.surface }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      Marketplace
-                      <span style={{ fontSize: '11px', fontWeight: 600, color: '#E65100', background: 'rgba(230,81,0,0.1)', padding: '3px 8px', borderRadius: '6px' }}>Brand</span>
+                  <div style={{ borderBottom: `1px solid ${C.border}`, background: C.surface }}>
+                    <div style={{ height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: '20px', paddingRight: '20px', fontWeight: 'bold', fontSize: '16px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        Marketplace
+                        <span style={{ fontSize: '11px', fontWeight: 600, color: '#E65100', background: 'rgba(230,81,0,0.1)', padding: '3px 8px', borderRadius: '6px' }}>Brand</span>
+                      </div>
+                      <button onClick={() => { setMarketplaceRole('none'); setNegotiatingCreator(null); }} style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: '6px', padding: '4px 10px', fontSize: '11px', color: C.textSecondary, cursor: 'pointer' }}>Switch Role</button>
                     </div>
-                    <button onClick={() => { setMarketplaceRole('none'); setNegotiatingCreator(null); }} style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: '6px', padding: '4px 10px', fontSize: '11px', color: C.textSecondary, cursor: 'pointer' }}>Switch Role</button>
+                    <div style={{ display:'flex', padding:'0 20px 0', gap:'4px' }}>
+                      {(['creators','campaigns','applications'] as const).map(t => (
+                        <button key={t} onClick={() => setMarketplaceTab(t)} style={{ padding:'8px 14px', borderRadius:'6px 6px 0 0', fontSize:'12px', fontWeight:600, cursor:'pointer', background:marketplaceTab===t ? C.bg : 'none', color:marketplaceTab===t ? C.primary : C.textSecondary, border:`1px solid ${marketplaceTab===t ? C.border : 'transparent'}`, borderBottom:marketplaceTab===t ? `1px solid ${C.bg}` : 'none', textTransform:'capitalize' }}>{t}</button>
+                      ))}
+                    </div>
                   </div>
                   <div style={{ padding: '20px' }}>
+                    {/* New Campaign Creator Modal */}
+                    {showCampaignCreator && (
+                      <div style={{ position:'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.75)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:9999 }}>
+                        <div style={{ background:C.surface, borderRadius:'16px', padding:'24px', maxWidth:'480px', width:'90%', maxHeight:'85vh', overflowY:'auto', border:`1px solid ${C.border}`, position:'relative' }}>
+                          <button onClick={() => setShowCampaignCreator(false)} style={{ position:'absolute', top:'16px', right:'16px', background:'none', border:'none', color:C.textMuted, fontSize:'22px', cursor:'pointer', lineHeight:1 }}>x</button>
+                          <div style={{ fontSize:'16px', fontWeight:700, color:C.text, marginBottom:'16px' }}>Create Campaign</div>
+                          {[
+                            { label:'Campaign title', val:newCampaignTitle, set:setNewCampaignTitle, placeholder:'e.g. Spring Product Launch' },
+                          ].map(f => (
+                            <div key={f.label} style={{ marginBottom:'12px' }}>
+                              <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>{f.label} *</div>
+                              <input type="text" value={f.val} onChange={e=>f.set(e.target.value)} placeholder={f.placeholder} style={{ width:'100%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', color:C.text, padding:'8px 10px', fontSize:'13px', fontFamily:'inherit', outline:'none', boxSizing:'border-box' as const }} />
+                            </div>
+                          ))}
+                          <div style={{ marginBottom:'12px' }}>
+                            <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>Description *</div>
+                            <textarea value={newCampaignDesc} onChange={e=>setNewCampaignDesc(e.target.value)} rows={3} placeholder="Describe the campaign and what you need from creators" style={{ width:'100%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', color:C.text, padding:'8px 10px', fontSize:'13px', fontFamily:'inherit', outline:'none', resize:'none', boxSizing:'border-box' as const }} />
+                          </div>
+                          <div style={{ marginBottom:'12px' }}>
+                            <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'6px' }}>Required professions *</div>
+                            <div style={{ display:'flex', flexWrap:'wrap', gap:'6px' }}>
+                              {['Software Engineer','Data Scientist','UX/UI Designer','Fitness Coach','Nutritionist','Product Manager','Graphic Designer','Chef'].map(p => (
+                                <button key={p} onClick={() => setNewCampaignProfessions(prev => prev.includes(p) ? prev.filter(x=>x!==p) : [...prev,p])} style={{ padding:'5px 10px', borderRadius:'6px', fontSize:'11px', fontWeight:600, cursor:'pointer', background:newCampaignProfessions.includes(p)?`${C.primary}15`:C.bg, color:newCampaignProfessions.includes(p)?C.primary:C.textSecondary, border:`1px solid ${newCampaignProfessions.includes(p)?C.primary:C.border}` }}>{p}</button>
+                              ))}
+                            </div>
+                          </div>
+                          <div style={{ display:'flex', gap:'10px', marginBottom:'12px' }}>
+                            <div style={{ flex:1 }}>
+                              <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>Budget ($) *</div>
+                              <input type="text" value={newCampaignBudget} onChange={e=>setNewCampaignBudget(e.target.value.replace(/[^0-9]/g,''))} placeholder="5000" style={{ width:'100%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', color:C.text, padding:'8px 10px', fontSize:'13px', fontFamily:'inherit', outline:'none', boxSizing:'border-box' as const }} />
+                            </div>
+                            <div style={{ flex:1 }}>
+                              <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>Deadline</div>
+                              <input type="date" value={newCampaignDeadline} onChange={e=>setNewCampaignDeadline(e.target.value)} style={{ width:'100%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', color:C.text, padding:'8px 10px', fontSize:'13px', fontFamily:'inherit', outline:'none', boxSizing:'border-box' as const }} />
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => {
+                              if (!newCampaignTitle.trim() || !newCampaignDesc.trim() || !newCampaignBudget || newCampaignProfessions.length===0) { setPurchaseToast('Fill in all required fields'); setTimeout(()=>setPurchaseToast(null),3000); return; }
+                              setCampaigns(prev => [...prev, { id:Date.now(), brandProfession:brandValueSkin??'', title:newCampaignTitle, description:newCampaignDesc, requiredProfessions:newCampaignProfessions, budget:newCampaignBudget, deadline:newCampaignDeadline, status:'open' as const, applicants:0 }]);
+                              setShowCampaignCreator(false); setNewCampaignTitle(''); setNewCampaignDesc(''); setNewCampaignBudget(''); setNewCampaignDeadline(''); setNewCampaignProfessions([]);
+                              setMarketplaceTab('campaigns'); setPurchaseToast('Campaign published — waiting for applications'); setTimeout(()=>setPurchaseToast(null),3000);
+                            }}
+                            style={{ width:'100%', background:C.primary, border:'none', borderRadius:'8px', padding:'11px', color:'#fff', fontWeight:700, fontSize:'14px', cursor:'pointer' }}
+                          >
+                            Publish Campaign
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    {/* Brand Identity Card */}
+                    <div style={{ background:C.card, border:`1px solid ${brandValueSkin ? 'rgba(230,81,0,0.3)' : C.border}`, borderRadius:'12px', padding:'14px 16px', marginBottom:'14px' }}>
+                      <div style={{ fontSize:'10px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.6px', marginBottom:'8px' }}>Your Brand Identity</div>
+                      {brandValueSkin ? (
+                        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                          <div>
+                            <div style={{ fontSize:'14px', fontWeight:700, color:C.text }}>{brandValueSkin}</div>
+                            <div style={{ fontSize:'11px', color:C.textSecondary, marginTop:'2px' }}>You match with creators in this profession</div>
+                          </div>
+                          <button onClick={() => setShowBrandStoreModal(true)} style={{ background:'none', border:`1px solid ${C.border}`, borderRadius:'6px', padding:'5px 10px', fontSize:'11px', color:C.textSecondary, cursor:'pointer' }}>Change</button>
+                        </div>
+                      ) : (
+                        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                          <div style={{ fontSize:'12px', color:C.textMuted }}>No profession set — brands need a ValueSkin to contact creators</div>
+                          <button onClick={() => setShowBrandStoreModal(true)} style={{ background:C.primary, border:'none', borderRadius:'6px', padding:'6px 12px', fontSize:'11px', fontWeight:700, color:'#fff', cursor:'pointer' }}>Get ValueSkin</button>
+                        </div>
+                      )}
+                    </div>
+
+                    {marketplaceTab === 'creators' && (<>
                     {/* Matching Rule Banner */}
                     <div style={{ background: 'rgba(0,102,204,0.06)', border: `1px solid rgba(0,102,204,0.15)`, borderRadius: '10px', padding: '12px 16px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
@@ -1212,7 +1526,7 @@ export default function InstagramDemoPage() {
                           {savedSearches.map(s => (
                             <button key={s.id} onClick={() => { setBrandSearchMode('profession'); setBrandSearchQuery(s.profession); setFilterAudienceAge(s.age); setFilterAudienceLoc(s.loc); }}
                               style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '5px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', background: `${C.primary}15`, color: C.primary, border: `1px solid ${C.primary}40` }}>
-                              🔖 {s.label}
+                              {s.label}
                               <span onClick={e => { e.stopPropagation(); setSavedSearches(prev => prev.filter(x => x.id !== s.id)); }} style={{ marginLeft: '2px', color: C.textMuted, fontSize: '12px' }}>×</span>
                             </button>
                           ))}
@@ -1232,7 +1546,7 @@ export default function InstagramDemoPage() {
                           {savedDealTemplates.map(t => (
                             <button key={t.id} onClick={() => { setBrandBriefTitle(t.name); setBrandBriefDeliverables(t.deliverables); setBrandBudget(t.budget); setBrandCampaignType(t.type); }}
                               style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '5px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', background: 'rgba(230,81,0,0.08)', color: '#E65100', border: '1px solid rgba(230,81,0,0.25)' }}>
-                              📋 {t.name}
+                              {t.name}
                             </button>
                           ))}
                         </div>
@@ -1585,21 +1899,46 @@ export default function InstagramDemoPage() {
                           </div>
 
                           {!isNegotiating ? (
-                            <button
-                              onClick={() => { setNegotiatingCreator(i); setBrandDealPhase('brief'); setBrandBriefTitle(''); setBrandBriefDeliverables(''); setBrandBudget('4000'); setBrandDealIntent('campaign'); }}
-                              style={{ background: creator.featured ? C.primary : C.surfaceAlt, border: creator.featured ? 'none' : `1px solid ${C.border}`, padding: '10px 16px', borderRadius: '8px', color: '#fff', fontWeight: '600', cursor: 'pointer', width: '100%', fontSize: '14px' }}
-                            >
-                              Send Proposal
-                            </button>
+                            (() => {
+                              const hasMatch = brandValueSkin === creator.valueSkin;
+                              const noBrandSkin = !brandValueSkin;
+                              return (
+                                <div>
+                                  {!hasMatch && !noBrandSkin && (
+                                    <div style={{ background:'rgba(230,81,0,0.06)', border:'1px solid rgba(230,81,0,0.2)', borderRadius:'8px', padding:'8px 10px', marginBottom:'8px', fontSize:'11px', color:'#E65100' }}>
+                                      No shared ValueSkin — you are {brandValueSkin}, this creator is {creator.valueSkin}
+                                    </div>
+                                  )}
+                                  {noBrandSkin && (
+                                    <div style={{ background:'rgba(230,81,0,0.06)', border:'1px solid rgba(230,81,0,0.2)', borderRadius:'8px', padding:'8px 10px', marginBottom:'8px', fontSize:'11px', color:'#E65100' }}>
+                                      Get a brand ValueSkin to contact creators
+                                    </div>
+                                  )}
+                                  <button
+                                    onClick={() => {
+                                      if (noBrandSkin) { setPurchaseToast('Get a brand ValueSkin first'); setTimeout(() => setPurchaseToast(null), 3000); return; }
+                                      if (!hasMatch) { setPurchaseToast('No shared ValueSkin with this creator'); setTimeout(() => setPurchaseToast(null), 3000); return; }
+                                      setNegotiatingCreator(i); setBrandDealPhase('brief'); setBrandBriefTitle(''); setBrandBriefDeliverables(''); setBrandBudget('4000'); setBrandDealIntent('campaign');
+                                    }}
+                                    style={{ background: hasMatch ? (creator.featured ? C.primary : C.surfaceAlt) : C.surfaceAlt, border: hasMatch && creator.featured ? 'none' : `1px solid ${hasMatch ? C.border : 'rgba(230,81,0,0.3)'}`, padding: '10px 16px', borderRadius: '8px', color: hasMatch ? '#fff' : '#E65100', fontWeight: '600', cursor: 'pointer', width: '100%', fontSize: '14px', opacity: hasMatch ? 1 : 0.7 }}
+                                  >
+                                    {noBrandSkin ? 'No ValueSkin' : hasMatch ? 'Send Proposal' : 'No Shared ValueSkin'}
+                                  </button>
+                                </div>
+                              );
+                            })()
                           ) : (
                             <div style={{ background: C.surfaceAlt, borderRadius: '10px', padding: '14px', border: `1px solid rgba(230,81,0,0.3)` }}>
                               {/* Deal Room Header */}
                               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                                <div style={{ fontSize: '11px', fontWeight: 700, color: '#E65100', textTransform: 'uppercase', letterSpacing: '0.6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#E65100" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                                  </svg>
-                                  Deal Room
+                                <div>
+                                  <div style={{ fontSize: '11px', fontWeight: 700, color: '#E65100', textTransform: 'uppercase', letterSpacing: '0.6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#E65100" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                                    </svg>
+                                    Deal Room
+                                  </div>
+                                  {brandValueSkin && <div style={{ fontSize:'10px', color:C.textMuted, marginTop:'2px' }}>Your identity: {brandValueSkin}</div>}
                                 </div>
                                 {brandDealPhase === 'pending' && (
                                   <div style={{ fontSize: '10px', color: '#E65100', background: 'rgba(230,81,0,0.1)', padding: '2px 8px', borderRadius: '10px', fontWeight: 600 }}>
@@ -1827,7 +2166,7 @@ export default function InstagramDemoPage() {
 
                                   <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
                                     <button
-                                      onClick={() => { setBrandDealPhase('accepted'); setPurchaseToast('Deal accepted — escrow stages unlocked'); setTimeout(() => setPurchaseToast(null), 3000); }}
+                                      onClick={() => { setBrandDealPhase('accepted'); setBrandApprovalPhase('accepted'); setPurchaseToast('Deal accepted — review deliverables when creator uploads'); setTimeout(() => setPurchaseToast(null), 3000); }}
                                       style={{ flex: 1, background: '#2E7D32', border: 'none', padding: '9px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}
                                     >
                                       Accept ${simulatedCounterAmount}
@@ -1905,12 +2244,54 @@ export default function InstagramDemoPage() {
                                     ))}
                                   </div>
 
-                                  <button
-                                    onClick={() => { setNegotiatingCreator(null); setBrandDealPhase('brief'); }}
-                                    style={{ width: '100%', background: '#2E7D32', border: 'none', padding: '9px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}
-                                  >
-                                    Proceed to Escrow
-                                  </button>
+                                  {brandApprovalPhase === 'accepted' && (
+                                    <button
+                                      onClick={() => setBrandApprovalPhase('reviewing')}
+                                      style={{ width: '100%', background: '#2E7D32', border: 'none', padding: '9px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}
+                                    >
+                                      Proceed to Escrow — Review Deliverables
+                                    </button>
+                                  )}
+                                  {brandApprovalPhase === 'reviewing' && (
+                                    <div style={{ marginTop:'12px' }}>
+                                      <div style={{ fontSize:'11px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'10px' }}>Review Creator Deliverables</div>
+                                      <div style={{ background:C.bg, borderRadius:'8px', padding:'12px', border:`1px solid ${C.border}`, marginBottom:'10px' }}>
+                                        <div style={{ fontSize:'12px', fontWeight:600, color:C.text, marginBottom:'4px' }}>Deliverable: 1x Instagram Reel</div>
+                                        <div style={{ fontSize:'11px', color:C.textSecondary, marginBottom:'8px' }}>Submitted 2 hours ago</div>
+                                        <div style={{ display:'flex', gap:'6px' }}>
+                                          <button style={{ flex:1, background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:'6px', padding:'5px', fontSize:'11px', color:C.text, cursor:'pointer' }}>View File</button>
+                                          <button style={{ flex:1, background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:'6px', padding:'5px', fontSize:'11px', color:C.text, cursor:'pointer' }}>Download</button>
+                                        </div>
+                                      </div>
+                                      <div style={{ display:'flex', gap:'8px' }}>
+                                        <button
+                                          onClick={() => { setBrandApprovalPhase('approved'); setPurchaseToast('Deliverable approved — payment released'); setTimeout(() => setPurchaseToast(null), 3000); }}
+                                          style={{ flex:1, background:'#2E7D32', border:'none', padding:'9px', borderRadius:'8px', color:'#fff', fontWeight:600, cursor:'pointer', fontSize:'13px' }}
+                                        >
+                                          Approve
+                                        </button>
+                                        <button
+                                          onClick={() => { setPurchaseToast('Revision requested — creator notified'); setTimeout(() => setPurchaseToast(null), 3000); }}
+                                          style={{ flex:1, background:'none', border:`1px solid ${C.border}`, padding:'9px', borderRadius:'8px', color:C.textSecondary, fontWeight:600, cursor:'pointer', fontSize:'13px' }}
+                                        >
+                                          Request Revision
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
+                                  {brandApprovalPhase === 'approved' && (
+                                    <div style={{ textAlign:'center', padding:'12px 0', marginTop:'12px' }}>
+                                      <div style={{ width:'36px', height:'36px', borderRadius:'50%', background:'rgba(46,125,50,0.1)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 8px' }}>
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2E7D32" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                                      </div>
+                                      <div style={{ fontSize:'14px', fontWeight:700, color:C.text, marginBottom:'4px' }}>Deal Complete</div>
+                                      <div style={{ fontSize:'12px', color:C.textSecondary, marginBottom:'12px' }}>Payment released: ${parseInt(simulatedCounterAmount).toLocaleString()}</div>
+                                      <div style={{ display:'flex', gap:'6px' }}>
+                                        <button onClick={() => setPurchaseToast('Rating submitted — thank you')} style={{ flex:1, background:C.surfaceAlt, border:`1px solid ${C.border}`, padding:'8px', borderRadius:'8px', color:C.text, fontSize:'12px', cursor:'pointer' }}>Rate Creator</button>
+                                        <button onClick={() => { setNegotiatingCreator(null); setBrandDealPhase('brief'); setBrandApprovalPhase('accepted'); }} style={{ flex:1, background:C.primary, border:'none', padding:'8px', borderRadius:'8px', color:'#fff', fontWeight:600, fontSize:'12px', cursor:'pointer' }}>Done</button>
+                                      </div>
+                                    </div>
+                                  )}
                                 </>
                               )}
                             </div>
@@ -1942,6 +2323,66 @@ export default function InstagramDemoPage() {
                         </>
                       );
                     })()}
+                    </>)}
+
+                    {marketplaceTab === 'campaigns' && (
+                      <div>
+                        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'14px' }}>
+                          <div style={{ fontSize:'12px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.6px' }}>Your Campaigns</div>
+                          <button onClick={() => setShowCampaignCreator(true)} style={{ background:C.primary, border:'none', borderRadius:'6px', padding:'6px 12px', fontSize:'12px', fontWeight:700, color:'#fff', cursor:'pointer' }}>+ New Campaign</button>
+                        </div>
+                        {campaigns.length === 0 ? (
+                          <div style={{ textAlign:'center', padding:'40px 20px', color:C.textMuted }}>
+                            <div style={{ fontSize:'14px', marginBottom:'4px' }}>No campaigns yet</div>
+                            <div style={{ fontSize:'12px' }}>Create a campaign to start receiving creator applications.</div>
+                          </div>
+                        ) : campaigns.map((c,i) => (
+                          <div key={i} style={{ background:C.card, borderRadius:'12px', padding:'14px', marginBottom:'10px', border:`1px solid ${C.border}` }}>
+                            <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'6px' }}>
+                              <span style={{ fontSize:'13px', fontWeight:700, color:C.text }}>{c.title}</span>
+                              <span style={{ fontSize:'12px', fontWeight:700, color:'#2E7D32' }}>${parseInt(c.budget).toLocaleString()}</span>
+                            </div>
+                            <div style={{ fontSize:'11px', color:C.textSecondary, marginBottom:'8px', lineHeight:1.4 }}>{c.description}</div>
+                            <div style={{ display:'flex', gap:'6px', flexWrap:'wrap', marginBottom:'8px' }}>
+                              {c.requiredProfessions.map(p => <span key={p} style={{ fontSize:'10px', fontWeight:600, color:C.primary, background:`${C.primary}12`, padding:'2px 7px', borderRadius:'6px', border:`1px solid ${C.primary}30` }}>{p}</span>)}
+                            </div>
+                            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                              <span style={{ fontSize:'10px', color:C.textMuted }}>{c.applicants} applicant{c.applicants!==1?'s':''} · {c.deadline ? `Deadline ${c.deadline}` : 'No deadline'}</span>
+                              <span style={{ fontSize:'10px', fontWeight:700, color:'#2E7D32', background:'rgba(46,125,50,0.1)', padding:'2px 8px', borderRadius:'6px', textTransform:'uppercase' }}>{c.status}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {marketplaceTab === 'applications' && (
+                      <div>
+                        <div style={{ fontSize:'12px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.6px', marginBottom:'14px' }}>Applications Received</div>
+                        {myApplications.filter(a => campaigns.some(c => c.id===a.campaignId)).length === 0 ? (
+                          <div style={{ textAlign:'center', padding:'40px 20px', color:C.textMuted }}>
+                            <div style={{ fontSize:'14px', marginBottom:'4px' }}>No applications yet</div>
+                            <div style={{ fontSize:'12px' }}>Creators will appear here once they apply to your campaigns.</div>
+                          </div>
+                        ) : myApplications.map((app,i) => {
+                          const camp = campaigns.find(c=>c.id===app.campaignId);
+                          return (
+                            <div key={i} style={{ background:C.card, borderRadius:'12px', padding:'14px', marginBottom:'10px', border:`1px solid ${C.border}` }}>
+                              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'6px' }}>
+                                <span style={{ fontSize:'13px', fontWeight:700, color:C.text }}>Creator ({app.creatorProfession})</span>
+                                <span style={{ fontSize:'10px', fontWeight:700, color:app.status==='pending'?'#f59e0b':app.status==='accepted'?'#2E7D32':'#ef4444', background:app.status==='pending'?'rgba(245,158,11,0.1)':app.status==='accepted'?'rgba(46,125,50,0.1)':'rgba(239,68,68,0.1)', padding:'2px 8px', borderRadius:'6px', textTransform:'uppercase' }}>{app.status}</span>
+                              </div>
+                              <div style={{ fontSize:'11px', color:C.textSecondary, marginBottom:'8px' }}>Campaign: {camp?.title} · Applied {app.appliedAt}</div>
+                              {app.status === 'pending' && (
+                                <div style={{ display:'flex', gap:'6px' }}>
+                                  <button onClick={() => { setMyApplications(prev => prev.map(a=>a.id===app.id?{...a,status:'accepted' as const}:a)); setPurchaseToast('Application accepted — creator notified'); setTimeout(()=>setPurchaseToast(null),3000); }} style={{ flex:1, background:'#2E7D32', border:'none', borderRadius:'6px', padding:'7px', fontSize:'12px', fontWeight:600, color:'#fff', cursor:'pointer' }}>Accept</button>
+                                  <button onClick={() => { setMyApplications(prev => prev.map(a=>a.id===app.id?{...a,status:'rejected' as const}:a)); setPurchaseToast('Application declined'); setTimeout(()=>setPurchaseToast(null),3000); }} style={{ flex:1, background:'none', border:`1px solid ${C.border}`, borderRadius:'6px', padding:'7px', fontSize:'12px', fontWeight:600, color:C.textSecondary, cursor:'pointer' }}>Decline</button>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </>
               )}
