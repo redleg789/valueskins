@@ -1,24 +1,137 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+
+interface LoginResponse {
+    token: string;
+    user: {
+        id: number;
+        instagram_user_id: string;
+        username: string;
+        display_name: string;
+        avatar_url: string | null;
+        role: string;
+        persona_id: number | null;
+    };
+}
 
 /**
  * OAuth Callback Handler
- * 
- * Handles OAuth callbacks from Twitter, Instagram, etc.
- * Verifies the connection and updates the user's profile.
+ *
+ * Handles the Instagram OAuth redirect. Extracts the authorization code
+ * from the URL, exchanges it with the backend for a JWT, persists the
+ * session, and redirects to /demo/instagram.
+ *
+ * Security notes:
+ *  - The code exchange happens server-side (POST /auth/login).
+ *  - State parameter is validated to prevent CSRF.
+ *  - Token is stored via the shared HttpClient.setToken path (localStorage).
+ *  - The authorization code is single-use; replaying it will fail.
  */
-
 export default function OAuthCallbackPage() {
+    const searchParams = useSearchParams();
     const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
-    const [platform, setPlatform] = useState<string>('');
-    const [error, setError] = useState<string>('');
+    const [errorMessage, setErrorMessage] = useState<string>('');
+    // Prevent double-execution in React StrictMode dev re-renders
+    const exchangeAttempted = useRef(false);
 
-    // In real implementation, this would:
-    // 1. Extract code from URL params
-    // 2. Call backend to exchange code for token
-    // 3. Fetch user info and verify ownership
-    // 4. Update persona with verified connection
+    useEffect(() => {
+        if (exchangeAttempted.current) return;
+        exchangeAttempted.current = true;
+
+        async function exchangeCode() {
+            const code = searchParams.get('code');
+            const state = searchParams.get('state');
+            const errorParam = searchParams.get('error');
+            const errorDescription = searchParams.get('error_description');
+
+            // Instagram redirects with ?error=... when user denies access
+            if (errorParam) {
+                setErrorMessage(errorDescription || errorParam || 'Authorization was denied.');
+                setStatus('error');
+                return;
+            }
+
+            if (!code) {
+                setErrorMessage('Missing authorization code. Please try logging in again.');
+                setStatus('error');
+                return;
+            }
+
+            // Validate CSRF state if one was stored before redirect
+            if (typeof window !== 'undefined') {
+                const storedState = sessionStorage.getItem('oauth_state');
+                if (storedState && state !== storedState) {
+                    setErrorMessage('State mismatch. Possible CSRF attack. Please try again.');
+                    setStatus('error');
+                    return;
+                }
+                // Clean up stored state regardless of outcome
+                sessionStorage.removeItem('oauth_state');
+            }
+
+            // Determine the redirect_uri that was used to initiate the OAuth flow.
+            // This must match exactly what was sent to Instagram's authorize endpoint.
+            const redirectUri = `${window.location.origin}/auth/callback`;
+
+            // Retrieve stored role preference (defaults to 'creator')
+            const storedRole = (typeof window !== 'undefined'
+                ? localStorage.getItem('valueskins_pending_role')
+                : null) || 'creator';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        code,
+                        redirect_uri: redirectUri,
+                        role: storedRole,
+                    }),
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    const msg = errorData.error || `Server returned HTTP ${response.status}`;
+                    setErrorMessage(msg);
+                    setStatus('error');
+                    return;
+                }
+
+                const data: LoginResponse = await response.json();
+
+                // Persist JWT token
+                if (data.token) {
+                    localStorage.setItem('valueskins_token', data.token);
+                }
+
+                // Persist user profile
+                if (data.user) {
+                    localStorage.setItem('valueskins_user', JSON.stringify(data.user));
+                }
+
+                // Clean up pending role
+                localStorage.removeItem('valueskins_pending_role');
+
+                setStatus('success');
+
+                // Redirect to the Instagram demo page after a brief moment
+                // so the success state is visible
+                setTimeout(() => {
+                    window.location.href = '/demo/instagram';
+                }, 800);
+            } catch (err) {
+                const message = err instanceof Error ? err.message : 'Network error during login.';
+                setErrorMessage(message);
+                setStatus('error');
+            }
+        }
+
+        exchangeCode();
+    }, [searchParams]);
 
     return (
         <div style={{
@@ -49,67 +162,81 @@ export default function OAuthCallbackPage() {
                             animation: 'spin 1s linear infinite',
                             margin: '0 auto 1.5rem'
                         }} />
-                        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.5rem' }}>Verifying Connection...</h1>
-                        <p style={{ color: '#a1a1aa' }}>Please wait while we verify your account.</p>
+                        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.5rem' }}>
+                            Verifying Connection...
+                        </h1>
+                        <p style={{ color: '#a1a1aa' }}>
+                            Exchanging authorization with Instagram. Please wait.
+                        </p>
                     </>
                 )}
 
                 {status === 'success' && (
                     <>
                         <div style={{
-                            fontSize: '4rem',
-                            marginBottom: '1rem'
-                        }}>✅</div>
+                            width: '60px',
+                            height: '60px',
+                            borderRadius: '50%',
+                            background: 'rgba(34,197,94,0.15)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            margin: '0 auto 1.5rem',
+                            fontSize: '1.5rem',
+                            color: '#22c55e',
+                            fontWeight: 700,
+                        }}>
+                            OK
+                        </div>
                         <h1 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.5rem' }}>
-                            {platform} Connected!
+                            Instagram Connected
                         </h1>
                         <p style={{ color: '#a1a1aa', marginBottom: '2rem' }}>
-                            Your account has been verified and added to your profile.
+                            Your account has been verified. Redirecting...
                         </p>
-                        <button
-                            onClick={() => window.location.href = '/profile'}
-                            style={{
-                                padding: '1rem 2rem',
-                                background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
-                                border: 'none',
-                                borderRadius: '12px',
-                                color: 'white',
-                                fontWeight: 600,
-                                cursor: 'pointer'
-                            }}
-                        >
-                            Go to Profile →
-                        </button>
                     </>
                 )}
 
                 {status === 'error' && (
                     <>
                         <div style={{
-                            fontSize: '4rem',
-                            marginBottom: '1rem'
-                        }}>❌</div>
+                            width: '60px',
+                            height: '60px',
+                            borderRadius: '50%',
+                            background: 'rgba(239,68,68,0.15)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            margin: '0 auto 1.5rem',
+                            fontSize: '1.2rem',
+                            color: '#ef4444',
+                            fontWeight: 700,
+                        }}>
+                            ERR
+                        </div>
                         <h1 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.5rem' }}>
                             Connection Failed
                         </h1>
-                        <p style={{ color: '#ef4444', marginBottom: '1rem' }}>{error}</p>
+                        <p style={{ color: '#ef4444', marginBottom: '1rem' }}>{errorMessage}</p>
                         <p style={{ color: '#a1a1aa', marginBottom: '2rem' }}>
                             Please try again or contact support if the issue persists.
                         </p>
-                        <button
-                            onClick={() => window.location.href = '/profile'}
+                        <a
+                            href="/demo/instagram"
                             style={{
+                                display: 'inline-block',
                                 padding: '1rem 2rem',
                                 background: 'rgba(255,255,255,0.1)',
                                 border: '1px solid rgba(255,255,255,0.2)',
                                 borderRadius: '12px',
                                 color: 'white',
                                 fontWeight: 600,
-                                cursor: 'pointer'
+                                cursor: 'pointer',
+                                textDecoration: 'none',
                             }}
                         >
-                            Back to Profile
-                        </button>
+                            Back to Login
+                        </a>
                     </>
                 )}
             </div>

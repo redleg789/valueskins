@@ -22,6 +22,13 @@ pub struct MatchingService {
     pool: PgPool,
 }
 
+/// Result of a fraud rule threshold lookup.
+/// Contains the threshold value and the action to take when exceeded.
+struct FraudRuleThreshold {
+    threshold: f64,
+    action: String,
+}
+
 impl MatchingService {
     /// Compute the effective creator level for a given platform.
     /// Applies C-Suite advantage if the platform has it enabled and
@@ -99,15 +106,81 @@ impl MatchingService {
         Self { pool }
     }
 
+    /// Lookup a fraud rule threshold from the admin-configurable fraud_rules table.
+    /// Returns None if the rule does not exist or is disabled.
+    async fn get_fraud_rule_threshold(
+        &self,
+        rule_name: &str,
+    ) -> Option<FraudRuleThreshold> {
+        let row: Option<(f64, String)> = sqlx::query_as(
+            "SELECT threshold_value::float8, action FROM fraud_rules WHERE rule_name = $1 AND enabled = TRUE"
+        )
+        .bind(rule_name)
+        .fetch_optional(&self.pool)
+        .await
+        .ok()?;
+
+        row.map(|(threshold, action)| FraudRuleThreshold { threshold, action })
+    }
+
+    /// Check and enforce discovery scan rate limit for a user.
+    /// Uses the discovery_rate_limits table with a 1-hour sliding window.
+    /// Returns Ok(()) if allowed, Err(MatchingError::RateLimited) if blocked.
+    async fn enforce_discovery_rate_limit(
+        &self,
+        user_id: i64,
+    ) -> Result<(), MatchingError> {
+        let threshold = self.get_fraud_rule_threshold("max_discovery_scans_per_hour").await;
+        let max_scans = threshold.map(|t| t.threshold as i64).unwrap_or(100);
+
+        // UPSERT: reset window if older than 1 hour, otherwise increment
+        let scan_count: i64 = sqlx::query_scalar(
+            r#"
+            INSERT INTO discovery_rate_limits (user_id, scan_count, window_start)
+            VALUES ($1, 1, NOW())
+            ON CONFLICT (user_id) DO UPDATE SET
+                scan_count = CASE
+                    WHEN discovery_rate_limits.window_start < NOW() - INTERVAL '1 hour'
+                    THEN 1
+                    ELSE discovery_rate_limits.scan_count + 1
+                END,
+                window_start = CASE
+                    WHEN discovery_rate_limits.window_start < NOW() - INTERVAL '1 hour'
+                    THEN NOW()
+                    ELSE discovery_rate_limits.window_start
+                END
+            RETURNING scan_count
+            "#
+        )
+        .bind(user_id)
+        .fetch_one(&self.pool)
+        .await
+        .map_err(MatchingError::Database)?;
+
+        if scan_count > max_scans {
+            return Err(MatchingError::RateLimited {
+                limit: max_scans,
+                window: "1 hour".to_string(),
+            });
+        }
+
+        Ok(())
+    }
+
     /// Brand discovers creators — filtered by ValuSkin match.
     ///
     /// Returns ONLY creators whose persona_professions.profession matches
     /// the brand's specified profession. This is the core matching gate.
+    ///
+    /// Enforces discovery rate limiting before returning results.
     pub async fn discover_creators(
         &self,
         brand_user_id: i64,
         query: &DiscoverCreatorsQuery,
     ) -> Result<Vec<MatchedCreator>, MatchingError> {
+        // Fraud prevention gate: enforce discovery scan rate limit
+        self.enforce_discovery_rate_limit(brand_user_id).await?;
+
         let profession = query.profession.as_deref()
             .ok_or(MatchingError::NoProfessionSpecified)?;
         let min_level = query.min_level.unwrap_or(1).max(1).min(5);
