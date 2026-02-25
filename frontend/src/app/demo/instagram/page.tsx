@@ -389,20 +389,101 @@ export default function InstagramDemoPage() {
   const [adminAllowLongTermContracts, setAdminAllowLongTermContracts] = useState(true);
   const [adminSavedFeaturesTab, setAdminSavedFeaturesTab] = useState(false);
 
-  // Gap 1-5 state
+  // Campaign type — shared across tabs via localStorage
+  type Campaign = {
+    id: number;
+    brandProfession: string;
+    title: string;
+    description: string;
+    requiredProfessions: string[];
+    minLevel: number;
+    budget: string;
+    deadline: string;
+    location: string;
+    nonNegotiables: string[];
+    deliverables: string;
+    status: 'open' | 'closed';
+    applicants: number;
+  };
+
+  // Application type — shared across tabs via localStorage
+  type SharedApplication = {
+    id: number;
+    campaignId: number;
+    campaignTitle: string;
+    creatorProfession: string;
+    creatorHandle: string;
+    status: 'pending' | 'accepted' | 'rejected';
+    appliedAt: string;
+  };
+
+  const STORAGE_KEY_CAMPAIGNS = 'vs_demo_campaigns';
+  const STORAGE_KEY_APPLICATIONS = 'vs_demo_applications';
+  const BC_NAME = 'vs_demo_sync';
+
+  const defaultCampaigns: Campaign[] = [
+    { id:1, brandProfession:'Software Engineer', title:'React Expert for SaaS Launch', description:'We need an authentic Software Engineer to demo our dev tool to a tech audience. 2x Reels.', requiredProfessions:['Software Engineer','Data Scientist'], minLevel:2, budget:'5000', deadline:'2026-03-15', location:'USA', nonNegotiables:['NDA required','Usage rights: 90 days'], deliverables:'2x Instagram Reels', status:'open', applicants:3 },
+    { id:2, brandProfession:'UX/UI Designer', title:'Mobile App Design Review', description:'UI/UX designer to review and showcase our new mobile app. 1x Reel, 3x Stories.', requiredProfessions:['UX/UI Designer','Product Manager'], minLevel:1, budget:'4500', deadline:'2026-03-20', location:'Remote', nonNegotiables:['Exclusivity: 30 days'], deliverables:'1x Reel, 3x Stories', status:'open', applicants:1 },
+    { id:3, brandProfession:'Fitness Coach', title:'Spring Fitness Challenge', description:'Fitness coach to lead a 7-day challenge campaign. 3x Reels.', requiredProfessions:['Fitness Coach','Nutritionist'], minLevel:1, budget:'3800', deadline:'2026-04-01', location:'Remote', nonNegotiables:[], deliverables:'3x Instagram Reels', status:'open', applicants:2 },
+  ];
+
+  const loadCampaigns = (): Campaign[] => {
+    if (typeof window === 'undefined') return defaultCampaigns;
+    try { const s = localStorage.getItem(STORAGE_KEY_CAMPAIGNS); return s ? JSON.parse(s) : defaultCampaigns; } catch { return defaultCampaigns; }
+  };
+  const loadApplications = (): SharedApplication[] => {
+    if (typeof window === 'undefined') return [];
+    try { const s = localStorage.getItem(STORAGE_KEY_APPLICATIONS); return s ? JSON.parse(s) : []; } catch { return []; }
+  };
+
   const [marketplaceTab, setMarketplaceTab] = useState<'creators' | 'campaigns' | 'applications'>('creators');
-  const [campaigns, setCampaigns] = useState<Array<{id:number;brandProfession:string;title:string;description:string;requiredProfessions:string[];budget:string;deadline:string;status:'open'|'closed';applicants:number;}>>([
-    { id:1, brandProfession:'Software Engineer', title:'React Expert for SaaS Launch', description:'We need an authentic Software Engineer to demo our dev tool to a tech audience. 2x Reels.', requiredProfessions:['Software Engineer','Data Scientist'], budget:'5000', deadline:'2026-03-15', status:'open' as const, applicants:3 },
-    { id:2, brandProfession:'UX/UI Designer', title:'Mobile App Design Review', description:'UI/UX designer to review and showcase our new mobile app. 1x Reel, 3x Stories.', requiredProfessions:['UX/UI Designer','Product Manager'], budget:'4500', deadline:'2026-03-20', status:'open' as const, applicants:1 },
-    { id:3, brandProfession:'Fitness Coach', title:'Spring Fitness Challenge', description:'Fitness coach to lead a 7-day challenge campaign. 3x Reels.', requiredProfessions:['Fitness Coach','Nutritionist'], budget:'3800', deadline:'2026-04-01', status:'open' as const, applicants:2 },
-  ]);
-  const [myApplications, setMyApplications] = useState<Array<{id:number;campaignId:number;campaignTitle:string;creatorProfession:string;status:'pending'|'accepted'|'rejected';appliedAt:string;}>>([]);
+  const [campaigns, setCampaigns] = useState<Campaign[]>(defaultCampaigns);
+  const [sharedApplications, setSharedApplications] = useState<SharedApplication[]>([]);
   const [showCampaignCreator, setShowCampaignCreator] = useState(false);
   const [newCampaignTitle, setNewCampaignTitle] = useState('');
   const [newCampaignDesc, setNewCampaignDesc] = useState('');
   const [newCampaignBudget, setNewCampaignBudget] = useState('');
   const [newCampaignDeadline, setNewCampaignDeadline] = useState('');
   const [newCampaignProfessions, setNewCampaignProfessions] = useState<string[]>([]);
+  const [newCampaignMinLevel, setNewCampaignMinLevel] = useState(1);
+  const [newCampaignLocation, setNewCampaignLocation] = useState('');
+  const [newCampaignDeliverables, setNewCampaignDeliverables] = useState('');
+  const [newCampaignNonNeg, setNewCampaignNonNeg] = useState<string[]>([]);
+
+  // Sync campaigns + applications across tabs via localStorage + BroadcastChannel
+  useEffect(() => {
+    setCampaigns(loadCampaigns());
+    setSharedApplications(loadApplications());
+    let bc: BroadcastChannel | null = null;
+    try {
+      bc = new BroadcastChannel(BC_NAME);
+      bc.onmessage = () => {
+        setCampaigns(loadCampaigns());
+        setSharedApplications(loadApplications());
+      };
+    } catch {}
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEY_CAMPAIGNS) setCampaigns(loadCampaigns());
+      if (e.key === STORAGE_KEY_APPLICATIONS) setSharedApplications(loadApplications());
+    };
+    window.addEventListener('storage', onStorage);
+    return () => { bc?.close(); window.removeEventListener('storage', onStorage); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const persistCampaigns = (updated: Campaign[]) => {
+    localStorage.setItem(STORAGE_KEY_CAMPAIGNS, JSON.stringify(updated));
+    setCampaigns(updated);
+    try { new BroadcastChannel(BC_NAME).postMessage('sync'); } catch {}
+  };
+  const persistApplications = (updated: SharedApplication[]) => {
+    localStorage.setItem(STORAGE_KEY_APPLICATIONS, JSON.stringify(updated));
+    setSharedApplications(updated);
+    try { new BroadcastChannel(BC_NAME).postMessage('sync'); } catch {}
+  };
+
+  // Keep legacy myApplications wired to sharedApplications for creator view
+  const myApplications = sharedApplications;
   // Gap 4: deal lifecycle
   type CreatorDealLifecycle = 'checklist'|'deliverables'|'submitted'|'approved';
   type BrandApprovalPhase = 'accepted'|'reviewing'|'approved';
@@ -1372,30 +1453,62 @@ export default function InstagramDemoPage() {
                     <div style={{ marginTop:'24px', paddingTop:'20px', borderTop:`1px solid ${C.border}` }}>
                       <div style={{ fontSize:'12px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.6px', marginBottom:'14px' }}>Open Campaigns</div>
                         {campaigns.filter(c=>c.status==='open').length === 0 ? (
-                          <div style={{ textAlign:'center', padding:'40px 20px', color:C.textMuted }}>No open campaigns available.</div>
+                          <div style={{ textAlign:'center', padding:'40px 20px', color:C.textMuted }}>No open campaigns yet. Check back soon.</div>
                         ) : campaigns.filter(c=>c.status==='open').map((c,i) => {
                           const myProfs = Object.values(valueSkins).map(v=>v?.profession).filter(Boolean) as string[];
-                          const canApply = c.requiredProfessions.some(p => myProfs.includes(p));
-                          const alreadyApplied = myApplications.some(a=>a.campaignId===c.id);
+                          const profMatch = c.requiredProfessions.some(p => myProfs.includes(p));
+                          const alreadyApplied = sharedApplications.some(a=>a.campaignId===c.id && a.creatorHandle==="@creator_demo");
                           const matchingProf = myProfs.find(p=>c.requiredProfessions.includes(p)) ?? '';
+                          const thisApp = sharedApplications.find(a=>a.campaignId===c.id && a.creatorHandle==="@creator_demo");
+                          // Negotiation allowed only when brand accepted this creator
+                          const canNegotiate = thisApp?.status === 'accepted';
                           return (
-                            <div key={i} style={{ background:C.card, borderRadius:'12px', padding:'14px', marginBottom:'10px', border:`1px solid ${canApply?'rgba(0,102,204,0.25)':C.border}`, opacity:canApply?1:0.6 }}>
-                              <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'6px' }}>
+                            <div key={i} style={{ background:C.card, borderRadius:'12px', padding:'14px', marginBottom:'10px', border:`1px solid ${profMatch?'rgba(0,102,204,0.3)':C.border}`, opacity:profMatch?1:0.55 }}>
+                              <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'6px', flexWrap:'wrap', gap:'4px' }}>
                                 <span style={{ fontSize:'13px', fontWeight:700, color:C.text }}>{c.title}</span>
-                                <span style={{ fontSize:'12px', fontWeight:700, color:'#2E7D32' }}>${parseInt(c.budget).toLocaleString()}</span>
+                                <span style={{ fontSize:'12px', fontWeight:700, color:'#2E7D32' }}>${parseInt(c.budget||'0').toLocaleString()}</span>
                               </div>
-                              <div style={{ fontSize:'11px', color:C.textSecondary, marginBottom:'8px', lineHeight:1.4 }}>{c.description}</div>
-                              <div style={{ display:'flex', gap:'6px', flexWrap:'wrap', marginBottom:'8px' }}>
+                              <div style={{ fontSize:'11px', color:C.textSecondary, marginBottom:'8px', lineHeight:1.5 }}>{c.description}</div>
+                              {/* Required ValueSkins */}
+                              <div style={{ display:'flex', gap:'5px', flexWrap:'wrap', marginBottom:'6px' }}>
                                 {c.requiredProfessions.map(p => <span key={p} style={{ fontSize:'10px', fontWeight:600, color:myProfs.includes(p)?C.primary:C.textMuted, background:myProfs.includes(p)?`${C.primary}12`:C.surfaceAlt, padding:'2px 7px', borderRadius:'6px', border:`1px solid ${myProfs.includes(p)?`${C.primary}30`:C.border}` }}>{p}</span>)}
                               </div>
-                              {c.deadline && <div style={{ fontSize:'10px', color:C.textMuted, marginBottom:'8px' }}>Deadline: {c.deadline}</div>}
-                              {canApply && !alreadyApplied && (
-                                <button onClick={() => { setMyApplications(prev=>[...prev,{id:Date.now(),campaignId:c.id,campaignTitle:c.title,creatorProfession:matchingProf,status:'pending' as const,appliedAt:new Date().toLocaleDateString()}]); setPurchaseToast('Application sent'); setTimeout(()=>setPurchaseToast(null),3000); }} style={{ width:'100%', background:C.primary, border:'none', borderRadius:'8px', padding:'9px', fontSize:'13px', fontWeight:600, color:'#fff', cursor:'pointer' }}>
-                                  Apply
+                              {/* Campaign details row */}
+                              <div style={{ display:'flex', gap:'12px', flexWrap:'wrap', fontSize:'10px', color:C.textMuted, marginBottom:'8px' }}>
+                                {c.minLevel > 1 && <span>Min level: L{c.minLevel}</span>}
+                                {c.location && <span>Location: {c.location}</span>}
+                                {c.deliverables && <span>Deliverables: {c.deliverables}</span>}
+                                {c.deadline && <span>Deadline: {c.deadline}</span>}
+                              </div>
+                              {/* Non-negotiables */}
+                              {c.nonNegotiables && c.nonNegotiables.length > 0 && (
+                                <div style={{ display:'flex', gap:'5px', flexWrap:'wrap', marginBottom:'8px' }}>
+                                  {c.nonNegotiables.map(n=><span key={n} style={{ fontSize:'10px', color:'#ef4444', background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.2)', padding:'2px 7px', borderRadius:'6px' }}>{n}</span>)}
+                                </div>
+                              )}
+                              {/* CTA */}
+                              {!profMatch && <div style={{ textAlign:'center', fontSize:'11px', color:C.textMuted, padding:'8px', background:C.surfaceAlt, borderRadius:'8px' }}>Requires ValueSkin: {c.requiredProfessions.join(' or ')}</div>}
+                              {profMatch && !alreadyApplied && (
+                                <button onClick={() => {
+                                  const newApp: SharedApplication = { id:Date.now(), campaignId:c.id, campaignTitle:c.title, creatorProfession:matchingProf, creatorHandle:"@creator_demo", status:'pending', appliedAt:new Date().toLocaleDateString() };
+                                  persistApplications([...sharedApplications, newApp]);
+                                  // increment applicant count
+                                  persistCampaigns(campaigns.map(x=>x.id===c.id?{...x,applicants:x.applicants+1}:x));
+                                  setPurchaseToast('Application sent — waiting for brand to review'); setTimeout(()=>setPurchaseToast(null),3000);
+                                }} style={{ width:'100%', background:C.primary, border:'none', borderRadius:'8px', padding:'9px', fontSize:'13px', fontWeight:600, color:'#fff', cursor:'pointer' }}>
+                                  Apply — ValueSkin match confirmed
                                 </button>
                               )}
-                              {alreadyApplied && <div style={{ textAlign:'center', fontSize:'12px', color:'#2E7D32', fontWeight:600, padding:'8px', background:'rgba(46,125,50,0.06)', borderRadius:'8px' }}>Applied</div>}
-                              {!canApply && <div style={{ textAlign:'center', fontSize:'12px', color:C.textMuted, padding:'8px', background:C.surfaceAlt, borderRadius:'8px' }}>Requires: {c.requiredProfessions.join(' or ')} — get that ValueSkin to apply</div>}
+                              {alreadyApplied && !canNegotiate && (
+                                <div style={{ textAlign:'center', fontSize:'12px', color:'#f59e0b', fontWeight:600, padding:'8px', background:'rgba(245,158,11,0.06)', borderRadius:'8px' }}>
+                                  Application pending — waiting for brand
+                                </div>
+                              )}
+                              {canNegotiate && (
+                                <button onClick={() => { setNegotiatingOpp(c.id); setDealRoomPhase('offer'); setActiveView('mim'); }} style={{ width:'100%', background:'#2E7D32', border:'none', borderRadius:'8px', padding:'9px', fontSize:'13px', fontWeight:600, color:'#fff', cursor:'pointer' }}>
+                                  Enter Negotiation
+                                </button>
+                              )}
                             </div>
                           );
                         })}
@@ -1453,10 +1566,19 @@ export default function InstagramDemoPage() {
                             <textarea value={newCampaignDesc} onChange={e=>setNewCampaignDesc(e.target.value)} rows={3} placeholder="Describe the campaign and what you need from creators" style={{ width:'100%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', color:C.text, padding:'8px 10px', fontSize:'13px', fontFamily:'inherit', outline:'none', resize:'none', boxSizing:'border-box' as const }} />
                           </div>
                           <div style={{ marginBottom:'12px' }}>
-                            <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'6px' }}>Required professions *</div>
+                            <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'6px' }}>Required ValueSkin (profession) *</div>
                             <div style={{ display:'flex', flexWrap:'wrap', gap:'6px' }}>
-                              {['Software Engineer','Data Scientist','UX/UI Designer','Fitness Coach','Nutritionist','Product Manager','Graphic Designer','Chef'].map(p => (
+                              {['Software Engineer','Data Scientist','UX/UI Designer','Fitness Coach','Nutritionist','Product Manager','Graphic Designer','Chef','Actor','Fitness Coach','Doctor','Financial Advisor'].map(p => (
                                 <button key={p} onClick={() => setNewCampaignProfessions(prev => prev.includes(p) ? prev.filter(x=>x!==p) : [...prev,p])} style={{ padding:'5px 10px', borderRadius:'6px', fontSize:'11px', fontWeight:600, cursor:'pointer', background:newCampaignProfessions.includes(p)?`${C.primary}15`:C.bg, color:newCampaignProfessions.includes(p)?C.primary:C.textSecondary, border:`1px solid ${newCampaignProfessions.includes(p)?C.primary:C.border}` }}>{p}</button>
+                              ))}
+                            </div>
+                            <div style={{ fontSize:'10px', color:C.textMuted, marginTop:'5px' }}>Only creators with a matching ValueSkin can enter negotiation.</div>
+                          </div>
+                          <div style={{ marginBottom:'12px' }}>
+                            <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>Minimum creator level *</div>
+                            <div style={{ display:'flex', gap:'6px' }}>
+                              {[1,2,3,4,5].map(l => (
+                                <button key={l} onClick={()=>setNewCampaignMinLevel(l)} style={{ flex:1, padding:'7px 0', borderRadius:'6px', fontSize:'12px', fontWeight:700, cursor:'pointer', background:newCampaignMinLevel===l?C.primary:C.bg, color:newCampaignMinLevel===l?'#fff':C.textSecondary, border:`1px solid ${newCampaignMinLevel===l?C.primary:C.border}` }}>L{l}</button>
                               ))}
                             </div>
                           </div>
@@ -1466,16 +1588,33 @@ export default function InstagramDemoPage() {
                               <input type="text" value={newCampaignBudget} onChange={e=>setNewCampaignBudget(e.target.value.replace(/[^0-9]/g,''))} placeholder="5000" style={{ width:'100%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', color:C.text, padding:'8px 10px', fontSize:'13px', fontFamily:'inherit', outline:'none', boxSizing:'border-box' as const }} />
                             </div>
                             <div style={{ flex:1 }}>
-                              <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>Deadline</div>
-                              <input type="date" value={newCampaignDeadline} onChange={e=>setNewCampaignDeadline(e.target.value)} style={{ width:'100%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', color:C.text, padding:'8px 10px', fontSize:'13px', fontFamily:'inherit', outline:'none', boxSizing:'border-box' as const }} />
+                              <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>Location</div>
+                              <input type="text" value={newCampaignLocation} onChange={e=>setNewCampaignLocation(e.target.value)} placeholder="USA / Remote / Global" style={{ width:'100%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', color:C.text, padding:'8px 10px', fontSize:'13px', fontFamily:'inherit', outline:'none', boxSizing:'border-box' as const }} />
                             </div>
+                          </div>
+                          <div style={{ marginBottom:'12px' }}>
+                            <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>Deliverables</div>
+                            <input type="text" value={newCampaignDeliverables} onChange={e=>setNewCampaignDeliverables(e.target.value)} placeholder="e.g. 2x Reels, 3x Stories" style={{ width:'100%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', color:C.text, padding:'8px 10px', fontSize:'13px', fontFamily:'inherit', outline:'none', boxSizing:'border-box' as const }} />
+                          </div>
+                          <div style={{ marginBottom:'12px' }}>
+                            <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'6px' }}>Non-negotiables</div>
+                            <div style={{ display:'flex', flexWrap:'wrap', gap:'6px' }}>
+                              {['NDA required','Usage rights: 90 days','Usage rights: 30 days','Exclusivity: 30 days','Exclusivity: 60 days','On-camera required','English only'].map(n => (
+                                <button key={n} onClick={()=>setNewCampaignNonNeg(prev=>prev.includes(n)?prev.filter(x=>x!==n):[...prev,n])} style={{ padding:'4px 9px', borderRadius:'6px', fontSize:'10px', fontWeight:600, cursor:'pointer', background:newCampaignNonNeg.includes(n)?'rgba(239,68,68,0.12)':C.bg, color:newCampaignNonNeg.includes(n)?'#ef4444':C.textSecondary, border:`1px solid ${newCampaignNonNeg.includes(n)?'rgba(239,68,68,0.4)':C.border}` }}>{n}</button>
+                              ))}
+                            </div>
+                          </div>
+                          <div style={{ marginBottom:'16px' }}>
+                            <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>Application deadline</div>
+                            <input type="date" value={newCampaignDeadline} onChange={e=>setNewCampaignDeadline(e.target.value)} style={{ width:'100%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', color:C.text, padding:'8px 10px', fontSize:'13px', fontFamily:'inherit', outline:'none', boxSizing:'border-box' as const }} />
                           </div>
                           <button
                             onClick={() => {
                               if (!newCampaignTitle.trim() || !newCampaignDesc.trim() || !newCampaignBudget || newCampaignProfessions.length===0) { setPurchaseToast('Fill in all required fields'); setTimeout(()=>setPurchaseToast(null),3000); return; }
-                              setCampaigns(prev => [...prev, { id:Date.now(), brandProfession:brandValueSkin??'', title:newCampaignTitle, description:newCampaignDesc, requiredProfessions:newCampaignProfessions, budget:newCampaignBudget, deadline:newCampaignDeadline, status:'open' as const, applicants:0 }]);
-                              setShowCampaignCreator(false); setNewCampaignTitle(''); setNewCampaignDesc(''); setNewCampaignBudget(''); setNewCampaignDeadline(''); setNewCampaignProfessions([]);
-                              setPurchaseToast('Campaign published — waiting for applications'); setTimeout(()=>setPurchaseToast(null),3000);
+                              const newC: Campaign = { id:Date.now(), brandProfession:brandValueSkin??'', title:newCampaignTitle, description:newCampaignDesc, requiredProfessions:newCampaignProfessions, minLevel:newCampaignMinLevel, budget:newCampaignBudget, deadline:newCampaignDeadline, location:newCampaignLocation, nonNegotiables:newCampaignNonNeg, deliverables:newCampaignDeliverables, status:'open', applicants:0 };
+                              persistCampaigns([...campaigns, newC]);
+                              setShowCampaignCreator(false); setNewCampaignTitle(''); setNewCampaignDesc(''); setNewCampaignBudget(''); setNewCampaignDeadline(''); setNewCampaignProfessions([]); setNewCampaignMinLevel(1); setNewCampaignLocation(''); setNewCampaignDeliverables(''); setNewCampaignNonNeg([]);
+                              setPurchaseToast('Campaign published — visible to matching creators now'); setTimeout(()=>setPurchaseToast(null),3000);
                             }}
                             style={{ width:'100%', background:C.primary, border:'none', borderRadius:'8px', padding:'11px', color:'#fff', fontWeight:700, fontSize:'14px', cursor:'pointer' }}
                           >
@@ -2333,16 +2472,26 @@ export default function InstagramDemoPage() {
                         </div>
                       ) : campaigns.map((c,i) => (
                         <div key={i} style={{ background:C.card, borderRadius:'12px', padding:'14px', marginBottom:'10px', border:`1px solid ${C.border}` }}>
-                          <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'6px' }}>
+                          <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'6px', flexWrap:'wrap', gap:'4px' }}>
                             <span style={{ fontSize:'13px', fontWeight:700, color:C.text }}>{c.title}</span>
-                            <span style={{ fontSize:'12px', fontWeight:700, color:'#2E7D32' }}>${parseInt(c.budget).toLocaleString()}</span>
+                            <span style={{ fontSize:'12px', fontWeight:700, color:'#2E7D32' }}>${parseInt(c.budget||'0').toLocaleString()}</span>
                           </div>
                           <div style={{ fontSize:'11px', color:C.textSecondary, marginBottom:'8px', lineHeight:1.4 }}>{c.description}</div>
-                          <div style={{ display:'flex', gap:'6px', flexWrap:'wrap', marginBottom:'8px' }}>
+                          <div style={{ display:'flex', gap:'5px', flexWrap:'wrap', marginBottom:'6px' }}>
                             {c.requiredProfessions.map(p => <span key={p} style={{ fontSize:'10px', fontWeight:600, color:C.primary, background:`${C.primary}12`, padding:'2px 7px', borderRadius:'6px', border:`1px solid ${C.primary}30` }}>{p}</span>)}
                           </div>
+                          <div style={{ display:'flex', gap:'12px', flexWrap:'wrap', fontSize:'10px', color:C.textMuted, marginBottom: c.nonNegotiables?.length ? '6px':'8px' }}>
+                            <span>Min: L{c.minLevel||1}</span>
+                            {c.location && <span>{c.location}</span>}
+                            {c.deliverables && <span>{c.deliverables}</span>}
+                          </div>
+                          {c.nonNegotiables && c.nonNegotiables.length > 0 && (
+                            <div style={{ display:'flex', gap:'5px', flexWrap:'wrap', marginBottom:'8px' }}>
+                              {c.nonNegotiables.map(n=><span key={n} style={{ fontSize:'10px', color:'#ef4444', background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.2)', padding:'2px 7px', borderRadius:'6px' }}>{n}</span>)}
+                            </div>
+                          )}
                           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                            <span style={{ fontSize:'10px', color:C.textMuted }}>{c.applicants} applicant{c.applicants!==1?'s':''} · {c.deadline ? `Deadline ${c.deadline}` : 'No deadline'}</span>
+                            <span style={{ fontSize:'10px', color:C.textMuted }}>{c.applicants} applicant{c.applicants!==1?'s':''}{c.deadline?` · Deadline ${c.deadline}`:''}</span>
                             <span style={{ fontSize:'10px', fontWeight:700, color:'#2E7D32', background:'rgba(46,125,50,0.1)', padding:'2px 8px', borderRadius:'6px', textTransform:'uppercase' }}>{c.status}</span>
                           </div>
                         </div>
@@ -2352,24 +2501,25 @@ export default function InstagramDemoPage() {
                     {/* Applications Received — always visible below campaigns */}
                     <div style={{ marginTop:'20px', paddingTop:'20px', borderTop:`1px solid ${C.border}` }}>
                       <div style={{ fontSize:'12px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.6px', marginBottom:'14px' }}>Applications Received</div>
-                      {myApplications.filter(a => campaigns.some(c => c.id===a.campaignId)).length === 0 ? (
+                      {sharedApplications.filter(a => campaigns.some(c => c.id===a.campaignId)).length === 0 ? (
                         <div style={{ textAlign:'center', padding:'24px 20px', color:C.textMuted }}>
                           <div style={{ fontSize:'13px', marginBottom:'4px' }}>No applications yet</div>
                           <div style={{ fontSize:'11px' }}>Creators will appear here once they apply to your campaigns.</div>
                         </div>
-                      ) : myApplications.map((app,i) => {
+                      ) : sharedApplications.filter(a=>campaigns.some(c=>c.id===a.campaignId)).map((app,i) => {
                         const camp = campaigns.find(c=>c.id===app.campaignId);
                         return (
-                          <div key={i} style={{ background:C.card, borderRadius:'12px', padding:'14px', marginBottom:'10px', border:`1px solid ${C.border}` }}>
+                          <div key={i} style={{ background:C.card, borderRadius:'12px', padding:'14px', marginBottom:'10px', border:`1px solid ${app.status==='accepted'?'rgba(46,125,50,0.3)':C.border}` }}>
                             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'6px' }}>
-                              <span style={{ fontSize:'13px', fontWeight:700, color:C.text }}>Creator ({app.creatorProfession})</span>
+                              <span style={{ fontSize:'13px', fontWeight:700, color:C.text }}>{app.creatorHandle} ({app.creatorProfession})</span>
                               <span style={{ fontSize:'10px', fontWeight:700, color:app.status==='pending'?'#f59e0b':app.status==='accepted'?'#2E7D32':'#ef4444', background:app.status==='pending'?'rgba(245,158,11,0.1)':app.status==='accepted'?'rgba(46,125,50,0.1)':'rgba(239,68,68,0.1)', padding:'2px 8px', borderRadius:'6px', textTransform:'uppercase' }}>{app.status}</span>
                             </div>
                             <div style={{ fontSize:'11px', color:C.textSecondary, marginBottom:'8px' }}>Campaign: {camp?.title} · Applied {app.appliedAt}</div>
+                            {app.status === 'accepted' && <div style={{ fontSize:'11px', color:'#2E7D32', marginBottom:'8px' }}>Creator has been notified and can now enter negotiation.</div>}
                             {app.status === 'pending' && (
                               <div style={{ display:'flex', gap:'6px' }}>
-                                <button onClick={() => { setMyApplications(prev => prev.map(a=>a.id===app.id?{...a,status:'accepted' as const}:a)); setPurchaseToast('Application accepted — creator notified'); setTimeout(()=>setPurchaseToast(null),3000); }} style={{ flex:1, background:'#2E7D32', border:'none', borderRadius:'6px', padding:'7px', fontSize:'12px', fontWeight:600, color:'#fff', cursor:'pointer' }}>Accept</button>
-                                <button onClick={() => { setMyApplications(prev => prev.map(a=>a.id===app.id?{...a,status:'rejected' as const}:a)); setPurchaseToast('Application declined'); setTimeout(()=>setPurchaseToast(null),3000); }} style={{ flex:1, background:'none', border:`1px solid ${C.border}`, borderRadius:'6px', padding:'7px', fontSize:'12px', fontWeight:600, color:C.textSecondary, cursor:'pointer' }}>Decline</button>
+                                <button onClick={() => { persistApplications(sharedApplications.map(a=>a.id===app.id?{...a,status:'accepted' as const}:a)); setPurchaseToast('Accepted — creator can now enter negotiation'); setTimeout(()=>setPurchaseToast(null),3000); }} style={{ flex:1, background:'#2E7D32', border:'none', borderRadius:'6px', padding:'7px', fontSize:'12px', fontWeight:600, color:'#fff', cursor:'pointer' }}>Accept</button>
+                                <button onClick={() => { persistApplications(sharedApplications.map(a=>a.id===app.id?{...a,status:'rejected' as const}:a)); setPurchaseToast('Application declined'); setTimeout(()=>setPurchaseToast(null),3000); }} style={{ flex:1, background:'none', border:`1px solid ${C.border}`, borderRadius:'6px', padding:'7px', fontSize:'12px', fontWeight:600, color:C.textSecondary, cursor:'pointer' }}>Decline</button>
                               </div>
                             )}
                           </div>
