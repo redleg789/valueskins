@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useAccount } from 'wagmi';
 
 /**
  * ReferralDashboard Component
@@ -31,7 +30,6 @@ interface LeaderboardEntry {
 }
 
 export default function ReferralDashboard({ personaId }: { personaId: number }) {
-    const { address } = useAccount();
     const [stats, setStats] = useState<ReferralStats | null>(null);
     const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
     const [loading, setLoading] = useState(true);

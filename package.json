@@ -13,12 +13,10 @@
   },
   "workspaces": [
     "frontend",
-    "contracts",
     "backend"
   ],
   "keywords": [
     "creator-economy",
-    "blockchain",
     "reputation",
     "verification",
     "equity"
