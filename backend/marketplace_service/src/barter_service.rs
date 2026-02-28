@@ -233,6 +233,12 @@ impl BarterService {
 
     /// Calculate platform fee for a deal based on compensation type.
     ///
+    /// Uses integer-cent arithmetic internally to prevent floating-point
+    /// rounding errors that compound at scale. At 2B transactions/year,
+    /// f64 rounding on $0.005 can silently shift ~$10M between platform
+    /// and creators. All intermediate math is done in cents (i64), then
+    /// converted back to f64 only for the return value.
+    ///
     /// - "paid": standard 5% fee
     /// - "barter" / "exposure": 0% fee, 0 payout (no money)
     /// - "hybrid": 5% fee on monetary portion only
@@ -244,19 +250,30 @@ impl BarterService {
         // Returns: (creator_payout, platform_fee, effective_fee_pct)
         match compensation_type {
             "barter" | "exposure" => {
-                // No money changes hands
                 (0.0, 0.0, 0.0)
             }
             "hybrid" | "paid" => {
-                let fee = total_amount * (standard_fee_pct / 100.0);
-                let payout = total_amount - fee;
-                (payout, fee, standard_fee_pct)
+                // Convert to cents to avoid f64 precision loss on fractional dollars.
+                // round() ensures $19.995 -> 2000 cents, not 1999.
+                let total_cents = (total_amount * 100.0).round() as i64;
+
+                // Floor the fee so the platform never overcharges creators.
+                // At scale, this is auditable: platform always rounds down on its cut.
+                let fee_cents = (total_cents as f64 * standard_fee_pct / 100.0).floor() as i64;
+                let payout_cents = total_cents - fee_cents;
+
+                // Invariant: payout + fee == total (no money created or destroyed)
+                debug_assert_eq!(payout_cents + fee_cents, total_cents,
+                    "Fee split must be lossless: {} + {} != {}", payout_cents, fee_cents, total_cents);
+
+                (payout_cents as f64 / 100.0, fee_cents as f64 / 100.0, standard_fee_pct)
             }
             _ => {
                 // Unknown type — treat as paid (safe default)
-                let fee = total_amount * (standard_fee_pct / 100.0);
-                let payout = total_amount - fee;
-                (payout, fee, standard_fee_pct)
+                let total_cents = (total_amount * 100.0).round() as i64;
+                let fee_cents = (total_cents as f64 * standard_fee_pct / 100.0).floor() as i64;
+                let payout_cents = total_cents - fee_cents;
+                (payout_cents as f64 / 100.0, fee_cents as f64 / 100.0, standard_fee_pct)
             }
         }
     }

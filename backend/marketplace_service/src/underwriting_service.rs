@@ -141,20 +141,34 @@ impl UnderwritingService {
         })
     }
 
-    /// Batch evaluate all creators
+    /// Batch evaluate all creators — paginated to prevent OOM at scale.
     pub async fn batch_evaluate_all(&self) -> Result<usize, UnderwritingError> {
-        let creator_ids: Vec<i64> = sqlx::query_scalar(
-            "SELECT DISTINCT creator_user_id FROM completed_deals"
-        )
-        .fetch_all(&self.pool)
-        .await
-        .map_err(UnderwritingError::from)?;
-
+        let batch_size: i64 = 1000;
+        let mut offset: i64 = 0;
         let mut count = 0;
-        for creator_id in creator_ids {
-            if self.evaluate_creator(creator_id).await.is_ok() {
-                count += 1;
+
+        loop {
+            let creator_ids: Vec<i64> = sqlx::query_scalar(
+                "SELECT DISTINCT creator_user_id FROM completed_deals \
+                 ORDER BY creator_user_id LIMIT $1 OFFSET $2"
+            )
+            .bind(batch_size)
+            .bind(offset)
+            .fetch_all(&self.pool)
+            .await
+            .map_err(UnderwritingError::from)?;
+
+            if creator_ids.is_empty() {
+                break;
             }
+
+            for creator_id in &creator_ids {
+                if self.evaluate_creator(*creator_id).await.is_ok() {
+                    count += 1;
+                }
+            }
+
+            offset += batch_size;
         }
 
         Ok(count)

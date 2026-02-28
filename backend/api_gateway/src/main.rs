@@ -7,7 +7,9 @@ use actix_web::{web, App, HttpServer, HttpResponse, Responder};
 use dotenv::dotenv;
 use shared::db::get_db_pool;
 use shared::logging;
+use sqlx::PgPool;
 use std::env;
+use std::time::Duration;
 
 // Service Imports
 use auth_service::token::TokenManager;
@@ -84,6 +86,32 @@ async fn main() -> std::io::Result<()> {
         }
     };
 
+    // Read replica support: if REPLICA_DATABASE_URL is set, analytics/reputation
+    // queries route there. Otherwise falls back to primary (single-DB deploys).
+    let replica_router = if let Ok(replica_url) = env::var("REPLICA_DATABASE_URL") {
+        match shared::db::get_db_pool(&replica_url).await {
+            Ok(replica_pool) => {
+                tracing::info!("Read replica connected.");
+                shared::read_replica::ReplicaRouter::with_replica(pool.clone(), replica_pool)
+            }
+            Err(e) => {
+                tracing::warn!(error = %e, "Read replica connection failed — using primary for all queries");
+                shared::read_replica::ReplicaRouter::primary_only(pool.clone())
+            }
+        }
+    } else {
+        shared::read_replica::ReplicaRouter::primary_only(pool.clone())
+    };
+
+    // Initialize circuit breaker
+    let circuit_breaker = shared::circuit_breaker::CircuitBreaker::new(pool.clone());
+
+    // Initialize production services
+    let feature_flags = shared::feature_flags::FeatureFlagService::new(pool.clone());
+    let refresh_tokens = shared::refresh_tokens::RefreshTokenService::new(pool.clone());
+    let pii_audit = shared::pii_audit::PiiAuditLogger::new(pool.clone());
+    let idempotency = shared::idempotency::IdempotencyService::new(pool.clone());
+
     // Initialize services
     let social_service = SocialService::new(pool.clone());
     let analytics_service = AnalyticsService::new(pool.clone());
@@ -110,9 +138,43 @@ async fn main() -> std::io::Result<()> {
     let analytics_data = web::Data::new(analytics_service);
     let recommendation_data = web::Data::new(recommendation_service);
     let email_data = web::Data::new(email_service);
+    let replica_data = web::Data::new(replica_router);
+    let circuit_breaker_data = web::Data::new(circuit_breaker);
+    let feature_flags_data = web::Data::new(feature_flags);
+    let refresh_tokens_data = web::Data::new(refresh_tokens);
+    let pii_audit_data = web::Data::new(pii_audit);
+    let idempotency_data = web::Data::new(idempotency);
 
     // Clone jwt_secret for middleware creation inside HttpServer closure
     let jwt_secret_clone = jwt_secret.clone();
+
+    // ── Background Workers ─────────────────────────────────────────
+    // Outbox worker: polls event_outbox every 1s, dispatches to handlers
+    let outbox_pool = pool_data.clone();
+    tokio::spawn(async move {
+        shared::workers::outbox_worker::start(
+            outbox_pool.as_ref().clone(),
+            std::time::Duration::from_secs(1),
+        ).await;
+    });
+
+    // Cleanup worker: expires soft holds, offer rounds, cache entries, data retention every 60s
+    let cleanup_pool = pool_data.clone();
+    tokio::spawn(async move {
+        shared::workers::cleanup_worker::start(
+            cleanup_pool.as_ref().clone(),
+            Duration::from_secs(60),
+        ).await;
+    });
+
+    // Notification worker: dispatches pending notifications every 5s
+    let notif_pool = pool_data.clone();
+    tokio::spawn(async move {
+        shared::workers::notification_worker::start(
+            notif_pool.as_ref().clone(),
+            Duration::from_secs(5),
+        ).await;
+    });
 
     tracing::info!("Starting Valueskins API at http://0.0.0.0:8080");
 
@@ -139,8 +201,8 @@ async fn main() -> std::io::Result<()> {
             .wrap(cors)
             .wrap(Governor::new(&governor_conf))
             .wrap(tiered_limiter)
-            // Structured request logging: every request gets a correlation ID,
-            // method/path/status/duration logged as JSON to stdout
+            .wrap(crate::middleware::security_headers::security_headers())
+            .wrap(crate::middleware::request_timeout::RequestTimeout::new(Duration::from_secs(30)))
             .wrap(logging::middleware::RequestLogger::new("api-gateway"))
             .app_data(pool_data.clone())
             .app_data(token_data.clone())
@@ -148,15 +210,25 @@ async fn main() -> std::io::Result<()> {
             .app_data(analytics_data.clone())
             .app_data(recommendation_data.clone())
             .app_data(email_data.clone())
+            .app_data(replica_data.clone())
+            .app_data(circuit_breaker_data.clone())
+            .app_data(feature_flags_data.clone())
+            .app_data(refresh_tokens_data.clone())
+            .app_data(pii_audit_data.clone())
+            .app_data(idempotency_data.clone())
 
             // === PUBLIC ROUTES (no auth required) ===
             .route("/health", web::get().to(health_check))
             .route("/health/live", web::get().to(health_check))
             .route("/health/ready", web::get().to(health_ready))
+            // Prometheus metrics endpoint for monitoring
+            .route("/metrics", web::get().to(shared::observability::metrics::metrics_handler))
 
             .service(
                 web::scope("/auth")
                     .route("/login", web::post().to(handlers::auth::login))
+                    .route("/refresh", web::post().to(handlers::auth::refresh_token))
+                    .route("/logout", web::post().to(handlers::auth::logout))
             )
 
             // Waitlist is public (pre-launch signups)
@@ -190,6 +262,12 @@ async fn main() -> std::io::Result<()> {
                 web::scope("/interest")
                     .route("/signup", web::post().to(interest_handlers::create_interest_signup))
                     .route("/signup/{id}", web::get().to(interest_handlers::get_interest_signup))
+            )
+
+            // Public media kit view (no auth)
+            .service(
+                web::scope("/creators")
+                    .route("/{slug}", web::get().to(handlers::mediakit::get_public_mediakit))
             )
 
             // === PROTECTED ROUTES (JWT required) ===
@@ -364,6 +442,8 @@ async fn main() -> std::io::Result<()> {
                     // Brand management (authenticated brand users)
                     .service(
                         web::scope("/brands")
+                            .route("/dashboard", web::get().to(handlers::brand::get_brand_dashboard))
+                            .route("/discover", web::get().to(handlers::brand::discover_creators))
                             .route("/opportunities/{id}/applications", web::get().to(marketplace_handlers::get_opportunity_applications))
                             .route("/applications/accept", web::post().to(marketplace_handlers::accept_application))
                             .route("/deals/complete", web::post().to(marketplace_handlers::complete_deal))
@@ -396,7 +476,7 @@ async fn main() -> std::io::Result<()> {
                             .route("", web::get().to(marketplace_handlers::get_my_payouts))
                     )
 
-                    // Admin: brand verification queue, payout reconciliation, interest signups
+                    // Admin: brand verification, payouts, interest signups, leaderboard, stats, flags
                     .service(
                         web::scope("/admin")
                             .route("/brands/verify", web::get().to(marketplace_handlers::admin_list_brand_verifications))
@@ -409,6 +489,72 @@ async fn main() -> std::io::Result<()> {
                             .route("/interest/signups/{id}/contact", web::post().to(interest_handlers::contact_interest_signup))
                             .route("/interest/signups/{id}/convert", web::post().to(interest_handlers::convert_interest_signup))
                             .route("/interest/signups/{id}/reject", web::post().to(interest_handlers::reject_interest_signup))
+                            // Leaderboard (materialized view)
+                            .route("/leaderboard", web::get().to(handlers::admin::get_leaderboard))
+                            // Platform stats
+                            .route("/stats", web::get().to(handlers::admin::get_platform_stats))
+                            // Feature flags management
+                            .route("/flags", web::get().to(handlers::admin::list_feature_flags))
+                            .route("/flags/{name}", web::patch().to(handlers::admin::update_feature_flag))
+                            .route("/flags/{name}/kill", web::post().to(handlers::admin::kill_feature_flag))
+                            // Users management
+                            .route("/users", web::get().to(handlers::admin::list_users))
+                            .route("/users/{id}", web::get().to(handlers::admin::get_user))
+                            .route("/users/{id}/deactivate", web::post().to(handlers::admin::deactivate_user))
+                            // GDPR requests
+                            .route("/gdpr/requests", web::get().to(handlers::admin::list_gdpr_requests))
+                            .route("/gdpr/requests/{id}/process", web::post().to(handlers::admin::process_gdpr_request))
+                            // Disputes
+                            .route("/disputes", web::get().to(handlers::admin::list_disputes))
+                            .route("/disputes/{id}/resolve", web::post().to(handlers::admin::resolve_dispute))
+                            // PII audit log
+                            .route("/pii-audit/{user_id}", web::get().to(handlers::admin::get_pii_audit_log))
+                            // API Keys
+                            .route("/api-keys", web::get().to(handlers::admin::list_api_keys))
+                    )
+
+                    // Contracts / Deal Rooms (user's view)
+                    .route("/contracts", web::get().to(handlers::admin::list_my_contracts))
+
+                    // Equity system
+                    .service(
+                        web::scope("/equity")
+                            .route("/me", web::get().to(handlers::equity::get_my_equity))
+                            .route("/dividends", web::get().to(handlers::equity::get_dividend_history))
+                    )
+
+                    // Insurance / Protection Fund
+                    .service(
+                        web::scope("/insurance")
+                            .route("/me", web::get().to(handlers::insurance::get_my_insurance))
+                            .route("/pool", web::get().to(handlers::insurance::get_protection_pool))
+                            .route("/claims", web::post().to(handlers::insurance::file_claim))
+                    )
+
+                    // Creator Collectives
+                    .service(
+                        web::scope("/collectives")
+                            .route("", web::get().to(handlers::collective::list_collectives))
+                            .route("/{id}", web::get().to(handlers::collective::get_collective))
+                    )
+
+                    // Market Rates (public within auth scope)
+                    .service(
+                        web::scope("/market-rates")
+                            .route("", web::get().to(handlers::collective::get_market_rates))
+                    )
+
+                    // Media Kit
+                    .service(
+                        web::scope("/mediakit")
+                            .route("/me", web::get().to(handlers::mediakit::get_my_mediakit))
+                            .route("/me", web::patch().to(handlers::mediakit::update_mediakit))
+                    )
+
+                    // Verification & Trust
+                    .service(
+                        web::scope("/verification")
+                            .route("/me", web::get().to(handlers::verification::get_my_verification))
                     )
 
                     // Notifications
@@ -443,6 +589,10 @@ async fn main() -> std::io::Result<()> {
             )
     })
     .bind(("0.0.0.0", 8080))?
+    // Graceful shutdown: finish in-flight requests before stopping.
+    // Without this, Kubernetes sends SIGTERM and active deal completions
+    // are aborted mid-transaction, leaving inconsistent state.
+    .shutdown_timeout(30) // 30 seconds to drain active connections
     .run()
     .await
 }

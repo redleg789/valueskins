@@ -16,6 +16,10 @@ use chrono::Utc;
 pub enum GdprError {
     AlreadyRequested,
     NotFound,
+    /// User has active deal rooms or pending escrow — cannot delete yet
+    ActiveDealsExist { count: i64 },
+    /// Scope value is not recognized
+    InvalidScope,
     Database(sqlx::Error),
 }
 
@@ -36,12 +40,35 @@ impl GdprService {
 
     /// Submit a data deletion request for the authenticated user.
     /// Returns the request ID.
+    const VALID_SCOPES: [&'static str; 3] = ["full", "pii_only", "content_only"];
+
     pub async fn request_deletion(
         &self,
         user_id: i64,
         scope: &str,
         reason: Option<&str>,
     ) -> Result<i64, GdprError> {
+        // Validate scope enum
+        if !Self::VALID_SCOPES.contains(&scope) {
+            return Err(GdprError::InvalidScope);
+        }
+
+        // CRITICAL: Block deletion if user has active deal rooms or pending escrow.
+        // At Meta scale, orphaned deals with funds in escrow = legal liability.
+        // User must complete or cancel all deals before requesting deletion.
+        let active_deals: i64 = sqlx::query_scalar(
+            "SELECT COUNT(*) FROM deal_rooms
+             WHERE (creator_user_id = $1 OR brand_user_id = $1)
+               AND status NOT IN ('completed', 'cancelled', 'disputed_resolved')"
+        )
+        .bind(user_id)
+        .fetch_one(&self.pool)
+        .await?;
+
+        if active_deals > 0 {
+            return Err(GdprError::ActiveDealsExist { count: active_deals });
+        }
+
         // Check for existing active request
         let existing: Option<i64> = sqlx::query_scalar(
             "SELECT id FROM data_deletion_requests WHERE user_id = $1 AND status IN ('pending','processing')"
@@ -135,6 +162,28 @@ impl GdprService {
         user_id: i64,
         processed_by: &str,
     ) -> Result<(), GdprError> {
+        // Defense-in-depth: re-check active deals even though request_deletion
+        // already checked. A deal could have been created between request and processing.
+        let active_deals: i64 = sqlx::query_scalar(
+            "SELECT COUNT(*) FROM deal_rooms
+             WHERE (creator_user_id = $1 OR brand_user_id = $1)
+               AND status NOT IN ('completed', 'cancelled', 'disputed_resolved')"
+        )
+        .bind(user_id)
+        .fetch_one(&self.pool)
+        .await?;
+
+        if active_deals > 0 {
+            // Revert to pending — background job will retry later
+            sqlx::query(
+                "UPDATE data_deletion_requests SET status='pending' WHERE id=$1"
+            )
+            .bind(request_id)
+            .execute(&self.pool)
+            .await?;
+            return Err(GdprError::ActiveDealsExist { count: active_deals });
+        }
+
         let mut deleted_tables: Vec<String> = Vec::new();
         let anon_suffix = format!("DELETED_{}", &format!("{:x}", user_id)[..8.min(format!("{:x}", user_id).len())]);
 

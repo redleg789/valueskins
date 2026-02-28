@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { api, ApiKeyEntry } from '@/lib/api';
 
 interface TierConfig {
     tier: string;
@@ -16,28 +17,24 @@ const INITIAL_TIERS: TierConfig[] = [
     { tier: 'enterprise', rpm: 100000, description: 'Unlimited (100k/min hard cap). Large platform integrations', color: '#f59e0b' },
 ];
 
-interface ApiKeyEntry {
-    id: number;
-    prefix: string;
-    owner: string;
-    tier: string;
-    requests_per_minute: number;
-    last_used: string | null;
-    is_active: boolean;
-}
-
-const MOCK_API_KEYS: ApiKeyEntry[] = [
-    { id: 1, prefix: 'vs_live_A', owner: 'Nike Brands', tier: 'pro', requests_per_minute: 10000, last_used: '2026-02-19T12:00:00Z', is_active: true },
-    { id: 2, prefix: 'vs_live_B', owner: 'Coinbase Creator', tier: 'basic', requests_per_minute: 1000, last_used: '2026-02-18T08:30:00Z', is_active: true },
-    { id: 3, prefix: 'vs_test_C', owner: 'Dev Sandbox', tier: 'free', requests_per_minute: 100, last_used: null, is_active: false },
-];
-
 export default function RateLimitsPage() {
     const [tiers, setTiers] = useState<TierConfig[]>(INITIAL_TIERS);
-    const [keys] = useState<ApiKeyEntry[]>(MOCK_API_KEYS);
+    const [keys, setKeys] = useState<ApiKeyEntry[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
     const [toast, setToast] = useState('');
     const [editing, setEditing] = useState<string | null>(null);
     const [editValue, setEditValue] = useState('');
+
+    const fetchKeys = useCallback(async () => {
+        setLoading(true);
+        const res = await api.admin.listApiKeys();
+        if (res.data) setKeys(res.data.api_keys);
+        else setError(res.error || 'Failed to load API keys');
+        setLoading(false);
+    }, []);
+
+    useEffect(() => { fetchKeys(); }, [fetchKeys]);
 
     const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
@@ -77,7 +74,6 @@ export default function RateLimitsPage() {
                 IP-based global limit (60/min) applies to all traffic regardless of tier.
             </p>
 
-            {/* How it works */}
             <div style={{ padding: '1rem', background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)', borderRadius: '10px', marginBottom: '1.5rem', fontSize: '0.85rem', color: '#c4b5fd' }}>
                 <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>Resolution priority</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', color: '#a78bfa' }}>
@@ -107,14 +103,9 @@ export default function RateLimitsPage() {
                                 <td style={{ padding: '0.9rem 1rem', fontWeight: 700 }}>
                                     {editing === t.tier ? (
                                         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                                            <input
-                                                type="number"
-                                                value={editValue}
-                                                onChange={e => setEditValue(e.target.value)}
+                                            <input type="number" value={editValue} onChange={e => setEditValue(e.target.value)}
                                                 style={{ width: '90px', padding: '0.3rem 0.5rem', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '6px', color: 'white', fontSize: '0.85rem' }}
-                                                autoFocus
-                                                onKeyDown={e => e.key === 'Enter' && saveEdit(t.tier)}
-                                            />
+                                                autoFocus onKeyDown={e => e.key === 'Enter' && saveEdit(t.tier)} />
                                             <button onClick={() => saveEdit(t.tier)} style={{ padding: '0.3rem 0.6rem', background: '#22c55e', border: 'none', borderRadius: '4px', color: 'white', cursor: 'pointer', fontSize: '0.8rem' }}>✓</button>
                                             <button onClick={() => setEditing(null)} style={{ padding: '0.3rem 0.6rem', background: 'rgba(239,68,68,0.2)', border: 'none', borderRadius: '4px', color: '#ef4444', cursor: 'pointer', fontSize: '0.8rem' }}>✕</button>
                                         </div>
@@ -137,7 +128,7 @@ export default function RateLimitsPage() {
                 </table>
             </div>
 
-            {/* API Keys */}
+            {/* API Keys from real data */}
             <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', overflow: 'hidden' }}>
                 <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid rgba(255,255,255,0.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>Active API Keys</span>
@@ -145,33 +136,41 @@ export default function RateLimitsPage() {
                         + Issue New Key
                     </button>
                 </div>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
-                    <thead>
-                        <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-                            {['Key Prefix', 'Owner', 'Tier', 'RPM', 'Last Used', 'Status'].map(h => (
-                                <th key={h} style={{ padding: '0.75rem 1rem', color: '#71717a', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', fontSize: '0.75rem' }}>{h}</th>
-                            ))}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {keys.map(k => (
-                            <tr key={k.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                                <td style={{ padding: '0.9rem 1rem', fontFamily: 'monospace', color: '#a1a1aa' }}>{k.prefix}****</td>
-                                <td style={{ padding: '0.9rem 1rem', fontWeight: 600 }}>{k.owner}</td>
-                                <td style={{ padding: '0.9rem 1rem' }}>{tierBadge(k.tier)}</td>
-                                <td style={{ padding: '0.9rem 1rem', color: '#71717a' }}>{k.requests_per_minute.toLocaleString()}</td>
-                                <td style={{ padding: '0.9rem 1rem', color: '#6b7280', fontSize: '0.8rem' }}>
-                                    {k.last_used ? new Date(k.last_used).toLocaleDateString() : 'Never'}
-                                </td>
-                                <td style={{ padding: '0.9rem 1rem' }}>
-                                    <span style={{ padding: '0.2rem 0.5rem', borderRadius: '100px', background: k.is_active ? 'rgba(34,197,94,0.12)' : 'rgba(107,114,128,0.12)', color: k.is_active ? '#22c55e' : '#9ca3af', fontSize: '0.75rem', fontWeight: 600 }}>
-                                        {k.is_active ? 'Active' : 'Inactive'}
-                                    </span>
-                                </td>
+                {loading ? (
+                    <div style={{ padding: '2rem', textAlign: 'center', color: '#71717a' }}>Loading API keys...</div>
+                ) : error ? (
+                    <div style={{ padding: '2rem', textAlign: 'center', color: '#ef4444' }}>{error}</div>
+                ) : keys.length === 0 ? (
+                    <div style={{ padding: '2rem', textAlign: 'center', color: '#71717a' }}>No API keys issued yet.</div>
+                ) : (
+                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
+                        <thead>
+                            <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+                                {['Key Prefix', 'Owner', 'Tier', 'RPM', 'Last Used', 'Status'].map(h => (
+                                    <th key={h} style={{ padding: '0.75rem 1rem', color: '#71717a', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', fontSize: '0.75rem' }}>{h}</th>
+                                ))}
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {keys.map(k => (
+                                <tr key={k.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                                    <td style={{ padding: '0.9rem 1rem', fontFamily: 'monospace', color: '#a1a1aa' }}>{k.prefix}****</td>
+                                    <td style={{ padding: '0.9rem 1rem', fontWeight: 600 }}>{k.owner}</td>
+                                    <td style={{ padding: '0.9rem 1rem' }}>{tierBadge(k.tier)}</td>
+                                    <td style={{ padding: '0.9rem 1rem', color: '#71717a' }}>{k.requests_per_minute.toLocaleString()}</td>
+                                    <td style={{ padding: '0.9rem 1rem', color: '#6b7280', fontSize: '0.8rem' }}>
+                                        {k.last_used ? new Date(k.last_used).toLocaleDateString() : 'Never'}
+                                    </td>
+                                    <td style={{ padding: '0.9rem 1rem' }}>
+                                        <span style={{ padding: '0.2rem 0.5rem', borderRadius: '100px', background: k.is_active ? 'rgba(34,197,94,0.12)' : 'rgba(107,114,128,0.12)', color: k.is_active ? '#22c55e' : '#9ca3af', fontSize: '0.75rem', fontWeight: 600 }}>
+                                            {k.is_active ? 'Active' : 'Inactive'}
+                                        </span>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                )}
             </div>
         </div>
     );

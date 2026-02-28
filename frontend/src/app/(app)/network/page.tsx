@@ -1,23 +1,46 @@
 'use client';
 
-import { useState } from 'react';
-
-const MOCK_STATS = [
-    { label: 'Total Value Locked', value: '$844,291' },
-    { label: 'Registered Personas', value: '12,402' },
-    { label: 'Professions Active', value: '14' },
-    { label: 'Career Skins Minted', value: '8,921' },
-];
+import { useState, useEffect } from 'react';
+import { api, PlatformStats } from '@/lib/api';
 
 export default function NetworkPage() {
+    const [stats, setStats] = useState<PlatformStats | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+
+    useEffect(() => {
+        (async () => {
+            const result = await api.admin.getPlatformStats();
+            if (result.data) {
+                setStats(result.data);
+            } else {
+                setError(result.error || 'Failed to load network stats');
+            }
+            setLoading(false);
+        })();
+    }, []);
+
+    const formatValue = (n: number) => n >= 1000000 ? `$${(n / 1000000).toFixed(1)}M` : n >= 1000 ? `${(n / 1000).toFixed(1)}K` : `${n}`;
+
+    if (loading) return <div className="p-8 max-w-7xl mx-auto"><div className="text-gray-400">Loading network stats...</div></div>;
+    if (error) return <div className="p-8 max-w-7xl mx-auto"><div className="text-red-400">{error}</div></div>;
+    if (!stats) return null;
+
+    const displayStats = [
+        { label: 'Total Volume', value: `$${formatValue(stats.total_volume)}` },
+        { label: 'Registered Personas', value: stats.total_personas.toLocaleString() },
+        { label: 'Professions Active', value: stats.total_skins.toLocaleString() },
+        { label: 'Completed Deals', value: stats.total_deals.toLocaleString() },
+    ];
+
     return (
         <div className="p-8 max-w-7xl mx-auto">
             <h1 className="text-4xl font-bold mb-2">Transparency Dashboard</h1>
-            <p className="text-gray-400 mb-12">Real-time on-chain metrics for the Valueskins Protocol.</p>
+            <p className="text-gray-400 mb-12">Real-time platform metrics for the Valueskins Protocol.</p>
 
             {/* Top Stats */}
             <div className="grid grid-cols-4 gap-6 mb-12">
-                {MOCK_STATS.map((stat, i) => (
+                {displayStats.map((stat, i) => (
                     <div key={i} className="glass-panel p-6">
                         <div className="text-sm text-gray-400 uppercase tracking-widest mb-2">{stat.label}</div>
                         <div className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-600">
@@ -27,71 +50,63 @@ export default function NetworkPage() {
                 ))}
             </div>
 
-            {/* Contract Addresses */}
+            {/* Platform Info */}
             <div className="glass-panel p-8 mb-12">
                 <h2 className="text-xl font-bold mb-6 flex items-center gap-3">
-                    <span className="text-2xl">📜</span> Smart Contract Registry (Sepolia)
+                    Platform Overview
                 </h2>
-
-                <div className="space-y-4">
-                    <ContractRow
-                        name="PersonaRegistry"
-                        address="0x71C...93a1"
-                        description="Core identity management and ownership."
-                    />
-                    <ContractRow
-                        name="ProfessionRegistry"
-                        address="0xA2d...b892"
-                        description="Governance-managed list of verifiable professions."
-                    />
-                    <ContractRow
-                        name="SkinNFT"
-                        address="0x4B3...c7d2"
-                        description="ERC-721 token representing career progression and levels."
-                    />
-                    <ContractRow
-                        name="LevelOracle"
-                        address="0x8f2...100a"
-                        description="Trustless oracle for validating off-chain achievements."
-                    />
-                    <ContractRow
-                        name="PaymentSplitter"
-                        address="0x11c...33e4"
-                        description="Revenue sharing for protocol treasury and creators."
-                    />
+                <div className="grid grid-cols-2 gap-6">
+                    <div className="p-4 bg-white/5 rounded-xl">
+                        <div className="text-sm text-gray-400 mb-1">Total Users</div>
+                        <div className="text-2xl font-bold text-purple-300">{stats.total_users.toLocaleString()}</div>
+                    </div>
+                    <div className="p-4 bg-white/5 rounded-xl">
+                        <div className="text-sm text-gray-400 mb-1">Platform Revenue</div>
+                        <div className="text-2xl font-bold text-green-400">${formatValue(stats.total_revenue)}</div>
+                    </div>
                 </div>
+                {stats.last_refreshed_at && (
+                    <div className="mt-4 text-xs text-gray-500">
+                        Last updated: {new Date(stats.last_refreshed_at).toLocaleString()}
+                    </div>
+                )}
             </div>
 
             <div className="grid grid-cols-2 gap-8">
                 <div className="glass-panel p-8">
-                    <h3 className="text-lg font-bold mb-4">Protocol Revenue</h3>
-                    <div className="h-64 flex items-center justify-center border border-dashed border-gray-700 rounded-lg">
-                        <span className="text-gray-500">Chart Component (Revenue)</span>
+                    <h3 className="text-lg font-bold mb-4">Revenue Breakdown</h3>
+                    <div className="space-y-3">
+                        <div className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
+                            <span className="text-gray-400">Total GMV</span>
+                            <span className="font-bold text-yellow-400">${formatValue(stats.total_volume)}</span>
+                        </div>
+                        <div className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
+                            <span className="text-gray-400">Platform Take</span>
+                            <span className="font-bold text-green-400">${formatValue(stats.total_revenue)}</span>
+                        </div>
+                        <div className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
+                            <span className="text-gray-400">Avg Deal Size</span>
+                            <span className="font-bold text-purple-400">{stats.total_deals > 0 ? `$${formatValue(stats.total_volume / stats.total_deals)}` : '$0'}</span>
+                        </div>
                     </div>
                 </div>
                 <div className="glass-panel p-8">
-                    <h3 className="text-lg font-bold mb-4">Minting Activity</h3>
-                    <div className="h-64 flex items-center justify-center border border-dashed border-gray-700 rounded-lg">
-                        <span className="text-gray-500">Chart Component (Mints)</span>
+                    <h3 className="text-lg font-bold mb-4">Activity Summary</h3>
+                    <div className="space-y-3">
+                        <div className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
+                            <span className="text-gray-400">Active Personas</span>
+                            <span className="font-bold text-cyan-400">{stats.total_personas.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
+                            <span className="text-gray-400">Total Skins</span>
+                            <span className="font-bold text-purple-400">{stats.total_skins.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
+                            <span className="text-gray-400">Completed Deals</span>
+                            <span className="font-bold text-green-400">{stats.total_deals.toLocaleString()}</span>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </div>
-    );
-}
-
-function ContractRow({ name, address, description }: { name: string, address: string, description: string }) {
-    return (
-        <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5 hover:border-purple-500/30 transition-colors">
-            <div>
-                <div className="font-bold text-lg text-purple-300">{name}</div>
-                <div className="text-sm text-gray-400">{description}</div>
-            </div>
-            <div className="flex items-center gap-4">
-                <code className="bg-black/50 px-3 py-1 rounded text-gray-300 font-mono text-sm">{address}</code>
-                <button className="text-sm text-purple-400 hover:text-purple-300 font-semibold">
-                    View on Etherscan ↗
-                </button>
             </div>
         </div>
     );

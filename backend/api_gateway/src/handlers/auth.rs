@@ -237,8 +237,32 @@ pub async fn login(
         }
     };
 
+    // Step 5: Issue refresh token (stored hashed in DB)
+    let refresh_service = pool.get_ref().clone();
+    let refresh_svc = shared::refresh_tokens::RefreshTokenService::new(refresh_service);
+    let refresh_pair = match refresh_svc.create(user_id, None, None).await {
+        Ok(pair) => pair,
+        Err(e) => {
+            error!("Failed to create refresh token: {:?}", e);
+            // Non-fatal: return JWT without refresh token
+            return HttpResponse::Ok().json(serde_json::json!({
+                "token": token,
+                "user": {
+                    "id": user_id,
+                    "instagram_user_id": ig_user_id,
+                    "username": username,
+                    "display_name": display_name,
+                    "avatar_url": avatar_url,
+                    "role": role,
+                    "persona_id": persona_id,
+                }
+            }));
+        }
+    };
+
     HttpResponse::Ok().json(serde_json::json!({
         "token": token,
+        "refresh_token": refresh_pair.refresh_token,
         "user": {
             "id": user_id,
             "instagram_user_id": ig_user_id,
@@ -249,4 +273,133 @@ pub async fn login(
             "persona_id": persona_id,
         }
     }))
+}
+
+#[derive(Deserialize)]
+pub struct RefreshRequest {
+    refresh_token: String,
+}
+
+/// POST /auth/refresh — rotate refresh token, issue new JWT
+pub async fn refresh_token(
+    req: web::Json<RefreshRequest>,
+    pool: web::Data<PgPool>,
+    token_manager: web::Data<TokenManager>,
+) -> impl Responder {
+    let refresh_svc = shared::refresh_tokens::RefreshTokenService::new(pool.get_ref().clone());
+
+    let pair = match refresh_svc.rotate(&req.refresh_token, None, None).await {
+        Ok(pair) => pair,
+        Err(shared::refresh_tokens::RefreshError::ReuseDetected) => {
+            warn!("Refresh token reuse detected — all sessions revoked");
+            return HttpResponse::Unauthorized().json(serde_json::json!({
+                "error": "Session compromised — all sessions revoked. Please log in again."
+            }));
+        }
+        Err(e) => {
+            warn!("Refresh token validation failed: {}", e);
+            return HttpResponse::Unauthorized().json(serde_json::json!({
+                "error": "Invalid or expired refresh token"
+            }));
+        }
+    };
+
+    // Look up user to re-issue JWT
+    let user: Option<(i64, String, String, Option<i64>)> = sqlx::query_as(
+        "SELECT u.id, u.instagram_user_id, u.role, p.id
+         FROM users u LEFT JOIN personas p ON p.owner_user_id = u.id
+         WHERE u.id = (SELECT user_id FROM refresh_tokens WHERE token_hash = $1 LIMIT 1)"
+    )
+    .bind(&shared::refresh_tokens::RefreshTokenService::hash_token_public(&req.refresh_token))
+    .fetch_optional(pool.get_ref())
+    .await
+    .ok()
+    .flatten();
+
+    // Fallback: look up by new token's family
+    let (user_id, ig_user_id, role, persona_id) = match user {
+        Some(u) => u,
+        None => {
+            // Use the user_id from the refresh token table directly
+            match sqlx::query_as::<_, (i64, String, String, Option<i64>)>(
+                "SELECT u.id, u.instagram_user_id, u.role, p.id
+                 FROM refresh_tokens rt
+                 JOIN users u ON u.id = rt.user_id
+                 LEFT JOIN personas p ON p.owner_user_id = u.id
+                 WHERE rt.family_id = $1
+                 ORDER BY rt.created_at DESC LIMIT 1"
+            )
+            .bind(pair.family_id)
+            .fetch_optional(pool.get_ref())
+            .await {
+                Ok(Some(u)) => u,
+                _ => {
+                    return HttpResponse::InternalServerError().json(serde_json::json!({
+                        "error": "Failed to resolve user for token refresh"
+                    }));
+                }
+            }
+        }
+    };
+
+    let jwt = match token_manager.create_token(user_id, &ig_user_id, &role, persona_id) {
+        Ok(t) => t,
+        Err(_) => {
+            return HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": "Failed to create session token"
+            }));
+        }
+    };
+
+    HttpResponse::Ok().json(serde_json::json!({
+        "token": jwt,
+        "refresh_token": pair.refresh_token,
+    }))
+}
+
+#[derive(Deserialize)]
+pub struct LogoutRequest {
+    refresh_token: Option<String>,
+    logout_all: Option<bool>,
+}
+
+/// POST /auth/logout — revoke refresh token(s)
+pub async fn logout(
+    req: web::Json<LogoutRequest>,
+    pool: web::Data<PgPool>,
+    http_req: actix_web::HttpRequest,
+) -> impl Responder {
+    let refresh_svc = shared::refresh_tokens::RefreshTokenService::new(pool.get_ref().clone());
+
+    if req.logout_all.unwrap_or(false) {
+        // Extract user_id from JWT claims in request extensions
+        if let Some(claims) = http_req.extensions().get::<auth_service::token::Claims>() {
+            match refresh_svc.revoke_all_for_user(claims.user_id).await {
+                Ok(n) => {
+                    info!(user_id = claims.user_id, revoked = n, "All sessions revoked");
+                    return HttpResponse::Ok().json(serde_json::json!({
+                        "message": "All sessions revoked",
+                        "revoked_count": n
+                    }));
+                }
+                Err(e) => {
+                    error!("Failed to revoke all sessions: {:?}", e);
+                    return HttpResponse::InternalServerError().json(serde_json::json!({
+                        "error": "Failed to revoke sessions"
+                    }));
+                }
+            }
+        }
+        return HttpResponse::Unauthorized().json(serde_json::json!({
+            "error": "Authentication required for logout-all"
+        }));
+    }
+
+    if let Some(ref token) = req.refresh_token {
+        if let Err(e) = refresh_svc.revoke(token).await {
+            error!("Failed to revoke refresh token: {:?}", e);
+        }
+    }
+
+    HttpResponse::Ok().json(serde_json::json!({ "message": "Logged out" }))
 }

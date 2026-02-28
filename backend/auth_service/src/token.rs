@@ -1,7 +1,10 @@
-use jsonwebtoken::{encode, decode, Header, Validation, EncodingKey, DecodingKey};
+use jsonwebtoken::{encode, decode, Header, Algorithm, Validation, EncodingKey, DecodingKey};
 use serde::{Deserialize, Serialize};
 use chrono::{Utc, Duration};
 use crate::error::AuthError;
+
+const VALID_ROLES: [&str; 2] = ["creator", "brand"];
+const VALID_TIERS: [&str; 4] = ["free", "basic", "pro", "enterprise"];
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Claims {
@@ -53,7 +56,21 @@ impl TokenManager {
         persona_id: Option<i64>,
         tier: Option<String>,
     ) -> Result<String, AuthError> {
-        let expiration = Utc::now()
+        // Reject invalid roles at token creation — prevents privilege escalation
+        // via tampered role strings embedded in JWTs
+        if !VALID_ROLES.contains(&role) {
+            return Err(AuthError::TokenCreationError);
+        }
+
+        // Reject invalid tiers — prevents rate-limit bypass via forged tier claims
+        if let Some(ref t) = tier {
+            if !VALID_TIERS.contains(&t.as_str()) {
+                return Err(AuthError::TokenCreationError);
+            }
+        }
+
+        let now = Utc::now();
+        let expiration = now
             .checked_add_signed(Duration::try_hours(24).expect("valid duration"))
             .expect("valid timestamp")
             .timestamp();
@@ -64,20 +81,43 @@ impl TokenManager {
             role: role.to_owned(),
             persona_id,
             tier,
-            iat: Utc::now().timestamp() as usize,
+            iat: now.timestamp() as usize,
             exp: expiration as usize,
         };
 
-        encode(&Header::default(), &claims, &self.encoding_key)
+        // Pin to HS256 — Header::default() uses HS256 but being explicit
+        // prevents accidental algorithm change in dependency upgrades
+        let header = Header::new(Algorithm::HS256);
+        encode(&header, &claims, &self.encoding_key)
             .map_err(|_| AuthError::TokenCreationError)
     }
 
     pub fn validate_token(&self, token: &str) -> Result<Claims, AuthError> {
+        // Pin algorithm to HS256 to prevent algorithm confusion attacks.
+        // Validation::default() accepts any algorithm — an attacker could
+        // forge a token using "none" or switch to RS256 with the HMAC secret
+        // as a public key, bypassing signature verification entirely.
+        let mut validation = Validation::new(Algorithm::HS256);
+        validation.validate_exp = true;
+        validation.validate_nbf = false;
+        validation.leeway = 30; // 30-second clock skew tolerance for distributed deploys
+
         let token_data = decode::<Claims>(
             token,
             &self.decoding_key,
-            &Validation::default()
+            &validation,
         ).map_err(|_| AuthError::InvalidToken)?;
+
+        // Post-decode validation: reject tokens with invalid role/tier claims
+        // even if signature is valid (defense-in-depth against DB corruption)
+        if !VALID_ROLES.contains(&token_data.claims.role.as_str()) {
+            return Err(AuthError::InvalidToken);
+        }
+        if let Some(ref t) = token_data.claims.tier {
+            if !VALID_TIERS.contains(&t.as_str()) {
+                return Err(AuthError::InvalidToken);
+            }
+        }
 
         Ok(token_data.claims)
     }

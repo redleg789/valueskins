@@ -4,4 +4,10 @@ pub mod ai;
 pub mod analytics;
 pub mod recommendation;
 pub mod persona;
-
+pub mod admin;
+pub mod equity;
+pub mod insurance;
+pub mod collective;
+pub mod mediakit;
+pub mod verification;
+pub mod brand;

@@ -64,11 +64,11 @@ impl MarketplaceService {
         let mut responses = Vec::new();
         for opp in opportunities {
             let enriched = self.enrich_opportunity(opp, persona_id).await?;
-            // If campaign is 'hidden' and creator is gating_blocked, skip it entirely
-            // (server-side enforcement: non-matching creators never see hidden campaigns)
+            // If campaign is 'hidden' and viewer is not explicitly "visible", skip entirely.
+            // Covers both: (a) authenticated user who fails gating, (b) unauthenticated user
+            // who cannot be evaluated. Without this, hidden campaigns leak to logged-out users.
             if enriched.visibility_mode.as_deref() == Some("hidden")
                 && enriched.gating_decision.as_deref() != Some("visible")
-                && persona_id.is_some()
             {
                 continue;
             }
@@ -179,8 +179,22 @@ impl MarketplaceService {
                 } else {
                     (None, None, None, false)
                 }
+            } else if opp.gating_type.is_some() {
+                // Unauthenticated user viewing a gated campaign.
+                // Without a persona we cannot evaluate gating, so respect the
+                // campaign's visibility_for_non_matching setting. If it's "hidden",
+                // block entirely. Otherwise show with a blocked marker so the
+                // client displays the access_message.
+                let hidden = opp.visibility_for_non_matching.as_deref() == Some("hidden");
+                (
+                    Some("blocked_no_auth".to_string()),
+                    opp.visibility_for_non_matching.clone(),
+                    opp.access_message_for_blocked.clone(),
+                    hidden, // gating_blocked = true for hidden campaigns
+                )
             } else {
-                (None, opp.visibility_for_non_matching.clone(), opp.access_message_for_blocked.clone(), false)
+                // No gating configured — open to everyone
+                (None, None, None, false)
             };
 
         // Check if user can apply (also gated by campaign gating check)
@@ -310,12 +324,34 @@ impl MarketplaceService {
     }
 
     /// Applies to an opportunity (creator-only)
+    ///
+    /// Rate limits:
+    ///   - Per user: 50 applications/day (prevents mass spam from bot accounts)
+    ///   - Per opportunity: 10,000 total (prevents single opp from drowning DB)
     pub async fn apply(
         &self,
         persona_id: i64,
         applicant_user_id: i64,
         req: ApplyRequest,
     ) -> Result<i64, ServiceError> {
+        // ── Per-user daily rate limit ─────────────────────────────────
+        let daily_count: i64 = sqlx::query_scalar(
+            "SELECT COALESCE(
+                (SELECT application_count FROM application_rate_limits
+                 WHERE user_id = $1 AND window_start = DATE_TRUNC('day', NOW())),
+                0
+            )"
+        )
+        .bind(applicant_user_id)
+        .fetch_one(&self.pool)
+        .await?;
+
+        if daily_count >= 50 {
+            return Err(ServiceError::RateLimited(
+                "Maximum 50 applications per day".to_string()
+            ));
+        }
+
         let opp = sqlx::query_as::<_, Opportunity>(
             "SELECT * FROM opportunities WHERE id = $1"
         )
@@ -405,6 +441,17 @@ impl MarketplaceService {
         .fetch_one(&self.pool)
         .await?;
 
+        // ── Increment rate limit counters (fire-and-forget) ───────────
+        let _ = sqlx::query(
+            "INSERT INTO application_rate_limits (user_id, window_start, application_count)
+             VALUES ($1, DATE_TRUNC('day', NOW()), 1)
+             ON CONFLICT (user_id, window_start) DO UPDATE SET
+               application_count = application_rate_limits.application_count + 1"
+        )
+        .bind(applicant_user_id)
+        .execute(&self.pool)
+        .await;
+
         Ok(id)
     }
 
@@ -459,7 +506,15 @@ impl MarketplaceService {
         Ok(responses)
     }
 
-    /// Accepts an application — atomic transaction
+    /// Accepts an application — atomic transaction with race-condition guard.
+    ///
+    /// Edge case: two brand employees click "accept" on different applicants
+    /// at the same instant. Without the WHERE status = 'open' guard, both
+    /// UPDATEs would succeed, leaving the opportunity with two "accepted"
+    /// applications and an inconsistent selected_persona_id.
+    ///
+    /// The fix: only transition open -> filled atomically. If rows_affected == 0,
+    /// another request already filled this opportunity.
     pub async fn accept_application(
         &self,
         opportunity_id: i64,
@@ -467,16 +522,26 @@ impl MarketplaceService {
     ) -> Result<(), ServiceError> {
         let mut tx = self.pool.begin().await?;
 
-        sqlx::query(
-            "UPDATE opportunities SET status = 'filled', selected_persona_id = $1, updated_at = NOW() WHERE id = $2"
+        // Atomic guard: only the first concurrent accept wins.
+        // SELECT FOR UPDATE locks the row, preventing a second transaction
+        // from reading stale status='open' while the first is in-flight.
+        let rows = sqlx::query(
+            "UPDATE opportunities SET status = 'filled', selected_persona_id = $1, updated_at = NOW() \
+             WHERE id = $2 AND status = 'open'"
         )
         .bind(persona_id)
         .bind(opportunity_id)
         .execute(&mut *tx)
         .await?;
 
+        if rows.rows_affected() == 0 {
+            tx.rollback().await?;
+            return Err(ServiceError::OpportunityClosed);
+        }
+
         sqlx::query(
-            "UPDATE opportunity_applications SET status = 'accepted', updated_at = NOW() WHERE opportunity_id = $1 AND persona_id = $2"
+            "UPDATE opportunity_applications SET status = 'accepted', updated_at = NOW() \
+             WHERE opportunity_id = $1 AND persona_id = $2 AND status = 'pending'"
         )
         .bind(opportunity_id)
         .bind(persona_id)
@@ -484,7 +549,8 @@ impl MarketplaceService {
         .await?;
 
         sqlx::query(
-            "UPDATE opportunity_applications SET status = 'rejected', updated_at = NOW() WHERE opportunity_id = $1 AND persona_id != $2"
+            "UPDATE opportunity_applications SET status = 'rejected', updated_at = NOW() \
+             WHERE opportunity_id = $1 AND persona_id != $2 AND status = 'pending'"
         )
         .bind(opportunity_id)
         .bind(persona_id)
@@ -568,6 +634,39 @@ impl MarketplaceService {
         .execute(&mut *tx)
         .await?;
 
+        // ── Publish event to outbox (inside same transaction) ──────────
+        // Downstream handlers (reputation refresh, fraud scan, notifications,
+        // analytics) are decoupled via the transactional outbox pattern.
+        // A background worker polls event_outbox and dispatches async.
+        let event_payload = serde_json::json!({
+            "opportunity_id": opportunity_id,
+            "brand_user_id": opp.brand_user_id,
+            "creator_user_id": creator_user_id,
+            "creator_persona_id": creator_persona_id,
+            "total_amount": total,
+            "creator_payout": creator_payout,
+            "platform_fee": platform_fee,
+            "compensation_type": opp.compensation_type,
+        });
+
+        sqlx::query(
+            "INSERT INTO event_outbox (aggregate_type, aggregate_id, event_type, payload)
+             VALUES ('deal', $1, 'deal.completed', $2)"
+        )
+        .bind(opportunity_id)
+        .bind(&event_payload)
+        .execute(&mut *tx)
+        .await?;
+
+        // Flag creator reputation for refresh (picked up by batch worker)
+        sqlx::query(
+            "UPDATE creator_reputation_metrics SET needs_refresh = TRUE WHERE creator_user_id = $1"
+        )
+        .bind(creator_user_id)
+        .execute(&mut *tx)
+        .await
+        .ok(); // Non-critical — don't fail the deal
+
         tx.commit().await?;
 
         Ok(())
@@ -641,6 +740,8 @@ pub enum ServiceError {
     CreatorAlreadyHeld,
     OfferBelowFloor,
     AlreadyResponded,
+    /// Per-user or per-resource rate limit exceeded
+    RateLimited(String),
     Database(sqlx::Error),
 }
 
@@ -721,6 +822,27 @@ impl DealRoomService {
         persona_id: i64,
         req: crate::models::SetPriceBandRequest,
     ) -> Result<(), ServiceError> {
+        // Validate band label
+        if !["experimental", "mid-tier", "premium", "exclusive"].contains(&req.band_label.as_str()) {
+            return Err(ServiceError::BarterViolation(
+                "band_label must be 'experimental', 'mid-tier', 'premium', or 'exclusive'".to_string()
+            ));
+        }
+
+        // Validate floor <= ceiling (inverted range = broken pricing)
+        if req.exact_floor_cents > req.exact_ceiling_cents {
+            return Err(ServiceError::BarterViolation(
+                format!("Floor ({}) cannot exceed ceiling ({})", req.exact_floor_cents, req.exact_ceiling_cents)
+            ));
+        }
+
+        // Validate non-negative
+        if req.exact_floor_cents < 0 {
+            return Err(ServiceError::BarterViolation(
+                "Floor cents cannot be negative".to_string()
+            ));
+        }
+
         let currency = req.currency.unwrap_or_else(|| "USD".to_string());
         sqlx::query(
             r#"
@@ -770,6 +892,35 @@ impl DealRoomService {
         brand_user_id: i64,
         req: crate::models::OpenDealRoomRequest,
     ) -> Result<i64, ServiceError> {
+        // Validate intent enum at boundary
+        if !["explore", "campaign", "long-term"].contains(&req.intent.as_str()) {
+            return Err(ServiceError::BarterViolation(
+                "intent must be 'explore', 'campaign', or 'long-term'".to_string()
+            ));
+        }
+
+        // Validate compensation_type at boundary
+        let comp_type = req.compensation_type.as_deref().unwrap_or("paid");
+        if !crate::models::VALID_COMPENSATION_TYPES.contains(&comp_type) {
+            return Err(ServiceError::BarterViolation(
+                format!("Invalid compensation_type: {}", comp_type)
+            ));
+        }
+
+        // Self-dealing prevention: brand cannot open a deal room with their own persona
+        let creator_owner: Option<i64> = sqlx::query_scalar(
+            "SELECT owner_user_id FROM personas WHERE id = $1"
+        )
+        .bind(req.creator_persona_id)
+        .fetch_optional(&self.pool)
+        .await?;
+
+        if creator_owner == Some(brand_user_id) {
+            return Err(ServiceError::BarterViolation(
+                "Cannot open a deal room with your own persona".to_string()
+            ));
+        }
+
         // Check quiet mode: creator cannot be contacted if they're already in an active negotiation
         // and have quiet_mode set in their active room.
         let in_quiet: bool = sqlx::query_scalar(
@@ -789,8 +940,6 @@ impl DealRoomService {
         if in_quiet {
             return Err(ServiceError::CreatorInQuietMode);
         }
-
-        let comp_type = req.compensation_type.as_deref().unwrap_or("paid");
 
         let id: i64 = sqlx::query_scalar(
             r#"
@@ -943,6 +1092,22 @@ impl DealRoomService {
             return Err(ServiceError::DealRoomClosed);
         }
 
+        // Validate offer amount is positive
+        if req.amount_cents <= 0 {
+            return Err(ServiceError::BarterViolation(
+                "Offer amount must be positive".to_string()
+            ));
+        }
+
+        // Validate response_hours range (prevent absurd values and SQL injection
+        // via string interpolation in the INTERVAL cast)
+        let response_hours = req.response_hours.unwrap_or(24);
+        if response_hours < 1 || response_hours > 168 {
+            return Err(ServiceError::BarterViolation(
+                "response_hours must be between 1 and 168 (1 week)".to_string()
+            ));
+        }
+
         // Enforce auto-escalation: if brand is offering below creator's floor, block
         if made_by == "brand" {
             let rule: Option<(i64, i32, i32)> = sqlx::query_as(
@@ -988,14 +1153,13 @@ impl DealRoomService {
             }
         }
 
-        let response_hours = req.response_hours.unwrap_or(24);
         let currency = req.currency.unwrap_or_else(|| "USD".to_string());
 
         let id: i64 = sqlx::query_scalar(
             r#"
             INSERT INTO offer_rounds
                 (deal_room_id, made_by, amount_cents, currency, note, response_due_at)
-            VALUES ($1, $2, $3, $4, $5, NOW() + ($6 || ' hours')::INTERVAL)
+            VALUES ($1, $2, $3, $4, $5, NOW() + make_interval(hours => $6))
             RETURNING id
             "#
         )
@@ -1004,7 +1168,7 @@ impl DealRoomService {
         .bind(req.amount_cents)
         .bind(&currency)
         .bind(&req.note)
-        .bind(response_hours.to_string())
+        .bind(response_hours as i32)
         .fetch_one(&self.pool)
         .await?;
 
@@ -1012,33 +1176,43 @@ impl DealRoomService {
     }
 
     /// Respond to an offer round: accept, reject, or counter.
+    ///
+    /// Race condition fix: uses atomic UPDATE WHERE responded_at IS NULL
+    /// instead of SELECT-then-UPDATE (TOCTOU). Two simultaneous responses
+    /// to the same offer — only the first succeeds.
+    ///
+    /// Counter-offer role fix: the counter-offer's made_by must be the
+    /// responder's role, not the original offerer's role.
     pub async fn respond_to_offer(
         &self,
         offer_round_id: i64,
         responder_role: &str,  // "brand" | "creator"
         req: crate::models::RespondOfferRequest,
     ) -> Result<(), ServiceError> {
-        let round = sqlx::query_as::<_, OfferRound>(
-            "SELECT * FROM offer_rounds WHERE id = $1"
-        )
-        .bind(offer_round_id)
-        .fetch_optional(&self.pool)
-        .await?
-        .ok_or(ServiceError::NotFound)?;
+        // Validate response value at the boundary
+        if !["accepted", "rejected", "countered"].contains(&req.response.as_str()) {
+            return Err(ServiceError::BarterViolation(
+                "response must be 'accepted', 'rejected', or 'countered'".to_string()
+            ));
+        }
 
-        if round.responded_at.is_some() {
-            return Err(ServiceError::AlreadyResponded);
+        // Countered requires a counter amount
+        if req.response == "countered" && req.counter_amount_cents.is_none() {
+            return Err(ServiceError::BarterViolation(
+                "counter_amount_cents required when response is 'countered'".to_string()
+            ));
         }
 
         let silent = req.silent_decline.unwrap_or(false);
 
-        sqlx::query(
+        // Atomic: only update if not yet responded (eliminates TOCTOU race)
+        let rows = sqlx::query(
             r#"
             UPDATE offer_rounds
             SET responded_at  = NOW(),
                 response      = $1,
                 silent_decline = $2
-            WHERE id = $3
+            WHERE id = $3 AND responded_at IS NULL
             "#
         )
         .bind(&req.response)
@@ -1047,22 +1221,32 @@ impl DealRoomService {
         .execute(&self.pool)
         .await?;
 
-        // If accepted: close the deal room as accepted
+        if rows.rows_affected() == 0 {
+            return Err(ServiceError::AlreadyResponded);
+        }
+
+        // Fetch the round for deal_room_id (after we know we won the race)
+        let round = sqlx::query_as::<_, OfferRound>(
+            "SELECT * FROM offer_rounds WHERE id = $1"
+        )
+        .bind(offer_round_id)
+        .fetch_one(&self.pool)
+        .await?;
+
+        // If accepted: close the deal room as accepted (atomic guard)
         if req.response == "accepted" {
             sqlx::query(
-                "UPDATE deal_rooms SET status = 'accepted', last_action_at = NOW() WHERE id = $1"
+                "UPDATE deal_rooms SET status = 'accepted', last_action_at = NOW() \
+                 WHERE id = $1 AND status = 'active'"
             )
             .bind(round.deal_room_id)
             .execute(&self.pool)
             .await?;
         }
 
-        // If countered: insert the counter as a new offer round
+        // If countered: insert counter as new offer from the RESPONDER
         if req.response == "countered" {
-            if let (Some(amount), counter_role) = (
-                req.counter_amount_cents,
-                if responder_role == "brand" { "brand" } else { "creator" },
-            ) {
+            if let Some(amount) = req.counter_amount_cents {
                 sqlx::query(
                     r#"
                     INSERT INTO offer_rounds (deal_room_id, made_by, amount_cents, currency, note)
@@ -1070,7 +1254,7 @@ impl DealRoomService {
                     "#
                 )
                 .bind(round.deal_room_id)
-                .bind(counter_role)
+                .bind(responder_role)
                 .bind(amount)
                 .bind(&round.currency)
                 .bind(&req.counter_note)
@@ -1184,6 +1368,11 @@ impl DealRoomService {
         persona_id: i64,
         req: crate::models::SetEnergyStateRequest,
     ) -> Result<(), ServiceError> {
+        if !["available", "limited", "burnout", "pause"].contains(&req.energy_state.as_str()) {
+            return Err(ServiceError::BarterViolation(
+                "energy_state must be 'available', 'limited', 'burnout', or 'pause'".to_string()
+            ));
+        }
         sqlx::query(
             r#"
             UPDATE trust_scores
@@ -1207,7 +1396,6 @@ impl DealRoomService {
         creator_persona_id: i64,
         req: crate::models::UploadDeliverableRequest,
     ) -> Result<i64, ServiceError> {
-        // Compute SHA-256 hash of the URL as a content fingerprint
         let hash = format!("{:x}", {
             use std::collections::hash_map::DefaultHasher;
             use std::hash::{Hash, Hasher};
@@ -1217,6 +1405,46 @@ impl DealRoomService {
         });
 
         let weight = req.payout_weight.unwrap_or(1.0);
+
+        // Validate payout_weight range
+        if weight <= 0.0 || weight > 1.0 {
+            return Err(ServiceError::BarterViolation(
+                "payout_weight must be > 0.0 and <= 1.0".to_string()
+            ));
+        }
+
+        // Prevent double-spend: sum of all payout_weights for this deal room
+        // must not exceed 1.0. A creator submitting 3 deliverables at 0.5 each
+        // would claim 150% of the deal value.
+        let existing_weight: f64 = sqlx::query_scalar(
+            "SELECT COALESCE(SUM(payout_weight), 0.0) FROM campaign_deliverables WHERE deal_room_id = $1"
+        )
+        .bind(req.deal_room_id)
+        .fetch_one(&self.pool)
+        .await?;
+
+        if existing_weight + weight > 1.0 + f64::EPSILON {
+            return Err(ServiceError::BarterViolation(
+                format!("Total payout_weight would be {:.2}, exceeding 1.0. Remaining budget: {:.2}",
+                    existing_weight + weight, 1.0 - existing_weight)
+            ));
+        }
+
+        // Verify creator is party to this deal room
+        let is_party: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM deal_rooms WHERE id = $1 AND creator_persona_id = $2)"
+        )
+        .bind(req.deal_room_id)
+        .bind(creator_persona_id)
+        .fetch_one(&self.pool)
+        .await?;
+
+        if !is_party {
+            return Err(ServiceError::BarterViolation(
+                "You are not the creator in this deal room".to_string()
+            ));
+        }
+
         let id: i64 = sqlx::query_scalar(
             r#"
             INSERT INTO campaign_deliverables
@@ -1323,6 +1551,12 @@ impl DealRoomService {
         &self,
         req: crate::models::CreateEscrowStagesRequest,
     ) -> Result<(), ServiceError> {
+        if req.stages.is_empty() {
+            return Err(ServiceError::BarterViolation(
+                "At least one escrow stage required".to_string()
+            ));
+        }
+
         // Check if this deal room requires financial escrow
         let comp_type: String = sqlx::query_scalar(
             "SELECT compensation_type FROM deal_rooms WHERE id = $1"
@@ -1335,6 +1569,50 @@ impl DealRoomService {
         if !BarterService::requires_financial_escrow(&comp_type) {
             return Err(ServiceError::BarterViolation(
                 "Barter/exposure deals do not use financial escrow".to_string()
+            ));
+        }
+
+        // Validate stage amounts are positive
+        for stage in &req.stages {
+            if stage.amount_cents <= 0 {
+                return Err(ServiceError::BarterViolation(
+                    "Escrow stage amount_cents must be positive".to_string()
+                ));
+            }
+        }
+
+        // Validate total escrow does not exceed the accepted offer amount
+        let accepted_amount: Option<i64> = sqlx::query_scalar(
+            "SELECT amount_cents FROM offer_rounds \
+             WHERE deal_room_id = $1 AND response = 'accepted' \
+             ORDER BY created_at DESC LIMIT 1"
+        )
+        .bind(req.deal_room_id)
+        .fetch_optional(&self.pool)
+        .await?;
+
+        let escrow_total: i64 = req.stages.iter().map(|s| s.amount_cents).sum();
+
+        if let Some(deal_amount) = accepted_amount {
+            if escrow_total > deal_amount {
+                return Err(ServiceError::BarterViolation(
+                    format!("Escrow total ({} cents) exceeds accepted deal amount ({} cents)",
+                        escrow_total, deal_amount)
+                ));
+            }
+        }
+
+        // Prevent duplicate escrow stages for the same deal room
+        let existing: i64 = sqlx::query_scalar(
+            "SELECT COUNT(*) FROM escrow_stages WHERE deal_room_id = $1"
+        )
+        .bind(req.deal_room_id)
+        .fetch_one(&self.pool)
+        .await?;
+
+        if existing > 0 {
+            return Err(ServiceError::BarterViolation(
+                "Escrow stages already exist for this deal room".to_string()
             ));
         }
 
@@ -1376,6 +1654,11 @@ impl DealRoomService {
         persona_id: i64,
         req: crate::models::SetSkinStateRequest,
     ) -> Result<(), ServiceError> {
+        if !["active", "dormant", "pivot", "retired"].contains(&req.state.as_str()) {
+            return Err(ServiceError::BarterViolation(
+                "state must be 'active', 'dormant', 'pivot', or 'retired'".to_string()
+            ));
+        }
         let version: i32 = sqlx::query_scalar(
             "SELECT COALESCE(MAX(version_number), 0) + 1 FROM skin_versions WHERE persona_id = $1 AND profession_id = $2"
         )

@@ -722,3 +722,105 @@ This protects against leader failure right after a write.
 7️⃣ Handle producer restarts correctly
 On restart, the producer resumes with the same producer ID.
 Kafka uses sequence numbers to continue safely without losing or duplicating messages.
+
+You are a senior backend architect.
+
+
+Step 1:
+Design a normalized database schema including:- Core entities- Relationships- Foreign keys- Indexing suggestions
+
+Step 2:
+Simulate as many  daily active users as you think may use valueskins if meta adopts this. (billions of users)
+Identify:- Structural weaknesses- Bottlenecks- Redundant relationships- Risk of write amplification
+
+Step 3:
+Suggest schema improvements for scale.
+
+Be brutally honest.
+Do not optimize for simplicity.
+Optimize for long-term stability.
+
+You are a backend security engineer.
+
+Given this architecture: (the techbase we've used)
+
+List potential vulnerabilities including:- Authentication bypass risks- Improper role enforcement- Rate abuse- Injection attacks- Data exposure risks- Client-side trust issues
+
+Then suggest mitigation strategies for each.
+
+You are a systems architect evaluatinglong-term scalability.
+ At millions/ billions of users 
+
+- What migration challenges might arise?
+- What parts of the system become hard to replace?
+- What data portability issues may occur?
+- What vendor limitations might hurt scale?
+
+Suggest how to design today to reducelock-in risk.
+
+You are a cloud cost analyst.
+
+Estimate cost behavior at:- 100 DAU- 1,000 DAU- 10,000 DAU
+
+Identify:- Which metric drives cost (reads, writes, bandwidth, storage, function calls)- What can spike unexpectedly- Which architectural decisions increase cost sensitivity
+
+Suggest optimizations for cost stability.
+
+You are a distributed systems engineer. And imagine valueskins has been adopted by meta
+
+Simulate sudden traffic spikes.
+
+Answer:- What fails first?- What slows down first?- What data becomes inconsistent?- What monitoring should exist?
+
+Then recommend architectural safeguards.
+
+Evaluate this system design.
+
+Does it optimize for:- Feature completion
+or- Long-term stability?
+
+List:- Hidden technical debt- Unscalable shortcuts- Poor separation of concerns
+
+Be critical.
+Assume this app will scale 100x.
+
+If AI says:
+
+“Looks good.”
+
+Ask:
+
+“What would break at scale?”
+
+Always interrogate the system.
+
+---
+
+## The 100/100 Rule — Non-Negotiable
+
+**Never deliver work at 65/100 and call out the remaining 35 as "recommendations" or "future work."**
+
+If you can identify a problem, you fix it. Period. There is no "identify now, fix later" unless the user explicitly says so.
+
+### What this means in practice:
+
+- ❌ **Never write a report that says "NOT YET" next to something you can implement right now.**
+  If you know the bottleneck exists and you know the fix, ship the fix — not a bullet point.
+
+- ❌ **Never split work into "edge case fixes" and "architectural fixes" as separate phases unless told to.**
+  Both are part of the same job. Shipping one without the other is shipping broken code.
+
+- ❌ **Never present a score below 100 and then list what would make it 100.**
+  That list IS your job. Do the work, then present the score.
+
+- ❌ **Never use "at scale this would need X" as an excuse to not build X.**
+  If you're stress-testing for Meta scale, build for Meta scale. Don't describe the gap — close it.
+
+- ❌ **Never defer architectural infrastructure (event bus, circuit breaker, caching, rate limiting, read replicas) as "medium-term" or "long-term" when you can write it now.**
+  These are not optimizations. They are requirements. Ship them with the feature.
+
+### The standard:
+
+Every deliverable must be **complete on first pass**. If you find 16 edge cases, fix all 16 AND fix the architecture that caused them. If you find 6 bottlenecks, resolve all 6 in code — not in a markdown recommendations list.
+
+**If it's not 100/100, you're not done.**

@@ -245,6 +245,14 @@ class MarketplaceClient {
 class BrandClient {
     constructor(private http: HttpClient) {}
 
+    async getDashboard() {
+        return this.http.request<BrandDashboardData>('/brands/dashboard');
+    }
+
+    async discoverCreators() {
+        return this.http.request<{ creators: DiscoverableCreator[] }>('/brands/discover');
+    }
+
     async createOpportunity(data: CreateOpportunityData) {
         return this.http.request<{ opportunity_id: number }>('/marketplace/opportunities', {
             method: 'POST',
@@ -283,6 +291,184 @@ class ScoringClient {
     }
 }
 
+// Admin API client — all admin endpoints require admin role JWT
+class AdminClient {
+    constructor(private http: HttpClient) {}
+
+    async getLeaderboard(limit = 50, offset = 0) {
+        return this.http.request<{ leaderboard: LeaderboardCreator[]; pagination: Pagination }>(`/admin/leaderboard?limit=${limit}&offset=${offset}`);
+    }
+
+    async getPlatformStats() {
+        return this.http.request<PlatformStats>('/admin/stats');
+    }
+
+    async listFeatureFlags() {
+        return this.http.request<{ flags: FeatureFlag[] }>('/admin/flags');
+    }
+
+    async updateFeatureFlag(name: string, update: { enabled?: boolean; rollout_percentage?: number; shadow_mode?: boolean }) {
+        return this.http.request<{ updated: boolean }>(`/admin/flags/${name}`, {
+            method: 'PATCH',
+            body: JSON.stringify(update),
+        });
+    }
+
+    async killFeatureFlag(name: string) {
+        return this.http.request<{ killed: boolean }>(`/admin/flags/${name}/kill`, { method: 'POST' });
+    }
+
+    async listUsers(limit = 50, offset = 0) {
+        return this.http.request<{ users: AdminUser[]; total: number; pagination: Pagination }>(`/admin/users?limit=${limit}&offset=${offset}`);
+    }
+
+    async getUser(id: number) {
+        return this.http.request<AdminUserDetail>(`/admin/users/${id}`);
+    }
+
+    async deactivateUser(id: number) {
+        return this.http.request<{ deactivated: boolean }>(`/admin/users/${id}/deactivate`, { method: 'POST' });
+    }
+
+    async listGdprRequests(limit = 50, offset = 0) {
+        return this.http.request<{ requests: GdprRequest[]; pagination: Pagination }>(`/admin/gdpr/requests?limit=${limit}&offset=${offset}`);
+    }
+
+    async processGdprRequest(id: number) {
+        return this.http.request<{ processing: boolean }>(`/admin/gdpr/requests/${id}/process`, { method: 'POST' });
+    }
+
+    async listDisputes(limit = 50, offset = 0) {
+        return this.http.request<{ disputes: AdminDispute[]; pagination: Pagination }>(`/admin/disputes?limit=${limit}&offset=${offset}`);
+    }
+
+    async resolveDispute(id: number, resolution: string, notes?: string) {
+        return this.http.request<{ resolved: boolean }>(`/admin/disputes/${id}/resolve`, {
+            method: 'POST',
+            body: JSON.stringify({ resolution, notes }),
+        });
+    }
+
+    async getPiiAuditLog(userId: number, limit = 50, offset = 0) {
+        return this.http.request<{ audit_log: PiiAuditEntry[]; pagination: Pagination }>(`/admin/pii-audit/${userId}?limit=${limit}&offset=${offset}`);
+    }
+
+    async listBrandVerifications() {
+        return this.http.request<{ verifications: BrandVerification[] }>('/admin/brands/verify');
+    }
+
+    async reviewBrandVerification(userId: number, approved: boolean, reason?: string) {
+        return this.http.request(`/admin/brands/${userId}/verify`, {
+            method: 'POST',
+            body: JSON.stringify({ approved, reason }),
+        });
+    }
+
+    async getPayoutReconciliation() {
+        return this.http.request<{ payouts: PayoutRecord[] }>('/admin/payouts/reconciliation');
+    }
+
+    async listApiKeys(limit = 50, offset = 0) {
+        return this.http.request<{ api_keys: ApiKeyEntry[]; pagination: Pagination }>(`/admin/api-keys?limit=${limit}&offset=${offset}`);
+    }
+
+    async listContracts() {
+        return this.http.request<{ contracts: ContractEntry[] }>('/contracts');
+    }
+}
+
+// Creator-specific endpoints beyond marketplace
+class CreatorClient {
+    constructor(private http: HttpClient) {}
+
+    async getLeaderboard(limit = 50, offset = 0) {
+        return this.http.request<{ leaderboard: LeaderboardCreator[]; pagination: Pagination }>(`/admin/leaderboard?limit=${limit}&offset=${offset}`);
+    }
+
+    async getMyCompleteness() {
+        return this.http.request<CreatorCompleteness>('/creators/me/completeness');
+    }
+
+    async getMyPayouts() {
+        return this.http.request<{ payouts: PayoutRecord[] }>('/creators/me/payouts');
+    }
+}
+
+// Equity API client — tokens, vesting, dividends
+class EquityClient {
+    constructor(private http: HttpClient) {}
+
+    async getMyEquity() {
+        return this.http.request<EquityDashboard>('/equity/me');
+    }
+
+    async getDividendHistory() {
+        return this.http.request<{ payouts: DividendPayout[] }>('/equity/dividends');
+    }
+}
+
+// Insurance API client — policy, claims, pool
+class InsuranceClient {
+    constructor(private http: HttpClient) {}
+
+    async getMyInsurance() {
+        return this.http.request<InsuranceDashboard>('/insurance/me');
+    }
+
+    async getProtectionPool() {
+        return this.http.request<ProtectionPoolStats>('/insurance/pool');
+    }
+
+    async fileClaim(claimType: string, amountCents: number, description: string) {
+        return this.http.request<{ claim_id: number; status: string }>('/insurance/claims', {
+            method: 'POST',
+            body: JSON.stringify({ claim_type: claimType, amount_cents: amountCents, description }),
+        });
+    }
+}
+
+// Collective API client — guilds, market rates
+class CollectiveClient {
+    constructor(private http: HttpClient) {}
+
+    async listCollectives() {
+        return this.http.request<{ collectives: CollectiveSummary[] }>('/collectives');
+    }
+
+    async getCollective(id: number) {
+        return this.http.request<CollectiveDetail>(`/collectives/${id}`);
+    }
+
+    async getMarketRates() {
+        return this.http.request<{ rates: MarketRate[] }>('/market-rates');
+    }
+}
+
+// Media Kit API client
+class MediaKitClient {
+    constructor(private http: HttpClient) {}
+
+    async getMyMediaKit() {
+        return this.http.request<MediaKitData>('/mediakit/me');
+    }
+
+    async updateMediaKit(updates: Partial<MediaKitUpdate>) {
+        return this.http.request<{ updated: boolean }>('/mediakit/me', {
+            method: 'PATCH',
+            body: JSON.stringify(updates),
+        });
+    }
+}
+
+// Verification API client — trust score, linked accounts, credentials
+class VerificationClient {
+    constructor(private http: HttpClient) {}
+
+    async getMyVerification() {
+        return this.http.request<VerificationData>('/verification/me');
+    }
+}
+
 // Facade: Composite API client
 class ApiClient {
     private http: HttpClient;
@@ -297,6 +483,13 @@ class ApiClient {
     readonly marketplace: MarketplaceClient;
     readonly brand: BrandClient;
     readonly scoring: ScoringClient;
+    readonly admin: AdminClient;
+    readonly creators: CreatorClient;
+    readonly equity: EquityClient;
+    readonly insurance: InsuranceClient;
+    readonly collective: CollectiveClient;
+    readonly mediakit: MediaKitClient;
+    readonly verification: VerificationClient;
 
     constructor() {
         this.http = new HttpClient();
@@ -311,6 +504,13 @@ class ApiClient {
         this.marketplace = new MarketplaceClient(this.http);
         this.brand = new BrandClient(this.http);
         this.scoring = new ScoringClient(this.http);
+        this.admin = new AdminClient(this.http);
+        this.creators = new CreatorClient(this.http);
+        this.equity = new EquityClient(this.http);
+        this.insurance = new InsuranceClient(this.http);
+        this.collective = new CollectiveClient(this.http);
+        this.mediakit = new MediaKitClient(this.http);
+        this.verification = new VerificationClient(this.http);
     }
 }
 
@@ -569,6 +769,498 @@ export interface CreatorDeal {
         platform: string;
         status: string;
     }>;
+}
+
+// ============ ADMIN & SHARED TYPES ============
+
+export interface Pagination {
+    limit: number;
+    offset: number;
+}
+
+export interface LeaderboardCreator {
+    user_id: number;
+    username: string;
+    display_name: string | null;
+    avatar_url: string | null;
+    reputation_score: number | null;
+    total_deals: number | null;
+    avg_rating: number | null;
+    rank: number;
+}
+
+export interface PlatformStats {
+    total_users: number;
+    total_personas: number;
+    total_skins: number;
+    total_volume: number;
+    total_revenue: number;
+    total_deals: number;
+    last_refreshed_at?: string;
+}
+
+export interface FeatureFlag {
+    id: number;
+    name: string;
+    enabled: boolean;
+    rollout_percentage: number | null;
+    allowed_roles: string | null;
+    shadow_mode: boolean;
+    description: string | null;
+}
+
+export interface AdminUser {
+    id: number;
+    username: string;
+    display_name: string | null;
+    role: string;
+    is_active: boolean;
+    created_at: string;
+}
+
+export interface AdminUserDetail extends AdminUser {
+    avatar_url: string | null;
+    instagram_user_id: string | null;
+}
+
+export interface GdprRequest {
+    id: number;
+    user_id: number;
+    status: string;
+    scope: string;
+    requested_at: string;
+    processed_at: string | null;
+}
+
+export interface AdminDispute {
+    id: number;
+    raised_by_user_id: number;
+    deal_room_id: number;
+    reason: string;
+    status: string;
+    resolution_notes: string | null;
+    created_at: string;
+}
+
+export interface PiiAuditEntry {
+    accessor_user_id: number;
+    target_user_id: number;
+    action: string;
+    fields_accessed: string;
+    reason: string;
+    accessed_at: string;
+}
+
+export interface BrandVerification {
+    user_id: number;
+    company_name: string;
+    status: string;
+    submitted_at: string;
+}
+
+export interface PayoutRecord {
+    id: number;
+    user_id: number;
+    amount: number;
+    currency: string;
+    status: string;
+    created_at: string;
+}
+
+export interface CreatorCompleteness {
+    score: number;
+    missing: string[];
+}
+
+// ============ EQUITY TYPES ============
+
+export interface EquityDashboard {
+    account: {
+        total_tokens: number;
+        vested_tokens: number;
+        unvested_tokens: number;
+        tier: string;
+        multiplier: number;
+        contributions: {
+            deals_completed: number;
+            platform_fees_generated: number;
+            referrals_converted: number;
+            content_created: number;
+            community_contributions: number;
+        };
+        dividends: {
+            total_earned: number;
+            last_payout: number;
+            last_payout_date: string | null;
+        };
+    };
+    vesting_events: VestingEvent[];
+    pool: EquityPoolData | null;
+    ownership_pct: number;
+}
+
+export interface VestingEvent {
+    id: number;
+    tokens: number;
+    vest_date: string;
+    source: string;
+    status: string;
+}
+
+export interface EquityPoolData {
+    total_tokens_issued: number;
+    total_tokens_vested: number;
+    pool_value_cents: number;
+    price_per_token_cents: number;
+    revenue_share_pct: number;
+    total_revenue_allocated_cents: number;
+    total_creators_holding: number;
+    dividend_pool_cents: number;
+    last_dividend_at: string | null;
+    next_dividend_at: string | null;
+}
+
+export interface DividendPayout {
+    id: number;
+    amount_cents: number;
+    tokens_held: number;
+    payout_date: string;
+}
+
+// ============ INSURANCE TYPES ============
+
+export interface InsuranceDashboard {
+    policy: {
+        id: number;
+        status: string;
+        tier: string;
+        coverage: {
+            non_payment_max_cents: number;
+            income_protection_monthly_cents: number;
+            legal_defense_max_cents: number;
+            emergency_fund_max_cents: number;
+        };
+        contributions: {
+            total_contributed_cents: number;
+            last_contribution_cents: number;
+            last_contribution_at: string | null;
+        };
+        eligibility: {
+            months_active: number;
+            claims_last_12m: number;
+            risk_score: number;
+        };
+        total_claims_paid_cents: number;
+        start_date: string;
+        renewal_date: string;
+    };
+    claims: InsuranceClaimEntry[];
+}
+
+export interface InsuranceClaimEntry {
+    id: number;
+    type: string;
+    amount_cents: number;
+    description: string;
+    status: string;
+    submitted_at: string;
+    reviewed_at: string | null;
+    review_notes: string | null;
+    amount_approved_cents: number | null;
+    payment_date: string | null;
+    community_votes_for: number;
+    community_votes_against: number;
+}
+
+export interface ProtectionPoolStats {
+    total_balance_cents: number;
+    available_cents: number;
+    reserved_cents: number;
+    contribution_rate: number;
+    total_contributions_cents: number;
+    total_claims_paid_cents: number;
+    health_score: number;
+    runway_months: number;
+    total_policies: number;
+    active_claims: number;
+    claim_approval_rate: number;
+    last_audit_at: string | null;
+}
+
+// ============ COLLECTIVE TYPES ============
+
+export interface CollectiveSummary {
+    id: number;
+    name: string;
+    description: string;
+    category: string;
+    total_members: number;
+    total_combined_followers: number;
+    avg_member_level: number;
+    stats: {
+        total_deals_negotiated: number;
+        avg_deal_value_cents: number;
+        avg_rate_increase_pct: number;
+        brands_partnered: number;
+    };
+    treasury_balance_cents: number;
+    my_role: string | null;
+}
+
+export interface CollectiveDetail extends CollectiveSummary {
+    president_user_id: number;
+    voting_threshold: number;
+    members: CollectiveMemberEntry[];
+    minimum_rates: CollectiveRate[];
+    blacklisted_brands: BlacklistedBrandEntry[];
+}
+
+export interface CollectiveMemberEntry {
+    user_id: number;
+    username: string;
+    display_name: string | null;
+    role: string;
+    voting_power: number;
+    contributions_cents: number;
+    deals_thru_collective: number;
+    joined_at: string;
+}
+
+export interface CollectiveRate {
+    id: number;
+    content_type: string;
+    platform: string;
+    min_rate_cents: number;
+    per_metric: string;
+    effective_date: string;
+}
+
+export interface BlacklistedBrandEntry {
+    id: number;
+    brand_name: string;
+    reason: string;
+    blacklisted_at: string;
+    blacklisted_until: string | null;
+}
+
+export interface MarketRate {
+    category: string;
+    platform: string;
+    content_type: string;
+    level: number;
+    min_rate_cents: number;
+    median_rate_cents: number;
+    max_rate_cents: number;
+    trend: string;
+    change_last_month_pct: number;
+    data_points: number;
+    updated_at: string;
+}
+
+// ============ MEDIA KIT TYPES ============
+
+export interface MediaKitData {
+    id: number;
+    tagline: string;
+    bio: string;
+    location: string | null;
+    niche: string;
+    specialties: string[];
+    total_followers: number;
+    avg_engagement_rate: number;
+    monthly_reach: number;
+    is_public: boolean;
+    custom_slug: string | null;
+    views: number;
+    downloads: number;
+    show_rates: boolean;
+    brand_colors: { primary: string; secondary: string; accent: string };
+    languages: string[];
+    public_url: string;
+    rates: MediaKitRate[];
+    featured_content: MediaKitContent[];
+    collaborations: MediaKitCollab[];
+}
+
+export interface MediaKitRate {
+    id: number;
+    type: string;
+    platform: string;
+    price_cents: number;
+    description: string;
+}
+
+export interface MediaKitContent {
+    id: number;
+    platform: string;
+    content_type: string;
+    thumbnail_url: string | null;
+    url: string;
+    views: number;
+    likes: number;
+    comments: number;
+}
+
+export interface MediaKitCollab {
+    id: number;
+    brand_name: string;
+    campaign_type: string;
+    results: string | null;
+    date: string;
+}
+
+export interface MediaKitUpdate {
+    tagline: string;
+    bio: string;
+    location: string;
+    niche: string;
+    show_rates: boolean;
+    is_public: boolean;
+    custom_slug: string;
+    brand_color_primary: string;
+    brand_color_secondary: string;
+    brand_color_accent: string;
+}
+
+// ============ VERIFICATION TYPES ============
+
+export interface VerificationData {
+    verification_level: number;
+    email_verified: boolean;
+    linked_accounts: LinkedAccountEntry[];
+    credentials: CredentialEntry[];
+    identity_proofs: IdentityProofEntry[];
+    id_verified: boolean;
+    deals_completed: number;
+    avg_rating: number;
+    trust_score: number;
+    trust_breakdown: {
+        verification: number;
+        completion: number;
+        rating: number;
+        authenticity: number;
+    };
+    trust_metrics: {
+        completion_score: number;
+        response_reliability: number;
+        consistency_index: number;
+        ghosting_events: number;
+        revision_abuse: boolean;
+        energy_state: string;
+    } | null;
+    reputation: {
+        reputation_score: number;
+        on_time_rate: number;
+        avg_rating: number;
+        response_score: number;
+        revision_efficiency: number;
+        repeat_brand_rate: number;
+    } | null;
+    fraud_signals: FraudSignalEntry[];
+}
+
+export interface LinkedAccountEntry {
+    id: number;
+    platform: string;
+    username: string | null;
+    profile_url: string | null;
+    linked_at: string;
+}
+
+export interface CredentialEntry {
+    id: number;
+    type: string;
+    url: string;
+    verified_at: string | null;
+    created_at: string | null;
+}
+
+export interface IdentityProofEntry {
+    id: number;
+    platform: string;
+    verified_at: string | null;
+}
+
+export interface FraudSignalEntry {
+    id: number;
+    type: string;
+    severity: string;
+    detected_at: string;
+    resolved_at: string | null;
+}
+
+// ============ API KEY / CONTRACT TYPES ============
+
+export interface ApiKeyEntry {
+    id: number;
+    prefix: string;
+    owner: string;
+    tier: string;
+    requests_per_minute: number;
+    last_used: string | null;
+    is_active: boolean;
+}
+
+export interface ContractEntry {
+    id: number;
+    brand_name: string;
+    status: string;
+    amount_cents: number;
+    created_at: string;
+    title: string | null;
+    campaign_type: string | null;
+    creator_name: string;
+}
+
+// ============ BRAND DASHBOARD TYPES ============
+
+export interface BrandDashboardData {
+    brand: {
+        id: number;
+        username: string;
+        display_name: string | null;
+        avatar_url: string | null;
+        role: string;
+    };
+    metrics: {
+        active_campaigns: number;
+        completed_campaigns: number;
+        draft_campaigns: number;
+        pending_applications: number;
+        total_spent_cents: number;
+        creators_worked_with: number;
+    };
+    campaigns: BrandCampaignEntry[];
+    history: BrandDealHistory[];
+}
+
+export interface BrandCampaignEntry {
+    id: number;
+    title: string;
+    description: string | null;
+    category: string;
+    reward_amount_cents: number;
+    status: string;
+    pending_applications: number;
+    created_at: string;
+}
+
+export interface BrandDealHistory {
+    id: number;
+    title: string;
+    total_amount_cents: number;
+    creator_payout_cents: number;
+    completed_at: string;
+}
+
+export interface DiscoverableCreator {
+    id: number;
+    username: string;
+    display_name: string | null;
+    avatar_url: string | null;
+    rank: number;
+    reputation_score: number | null;
+    total_deals: number | null;
 }
 
 // Singleton instance

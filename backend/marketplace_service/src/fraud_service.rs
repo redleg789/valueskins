@@ -209,20 +209,34 @@ impl FraudService {
         Ok(signals)
     }
 
-    /// Batch scan all creators
+    /// Batch scan all creators — paginated to prevent OOM at scale.
     pub async fn batch_scan_all(&self) -> Result<usize, FraudError> {
-        let creator_ids: Vec<i64> = sqlx::query_scalar(
-            "SELECT DISTINCT creator_user_id FROM completed_deals"
-        )
-        .fetch_all(&self.pool)
-        .await
-        .map_err(FraudError::from)?;
-
+        let batch_size: i64 = 1000;
+        let mut offset: i64 = 0;
         let mut count = 0;
-        for creator_id in creator_ids {
-            if let Ok(signals) = self.run_full_scan(creator_id).await {
-                count += signals.len();
+
+        loop {
+            let creator_ids: Vec<i64> = sqlx::query_scalar(
+                "SELECT DISTINCT creator_user_id FROM completed_deals \
+                 ORDER BY creator_user_id LIMIT $1 OFFSET $2"
+            )
+            .bind(batch_size)
+            .bind(offset)
+            .fetch_all(&self.pool)
+            .await
+            .map_err(FraudError::from)?;
+
+            if creator_ids.is_empty() {
+                break;
             }
+
+            for creator_id in &creator_ids {
+                if let Ok(signals) = self.run_full_scan(*creator_id).await {
+                    count += signals.len();
+                }
+            }
+
+            offset += batch_size;
         }
 
         Ok(count)
