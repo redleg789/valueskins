@@ -63,22 +63,26 @@ where
         let token_manager = self.token_manager.clone();
 
         Box::pin(async move {
-            // Extract Authorization header
-            let auth_header = req
-                .headers()
-                .get("Authorization")
-                .and_then(|h| h.to_str().ok());
-
-            let token = match auth_header {
-                Some(header) if header.starts_with("Bearer ") => {
-                    header.strip_prefix("Bearer ").unwrap()
-                }
-                _ => {
-                    let response = HttpResponse::Unauthorized()
-                        .json(serde_json::json!({ "error": "Missing or invalid Authorization header" }));
-                    return Ok(req.into_response(response).map_into_right_body());
+            // Prefer httpOnly session cookie (web clients); fall back to Bearer token (API/mobile).
+            let token_str: String = if let Some(cookie) = req.cookie("valueskins_session") {
+                cookie.value().to_owned()
+            } else {
+                let auth_header = req
+                    .headers()
+                    .get("Authorization")
+                    .and_then(|h| h.to_str().ok());
+                match auth_header {
+                    Some(h) if h.starts_with("Bearer ") => {
+                        h.strip_prefix("Bearer ").unwrap().to_owned()
+                    }
+                    _ => {
+                        let response = HttpResponse::Unauthorized()
+                            .json(serde_json::json!({ "error": "Missing or invalid session" }));
+                        return Ok(req.into_response(response).map_into_right_body());
+                    }
                 }
             };
+            let token = token_str.as_str();
 
             // Verify token and store full claims in request extensions
             match token_manager.validate_token(token) {

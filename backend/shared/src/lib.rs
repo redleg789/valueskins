@@ -12,3 +12,4 @@ pub mod idempotency;
 pub mod upload_validator;
 pub mod refresh_tokens;
 pub mod data_retention;
+pub mod platform_config;

@@ -58,7 +58,7 @@ export default function CreatorInterestPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleInputChange = (field: keyof SignupForm, value: any) => {
+  const handleInputChange = <K extends keyof SignupForm>(field: K, value: SignupForm[K]) => {
     setForm(prev => ({ ...prev, [field]: value }));
     setError('');
   };

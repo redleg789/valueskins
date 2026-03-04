@@ -1,58 +1,55 @@
-## vexp — Context-Aware AI Coding <!-- vexp v1.2.12 -->
+## vexp — Context-Aware AI Coding <!-- vexp v1.2.18 -->
 
-### MANDATORY: use vexp MCP tools before ANYTHING else
-For every task — questions, bug fixes, features, exploration:
-**call the `get_context_capsule` MCP tool first**.
+### MANDATORY: use vexp pipeline — do NOT grep, glob, or Read files
+For every task — bug fixes, features, refactors, debugging:
+**call `run_pipeline` FIRST**. It executes context search + impact analysis +
+memory recall in a single call, returning compressed results.
 
-Do NOT use grep, glob, Bash, or Read to search/explore the codebase.
-Use vexp MCP tools instead — they return pre-indexed, relevant context.
+Do NOT use grep, glob, Bash, Read, or cat to search/explore the codebase.
+vexp returns pre-indexed, graph-ranked context that is more relevant and
+uses fewer tokens than manual file reading.
 
-### Available MCP tools (invoke via tool interface, NOT via HTTP or bash)
-- `get_context_capsule` — most relevant code for your task or question (ALWAYS FIRST)
-- `get_impact_graph` — what breaks if you change a symbol
-- `search_logic_flow` — execution paths between functions
-- `get_skeleton` — token-efficient file structure
+### Primary Tool
+- `run_pipeline` — **USE THIS FOR EVERYTHING**. Single call that runs
+  capsule + impact + memory server-side. Returns compressed results.
+  Auto-detects intent (debug/modify/refactor/explore) from your task.
+  Includes full file content for pivots (no need to Read files).
+  Examples:
+  - `run_pipeline({ "task": "fix JWT validation bug" })` — auto-detect
+  - `run_pipeline({ "task": "refactor db layer", "preset": "refactor" })` — explicit
+  - `run_pipeline({ "task": "add auth", "observation": "using JWT" })` — save insight in same call
+
+### Other MCP tools (use only when run_pipeline is insufficient)
+- `get_context_capsule` — lightweight alternative for simple questions only
+- `get_impact_graph` — standalone deep impact analysis of a specific symbol
+- `search_logic_flow` — trace execution paths between two specific symbols
+- `get_skeleton` — token-efficient file structure for a specific file
 - `index_status` — indexing status and health check
-- `workspace_setup` — bootstrap vexp config for a new project
-- `submit_lsp_edges` — submit type-resolved call edges (used by VS Code extension)
 - `get_session_context` — recall observations from current/previous sessions
-- `search_memory` — cross-session search for past decisions, insights, and explored code
-- `save_observation` — persist important insights with optional code symbol linking
-
-### Smart Features (automatic — no action needed)
-- **Intent Detection**: vexp auto-detects query intent from your prompt keywords.
-  "fix bug" → Debug mode (follows error paths), "refactor" → blast-radius mode,
-  "add feature" → Modify mode, default → Read mode. Each mode optimizes result ranking.
-- **Hybrid Search**: combines keyword matching (FTS) + semantic similarity (TF-IDF) + graph
-  centrality for better results. Finds `validateCredentials` when searching "authentication".
-- **Session Memory**: every tool call is auto-captured as an observation. Relevant memories
-  from previous sessions are auto-surfaced inside `get_context_capsule` results. Observations
-  linked to code symbols are auto-flagged stale when that code changes.
-- **Feedback Loop**: repeated queries with similar terms auto-expand the result budget.
-- **LSP Bridge**: VS Code captures type-resolved call edges for high-confidence call graphs.
-- **Change Coupling**: files modified together in git history are included as related context.
-- **Context Lineage**: frequently modified code gets a boost in relevance ranking.
+- `search_memory` — cross-session search for past decisions
+- `save_observation` — persist insights (prefer using run_pipeline's observation param instead)
 
 ### Workflow
-1. `get_context_capsule("your task or question")` — ALWAYS FIRST (includes relevant memories)
-2. Read the pivot files returned (full content)
-3. Review supporting skeletons for broader context
-4. Make targeted changes based on the context
-5. `get_impact_graph` before refactoring to verify no regressions
-6. `save_observation` to persist important decisions with code symbol links
-7. `search_memory` or `get_session_context` to recall past work
+1. `run_pipeline("your task")` — ALWAYS FIRST. Returns pivots + impact + memories in 1 call
+2. Make targeted changes based on the context returned
+3. `run_pipeline` again ONLY if you need more context during implementation
+4. Do NOT chain multiple vexp calls — one `run_pipeline` replaces capsule + impact + memory + observation
+
+### Smart Features (automatic — no action needed)
+- **Intent Detection**: auto-detects from your task keywords. "fix bug" → Debug, "refactor" → blast-radius, "add" → Modify
+- **Hybrid Search**: keyword + semantic + graph centrality ranking
+- **Session Memory**: auto-captures observations; memories auto-surfaced in results
+- **LSP Bridge**: VS Code captures type-resolved call edges
+- **Change Coupling**: co-changed files included as related context
 
 ### Advanced Parameters
-- `include_tests: true` — include test files (useful for debugging)
-- `max_tokens: 12000` — increase token budget for complex tasks
-- `pivot_depth: 3` — deeper graph traversal for broad exploration
-- `skeleton_detail: "detailed"` — more verbose skeletons
+- `preset: "debug"` — forces debug mode (capsule+tests+impact+memory)
+- `preset: "refactor"` — deep impact analysis (depth 5)
+- `max_tokens: 12000` — increase total budget for complex tasks
+- `include_tests: true` — include test files in results
+- `include_file_content: false` — omit full file content (lighter response)
 
 ### Multi-Repo Workspaces
-When multiple repos are indexed (monorepos, frontend+backend, microservices):
-- `get_context_capsule` queries **all repos** automatically — results show repo alias per file
-- Use `repos: ["alias"]` to restrict queries to specific repos
-- Use `cross_repo: true` on `get_impact_graph` and `search_logic_flow` to trace across repo boundaries
-- Use `index_status` to discover available repo aliases
-- `get_skeleton` accepts `repo: "alias"` to target a specific repo's files
+`run_pipeline` auto-queries all indexed repos. Use `repos: ["alias"]` to scope.
+Use `index_status` to discover available repo aliases.
 <!-- /vexp -->

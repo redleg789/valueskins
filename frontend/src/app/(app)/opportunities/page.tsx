@@ -6,6 +6,7 @@ import { api, MarketplaceOpportunity } from '@/lib/api';
 export default function MarketplacePage() {
     const [opportunities, setOpportunities] = useState<MarketplaceOpportunity[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         async function fetchOpportunities() {
@@ -13,9 +14,11 @@ export default function MarketplacePage() {
                 const res = await api.marketplace.getOpportunities();
                 if (res.data) {
                     setOpportunities(res.data.opportunities);
+                } else if (res.error) {
+                    setError(res.error);
                 }
-            } catch (error) {
-                console.error("Failed to fetch opportunities", error);
+            } catch {
+                setError('Failed to load opportunities. Please try again.');
             } finally {
                 setLoading(false);
             }
@@ -36,7 +39,17 @@ export default function MarketplacePage() {
                 </div>
             </div>
 
-            {loading ? (
+            {error ? (
+                <div className="flex flex-col items-center py-20 gap-3">
+                    <p className="text-red-400 font-medium">{error}</p>
+                    <button
+                        onClick={() => { setError(null); setLoading(true); }}
+                        className="text-sm text-purple-400 underline"
+                    >
+                        Retry
+                    </button>
+                </div>
+            ) : loading ? (
                 <div className="flex justify-center py-20">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
                 </div>

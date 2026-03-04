@@ -1,9 +1,27 @@
 use actix_web::{web, HttpResponse, Responder};
+use actix_web::cookie::{Cookie, SameSite};
+use actix_web::cookie::time::Duration as CookieDuration;
 use serde::Deserialize;
 use sqlx::PgPool;
 use tracing::{info, error, warn};
 use auth_service::verify::verify_instagram_token;
 use auth_service::token::TokenManager;
+
+/// Build a session cookie for the given token.
+/// `secure` should be true in production (HTTPS only).
+fn session_cookie(token: &str, secure: bool) -> Cookie<'static> {
+    Cookie::build("valueskins_session", token.to_owned())
+        .http_only(true)
+        .secure(secure)
+        .same_site(SameSite::Lax)
+        .path("/")
+        .max_age(CookieDuration::hours(24))
+        .finish()
+}
+
+fn is_production() -> bool {
+    std::env::var("APP_ENV").map(|v| v == "production").unwrap_or(false)
+}
 
 #[derive(Deserialize)]
 pub struct LoginRequest {
@@ -244,35 +262,39 @@ pub async fn login(
         Ok(pair) => pair,
         Err(e) => {
             error!("Failed to create refresh token: {:?}", e);
-            // Non-fatal: return JWT without refresh token
-            return HttpResponse::Ok().json(serde_json::json!({
-                "token": token,
-                "user": {
-                    "id": user_id,
-                    "instagram_user_id": ig_user_id,
-                    "username": username,
-                    "display_name": display_name,
-                    "avatar_url": avatar_url,
-                    "role": role,
-                    "persona_id": persona_id,
-                }
-            }));
+            // Non-fatal: return JWT without refresh token, still set cookie
+            return HttpResponse::Ok()
+                .cookie(session_cookie(&token, is_production()))
+                .json(serde_json::json!({
+                    "token": token,
+                    "user": {
+                        "id": user_id,
+                        "instagram_user_id": ig_user_id,
+                        "username": username,
+                        "display_name": display_name,
+                        "avatar_url": avatar_url,
+                        "role": role,
+                        "persona_id": persona_id,
+                    }
+                }));
         }
     };
 
-    HttpResponse::Ok().json(serde_json::json!({
-        "token": token,
-        "refresh_token": refresh_pair.refresh_token,
-        "user": {
-            "id": user_id,
-            "instagram_user_id": ig_user_id,
-            "username": username,
-            "display_name": display_name,
-            "avatar_url": avatar_url,
-            "role": role,
-            "persona_id": persona_id,
-        }
-    }))
+    HttpResponse::Ok()
+        .cookie(session_cookie(&token, is_production()))
+        .json(serde_json::json!({
+            "token": token,
+            "refresh_token": refresh_pair.refresh_token,
+            "user": {
+                "id": user_id,
+                "instagram_user_id": ig_user_id,
+                "username": username,
+                "display_name": display_name,
+                "avatar_url": avatar_url,
+                "role": role,
+                "persona_id": persona_id,
+            }
+        }))
 }
 
 #[derive(Deserialize)]
@@ -351,10 +373,12 @@ pub async fn refresh_token(
         }
     };
 
-    HttpResponse::Ok().json(serde_json::json!({
-        "token": jwt,
-        "refresh_token": pair.refresh_token,
-    }))
+    HttpResponse::Ok()
+        .cookie(session_cookie(&jwt, is_production()))
+        .json(serde_json::json!({
+            "token": jwt,
+            "refresh_token": pair.refresh_token,
+        }))
 }
 
 #[derive(Deserialize)]
@@ -377,10 +401,19 @@ pub async fn logout(
             match refresh_svc.revoke_all_for_user(claims.user_id).await {
                 Ok(n) => {
                     info!(user_id = claims.user_id, revoked = n, "All sessions revoked");
-                    return HttpResponse::Ok().json(serde_json::json!({
-                        "message": "All sessions revoked",
-                        "revoked_count": n
-                    }));
+                    let expired_cookie = Cookie::build("valueskins_session", "")
+                        .http_only(true)
+                        .secure(is_production())
+                        .same_site(SameSite::Lax)
+                        .path("/")
+                        .max_age(CookieDuration::ZERO)
+                        .finish();
+                    return HttpResponse::Ok()
+                        .cookie(expired_cookie)
+                        .json(serde_json::json!({
+                            "message": "All sessions revoked",
+                            "revoked_count": n
+                        }));
                 }
                 Err(e) => {
                     error!("Failed to revoke all sessions: {:?}", e);
@@ -401,5 +434,17 @@ pub async fn logout(
         }
     }
 
-    HttpResponse::Ok().json(serde_json::json!({ "message": "Logged out" }))
+    // Expire the httpOnly session cookie by setting Max-Age=0.
+    // This is the only reliable way to clear an httpOnly cookie from the browser.
+    let expired_cookie = Cookie::build("valueskins_session", "")
+        .http_only(true)
+        .secure(is_production())
+        .same_site(SameSite::Lax)
+        .path("/")
+        .max_age(CookieDuration::ZERO)
+        .finish();
+
+    HttpResponse::Ok()
+        .cookie(expired_cookie)
+        .json(serde_json::json!({ "message": "Logged out" }))
 }

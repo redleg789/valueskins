@@ -117,7 +117,7 @@ export default function AttributesPage() {
     content_rights_owned: true,
   });
 
-  const set = (field: keyof Form, value: any) => setForm(prev => ({ ...prev, [field]: value }));
+  const set = <K extends keyof Form>(field: K, value: Form[K]) => setForm(prev => ({ ...prev, [field]: value }));
   const stepIndex = STEPS.indexOf(step);
 
   const next = () => {

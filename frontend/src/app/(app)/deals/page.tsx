@@ -7,6 +7,7 @@ import { usePlatform } from '@/lib/context';
 import { PLATFORM_CONFIGS } from '@/lib/professions';
 import {
   getDealStatusInfo,
+  getOpportunityStatusInfo,
   formatCurrency,
   calculateDealPricing,
 } from '@/lib/deals';
@@ -259,7 +260,7 @@ function Tag({ label, color }: { label: string; color?: string }) {
 }
 
 function OpportunityCard({ opportunity, accentColor, index, onClick }: { opportunity: MarketplaceOpportunity; accentColor: string; index: number; onClick: () => void }) {
-  const statusInfo = getDealStatusInfo(opportunity.status as any);
+  const statusInfo = getOpportunityStatusInfo(opportunity.status);
   return (
     <div
       onClick={onClick}
@@ -291,7 +292,7 @@ function OpportunityCard({ opportunity, accentColor, index, onClick }: { opportu
 }
 
 function CreatorDealCard({ deal, type, accentColor, index, onClick }: { deal: CreatorDeal; type: 'active' | 'completed'; accentColor: string; index: number; onClick: () => void }) {
-  const statusInfo = getDealStatusInfo(deal.status as any);
+  const statusInfo = getDealStatusInfo(deal.status);
   return (
     <div
       onClick={onClick}

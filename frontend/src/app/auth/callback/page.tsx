@@ -103,12 +103,12 @@ export default function OAuthCallbackPage() {
 
                 const data: LoginResponse = await response.json();
 
-                // Persist JWT token
-                if (data.token) {
-                    localStorage.setItem('valueskins_token', data.token);
-                }
+                // The backend sets an httpOnly `valueskins_session` cookie on the
+                // /auth/login response — do NOT store the raw JWT in localStorage
+                // (XSS risk). The cookie is sent automatically on subsequent requests
+                // because the API client uses `credentials: 'include'`.
 
-                // Persist user profile
+                // Persist non-sensitive user profile for display purposes only
                 if (data.user) {
                     localStorage.setItem('valueskins_user', JSON.stringify(data.user));
                 }

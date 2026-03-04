@@ -20,6 +20,8 @@
 
 import { Platform } from './professions';
 
+export type OpportunityStatus = 'open' | 'closed' | 'in_progress' | 'completed' | 'cancelled';
+
 export type DealStatus =
   | 'draft'           // Brand creating
   | 'active'          // Open for applications
@@ -197,6 +199,22 @@ export function formatCurrency(cents: number): string {
 // ═════════════════════════════════════════════════════════════════════════
 // STATUS HELPERS
 // ═════════════════════════════════════════════════════════════════════════
+
+export function getOpportunityStatusInfo(status: OpportunityStatus): {
+  label: string;
+  color: string;
+  bgColor: string;
+  description: string;
+} {
+  const statusMap: Record<OpportunityStatus, { label: string; color: string; bgColor: string; description: string }> = {
+    open:        { label: 'Open',        color: '#10b981', bgColor: '#10b98120', description: 'Accepting applications' },
+    closed:      { label: 'Closed',      color: '#737373', bgColor: '#26262620', description: 'No longer accepting applications' },
+    in_progress: { label: 'In Progress', color: '#0095f6', bgColor: '#0095f620', description: 'Work underway' },
+    completed:   { label: 'Completed',   color: '#10b981', bgColor: '#10b98120', description: 'Campaign complete' },
+    cancelled:   { label: 'Cancelled',   color: '#ef4444', bgColor: '#ef444420', description: 'Campaign cancelled' },
+  };
+  return statusMap[status];
+}
 
 export function getDealStatusInfo(status: DealStatus): {
   label: string;

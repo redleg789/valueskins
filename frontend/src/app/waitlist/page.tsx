@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
 /**
@@ -47,11 +47,34 @@ const FOLLOWER_RANGES = [
     { value: '1m+', label: '1M+' },
 ];
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080';
+
+interface WaitlistStats {
+    total_signups: number;
+    verified_signups: number;
+    referral_signups: number;
+}
+
+function formatCount(n: number): string {
+    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M+`;
+    if (n >= 1_000)     return `${(n / 1_000).toFixed(1)}K+`;
+    return n.toLocaleString();
+}
+
 export default function WaitlistPage() {
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [submitted, setSubmitted] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const [waitlistPosition, setWaitlistPosition] = useState<number | null>(null);
+    const [stats, setStats] = useState<WaitlistStats | null>(null);
+
+    useEffect(() => {
+        fetch(`${API_URL}/waitlist/stats`)
+            .then(r => r.ok ? r.json() : Promise.reject(r.status))
+            .then((data: WaitlistStats) => setStats(data))
+            .catch(() => { /* non-critical — page works without stats */ });
+    }, []);
 
     const [formData, setFormData] = useState<WaitlistFormData>({
         email: '',
@@ -63,22 +86,56 @@ export default function WaitlistPage() {
 
     const handleSubmit = async () => {
         setLoading(true);
+        setError(null);
 
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        const searchParams = typeof window !== 'undefined'
+            ? new URLSearchParams(window.location.search)
+            : new URLSearchParams();
 
-        // Track conversion event
-        if (typeof window !== 'undefined' && (window as any).gtag) {
-            (window as any).gtag('event', 'waitlist_signup', {
-                creator_type: formData.creatorType,
-                followers: formData.followers,
-                platforms: formData.platforms.join(','),
+        try {
+            const res = await fetch(`${API_URL}/waitlist/join`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: formData.email,
+                    creator_type: formData.creatorType,
+                    follower_range: formData.followers,
+                    platforms: formData.platforms,
+                    referral_source: typeof document !== 'undefined' ? document.referrer || null : null,
+                    utm_source: searchParams.get('utm_source'),
+                    utm_medium: searchParams.get('utm_medium'),
+                    utm_campaign: searchParams.get('utm_campaign'),
+                }),
             });
-        }
 
-        setWaitlistPosition(Math.floor(Math.random() * 500) + 1000);
-        setSubmitted(true);
-        setLoading(false);
+            if (res.status === 409) {
+                // Already on waitlist — look up real position and show success
+                const posRes = await fetch(`${API_URL}/waitlist/position?email=${encodeURIComponent(formData.email)}`);
+                const posData = posRes.ok ? await posRes.json() : null;
+                setWaitlistPosition(posData?.position ?? null);
+            } else if (!res.ok) {
+                const data: { error?: string } = await res.json().catch(() => ({}));
+                setError(data.error ?? 'Something went wrong. Please try again.');
+                return;
+            } else {
+                const data: { position: number } = await res.json();
+                setWaitlistPosition(data.position);
+            }
+
+            if (typeof window !== 'undefined' && window.gtag) {
+                window.gtag('event', 'waitlist_signup', {
+                    creator_type: formData.creatorType,
+                    followers: formData.followers,
+                    platforms: formData.platforms.join(','),
+                });
+            }
+
+            setSubmitted(true);
+        } catch {
+            setError('Network error. Please check your connection and try again.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const togglePlatform = (platform: string) => {
@@ -180,16 +237,22 @@ export default function WaitlistPage() {
                             {/* Social Proof */}
                             <div className="flex flex-wrap gap-6 mb-8">
                                 <div>
-                                    <div className="text-3xl font-bold text-white">2,847</div>
+                                    <div className="text-3xl font-bold text-white">
+                                        {stats ? formatCount(stats.total_signups) : '—'}
+                                    </div>
                                     <div className="text-sm text-gray-400">Creators Waiting</div>
                                 </div>
                                 <div>
-                                    <div className="text-3xl font-bold text-white">$1.2M+</div>
-                                    <div className="text-sm text-gray-400">Opportunities Lined Up</div>
+                                    <div className="text-3xl font-bold text-white">
+                                        {stats ? formatCount(stats.verified_signups) : '—'}
+                                    </div>
+                                    <div className="text-sm text-gray-400">Verified Creators</div>
                                 </div>
                                 <div>
-                                    <div className="text-3xl font-bold text-white">47</div>
-                                    <div className="text-sm text-gray-400">Brand Partners</div>
+                                    <div className="text-3xl font-bold text-white">
+                                        {stats ? formatCount(stats.referral_signups) : '—'}
+                                    </div>
+                                    <div className="text-sm text-gray-400">Referred Signups</div>
                                 </div>
                             </div>
 
@@ -326,6 +389,9 @@ export default function WaitlistPage() {
                                         </div>
                                     </div>
 
+                                    {error && (
+                                        <p className="text-sm text-red-400 text-center pt-2">{error}</p>
+                                    )}
                                     <div className="flex gap-3 pt-4">
                                         <button
                                             onClick={() => setStep(2)}

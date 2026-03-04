@@ -1,3 +1,5 @@
+import type { DealStatus, DeliverableType, OpportunityStatus } from './deals';
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
 interface ApiResponse<T> {
@@ -5,29 +7,29 @@ interface ApiResponse<T> {
     error?: string;
 }
 
-// Base HTTP client — handles token management and HTTP requests
+// Base HTTP client — session maintained via httpOnly cookie set by the backend.
+// `credentials: 'include'` ensures the browser sends the cookie on every request.
+// Falls back to Authorization header for non-browser (SSR / mobile SDK) contexts.
 class HttpClient {
+    // No in-memory token needed; cookie is managed by browser + backend.
+    // Kept as a nullable field only for server-side / non-cookie contexts.
     private token: string | null = null;
 
+    /** Called only in non-browser environments (e.g. SSR data-fetch with token). */
     setToken(token: string) {
         this.token = token;
-        if (typeof window !== 'undefined') {
-            localStorage.setItem('valueskins_token', token);
-        }
+        // Do NOT write to localStorage — storing JWTs there is an XSS risk.
+        // Tokens are delivered via httpOnly cookie from the /auth/login endpoint.
     }
 
     getToken(): string | null {
-        if (this.token) return this.token;
-        if (typeof window !== 'undefined') {
-            this.token = localStorage.getItem('valueskins_token');
-        }
         return this.token;
     }
 
     clearToken() {
         this.token = null;
         if (typeof window !== 'undefined') {
-            localStorage.removeItem('valueskins_token');
+            // Clear persisted user profile (non-secret)
             localStorage.removeItem('valueskins_user');
         }
     }
@@ -41,14 +43,17 @@ class HttpClient {
             ...options.headers as Record<string, string>,
         };
 
-        const token = this.getToken();
-        if (token) {
-            headers['Authorization'] = `Bearer ${token}`;
+        // Only add Authorization header in non-browser (SSR) contexts where
+        // the httpOnly cookie cannot be used.
+        if (this.token) {
+            headers['Authorization'] = `Bearer ${this.token}`;
         }
 
         try {
             const response = await fetch(`${API_BASE_URL}${endpoint}`, {
                 ...options,
+                // Send httpOnly cookie on every request (browser clients)
+                credentials: 'include',
                 headers,
             });
 
@@ -611,7 +616,7 @@ export interface MarketplaceOpportunity {
     reward_amount: string;
     reward_currency: string;
     deadline: string;
-    status: string;
+    status: OpportunityStatus;
     application_count: number;
     created_at: string;
     can_apply: boolean;
@@ -751,7 +756,7 @@ export interface CreatorDeal {
     id: number;
     title: string;
     brand_name: string;
-    status: string;
+    status: DealStatus;
     total_amount: number;
     base_budget: number;
     required_level: number;
@@ -763,11 +768,11 @@ export interface CreatorDeal {
     applicant_count: number;
     deliverables: Array<{
         id: number;
-        type: string;
+        type: DeliverableType;
         description: string;
         quantity: number;
         platform: string;
-        status: string;
+        status: 'pending' | 'submitted' | 'approved' | 'revision';
     }>;
 }
 

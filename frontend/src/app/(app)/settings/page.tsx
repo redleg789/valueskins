@@ -84,9 +84,11 @@ export default function SettingsPage() {
     deal_type_preference: [] as string[], min_deal_size_usd: '', response_time_hours: '',
     exclusivity_available: false, willing_to_sign_nda: false, willing_to_sign_usage_rights: false,
     on_camera_willing: true, product_preference: '', content_rights_owned: true,
+    // Advance preferences
+    creator_requires_advance: false, creator_advance_pct_wanted: 30, creator_advance_negotiable: true,
   });
 
-  const setA = (field: keyof typeof attrs, value: any) => setAttrs(prev => ({ ...prev, [field]: value }));
+  const setA = <K extends keyof typeof attrs>(field: K, value: typeof attrs[K]) => setAttrs(prev => ({ ...prev, [field]: value }));
 
   const toggleSection = (s: string) => setExpandedSection(prev => prev === s ? null : s);
 
@@ -235,6 +237,48 @@ export default function SettingsPage() {
               <InlineToggle value={attrs.willing_to_sign_nda} onChange={v => setA('willing_to_sign_nda', v)} label="Willing to sign NDA" />
               <InlineToggle value={attrs.willing_to_sign_usage_rights} onChange={v => setA('willing_to_sign_usage_rights', v)} label="Willing to grant usage rights" />
             </SectionRow>
+          </>}
+        </div>
+
+        {/* Advance Preferences */}
+        <div style={{ borderBottom: '1px solid var(--ig-separator)' }}>
+          <button onClick={() => toggleSection('advance')} style={{ width: '100%', ...sectionHeaderStyle, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>💳 Advance Preferences</span>
+            <span style={{ fontSize: 16 }}>{expandedSection === 'advance' ? '▲' : '▼'}</span>
+          </button>
+          {expandedSection === 'advance' && <>
+            <SectionRow>
+              <div style={{ background: 'var(--ig-elevated)', padding: 12, borderRadius: 8, marginBottom: 16, fontSize: 12, color: 'var(--ig-text-secondary)' }}>
+                💡 Control whether you want advances on deals. Set your preference and non-negotiable terms.
+              </div>
+              <InlineToggle value={attrs.creator_requires_advance} onChange={v => setA('creator_requires_advance', v)} label="I want/need advances on deals" />
+            </SectionRow>
+            {attrs.creator_requires_advance && <>
+              <SectionRow>
+                <label style={labelStyle}>Advance % (e.g. 30% upfront)</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <input
+                    type="range"
+                    min="10"
+                    max="50"
+                    value={attrs.creator_advance_pct_wanted}
+                    onChange={e => setA('creator_advance_pct_wanted', parseInt(e.target.value))}
+                    style={{ flex: 1 }}
+                  />
+                  <div style={{ fontSize: 16, fontWeight: 600, minWidth: 50, textAlign: 'center' }}>
+                    {attrs.creator_advance_pct_wanted}%
+                  </div>
+                </div>
+              </SectionRow>
+              <SectionRow>
+                <InlineToggle value={attrs.creator_advance_negotiable} onChange={v => setA('creator_advance_negotiable', v)} label="Open to negotiating on advance %" />
+                {!attrs.creator_advance_negotiable && (
+                  <div style={{ fontSize: 12, color: 'var(--ig-blue)', marginTop: 8 }}>
+                    ✓ Advances are non-negotiable. Only matching brands will be suggested.
+                  </div>
+                )}
+              </SectionRow>
+            </>}
           </>}
         </div>
 

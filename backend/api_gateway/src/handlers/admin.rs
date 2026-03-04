@@ -4,7 +4,7 @@
 //! All handlers enforce admin role via claims check.
 
 use actix_web::{web, HttpRequest, HttpResponse, Responder};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 
 /// Extract and validate admin role from JWT claims.
@@ -693,4 +693,173 @@ pub async fn list_my_contracts(
     }).collect();
 
     HttpResponse::Ok().json(serde_json::json!({ "contracts": contracts }))
+}
+
+// ── Platform Config ──────────────────────────────────────────
+
+#[derive(Debug, Serialize, sqlx::FromRow)]
+pub struct PlatformConfig {
+    pub platform_name:                   String,
+    pub platform_fee_percentage:         sqlx::types::BigDecimal,
+    pub min_payout_amount:               sqlx::types::BigDecimal,
+    pub max_payout_amount:               sqlx::types::BigDecimal,
+    pub payout_currency:                 String,
+    pub notification_email_from:         String,
+    pub support_contact_email:           String,
+    pub terms_of_service_url:            String,
+    pub privacy_policy_url:              String,
+    pub max_creator_applications_per_day: i32,
+    pub max_brand_opportunities_per_day:  i32,
+    pub gdpr_compliance_days:            i32,
+    pub enable_kyc:                      bool,
+    pub kyc_provider:                    String,
+    pub enable_csuite_advantage:         bool,
+    pub csuite_enforcement_type:         String,
+    pub enable_campaign_gating:          bool,
+    pub enable_communities:              bool,
+    pub enable_dispute_resolution:       bool,
+    pub enable_brand_verification:       bool,
+    pub maintenance_mode_enabled:        bool,
+    pub maintenance_mode_message:        String,
+    pub updated_at:                      chrono::DateTime<chrono::Utc>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UpdatePlatformConfigRequest {
+    pub platform_name:                   Option<String>,
+    pub platform_fee_percentage:         Option<f64>,
+    pub min_payout_amount:               Option<f64>,
+    pub max_payout_amount:               Option<f64>,
+    pub payout_currency:                 Option<String>,
+    pub notification_email_from:         Option<String>,
+    pub support_contact_email:           Option<String>,
+    pub terms_of_service_url:            Option<String>,
+    pub privacy_policy_url:              Option<String>,
+    pub max_creator_applications_per_day: Option<i32>,
+    pub max_brand_opportunities_per_day:  Option<i32>,
+    pub gdpr_compliance_days:            Option<i32>,
+    pub enable_kyc:                      Option<bool>,
+    pub kyc_provider:                    Option<String>,
+    pub enable_csuite_advantage:         Option<bool>,
+    pub csuite_enforcement_type:         Option<String>,
+    pub enable_campaign_gating:          Option<bool>,
+    pub enable_communities:              Option<bool>,
+    pub enable_dispute_resolution:       Option<bool>,
+    pub enable_brand_verification:       Option<bool>,
+    pub maintenance_mode_enabled:        Option<bool>,
+    pub maintenance_mode_message:        Option<String>,
+}
+
+pub async fn get_platform_config(
+    req: HttpRequest,
+    pool: web::Data<PgPool>,
+) -> impl Responder {
+    let admin_id = match require_admin(&req) {
+        Ok(id) => id,
+        Err(r) => return r,
+    };
+
+    tracing::info!(admin_id, "Admin fetching platform config");
+
+    match sqlx::query_as::<_, PlatformConfig>(
+        "SELECT platform_name, platform_fee_percentage, min_payout_amount, max_payout_amount,
+                payout_currency, notification_email_from, support_contact_email,
+                terms_of_service_url, privacy_policy_url,
+                max_creator_applications_per_day, max_brand_opportunities_per_day,
+                gdpr_compliance_days, enable_kyc, kyc_provider,
+                enable_csuite_advantage, csuite_enforcement_type,
+                enable_campaign_gating, enable_communities,
+                enable_dispute_resolution, enable_brand_verification,
+                maintenance_mode_enabled, maintenance_mode_message, updated_at
+         FROM platform_config WHERE id = 1"
+    )
+    .fetch_one(pool.get_ref())
+    .await {
+        Ok(config) => HttpResponse::Ok().json(config),
+        Err(e) => {
+            tracing::error!(error = %e, "Failed to fetch platform config");
+            HttpResponse::InternalServerError().json(serde_json::json!({"error": "Failed to fetch config"}))
+        }
+    }
+}
+
+pub async fn update_platform_config(
+    req: HttpRequest,
+    pool: web::Data<PgPool>,
+    platform_cfg: web::Data<std::sync::Arc<shared::platform_config::PlatformConfigService>>,
+    body: web::Json<UpdatePlatformConfigRequest>,
+) -> impl Responder {
+    let admin_id = match require_admin(&req) {
+        Ok(id) => id,
+        Err(r) => return r,
+    };
+
+    tracing::info!(admin_id, "Admin updating platform config");
+
+    // Build dynamic UPDATE — only set fields that were provided
+    let result = sqlx::query(
+        "UPDATE platform_config SET
+            platform_name                    = COALESCE($1,  platform_name),
+            platform_fee_percentage          = COALESCE($2,  platform_fee_percentage),
+            min_payout_amount                = COALESCE($3,  min_payout_amount),
+            max_payout_amount                = COALESCE($4,  max_payout_amount),
+            payout_currency                  = COALESCE($5,  payout_currency),
+            notification_email_from          = COALESCE($6,  notification_email_from),
+            support_contact_email            = COALESCE($7,  support_contact_email),
+            terms_of_service_url             = COALESCE($8,  terms_of_service_url),
+            privacy_policy_url               = COALESCE($9,  privacy_policy_url),
+            max_creator_applications_per_day = COALESCE($10, max_creator_applications_per_day),
+            max_brand_opportunities_per_day  = COALESCE($11, max_brand_opportunities_per_day),
+            gdpr_compliance_days             = COALESCE($12, gdpr_compliance_days),
+            enable_kyc                       = COALESCE($13, enable_kyc),
+            kyc_provider                     = COALESCE($14, kyc_provider),
+            enable_csuite_advantage          = COALESCE($15, enable_csuite_advantage),
+            csuite_enforcement_type          = COALESCE($16, csuite_enforcement_type),
+            enable_campaign_gating           = COALESCE($17, enable_campaign_gating),
+            enable_communities               = COALESCE($18, enable_communities),
+            enable_dispute_resolution        = COALESCE($19, enable_dispute_resolution),
+            enable_brand_verification        = COALESCE($20, enable_brand_verification),
+            maintenance_mode_enabled         = COALESCE($21, maintenance_mode_enabled),
+            maintenance_mode_message         = COALESCE($22, maintenance_mode_message),
+            updated_by                       = $23
+         WHERE id = 1"
+    )
+    .bind(&body.platform_name)
+    .bind(body.platform_fee_percentage)
+    .bind(body.min_payout_amount)
+    .bind(body.max_payout_amount)
+    .bind(&body.payout_currency)
+    .bind(&body.notification_email_from)
+    .bind(&body.support_contact_email)
+    .bind(&body.terms_of_service_url)
+    .bind(&body.privacy_policy_url)
+    .bind(body.max_creator_applications_per_day)
+    .bind(body.max_brand_opportunities_per_day)
+    .bind(body.gdpr_compliance_days)
+    .bind(body.enable_kyc)
+    .bind(&body.kyc_provider)
+    .bind(body.enable_csuite_advantage)
+    .bind(&body.csuite_enforcement_type)
+    .bind(body.enable_campaign_gating)
+    .bind(body.enable_communities)
+    .bind(body.enable_dispute_resolution)
+    .bind(body.enable_brand_verification)
+    .bind(body.maintenance_mode_enabled)
+    .bind(&body.maintenance_mode_message)
+    .bind(admin_id)
+    .execute(pool.get_ref())
+    .await;
+
+    match result {
+        Ok(_) => {
+            // Invalidate the in-memory cache so maintenance mode / feature flags
+            // take effect on the next request without waiting 30s.
+            platform_cfg.invalidate().await;
+            HttpResponse::Ok().json(serde_json::json!({"message": "Platform config updated"}))
+        }
+        Err(e) => {
+            tracing::error!(error = %e, "Failed to update platform config");
+            HttpResponse::InternalServerError().json(serde_json::json!({"error": "Failed to update config"}))
+        }
+    }
 }

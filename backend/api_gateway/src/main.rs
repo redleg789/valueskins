@@ -34,6 +34,7 @@ use platform_service::handlers as platform_handlers;
 
 use crate::middleware::auth::JwtAuth;
 use crate::middleware::rate_limit::{TieredRateLimiter, TierLimits};
+use crate::middleware::maintenance::MaintenanceGuard;
 
 async fn health_check() -> impl Responder {
     HttpResponse::Ok().json(serde_json::json!({ "status": "ok", "service": "Valueskins API" }))
@@ -111,6 +112,7 @@ async fn main() -> std::io::Result<()> {
     let refresh_tokens = shared::refresh_tokens::RefreshTokenService::new(pool.clone());
     let pii_audit = shared::pii_audit::PiiAuditLogger::new(pool.clone());
     let idempotency = shared::idempotency::IdempotencyService::new(pool.clone());
+    let platform_cfg = std::sync::Arc::new(shared::platform_config::PlatformConfigService::new(pool.clone()));
 
     // Initialize services
     let social_service = SocialService::new(pool.clone());
@@ -186,11 +188,17 @@ async fn main() -> std::io::Result<()> {
                 origins.iter().any(|o| origin.as_bytes() == o.as_bytes())
             })
             .allowed_methods(vec!["GET", "POST", "PUT", "DELETE", "OPTIONS"])
-            .allowed_headers(vec!["Authorization", "Content-Type", "X-API-Key"])
+            .allowed_headers(vec!["Authorization", "Content-Type", "X-API-Key", "X-Correlation-ID"])
+            // Required for httpOnly cookie sessions: browser will not send credentials
+            // on cross-origin requests unless the server explicitly allows it.
+            .supports_credentials()
             .max_age(3600);
 
         // Create JWT middleware (needs a new TokenManager per factory call)
         let jwt_auth = JwtAuth::new(TokenManager::new(&jwt_secret_clone));
+
+        // Maintenance mode guard — checked before auth, returns 503 when enabled
+        let maintenance = MaintenanceGuard::new(platform_cfg.clone());
 
         // Tiered rate limiter: applies different limits per user/API-key tier
         // after JWT is parsed (JWT middleware injects Claims into extensions).
@@ -199,6 +207,7 @@ async fn main() -> std::io::Result<()> {
 
         App::new()
             .wrap(cors)
+            .wrap(maintenance)
             .wrap(Governor::new(&governor_conf))
             .wrap(tiered_limiter)
             .wrap(crate::middleware::security_headers::security_headers())
@@ -216,6 +225,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(refresh_tokens_data.clone())
             .app_data(pii_audit_data.clone())
             .app_data(idempotency_data.clone())
+            .app_data(web::Data::from(platform_cfg.clone()))
 
             // === PUBLIC ROUTES (no auth required) ===
             .route("/health", web::get().to(health_check))
@@ -511,6 +521,9 @@ async fn main() -> std::io::Result<()> {
                             .route("/pii-audit/{user_id}", web::get().to(handlers::admin::get_pii_audit_log))
                             // API Keys
                             .route("/api-keys", web::get().to(handlers::admin::list_api_keys))
+                            // Platform config
+                            .route("/config", web::get().to(handlers::admin::get_platform_config))
+                            .route("/config", web::post().to(handlers::admin::update_platform_config))
                     )
 
                     // Contracts / Deal Rooms (user's view)
