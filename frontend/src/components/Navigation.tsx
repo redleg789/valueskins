@@ -5,13 +5,10 @@ import { usePathname } from 'next/navigation';
 
 const NAV_ITEMS = [
     { href: '/marketplace', label: 'Marketplace', icon: '🎯' },
-    { href: '/suggestions', label: 'Suggestions', icon: '⭐' },
-    { href: '/deals', label: 'Deals', icon: '💼' },
-    { href: '/pricing', label: 'Pricing', icon: '💰' },
+    { href: '/leaderboard', label: 'Leaderboard', icon: '🏆' },
     { href: '/profile', label: 'Profile', icon: '👤' },
-    { href: '/credit', label: 'Credit', icon: '💳' },
-    { href: '/reputation', label: 'Reputation', icon: '📜' },
-    { href: '/reputation-system', label: 'Ratings', icon: '⭐⭐' },
+    { href: '/referrals', label: 'Referrals', icon: '🔗' },
+    { href: '/scoring', label: 'How Scoring Works', icon: '📊' },
 ];
 
 export function Navigation() {

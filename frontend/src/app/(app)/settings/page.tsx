@@ -315,6 +315,84 @@ export default function SettingsPage() {
           <SettingsRow label="Marketplace Access" value="Enabled" onClick={() => {}} />
         </div>
 
+        {/* Insurance & Claims */}
+        <div style={{ borderBottom: '1px solid var(--ig-separator)' }}>
+          <button onClick={() => toggleSection('insurance')} style={{ width: '100%', ...sectionHeaderStyle, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>💼 Insurance & Claims</span>
+            <span style={{ fontSize: 16 }}>{expandedSection === 'insurance' ? '▲' : '▼'}</span>
+          </button>
+          {expandedSection === 'insurance' && <>
+            <SectionRow>
+              <div style={{ background: 'var(--ig-elevated)', padding: 12, borderRadius: 8, marginBottom: 16, fontSize: 12, color: 'var(--ig-text-secondary)' }}>
+                ✓ All deals on Valueskins are backed by creator protection insurance. File claims for non-payment or disputes.
+              </div>
+            </SectionRow>
+            <SettingsRow label="View Claims" value="1 filed" onClick={() => {}} />
+            <SettingsRow label="File New Claim" value="Access form" onClick={() => {}} />
+            <SectionRow>
+              <div style={{ fontSize: 12, color: 'var(--ig-text-tertiary)', marginTop: 8 }}>
+                ✓ Non-payment claims processed within 48 hours<br/>
+                ✓ Dispute mediation with evidence bundle export<br/>
+                ✓ Full protection up to deal amount
+              </div>
+            </SectionRow>
+          </>}
+        </div>
+
+        {/* Tax & Earnings */}
+        <div style={{ borderBottom: '1px solid var(--ig-separator)' }}>
+          <button onClick={() => toggleSection('tax')} style={{ width: '100%', ...sectionHeaderStyle, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>📊 Tax & Earnings</span>
+            <span style={{ fontSize: 16 }}>{expandedSection === 'tax' ? '▲' : '▼'}</span>
+          </button>
+          {expandedSection === 'tax' && <>
+            <SectionRow>
+              <div style={{ background: 'var(--ig-elevated)', padding: 12, borderRadius: 8, marginBottom: 16, fontSize: 12, color: 'var(--ig-text-secondary)' }}>
+                Track earnings, view 1099-NEC, and manage deductions for tax filing.
+              </div>
+            </SectionRow>
+            <SettingsRow label="Earnings Statement" value="2024 Year-to-date" onClick={() => {}} />
+            <SettingsRow label="1099-NEC Documents" value="Download" onClick={() => {}} />
+            <SettingsRow label="Deductions & Expenses" value="Manage" onClick={() => {}} />
+            <SettingsRow label="Export for Accounting" value="CSV / PDF" onClick={() => {}} />
+            <SectionRow>
+              <div style={{ fontSize: 12, color: 'var(--ig-text-tertiary)', marginTop: 8 }}>
+                ✓ Automatic earnings tracking across all deals<br/>
+                ✓ Deductible expenses tracking<br/>
+                ✓ 1099-NEC issued by January 31st
+              </div>
+            </SectionRow>
+          </>}
+        </div>
+
+        {/* Privacy & Data */}
+        <div style={{ borderBottom: '1px solid var(--ig-separator)' }}>
+          <button onClick={() => toggleSection('privacy')} style={{ width: '100%', ...sectionHeaderStyle, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>🔐 Privacy & Data</span>
+            <span style={{ fontSize: 16 }}>{expandedSection === 'privacy' ? '▲' : '▼'}</span>
+          </button>
+          {expandedSection === 'privacy' && <>
+            <SectionRow>
+              <div style={{ background: 'var(--ig-elevated)', padding: 12, borderRadius: 8, marginBottom: 16, fontSize: 12, color: 'var(--ig-text-secondary)' }}>
+                GDPR & privacy regulations: manage your data, request export, or delete your account.
+              </div>
+            </SectionRow>
+            <SettingsRow label="Export Your Data" value="Request ZIP" onClick={() => {}} />
+            <SettingsRow label="Data Download History" value="View" onClick={() => {}} />
+            <SectionRow>
+              <div style={{ marginTop: 12, padding: 12, background: '#ef4444' + '20', borderRadius: 8, border: '1px solid #ef4444' + '40' }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#ef4444', marginBottom: 8 }}>Danger Zone: Delete Account</div>
+                <button style={{ width: '100%', background: '#ef4444', border: 'none', borderRadius: 6, padding: 10, color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>
+                  Permanently Delete My Account
+                </button>
+                <div style={{ fontSize: 11, color: 'var(--ig-text-tertiary)', marginTop: 8 }}>
+                  ⚠️ This is permanent. You will lose access to all deals and history.
+                </div>
+              </div>
+            </SectionRow>
+          </>}
+        </div>
+
         {/* Notifications */}
         <div style={{ borderBottom: '1px solid var(--ig-separator)' }}>
           <div style={sectionHeaderStyle}>Notifications</div>
