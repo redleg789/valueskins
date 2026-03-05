@@ -37,7 +37,7 @@ export default function EquityPage() {
     setError(null);
     try {
       const result = await api.equity.getMyEquity();
-      setData(result);
+      if (result.data) setData(result.data);
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : 'Failed to load equity data';

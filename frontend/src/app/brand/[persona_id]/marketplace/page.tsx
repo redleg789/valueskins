@@ -26,8 +26,8 @@ interface CreatorProfile {
   username: string;
   display_name: string;
   avatar_url?: string;
-  level: number;
-  score: number;
+  level?: number;
+  score?: number;
 }
 
 interface Opportunity {
