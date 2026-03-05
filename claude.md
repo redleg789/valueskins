@@ -13,8 +13,13 @@ If you remove a password gate, fix a bug, or change anything the user will check
 ### 3. Always push to the correct branch
 Check which branch Vercel/CI deploys from (usually `main`). Push to BOTH `master` and `main` (or whatever the deploy branch is). Run `git branch -a` first if unsure.
 
-### 4. Type-check before pushing frontend changes
-Always run `npx tsc --noEmit` before committing frontend changes. Never push code that fails TypeScript compilation. This includes checking that API response types match component state types (`ApiResponse<T>` vs `T`).
+### 4. Type-check AND build-check before pushing frontend changes
+`tsc --noEmit` passing ≠ build passing. Next.js has additional build-time checks that only surface during `next build`:
+- `useSearchParams()` must be wrapped in `<Suspense>` boundary (SSR prerender crashes without it)
+- Dynamic route folders must use `[param]` not `\[param\]` (escaped brackets create broken paths)
+- Static page generation can fail even when types pass
+- API response types must match component state (`ApiResponse<T>` vs `T | null`)
+**Before every push:** run `npx tsc --noEmit` first, then if possible `cd frontend && npm run build`. If build can't run locally, at minimum grep for: `useSearchParams` without Suspense, `useRouter` in server components, missing `'use client'` directives. Never push and hope — verify locally first.
 
 ### 5. Check for duplicate/escaped files after git operations
 After creating files with brackets (Next.js dynamic routes like `[id]`), verify no escaped duplicates exist (`\[id\]`). Run `ls` on the directory before committing.
