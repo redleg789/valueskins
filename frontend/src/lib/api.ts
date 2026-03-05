@@ -209,11 +209,13 @@ class MarketplaceClient {
         if (filters?.maxLevel) params.append('max_level', filters.maxLevel.toString());
         if (filters?.category) params.append('category', filters.category);
         if (filters?.status) params.append('status', filters.status);
+        if (filters?.personaId) params.append('persona_id', filters.personaId.toString());
 
         const queryStr = params.toString();
         const endpoint = queryStr ? `/marketplace/opportunities?${queryStr}` : '/marketplace/opportunities';
         return this.http.request<{ opportunities: MarketplaceOpportunity[]; count: number }>(endpoint);
     }
+
 
     async getOpportunityDetails(opportunityId: number) {
         return this.http.request<MarketplaceOpportunity>(`/marketplace/opportunities/${opportunityId}`);
@@ -238,10 +240,56 @@ class MarketplaceClient {
         return this.http.request<{ deals: CreatorDeal[] }>('/marketplace/deals/mine');
     }
 
-    async submitDeliverable(dealId: number, deliverableId: number, contentUrl: string) {
+
+
+    // Deal Room Messages
+    async postMessage(dealRoomId: number, data: { content: string; message_type?: string }) {
+        return this.http.request<DealRoomMessage>(`/deal-rooms/${dealRoomId}/messages`, {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+    }
+
+    async getMessages(dealRoomId: number, query?: { limit?: number; offset?: number }) {
+        const params = new URLSearchParams();
+        if (query?.limit) params.append('limit', query.limit.toString());
+        if (query?.offset) params.append('offset', query.offset.toString());
+        
+        const queryStr = params.toString();
+        const endpoint = queryStr 
+            ? `/deal-rooms/${dealRoomId}/messages?${queryStr}` 
+            : `/deal-rooms/${dealRoomId}/messages`;
+        
+        return this.http.request<MessagesResponse>(endpoint);
+    }    async submitDeliverable(dealId: number, deliverableId: number, contentUrl: string) {
         return this.http.request('/marketplace/deliverables/submit', {
             method: 'POST',
             body: JSON.stringify({ deal_id: dealId, deliverable_id: deliverableId, content_url: contentUrl }),
+        });
+    }
+}
+
+// Deal Rooms Chat Client — real-time chat and messaging for deal negotiation
+class DealRoomsClient {
+    constructor(private http: HttpClient) {}
+
+    async getChatHistory(dealRoomId: number, query?: { limit?: number; offset?: number }) {
+        const params = new URLSearchParams();
+        if (query?.limit) params.append('limit', query.limit.toString());
+        if (query?.offset) params.append('offset', query.offset.toString());
+
+        const queryStr = params.toString();
+        const endpoint = queryStr
+            ? `/deal-rooms/${dealRoomId}/chat?${queryStr}`
+            : `/deal-rooms/${dealRoomId}/chat`;
+
+        return this.http.request<{ messages: DealRoomMessage[]; count: number }>(endpoint);
+    }
+
+    async sendMessage(dealRoomId: number, message: string) {
+        return this.http.request<{ message_id: number; sent_at: string }>(`/deal-rooms/${dealRoomId}/chat`, {
+            method: 'POST',
+            body: JSON.stringify({ message }),
         });
     }
 }
@@ -474,6 +522,153 @@ class VerificationClient {
     }
 }
 
+// Pricing Benchmark API client
+class PricingClient {
+    constructor(private http: HttpClient) {}
+
+    async getBenchmark(category: string, platform: string, contentType: string, level?: number) {
+        const params = new URLSearchParams({ category, platform, content_type: contentType });
+        if (level) params.set('level', level.toString());
+        return this.http.request<{ benchmark: PricingBenchmark }>(`/pricing/benchmark?${params}`);
+    }
+
+    async getMyWorth(personaId: number, contentType?: string, platform?: string) {
+        const params = new URLSearchParams({ persona_id: personaId.toString() });
+        if (contentType) params.set('content_type', contentType);
+        if (platform) params.set('platform', platform);
+        return this.http.request<{ valuation: PersonalValuation }>(`/pricing/my-worth?${params}`);
+    }
+
+    async recompute(category?: string, platform?: string) {
+        return this.http.request<{ version: number }>('/pricing/recompute', {
+            method: 'POST',
+            body: JSON.stringify({ category, platform }),
+        });
+    }
+}
+
+// Creator Credit Line API client
+class CreditClient {
+    constructor(private http: HttpClient) {}
+
+    async apply() {
+        return this.http.request<{ credit_line: CreditLineData }>('/credit/apply', { method: 'POST' });
+    }
+
+    async getStatus() {
+        return this.http.request<CreditLineData>('/credit/status');
+    }
+
+    async getScore() {
+        return this.http.request<{ score: CreditScoreData }>('/credit/score');
+    }
+
+    async drawAdvance(dealRoomId: number, amountCents: number, autoDeduct?: boolean) {
+        return this.http.request<{ advance: CreditAdvanceData }>('/credit/advance', {
+            method: 'POST',
+            body: JSON.stringify({ deal_room_id: dealRoomId, amount_cents: amountCents, auto_deduct: autoDeduct }),
+        });
+    }
+
+    async repayAdvance(advanceId: number) {
+        return this.http.request<{ advance: CreditAdvanceData }>(`/credit/repay/${advanceId}`, { method: 'POST' });
+    }
+
+    async listAdvances(status?: string, limit?: number, offset?: number) {
+        const params = new URLSearchParams();
+        if (status) params.set('status', status);
+        if (limit) params.set('limit', limit.toString());
+        if (offset) params.set('offset', offset.toString());
+        return this.http.request<{ advances: CreditAdvanceData[] }>(`/credit/advances?${params}`);
+    }
+}
+
+// Contract API client
+class ContractClient {
+    constructor(private http: HttpClient) {}
+
+    async generate(req: GenerateContractReq) {
+        return this.http.request<{ contract: ContractInstanceData }>('/contracts/generate', {
+            method: 'POST',
+            body: JSON.stringify(req),
+        });
+    }
+
+    async sign(contractId: number, contractHash: string) {
+        return this.http.request<{ contract: ContractInstanceData }>(`/contracts/${contractId}/sign`, {
+            method: 'POST',
+            body: JSON.stringify({ contract_hash: contractHash }),
+        });
+    }
+
+    async getById(contractId: number) {
+        return this.http.request<ContractInstanceData>(`/contracts/${contractId}`);
+    }
+
+    async getByDealRoom(dealRoomId: number) {
+        return this.http.request<ContractInstanceData>(`/contracts/deal-room/${dealRoomId}`);
+    }
+
+    async requestRevision(contractId: number, description: string, isPaid?: boolean, costCents?: number) {
+        return this.http.request<{ revision: ContractRevisionData }>(`/contracts/${contractId}/revisions`, {
+            method: 'POST',
+            body: JSON.stringify({ change_description: description, is_paid_revision: isPaid, additional_cost_cents: costCents }),
+        });
+    }
+
+    async listTemplates(templateType?: string) {
+        const params = new URLSearchParams();
+        if (templateType) params.set('template_type', templateType);
+        return this.http.request<{ templates: ContractTemplateData[] }>(`/contracts/templates?${params}`);
+    }
+}
+
+// Reputation Passport API client
+class ReputationClient {
+    constructor(private http: HttpClient) {}
+
+    async generateExport(personaId: number) {
+        return this.http.request<{ export: ReputationExportData }>(`/reputation/export?persona_id=${personaId}`, { method: 'POST' });
+    }
+
+    async verify(personaId: number, version: number) {
+        return this.http.request<{ verification: ReputationVerification }>(`/reputation/verify?persona_id=${personaId}&version=${version}`);
+    }
+
+    async listExports(personaId: number, limit?: number) {
+        const params = new URLSearchParams({ persona_id: personaId.toString() });
+        if (limit) params.set('limit', limit.toString());
+        return this.http.request<{ exports: ReputationExportData[] }>(`/reputation/exports?${params}`);
+    }
+
+    async getPublicKey() {
+        return this.http.request<{ public_key: string; algorithm: string }>('/reputation/public-key');
+    }
+}
+
+// Deal Suggestions API client
+class SuggestionClient {
+    constructor(private http: HttpClient) {}
+
+    async getSuggestions(personaId: number, minScore?: number, advanceOnly?: boolean) {
+        const params = new URLSearchParams({ persona_id: personaId.toString() });
+        if (minScore) params.set('min_score', minScore.toString());
+        if (advanceOnly) params.set('advance_only', 'true');
+        return this.http.request<{ suggestions: DealSuggestionData[] }>(`/matching/suggestions?${params}`);
+    }
+
+    async actOnSuggestion(suggestionId: number, action: 'dismiss' | 'convert') {
+        return this.http.request<{ message: string }>(`/matching/suggestions/${suggestionId}/action`, {
+            method: 'POST',
+            body: JSON.stringify({ action }),
+        });
+    }
+
+    async generateForOpportunity(opportunityId: number) {
+        return this.http.request<{ suggestions_generated: number }>(`/matching/opportunities/${opportunityId}/generate-suggestions`, { method: 'POST' });
+    }
+}
+
 // Facade: Composite API client
 class ApiClient {
     private http: HttpClient;
@@ -495,6 +690,12 @@ class ApiClient {
     readonly collective: CollectiveClient;
     readonly mediakit: MediaKitClient;
     readonly verification: VerificationClient;
+    readonly pricing: PricingClient;
+    readonly credit: CreditClient;
+    readonly contracts: ContractClient;
+    readonly reputation: ReputationClient;
+    readonly suggestions: SuggestionClient;
+    readonly dealRooms: DealRoomsClient;
 
     constructor() {
         this.http = new HttpClient();
@@ -516,6 +717,12 @@ class ApiClient {
         this.collective = new CollectiveClient(this.http);
         this.mediakit = new MediaKitClient(this.http);
         this.verification = new VerificationClient(this.http);
+        this.pricing = new PricingClient(this.http);
+        this.credit = new CreditClient(this.http);
+        this.contracts = new ContractClient(this.http);
+        this.reputation = new ReputationClient(this.http);
+        this.suggestions = new SuggestionClient(this.http);
+        this.dealRooms = new DealRoomsClient(this.http);
     }
 }
 
@@ -600,6 +807,7 @@ export interface OpportunityFilters {
     maxLevel?: number;
     category?: string;
     status?: 'open' | 'filled' | 'completed';
+    personaId?: number;  // Filter by matching persona's ValuSkin professions
 }
 
 export interface MarketplaceOpportunity {
@@ -1266,6 +1474,178 @@ export interface DiscoverableCreator {
     rank: number;
     reputation_score: number | null;
     total_deals: number | null;
+}
+
+// === NEW SERVICE TYPES ===
+
+export interface PricingBenchmark {
+    id: number;
+    category: string;
+    platform: string;
+    content_type: string;
+    level: number;
+    p25_rate_cents: number;
+    median_rate_cents: number;
+    p75_rate_cents: number;
+    trend: 'rising' | 'stable' | 'falling';
+    change_last_month_pct: number;
+    data_points: number;
+    benchmark_version: number;
+    computed_at: string;
+}
+
+export interface PersonalValuation {
+    estimated_rate_cents: number;
+    confidence: 'high' | 'medium' | 'low';
+    factors: Record<string, unknown>;
+    market_position: string;
+    benchmark: PricingBenchmark | null;
+}
+
+export interface CreditLineData {
+    id: number;
+    user_id: number;
+    credit_limit_cents: number;
+    used_cents: number;
+    available_cents: number;
+    credit_score: number;
+    status: 'active' | 'suspended' | 'closed';
+    created_at: string;
+    updated_at: string;
+}
+
+export interface CreditScoreData {
+    total_score: number;
+    factors: {
+        completed_deals_factor: number;
+        avg_deal_value_factor: number;
+        trust_score_factor: number;
+        tenure_factor: number;
+        on_time_rate_factor: number;
+    };
+    credit_limit_cents: number;
+}
+
+export interface CreditAdvanceData {
+    id: number;
+    credit_line_id: number;
+    deal_room_id: number;
+    amount_cents: number;
+    repayment_auto_deduct: boolean;
+    repayment_due_at: string | null;
+    repaid_at: string | null;
+    status: 'issued' | 'pending' | 'repaid' | 'forfeited';
+    created_at: string;
+}
+
+export interface ContractInstanceData {
+    id: number;
+    deal_room_id: number;
+    template_id: number;
+    contract_content: string;
+    contract_hash: string;
+    pdf_url: string | null;
+    status: 'draft' | 'pending_both' | 'pending_brand' | 'pending_creator' | 'signed' | 'executed';
+    exact_amount_cents: number;
+    currency: string;
+    deliverable_list: string;
+    revision_cap: number;
+    kill_fee_pct: number;
+    advance_pct: number;
+    exclusivity_days: number;
+    usage_rights_scope: string;
+    deadline: string | null;
+    brand_signed_at: string | null;
+    creator_signed_at: string | null;
+    created_at: string;
+}
+
+export interface ContractRevisionData {
+    id: number;
+    contract_instance_id: number;
+    revision_number: number;
+    requested_by_user_id: number;
+    change_description: string;
+    is_paid_revision: boolean;
+    additional_cost_cents: number | null;
+    status: 'pending' | 'approved' | 'rejected' | 'completed';
+    created_at: string;
+}
+
+export interface ContractTemplateData {
+    id: number;
+    template_name: string;
+    template_type: string;
+    description: string;
+    default_revision_cap: number;
+    default_kill_fee_pct: number;
+    default_advance_pct: number;
+    default_exclusivity_days: number;
+    usage_rights_description: string;
+}
+
+export interface GenerateContractReq {
+    deal_room_id: number;
+    template_type: string;
+    exact_amount_cents: number;
+    currency?: string;
+    deliverable_list: string;
+    revision_cap?: number;
+    kill_fee_pct?: number;
+    advance_pct?: number;
+    exclusivity_days?: number;
+    usage_rights_scope: string;
+    deadline?: string;
+}
+
+export interface ReputationExportData {
+    id: number;
+    persona_id: number;
+    export_version: number;
+    deal_count: number;
+    avg_deal_cents: number;
+    completion_rate_pct: number;
+    on_time_rate_pct: number;
+    trust_scores_snapshot: Record<string, unknown>;
+    testimonial_count: number;
+    signed_hash: string;
+    created_at: string;
+}
+
+export interface ReputationVerification {
+    valid: boolean;
+    export: ReputationExportData | null;
+    public_key: string;
+}
+
+export interface DealSuggestionData {
+    id: number;
+    brand_user_id: number;
+    brand_name: string;
+    creator_persona_id: number;
+    match_score: number;
+    match_factors: Record<string, unknown>;
+    advance_compatible: boolean;
+    status: string;
+    created_at: string;
+}
+
+// Deal Room Messages
+export interface DealRoomMessage {
+    id: number;
+    deal_room_id: number;
+    sender_user_id: number;
+    content: string;
+    message_type: 'text' | 'system' | 'offer_made' | 'offer_accepted' | 'deliverable_uploaded' | 'contract_signed' | 'dispute_filed';
+    server_timestamp: string;
+    is_deleted: boolean;
+}
+
+export interface MessagesResponse {
+    messages: DealRoomMessage[];
+    total: number;
+    limit: number;
+    offset: number;
 }
 
 // Singleton instance

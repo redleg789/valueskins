@@ -11,3 +11,4 @@ pub mod collective;
 pub mod mediakit;
 pub mod verification;
 pub mod brand;
+pub mod messages;

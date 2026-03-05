@@ -91,3 +91,43 @@ pub struct DiscoverOpportunitiesQuery {
     pub limit: Option<i32>,
     pub offset: Option<i32>,
 }
+
+// === DEAL SUGGESTIONS (AI-ranked proactive matches) ===
+
+/// A proactive deal suggestion pushed to a creator.
+#[derive(Debug, Serialize, sqlx::FromRow)]
+pub struct DealSuggestion {
+    pub id: i64,
+    pub brand_user_id: i64,
+    pub brand_name: String,
+    pub creator_persona_id: i64,
+    pub match_score: f64,
+    pub match_factors: serde_json::Value,
+    pub advance_compatible: bool,
+    pub status: String,
+    pub created_at: DateTime<Utc>,
+}
+
+/// Query params for suggestion listing.
+#[derive(Debug, Deserialize)]
+pub struct SuggestionQuery {
+    pub persona_id: i64,
+    pub min_score: Option<f64>,
+    pub advance_only: Option<bool>,
+    pub limit: Option<i32>,
+    pub offset: Option<i32>,
+}
+
+/// Query for brand-side ranked creators per opportunity.
+#[derive(Debug, Deserialize)]
+pub struct RankedCreatorsQuery {
+    pub opportunity_id: i64,
+    pub limit: Option<i32>,
+    pub offset: Option<i32>,
+}
+
+/// Action on a suggestion.
+#[derive(Debug, Deserialize)]
+pub struct SuggestionAction {
+    pub action: String,  // "dismiss" or "convert"
+}

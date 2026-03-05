@@ -35,3 +35,10 @@ matching_service = { path = "../matching_service" }
 settings_service = { path = "../settings_service" }
 linkedin_service = { path = "../linkedin_service" }
 platform_service = { path = "../platform_service" }
+pricing_service = { path = "../pricing_service" }
+credit_service = { path = "../credit_service" }
+contract_service = { path = "../contract_service" }
+reputation_service = { path = "../reputation_service" }
+ed25519-dalek = { version = "2.1", features = ["rand_core"] }
+base64 = "0.21"
+rand = "0.8"

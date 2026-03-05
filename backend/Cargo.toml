@@ -21,5 +21,9 @@ members = [
     "settings_service",
     "linkedin_service",
     "platform_service",
+    "pricing_service",
+    "credit_service",
+    "contract_service",
+    "reputation_service",
 ]
 

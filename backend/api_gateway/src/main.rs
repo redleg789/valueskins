@@ -31,6 +31,10 @@ use matching_service::handlers as matching_handlers;
 use settings_service::handlers as settings_handlers;
 use linkedin_service::handlers as linkedin_handlers;
 use platform_service::handlers as platform_handlers;
+use pricing_service::handlers as pricing_handlers;
+use credit_service::handlers as credit_handlers;
+use contract_service::handlers as contract_handlers;
+use reputation_service::handlers as reputation_handlers;
 
 use crate::middleware::auth::JwtAuth;
 use crate::middleware::rate_limit::{TieredRateLimiter, TierLimits};
@@ -178,6 +182,21 @@ async fn main() -> std::io::Result<()> {
         ).await;
     });
 
+    // Reputation service with Ed25519 signing key (must init before replica_router is moved)
+    let reputation_signing_key = match env::var("PLATFORM_SIGNING_KEY_ED25519") {
+        Ok(key) => key,
+        Err(_) => {
+            tracing::error!("PLATFORM_SIGNING_KEY_ED25519 not set — refusing to start (required for reputation passport signing)");
+            std::process::exit(1);
+        }
+    };
+    let reputation_svc = reputation_service::service::ReputationService::new(
+        replica_data.write_pool().clone(),
+        replica_data.read_pool().clone(),
+        &reputation_signing_key,
+    ).expect("Failed to initialize reputation service");
+    let reputation_data = web::Data::new(std::sync::Arc::new(reputation_svc));
+
     tracing::info!("Starting Valueskins API at http://0.0.0.0:8080");
 
     HttpServer::new(move || {
@@ -226,6 +245,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(pii_audit_data.clone())
             .app_data(idempotency_data.clone())
             .app_data(web::Data::from(platform_cfg.clone()))
+            .app_data(reputation_data.clone())
 
             // === PUBLIC ROUTES (no auth required) ===
             .route("/health", web::get().to(health_check))
@@ -326,6 +346,8 @@ async fn main() -> std::io::Result<()> {
                             .route("/{id}/checklist", web::get().to(marketplace_handlers::get_checklist))
                             .route("/{id}/escrow", web::post().to(marketplace_handlers::create_escrow_stages))
                             .route("/{id}/repeat", web::post().to(marketplace_handlers::repeat_collab))
+                            .route("/{id}/messages", web::post().to(handlers::messages::post_message))
+                            .route("/{id}/messages", web::get().to(handlers::messages::get_messages))
                     )
 
                     // Offer round responses
@@ -396,9 +418,60 @@ async fn main() -> std::io::Result<()> {
                         web::scope("/matching")
                             .route("/creators", web::get().to(matching_handlers::discover_creators))
                             .route("/opportunities", web::get().to(matching_handlers::discover_opportunities))
+                            .route("/persona/{persona_id}/opportunities", web::get().to(matching_handlers::get_persona_matched_opportunities))
                             .route("/opportunities/{id}/requirements", web::post().to(matching_handlers::set_requirements))
                             .route("/opportunities/{id}/requirements", web::get().to(matching_handlers::get_requirements))
                             .route("/audit", web::get().to(matching_handlers::get_audit_log))
+                            // Deal Suggestions (AI-ranked proactive matches)
+                            .route("/suggestions", web::get().to(matching_handlers::get_suggestions))
+                            .route("/suggestions/{id}/action", web::post().to(matching_handlers::act_on_suggestion))
+                            .route("/opportunities/{id}/generate-suggestions", web::post().to(matching_handlers::generate_suggestions))
+                    )
+
+                    // Deal Room Chat
+                    .service(
+                        web::scope("/deal-rooms")
+                            .route("/{deal_room_id}/chat", web::get().to(matching_handlers::get_chat_history))
+                            .route("/{deal_room_id}/chat", web::post().to(matching_handlers::send_message))
+                    )
+
+                    // Pricing Benchmarks — market authority for creator rates
+                    .service(
+                        web::scope("/pricing")
+                            .route("/benchmark", web::get().to(pricing_handlers::get_benchmark))
+                            .route("/my-worth", web::get().to(pricing_handlers::get_personal_valuation))
+                            .route("/recompute", web::post().to(pricing_handlers::recompute_benchmarks))
+                    )
+
+                    // Creator Credit Lines — deterministic scoring, advance draws
+                    .service(
+                        web::scope("/credit")
+                            .route("/apply", web::post().to(credit_handlers::apply_credit))
+                            .route("/status", web::get().to(credit_handlers::get_status))
+                            .route("/score", web::get().to(credit_handlers::get_score))
+                            .route("/advance", web::post().to(credit_handlers::draw_advance))
+                            .route("/repay/{advance_id}", web::post().to(credit_handlers::repay_advance))
+                            .route("/advances", web::get().to(credit_handlers::list_advances))
+                    )
+
+                    // Contracts — auto-generation, e-signature, SHA-256 tamper evidence
+                    .service(
+                        web::scope("/contracts")
+                            .route("/generate", web::post().to(contract_handlers::generate_contract))
+                            .route("/templates", web::get().to(contract_handlers::list_templates))
+                            .route("/{id}", web::get().to(contract_handlers::get_contract))
+                            .route("/{id}/sign", web::post().to(contract_handlers::sign_contract))
+                            .route("/{id}/revisions", web::post().to(contract_handlers::request_revision))
+                            .route("/deal-room/{deal_room_id}", web::get().to(contract_handlers::get_contract_by_deal_room))
+                    )
+
+                    // Reputation Passports — Ed25519-signed, verifiable by brands
+                    .service(
+                        web::scope("/reputation")
+                            .route("/export", web::post().to(reputation_handlers::generate_export))
+                            .route("/verify", web::get().to(reputation_handlers::verify_export))
+                            .route("/exports", web::get().to(reputation_handlers::list_exports))
+                            .route("/public-key", web::get().to(reputation_handlers::get_public_key))
                     )
 
                     // User Settings (barter preference, energy, price band, etc.)
