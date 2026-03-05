@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
@@ -31,7 +31,7 @@ interface LoginResponse {
  *  - Token is stored via the shared HttpClient.setToken path (localStorage).
  *  - The authorization code is single-use; replaying it will fail.
  */
-export default function OAuthCallbackPage() {
+function OAuthCallbackInner() {
     const searchParams = useSearchParams();
     const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
     const [errorMessage, setErrorMessage] = useState<string>('');
@@ -248,5 +248,13 @@ export default function OAuthCallbackPage() {
                 }
             `}</style>
         </div>
+    );
+}
+
+export default function OAuthCallbackPage() {
+    return (
+        <Suspense>
+            <OAuthCallbackInner />
+        </Suspense>
     );
 }
