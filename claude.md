@@ -1,4 +1,46 @@
-Use approaches that use the least amount of tokens without compromising the quality, the fulless of code like frontend, backend, etc. speed may be compromised but not the quality or the fullness. 
+Use approaches that use the least amount of tokens without compromising the quality, the fulless of code like frontend, backend, etc. speed may be compromised but not the quality or the fullness.
+
+---
+
+## Hard Lessons — Never Repeat These Mistakes
+
+### 1. Self-audit BEFORE declaring done
+Never say "done" without running a full scale audit against the target user count. If the target is "billions of users", stress-test every query, every lock, every handler BEFORE presenting the work. The user should never have to ask "is it really prod ready?" — you should have already verified.
+
+### 2. Always push after making changes the user expects to see live
+If you remove a password gate, fix a bug, or change anything the user will check on a live deployment — commit AND push in the same step. Never leave changes uncommitted when the user expects them deployed.
+
+### 3. Always push to the correct branch
+Check which branch Vercel/CI deploys from (usually `main`). Push to BOTH `master` and `main` (or whatever the deploy branch is). Run `git branch -a` first if unsure.
+
+### 4. Type-check before pushing frontend changes
+Always run `npx tsc --noEmit` before committing frontend changes. Never push code that fails TypeScript compilation. This includes checking that API response types match component state types (`ApiResponse<T>` vs `T`).
+
+### 5. Check for duplicate/escaped files after git operations
+After creating files with brackets (Next.js dynamic routes like `[id]`), verify no escaped duplicates exist (`\[id\]`). Run `ls` on the directory before committing.
+
+### 6. Audit your own code like an attacker
+After writing any service, immediately ask:
+- What breaks at 1 billion rows?
+- What races exist between read and write?
+- What authorization checks are missing?
+- What happens when advisory lock IDs overflow i32?
+- Are all list queries paginated with real totals (not `.len()`)?
+- Do all timeouts cancel the DB query, not just the Rust future?
+Don't wait for the user to catch these. Find and fix them in the same pass.
+
+### 7. MVP flow > backend perfection
+Backend scale fixes mean nothing if the user can't:
+- Log in (Instagram OAuth must work end-to-end)
+- See filtered results (marketplace must filter by ValuSkin)
+- Chat (deal room messages must persist)
+- Share links (brand URLs must route correctly)
+Always verify the end-to-end user flow works before optimizing internals.
+
+### 8. Never ship partial work as complete
+If you find 30 issues, fix all 30. Don't fix 14 and present it as done. The 100/100 rule applies to audits too.
+
+---
 
 **claude.md — Production-grade implementation rules**
 
