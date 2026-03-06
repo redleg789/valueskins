@@ -441,8 +441,9 @@ pub struct ChatMessage {
     pub deal_room_id: i64,
     pub sender_user_id: i64,
     pub sender_name: String,
-    pub message: String,
-    pub created_at: String,
+    pub content: String,
+    pub message_type: String,
+    pub server_timestamp: String,
 }
 
 #[derive(serde::Deserialize)]
@@ -506,8 +507,9 @@ pub async fn get_chat_history(
         deal_room_id: i64,
         sender_user_id: i64,
         sender_name: String,
-        message: String,
-        created_at: chrono::DateTime<Utc>,
+        content: String,
+        message_type: String,
+        server_timestamp: chrono::DateTime<Utc>,
     }
 
     let messages = match sqlx::query_as::<_, MessageRow>(
@@ -517,12 +519,13 @@ pub async fn get_chat_history(
             dm.deal_room_id,
             dm.sender_user_id,
             u.display_name AS sender_name,
-            dm.message,
-            dm.created_at
+            dm.content,
+            dm.message_type,
+            dm.server_timestamp
         FROM deal_room_messages dm
         JOIN users u ON dm.sender_user_id = u.id
         WHERE dm.deal_room_id = $1
-        ORDER BY dm.created_at ASC
+        ORDER BY dm.server_timestamp ASC
         LIMIT $2 OFFSET $3
         "#
     )
@@ -546,8 +549,9 @@ pub async fn get_chat_history(
         deal_room_id: m.deal_room_id,
         sender_user_id: m.sender_user_id,
         sender_name: m.sender_name,
-        message: m.message,
-        created_at: m.created_at.to_rfc3339(),
+        content: m.content,
+        message_type: m.message_type,
+        server_timestamp: m.server_timestamp.to_rfc3339(),
     }).collect();
 
     HttpResponse::Ok().json(serde_json::json!({
@@ -627,12 +631,13 @@ pub async fn send_message(
         }
     };
 
-    // Insert message
+    // Insert message (content + message_type match the original migration schema;
+    // server_timestamp defaults to NOW() via column default)
     let message_result = sqlx::query(
         r#"
-        INSERT INTO deal_room_messages (deal_room_id, sender_user_id, message, created_at)
-        VALUES ($1, $2, $3, NOW())
-        RETURNING id
+        INSERT INTO deal_room_messages (deal_room_id, sender_user_id, content, message_type)
+        VALUES ($1, $2, $3, 'text')
+        RETURNING id, server_timestamp
         "#
     )
     .bind(deal_room_id)
@@ -641,10 +646,12 @@ pub async fn send_message(
     .fetch_one(&mut *tx)
     .await;
 
-    let message_id = match message_result {
+    let (message_id, sent_at) = match message_result {
         Ok(row) => {
             use sqlx::Row;
-            row.get::<i64, _>("id")
+            let id: i64 = row.get("id");
+            let ts: chrono::DateTime<Utc> = row.get("server_timestamp");
+            (id, ts)
         }
         Err(e) => {
             error!(error = %e, deal_room_id = %deal_room_id, "Failed to insert message");
@@ -685,6 +692,6 @@ pub async fn send_message(
     HttpResponse::Ok().json(serde_json::json!({
         "message_id": message_id,
         "deal_room_id": deal_room_id,
-        "sent_at": Utc::now().to_rfc3339(),
+        "sent_at": sent_at.to_rfc3339(),
     }))
 }
