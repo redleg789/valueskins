@@ -132,6 +132,16 @@ class PersonaClient {
     async getMyProfile() {
         return this.http.request<CreatorProfile>('/personas/me/profile');
     }
+
+    async setProfession(opts: { profession_name: string; profession_category?: string; profession_description?: string }) {
+        return this.http.request<{ persona_id: number; profession_id: number; slot: string; level: number }>(
+            '/personas/me/profession',
+            {
+                method: 'POST',
+                body: JSON.stringify(opts),
+            }
+        );
+    }
 }
 
 // Social API client

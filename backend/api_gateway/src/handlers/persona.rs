@@ -1,6 +1,6 @@
-use actix_web::{web, HttpResponse, Responder};
+use actix_web::{web, HttpRequest, HttpResponse, Responder, HttpMessage};
 use sqlx::PgPool;
-use tracing::error;
+use tracing::{error, info};
 
 pub async fn get_personas(
     pool: web::Data<PgPool>,
@@ -95,6 +95,129 @@ pub async fn get_persona_skins(
             HttpResponse::InternalServerError().finish()
         }
     }
+}
+
+/// POST /personas/me/profession
+///
+/// Assigns a profession (ValuSkin) to the authenticated user's persona.
+/// Creates the persona_professions row with level 1 and 'primary' slot.
+/// Idempotent: ON CONFLICT updates the profession if already set.
+pub async fn set_my_profession(
+    req: HttpRequest,
+    pool: web::Data<PgPool>,
+    body: web::Json<SetProfessionRequest>,
+) -> impl Responder {
+    let claims = match req.extensions().get::<auth_service::token::Claims>() {
+        Some(c) => c.clone(),
+        None => return HttpResponse::Unauthorized().json(serde_json::json!({"error": "Unauthorized"})),
+    };
+
+    let user_id: i64 = match claims.sub.parse() {
+        Ok(id) => id,
+        Err(_) => return HttpResponse::BadRequest().json(serde_json::json!({"error": "Invalid user ID"})),
+    };
+
+    // Get user's persona_id
+    let persona_id: i64 = match sqlx::query_scalar::<_, i64>(
+        "SELECT id FROM personas WHERE owner_user_id = $1 AND exists = true"
+    )
+    .bind(user_id)
+    .fetch_optional(pool.get_ref())
+    .await {
+        Ok(Some(id)) => id,
+        Ok(None) => return HttpResponse::NotFound().json(serde_json::json!({"error": "No persona found. Complete login first."})),
+        Err(e) => {
+            error!("Error fetching persona: {:?}", e);
+            return HttpResponse::InternalServerError().json(serde_json::json!({"error": "Internal server error"}));
+        }
+    };
+
+    // Resolve profession_id: accept either numeric id or string name
+    let profession_id: i64 = if let Some(id) = body.profession_id {
+        // Verify numeric id exists
+        let exists: bool = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM professions WHERE id = $1)"
+        )
+        .bind(id)
+        .fetch_one(pool.get_ref())
+        .await
+        .unwrap_or(false);
+        if !exists {
+            return HttpResponse::BadRequest().json(serde_json::json!({"error": "Invalid profession_id"}));
+        }
+        id
+    } else if let Some(ref name) = body.profession_name {
+        // Look up by name (case-insensitive), create if missing
+        match sqlx::query_scalar::<_, i64>(
+            "SELECT id FROM professions WHERE LOWER(name) = LOWER($1) AND is_active = true"
+        )
+        .bind(name)
+        .fetch_optional(pool.get_ref())
+        .await {
+            Ok(Some(id)) => id,
+            Ok(None) => {
+                // Auto-create profession from frontend catalog
+                let category = body.profession_category.as_deref().unwrap_or("General");
+                match sqlx::query_scalar::<_, i64>(
+                    "INSERT INTO professions (name, category, description, is_active) VALUES ($1, $2, $3, true) RETURNING id"
+                )
+                .bind(name)
+                .bind(category)
+                .bind(body.profession_description.as_deref().unwrap_or(""))
+                .fetch_one(pool.get_ref())
+                .await {
+                    Ok(id) => id,
+                    Err(e) => {
+                        error!("Error creating profession: {:?}", e);
+                        return HttpResponse::InternalServerError().json(serde_json::json!({"error": "Failed to create profession"}));
+                    }
+                }
+            }
+            Err(e) => {
+                error!("Error looking up profession: {:?}", e);
+                return HttpResponse::InternalServerError().json(serde_json::json!({"error": "Internal server error"}));
+            }
+        }
+    } else {
+        return HttpResponse::BadRequest().json(serde_json::json!({"error": "Either profession_id or profession_name is required"}));
+    };
+
+    // Upsert persona_professions (idempotent)
+    match sqlx::query(
+        r#"
+        INSERT INTO persona_professions (persona_id, profession_id, level, slot, real_score)
+        VALUES ($1, $2, 1, 'primary', 50)
+        ON CONFLICT (persona_id, profession_id) DO UPDATE SET
+            slot = 'primary',
+            level = GREATEST(persona_professions.level, 1)
+        "#
+    )
+    .bind(persona_id)
+    .bind(profession_id)
+    .execute(pool.get_ref())
+    .await {
+        Ok(_) => {
+            info!(user_id, persona_id, profession_id, "Profession assigned");
+            HttpResponse::Ok().json(serde_json::json!({
+                "persona_id": persona_id,
+                "profession_id": profession_id,
+                "slot": "primary",
+                "level": 1
+            }))
+        }
+        Err(e) => {
+            error!("Error setting profession: {:?}", e);
+            HttpResponse::InternalServerError().json(serde_json::json!({"error": "Failed to set profession"}))
+        }
+    }
+}
+
+#[derive(serde::Deserialize)]
+pub struct SetProfessionRequest {
+    pub profession_id: Option<i64>,
+    pub profession_name: Option<String>,
+    pub profession_category: Option<String>,
+    pub profession_description: Option<String>,
 }
 
 #[derive(serde::Deserialize)]

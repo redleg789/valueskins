@@ -118,10 +118,13 @@ function OAuthCallbackInner() {
 
                 setStatus('success');
 
-                // Redirect to the Instagram demo page after a brief moment
-                // so the success state is visible
+                // Route to real app: if no persona yet, go to onboarding; otherwise marketplace
                 setTimeout(() => {
-                    window.location.href = '/demo/instagram';
+                    if (data.user?.persona_id) {
+                        window.location.href = '/marketplace';
+                    } else {
+                        window.location.href = '/onboarding/profession';
+                    }
                 }, 800);
             } catch (err) {
                 const message = err instanceof Error ? err.message : 'Network error during login.';

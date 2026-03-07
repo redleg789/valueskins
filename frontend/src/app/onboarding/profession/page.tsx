@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { usePlatform } from '@/lib/context';
+import { api } from '@/lib/api';
 import {
   getProfessionsByPlatform,
   getProfessionsByCategory,
@@ -13,10 +15,13 @@ import {
 type Category = 'Tech' | 'Art' | 'Law' | 'Medical' | 'Gaming' | 'Finance' | 'Fitness' | 'Content';
 
 export default function ProfessionSelectionPage() {
+  const router = useRouter();
   const { activePlatform } = usePlatform();
   const [selectedCategory, setSelectedCategory] = useState<Category>('Tech');
   const [selectedProfession, setSelectedProfession] = useState<Profession | null>(null);
   const [search, setSearch] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const categories: Category[] = ['Tech', 'Art', 'Law', 'Medical', 'Gaming', 'Finance', 'Fitness', 'Content'];
 
@@ -227,27 +232,54 @@ export default function ProfessionSelectionPage() {
             </p>
           </div>
 
-          <Link href="/store" style={{ textDecoration: 'none', width: '100%', display: 'block' }}>
-            <button
-              onClick={() => {
-                localStorage.setItem('valueskins_profession', selectedProfession.id);
-              }}
-              style={{
-                width: '100%',
-                padding: '12px 0',
-                background: `linear-gradient(135deg, ${selectedProfession.gradientFrom}, ${selectedProfession.gradientTo})`,
-                border: 'none',
-                borderRadius: 8,
-                fontSize: 16,
-                fontWeight: 600,
-                color: '#fff',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-              }}
-            >
-              Select & Continue
-            </button>
-          </Link>
+          {saveError && (
+            <p style={{ color: '#ef4444', fontSize: 13, marginBottom: 8 }}>{saveError}</p>
+          )}
+          <button
+            disabled={saving}
+            onClick={async () => {
+              setSaving(true);
+              setSaveError(null);
+              const result = await api.persona.setProfession({
+                profession_name: selectedProfession.name,
+                profession_category: selectedProfession.category,
+                profession_description: selectedProfession.description,
+              });
+              if (result.error) {
+                setSaveError(result.error);
+                setSaving(false);
+                return;
+              }
+              // Update local user cache with persona_id
+              try {
+                const userStr = localStorage.getItem('valueskins_user');
+                if (userStr) {
+                  const user = JSON.parse(userStr);
+                  if (result.data?.persona_id) {
+                    user.persona_id = result.data.persona_id;
+                    localStorage.setItem('valueskins_user', JSON.stringify(user));
+                  }
+                }
+              } catch { /* non-critical */ }
+              router.push('/marketplace');
+            }}
+            style={{
+              width: '100%',
+              padding: '12px 0',
+              background: saving
+                ? 'rgba(139,92,246,0.3)'
+                : `linear-gradient(135deg, ${selectedProfession.gradientFrom}, ${selectedProfession.gradientTo})`,
+              border: 'none',
+              borderRadius: 8,
+              fontSize: 16,
+              fontWeight: 600,
+              color: '#fff',
+              cursor: saving ? 'not-allowed' : 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            {saving ? 'Saving...' : 'Select & Continue'}
+          </button>
         </div>
       )}
     </div>
