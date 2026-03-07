@@ -233,7 +233,7 @@ export default function ProfessionSelectionPage() {
           </div>
 
           {saveError && (
-            <p style={{ color: '#ef4444', fontSize: 13, marginBottom: 8 }}>{saveError}</p>
+            <p style={{ color: '#ccc', fontSize: 13, marginBottom: 8 }}>{saveError}</p>
           )}
           <button
             disabled={saving}
@@ -266,19 +266,17 @@ export default function ProfessionSelectionPage() {
             style={{
               width: '100%',
               padding: '12px 0',
-              background: saving
-                ? 'rgba(139,92,246,0.3)'
-                : `linear-gradient(135deg, ${selectedProfession.gradientFrom}, ${selectedProfession.gradientTo})`,
-              border: 'none',
+              background: saving ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.15)',
+              border: '1px solid rgba(255,255,255,0.2)',
               borderRadius: 8,
               fontSize: 16,
               fontWeight: 600,
-              color: '#fff',
+              color: '#f5f5f5',
               cursor: saving ? 'not-allowed' : 'pointer',
               transition: 'all 0.2s ease',
             }}
           >
-            {saving ? 'Saving...' : 'Select & Continue'}
+            {saving ? 'Saving...' : 'Continue'}
           </button>
         </div>
       )}

@@ -131,14 +131,14 @@ export default function DealRoomPage() {
           &larr;
         </button>
         <div>
-          <div style={{ fontWeight: 600, fontSize: 16 }}>Deal Room #{dealRoomId}</div>
+          <div style={{ fontWeight: 600, fontSize: 16 }}>Deal #{dealRoomId}</div>
           <div style={{ fontSize: 12, color: C.textSecondary }}>
-            All messages are recorded and legally binding
+            All messages are immutable and recorded
           </div>
         </div>
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
           <div style={{ width: 8, height: 8, borderRadius: '50%', background: C.green }} />
-          <span style={{ fontSize: 12, color: C.green }}>Documented</span>
+          <span style={{ fontSize: 12, color: C.green }}>Recorded</span>
         </div>
       </div>
 
@@ -162,11 +162,10 @@ export default function DealRoomPage() {
         )}
         {!loading && !error && messages.length === 0 && (
           <div style={{ textAlign: 'center', padding: 40, color: C.textSecondary }}>
-            <p style={{ fontSize: 32, marginBottom: 8 }}>No messages yet</p>
+            <p style={{ fontSize: 18, marginBottom: 8, fontWeight: 600 }}>No messages yet</p>
             <p>Send the first message to start negotiating.</p>
-            <p style={{ fontSize: 12, marginTop: 8, color: C.textSecondary }}>
-              Every message is timestamped and stored as an immutable record.
-              <br />This is not a DM — this is a documented negotiation trail.
+            <p style={{ fontSize: 12, marginTop: 12, color: C.textSecondary }}>
+              Every message is timestamped and stored as an immutable record on the server.
             </p>
           </div>
         )}
@@ -175,16 +174,15 @@ export default function DealRoomPage() {
         {messages.length > 0 && (
           <div style={{
             padding: '10px 14px',
-            background: 'rgba(34, 197, 94, 0.08)',
-            border: '1px solid rgba(34, 197, 94, 0.2)',
+            background: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.1)',
             borderRadius: 10,
             marginBottom: 8,
             fontSize: 12,
-            color: C.green,
+            color: '#999',
             textAlign: 'center',
           }}>
-            All {messages.length} messages are immutable, timestamped, and stored server-side.
-            Database triggers prevent modification or deletion. This trail is legally admissible.
+            All {messages.length} messages are immutable, timestamped, and server-recorded
           </div>
         )}
 

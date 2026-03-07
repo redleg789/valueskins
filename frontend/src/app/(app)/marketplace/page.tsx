@@ -108,47 +108,46 @@ export default function MarketplacePage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0a0a0f', color: 'white', padding: '2rem' }}>
+    <div style={{ minHeight: '100vh', background: '#0a0a0f', color: '#f5f5f5', padding: '2rem' }}>
       <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }`}</style>
       <div style={{ maxWidth: '1400px', margin: '0 auto 2rem' }}>
-        <h1 style={{ fontSize: '2.5rem', fontWeight: 800, marginBottom: '0.5rem' }}>Opportunity Marketplace</h1>
-        <p style={{ color: '#a1a1aa' }}>Level-gated opportunities from verified brands</p>
-        <div style={{ display: 'flex', gap: '2rem', marginTop: '1.5rem', padding: '1rem', background: 'rgba(139,92,246,0.05)', borderRadius: '12px', border: '1px solid rgba(139,92,246,0.1)' }}>
+        <h1 style={{ fontSize: '2.5rem', fontWeight: 800, marginBottom: '0.5rem' }}>Opportunities</h1>
+        <p style={{ color: '#888' }}>Level-gated opportunities from verified brands</p>
+        <div style={{ display: 'flex', gap: '2rem', marginTop: '1.5rem', padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
           {stats ? (
             <>
-              <div><span style={{ fontSize: '1.5rem', fontWeight: 700, background: 'linear-gradient(135deg,#8b5cf6,#06b6d4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>${parseFloat(stats.total_volume || '0').toLocaleString()}</span> <span style={{ color: '#71717a', fontSize: '0.9rem' }}>Total Value</span></div>
-              <div><span style={{ fontSize: '1.5rem', fontWeight: 700, background: 'linear-gradient(135deg,#8b5cf6,#06b6d4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{stats.active_opportunities}</span> <span style={{ color: '#71717a', fontSize: '0.9rem' }}>Active</span></div>
-              <div><span style={{ fontSize: '1.5rem', fontWeight: 700, background: 'linear-gradient(135deg,#8b5cf6,#06b6d4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{stats.completed_deals}</span> <span style={{ color: '#71717a', fontSize: '0.9rem' }}>Completed</span></div>
+              <div><span style={{ fontSize: '1.5rem', fontWeight: 700, color: '#f5f5f5' }}>${parseFloat(stats.total_volume || '0').toLocaleString()}</span> <span style={{ color: '#888', fontSize: '0.9rem' }}>Total Value</span></div>
+              <div><span style={{ fontSize: '1.5rem', fontWeight: 700, color: '#f5f5f5' }}>{stats.active_opportunities}</span> <span style={{ color: '#888', fontSize: '0.9rem' }}>Active</span></div>
+              <div><span style={{ fontSize: '1.5rem', fontWeight: 700, color: '#f5f5f5' }}>{stats.completed_deals}</span> <span style={{ color: '#888', fontSize: '0.9rem' }}>Completed</span></div>
             </>
           ) : (
-            <div style={{ height: '32px', width: '300px', background: 'rgba(255,255,255,0.07)', borderRadius: '4px' }} />
+            <div style={{ height: '32px', width: '300px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px' }} />
           )}
         </div>
       </div>
 
       <div style={{ maxWidth: '1400px', margin: '0 auto 2rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
         {CATEGORIES.map(cat => (
-          <button key={cat} onClick={() => setSelectedCategory(cat)} style={{ padding: '0.5rem 1rem', background: selectedCategory === cat ? 'rgba(139,92,246,0.2)' : 'rgba(255,255,255,0.05)', border: `1px solid ${selectedCategory === cat ? '#8b5cf6' : 'rgba(255,255,255,0.1)'}`, borderRadius: '8px', color: selectedCategory === cat ? 'white' : '#a1a1aa', cursor: 'pointer' }}>{cat}</button>
+          <button key={cat} onClick={() => setSelectedCategory(cat)} style={{ padding: '0.5rem 1rem', background: selectedCategory === cat ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.05)', border: `1px solid ${selectedCategory === cat ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.1)'}`, borderRadius: '8px', color: selectedCategory === cat ? '#f5f5f5' : '#888', cursor: 'pointer', fontWeight: selectedCategory === cat ? 600 : 400 }}>{cat}</button>
         ))}
-        <select value={sortBy} onChange={e => setSortBy(e.target.value as 'newest' | 'reward')} style={{ marginLeft: 'auto', padding: '0.5rem 1rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'white' }}>
+        <select value={sortBy} onChange={e => setSortBy(e.target.value as 'newest' | 'reward')} style={{ marginLeft: 'auto', padding: '0.5rem 1rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#f5f5f5' }}>
           <option value="newest">Newest</option>
           <option value="reward">Highest Reward</option>
         </select>
       </div>
 
       {applyError && (
-        <div style={{ maxWidth: '1400px', margin: '0 auto 1rem', padding: '1rem', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '12px', color: '#ef4444', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ maxWidth: '1400px', margin: '0 auto 1rem', padding: '1rem', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '12px', color: '#f5f5f5', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span>{applyError}</span>
-          <button onClick={() => setApplyError(null)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '1.2rem' }}>×</button>
+          <button onClick={() => setApplyError(null)} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: '1.2rem' }}>×</button>
         </div>
       )}
 
       {error ? (
         <div style={{ maxWidth: '1400px', margin: '0 auto', textAlign: 'center', padding: '4rem' }}>
-          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⚠️</div>
           <h2 style={{ marginBottom: '0.5rem' }}>Failed to load opportunities</h2>
-          <p style={{ color: '#a1a1aa', marginBottom: '1.5rem' }}>{error}</p>
-          <button onClick={loadData} style={{ padding: '0.75rem 1.5rem', background: 'rgba(139,92,246,0.2)', border: '1px solid #8b5cf6', borderRadius: '10px', color: 'white', cursor: 'pointer' }}>Try Again</button>
+          <p style={{ color: '#888', marginBottom: '1.5rem' }}>{error}</p>
+          <button onClick={loadData} style={{ padding: '0.75rem 1.5rem', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '10px', color: '#f5f5f5', cursor: 'pointer' }}>Try Again</button>
         </div>
       ) : (
         <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: '1.5rem' }}>
@@ -156,8 +155,7 @@ export default function MarketplacePage() {
             ? Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
             : sorted.length === 0
               ? (
-                <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '4rem', color: '#a1a1aa' }}>
-                  <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎯</div>
+                <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '4rem', color: '#888' }}>
                   <p>No opportunities found for this category.</p>
                 </div>
               )
@@ -165,34 +163,34 @@ export default function MarketplacePage() {
                 const userLevel = userProfile?.id ? (userProfile.level ?? 1) : 0;
                 const isLocked = userLevel < opp.required_level;
                 return (
-                  <div key={opp.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px', padding: '1.5rem' }}>
+                  <div key={opp.id} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', padding: '1.5rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <div style={{ width: '40px', height: '40px', background: 'linear-gradient(135deg,#8b5cf6,#06b6d4)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>{(opp.brand_name || '?').charAt(0)}</div>
-                        <span style={{ fontWeight: 600 }}>{opp.brand_name || 'Unknown Brand'} {opp.brand_verified && <span style={{ color: '#3b82f6' }}>✓</span>}</span>
+                        <div style={{ width: '40px', height: '40px', background: 'rgba(255,255,255,0.1)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: '#f5f5f5', fontSize: '0.85rem' }}>{(opp.brand_name || '?').charAt(0)}</div>
+                        <span style={{ fontWeight: 600, color: '#f5f5f5' }}>{opp.brand_name || 'Unknown Brand'} {opp.brand_verified && <span style={{ color: '#999' }}>✓</span>}</span>
                       </div>
-                      <span style={{ padding: '0.25rem 0.75rem', background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.2)', borderRadius: '100px', fontSize: '0.75rem', color: '#8b5cf6' }}>{opp.category}</span>
+                      <span style={{ padding: '0.25rem 0.75rem', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '100px', fontSize: '0.75rem', color: '#ccc' }}>{opp.category}</span>
                     </div>
-                    <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.5rem' }}>{opp.title}</h3>
-                    <p style={{ color: '#a1a1aa', fontSize: '0.9rem', marginBottom: '1.5rem' }}>{opp.description}</p>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.5rem', color: '#f5f5f5' }}>{opp.title}</h3>
+                    <p style={{ color: '#888', fontSize: '0.9rem', marginBottom: '1.5rem' }}>{opp.description}</p>
                     <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                       <div>
-                        <div style={{ color: '#71717a', fontSize: '0.75rem' }}>REWARD</div>
-                        <div style={{ fontSize: '1.25rem', fontWeight: 600, background: 'linear-gradient(135deg,#8b5cf6,#06b6d4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{formatReward(opp.reward_amount, opp.reward_currency)}</div>
+                        <div style={{ color: '#666', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Reward</div>
+                        <div style={{ fontSize: '1.25rem', fontWeight: 600, color: '#f5f5f5' }}>{formatReward(opp.reward_amount, opp.reward_currency)}</div>
                       </div>
                       <div>
-                        <div style={{ color: '#71717a', fontSize: '0.75rem' }}>LEVEL</div>
-                        <span style={{ padding: '0.25rem 0.5rem', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 600, background: `${LEVEL_COLORS[opp.required_level - 1]}20`, color: LEVEL_COLORS[opp.required_level - 1] }}>★ {opp.required_level} {LEVEL_NAMES[opp.required_level - 1] ?? 'Unknown'}</span>
+                        <div style={{ color: '#666', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Level</div>
+                        <span style={{ padding: '0.25rem 0.5rem', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 600, background: 'rgba(255,255,255,0.08)', color: '#ccc' }}>Level {opp.required_level}</span>
                       </div>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ color: '#71717a', fontSize: '0.85rem' }}>{opp.application_count} applicants</span>
+                      <span style={{ color: '#666', fontSize: '0.85rem' }}>{opp.application_count} applications</span>
                       {!opp.can_apply ? (
-                        <button disabled style={{ padding: '0.75rem 1.5rem', background: 'rgba(34,197,94,0.2)', border: 'none', borderRadius: '10px', color: '#22c55e', fontWeight: 600 }}>✓ Applied</button>
+                        <button disabled style={{ padding: '0.75rem 1.5rem', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: '#999', fontWeight: 600, cursor: 'not-allowed' }}>Applied</button>
                       ) : isLocked ? (
-                        <button disabled style={{ padding: '0.75rem 1.5rem', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '10px', color: '#71717a', fontWeight: 600 }}>🔒 Level {opp.required_level}</button>
+                        <button disabled style={{ padding: '0.75rem 1.5rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: '#666', fontWeight: 600, cursor: 'not-allowed' }}>Locked</button>
                       ) : (
-                        <button onClick={() => handleApply(opp.id)} disabled={applyingTo === opp.id} style={{ padding: '0.75rem 1.5rem', background: 'linear-gradient(135deg,#8b5cf6,#7c3aed)', border: 'none', borderRadius: '10px', color: 'white', fontWeight: 600, cursor: 'pointer' }}>{applyingTo === opp.id ? 'Applying...' : 'Apply Now'}</button>
+                        <button onClick={() => handleApply(opp.id)} disabled={applyingTo === opp.id} style={{ padding: '0.75rem 1.5rem', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: '10px', color: '#f5f5f5', fontWeight: 600, cursor: 'pointer' }}>{applyingTo === opp.id ? 'Applying...' : 'Apply'}</button>
                       )}
                     </div>
                   </div>
