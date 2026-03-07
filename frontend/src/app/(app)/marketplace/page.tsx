@@ -30,10 +30,28 @@ export default function MarketplacePage() {
   const [error, setError] = useState<string | null>(null);
   const [applyingTo, setApplyingTo] = useState<number | null>(null);
   const [applyError, setApplyError] = useState<string | null>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
+
+    // Fetch current user profile from backend (not stale localStorage)
+    const userResult = await api.persona.getMyProfile();
+    if (userResult.data) {
+      setUserProfile(userResult.data);
+      // Also update localStorage to keep it in sync
+      if (userResult.data.id) {
+        try {
+          const stored = localStorage.getItem('valueskins_user');
+          if (stored) {
+            const user = JSON.parse(stored);
+            user.persona_id = userResult.data.id;
+            localStorage.setItem('valueskins_user', JSON.stringify(user));
+          }
+        } catch { /* non-critical */ }
+      }
+    }
 
     const filters: OpportunityFilters = { status: 'open' };
     if (selectedCategory !== 'All') filters.category = selectedCategory;
@@ -72,14 +90,13 @@ export default function MarketplacePage() {
   };
 
   const handleApply = async (id: number) => {
-    const user = api.auth.getUser();
-    if (!user?.persona_id) {
+    if (!userProfile?.id) {
       setApplyError('You must set up a persona before applying. Visit your profile to get started.');
       return;
     }
     setApplyingTo(id);
     setApplyError(null);
-    const result = await api.marketplace.applyToOpportunity(id, user.persona_id, '');
+    const result = await api.marketplace.applyToOpportunity(id, userProfile.id, '');
     if (result.error) {
       setApplyError(result.error);
     } else {
@@ -145,7 +162,7 @@ export default function MarketplacePage() {
                 </div>
               )
               : sorted.map(opp => {
-                const userLevel = api.auth.getUser()?.persona_id ? 1 : 0; // actual level fetched in profile
+                const userLevel = userProfile?.id ? (userProfile.level ?? 1) : 0;
                 const isLocked = userLevel < opp.required_level;
                 return (
                   <div key={opp.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px', padding: '1.5rem' }}>

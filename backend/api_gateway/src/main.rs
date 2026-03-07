@@ -309,6 +309,7 @@ async fn main() -> std::io::Result<()> {
                     .service(
                         web::scope("/personas")
                             .route("", web::get().to(handlers::persona::get_personas))
+                            .route("/me/profile", web::get().to(handlers::persona::get_my_profile))
                             .route("/me/profession", web::post().to(handlers::persona::set_my_profession))
                             .route("/{id}", web::get().to(handlers::persona::get_persona))
                             .route("/{id}/skins", web::get().to(handlers::persona::get_persona_skins))

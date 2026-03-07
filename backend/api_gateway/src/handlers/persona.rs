@@ -2,6 +2,58 @@ use actix_web::{web, HttpRequest, HttpResponse, Responder, HttpMessage};
 use sqlx::PgPool;
 use tracing::{error, info};
 
+/// GET /personas/me/profile
+/// Returns authenticated user's full profile with persona and profession info
+pub async fn get_my_profile(
+    req: HttpRequest,
+    pool: web::Data<PgPool>,
+) -> impl Responder {
+    let claims = match req.extensions().get::<auth_service::token::Claims>() {
+        Some(c) => c.clone(),
+        None => return HttpResponse::Unauthorized().json(serde_json::json!({"error": "Unauthorized"})),
+    };
+
+    let user_id: i64 = match claims.sub.parse() {
+        Ok(id) => id,
+        Err(_) => return HttpResponse::BadRequest().json(serde_json::json!({"error": "Invalid user ID"})),
+    };
+
+    // Fetch persona with profession info
+    let result = sqlx::query_as::<_, ProfileResponse>(
+        r#"
+        SELECT
+            p.id as persona_id,
+            p.owner_user_id,
+            u.username,
+            p.display_name,
+            p.avatar_uri,
+            COALESCE(MAX(pp.level), 1) as level,
+            COALESCE(MAX(pp.real_score), 0) as score,
+            STRING_AGG(DISTINCT prof.name, ', ') as professions,
+            p.created_at,
+            p.last_active_at
+        FROM personas p
+        JOIN users u ON p.owner_user_id = u.id
+        LEFT JOIN persona_professions pp ON p.id = pp.persona_id
+        LEFT JOIN professions prof ON pp.profession_id = prof.id
+        WHERE p.owner_user_id = $1 AND p.exists = true
+        GROUP BY p.id, p.owner_user_id, u.username, p.display_name, p.avatar_uri, p.created_at, p.last_active_at
+        "#
+    )
+    .bind(user_id)
+    .fetch_optional(pool.get_ref())
+    .await;
+
+    match result {
+        Ok(Some(profile)) => HttpResponse::Ok().json(profile),
+        Ok(None) => HttpResponse::NotFound().json(serde_json::json!({"error": "Persona not found"})),
+        Err(e) => {
+            error!("Error fetching profile: {:?}", e);
+            HttpResponse::InternalServerError().json(serde_json::json!({"error": "Internal server error"}))
+        }
+    }
+}
+
 pub async fn get_personas(
     pool: web::Data<PgPool>,
     query: web::Query<PaginationQuery>,
@@ -233,6 +285,20 @@ pub struct PersonaResponse {
     pub username: String,
     pub display_name: String,
     pub avatar_uri: Option<String>,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub last_active_at: chrono::DateTime<chrono::Utc>,
+}
+
+#[derive(serde::Serialize, sqlx::FromRow)]
+pub struct ProfileResponse {
+    pub persona_id: i64,
+    pub owner_user_id: i64,
+    pub username: String,
+    pub display_name: String,
+    pub avatar_uri: Option<String>,
+    pub level: i32,
+    pub score: i64,
+    pub professions: Option<String>,
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub last_active_at: chrono::DateTime<chrono::Utc>,
 }
