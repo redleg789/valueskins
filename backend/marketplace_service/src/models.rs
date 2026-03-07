@@ -100,6 +100,7 @@ pub struct ApplicationResponse {
     pub opportunity_title: String,
     pub persona_id: i64,
     pub persona_name: String,
+    pub username: String,  // same as persona_name, for frontend compatibility
     pub persona_level: i32,
     pub pitch: String,
     pub status: String,
@@ -210,14 +211,24 @@ pub struct OpenDealRoomRequest {
 #[derive(Debug, Serialize)]
 pub struct DealRoomSummary {
     pub id: i64,
+    pub opportunity_id: Option<i64>,
+    pub opportunity_title: Option<String>,
+    pub creator_persona_id: i64,
+    pub creator_name: String,
+    pub brand_persona_id: i64,
+    pub brand_name: String,
     pub intent: String,
     pub status: String,
     pub brief_title: Option<String>,
     pub brief_campaign_type: Option<String>,
     pub expires_at: DateTime<Utc>,
     pub last_action_at: DateTime<Utc>,
+    pub created_at: DateTime<Utc>,
     pub offer_count: i64,
     pub latest_amount_cents: Option<i64>,
+    pub last_message: Option<String>,
+    pub last_message_at: Option<DateTime<Utc>>,
+    pub unread_count: i64,
     /// Suggested fair range from negotiation memory (None if no history)
     pub suggested_floor_cents: Option<i64>,
     pub suggested_ceiling_cents: Option<i64>,

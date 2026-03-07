@@ -302,6 +302,27 @@ class DealRoomsClient {
             body: JSON.stringify({ message }),
         });
     }
+
+    async listMyRooms() {
+        return this.http.request<{ deal_rooms: DealRoomSummary[] }>('/marketplace/deal-rooms');
+    }
+
+    async openDealRoom(data: {
+        opportunity_id?: number;
+        creator_persona_id: number;
+        intent: string;
+        brief_title: string;
+        brief_description: string;
+        brief_deliverables: string;
+        brief_deadline?: string;
+        brief_campaign_type: string;
+        compensation_type?: string;
+    }) {
+        return this.http.request<{ deal_room_id: number }>('/marketplace/deal-rooms', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+    }
 }
 
 // Brand API client — brand dashboard and opportunity management
@@ -854,8 +875,9 @@ export interface Application {
     opportunity_id: number;
     opportunity_title: string;
     persona_id: number;
+    username?: string;
     pitch: string;
-    status: 'pending' | 'accepted' | 'rejected' | 'withdrawn';
+    status: 'pending' | 'accepted' | 'rejected' | 'withdrawn' | 'applied';
     created_at: string;
 }
 
@@ -1656,6 +1678,21 @@ export interface MessagesResponse {
     total: number;
     limit: number;
     offset: number;
+}
+
+export interface DealRoomSummary {
+    id: number;
+    opportunity_id: number | null;
+    opportunity_title: string | null;
+    creator_persona_id: number;
+    creator_name: string;
+    brand_persona_id: number;
+    brand_name: string;
+    status: string;
+    last_message: string | null;
+    last_message_at: string | null;
+    created_at: string;
+    unread_count: number;
 }
 
 // Singleton instance

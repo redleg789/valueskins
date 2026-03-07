@@ -495,7 +495,8 @@ impl MarketplaceService {
                 opportunity_id: app.opportunity_id,
                 opportunity_title: opp_title.clone(),
                 persona_id: app.persona_id,
-                persona_name: name,
+                persona_name: name.clone(),
+                username: name,
                 persona_level: level,
                 pitch: app.pitch.unwrap_or_default(),
                 status: app.status,
@@ -1024,16 +1025,87 @@ impl DealRoomService {
             .fetch_one(&self.pool)
             .await?;
 
+            // Opportunity title (if linked)
+            let opp_title: Option<String> = if let Some(oid) = room.opportunity_id {
+                sqlx::query_scalar("SELECT title FROM opportunities WHERE id = $1")
+                    .bind(oid)
+                    .fetch_optional(&self.pool)
+                    .await?
+            } else {
+                None
+            };
+
+            // Creator display name
+            let creator_name: String = sqlx::query_scalar(
+                "SELECT COALESCE(display_name, username, 'Creator') FROM personas WHERE id = $1"
+            )
+            .bind(room.creator_persona_id)
+            .fetch_optional(&self.pool)
+            .await?
+            .unwrap_or_else(|| format!("creator_{}", room.creator_persona_id));
+
+            // Brand display name (from brand persona linked to brand_user_id)
+            let brand_name: String = sqlx::query_scalar(
+                "SELECT COALESCE(display_name, username, 'Brand') FROM personas WHERE owner_user_id = $1 AND role = 'brand' LIMIT 1"
+            )
+            .bind(room.brand_user_id)
+            .fetch_optional(&self.pool)
+            .await?
+            .unwrap_or_else(|| format!("brand_{}", room.brand_user_id));
+
+            // Brand persona id
+            let brand_persona_id: i64 = sqlx::query_scalar(
+                "SELECT id FROM personas WHERE owner_user_id = $1 AND role = 'brand' LIMIT 1"
+            )
+            .bind(room.brand_user_id)
+            .fetch_optional(&self.pool)
+            .await?
+            .unwrap_or(0);
+
+            // Last message in deal room
+            let last_msg: Option<(String, DateTime<Utc>)> = sqlx::query_as(
+                "SELECT content, server_timestamp FROM deal_room_messages WHERE deal_room_id = $1 ORDER BY server_timestamp DESC LIMIT 1"
+            )
+            .bind(room.id)
+            .fetch_optional(&self.pool)
+            .await?;
+
+            let (last_message, last_message_at) = match last_msg {
+                Some((msg, ts)) => (Some(msg), Some(ts)),
+                None => (None, None),
+            };
+
+            // Unread count for current user (messages not from this user since last_action_at)
+            let unread_count: i64 = sqlx::query_scalar(
+                "SELECT COUNT(*) FROM deal_room_messages WHERE deal_room_id = $1 AND sender_user_id != $2 AND server_timestamp > $3"
+            )
+            .bind(room.id)
+            .bind(user_id)
+            .bind(room.last_action_at)
+            .fetch_one(&self.pool)
+            .await
+            .unwrap_or(0);
+
             summaries.push(crate::models::DealRoomSummary {
                 id: room.id,
+                opportunity_id: room.opportunity_id,
+                opportunity_title: opp_title.or(room.brief_title.clone()),
+                creator_persona_id: room.creator_persona_id,
+                creator_name,
+                brand_persona_id,
+                brand_name,
                 intent: room.intent,
                 status: room.status,
                 brief_title: room.brief_title,
                 brief_campaign_type: room.brief_campaign_type,
                 expires_at: room.expires_at,
                 last_action_at: room.last_action_at,
+                created_at: room.created_at,
                 offer_count,
                 latest_amount_cents: latest_amount,
+                last_message,
+                last_message_at,
+                unread_count,
                 suggested_floor_cents: suggested_floor,
                 suggested_ceiling_cents: suggested_ceiling,
                 creator_price_band: band_label,

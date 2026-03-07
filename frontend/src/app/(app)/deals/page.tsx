@@ -11,16 +11,9 @@ import {
   formatCurrency,
   calculateDealPricing,
 } from '@/lib/deals';
-import { api, type CreatorDeal, type MarketplaceOpportunity } from '@/lib/api';
+import { api, type CreatorDeal, type MarketplaceOpportunity, type DealRoomSummary } from '@/lib/api';
 
-/*
- * PATENT-RELEVANT: Escrow-Backed Deal Pipeline with Status Tracking
- * ──────────────────────────────────────────────────────────────────────────
- * This page shows creators their active deals and available opportunities.
- * Key innovation: Real-time deal status with escrow visibility.
- */
-
-type Tab = 'opportunities' | 'active' | 'completed';
+type Tab = 'opportunities' | 'active' | 'completed' | 'chats';
 
 function DealSkeletonCard() {
   return (
@@ -67,6 +60,8 @@ export default function DealsPage() {
   // Summary stats derived from real data
   const [totalEarnings, setTotalEarnings] = useState(0);
   const [pendingAmount, setPendingAmount] = useState(0);
+  const [myRooms, setMyRooms] = useState<DealRoomSummary[]>([]);
+  const [roomsLoading, setRoomsLoading] = useState(true);
 
   const platformConfig = PLATFORM_CONFIGS[activePlatform];
   const accentColor = platformConfig.primaryColor;
@@ -92,7 +87,6 @@ export default function DealsPage() {
     } else {
       const deals = result.data?.deals ?? [];
       setMyDeals(deals);
-      // Compute totals from real data
       const completed = deals.filter(d => ['approved', 'completed'].includes(d.status));
       const active = deals.filter(d => ['funded', 'in_progress', 'submitted', 'revision'].includes(d.status));
       setTotalEarnings(completed.reduce((sum, d) => sum + d.total_amount, 0));
@@ -101,17 +95,27 @@ export default function DealsPage() {
     setLoadingDeals(false);
   }, []);
 
+  const loadMyRooms = useCallback(async () => {
+    setRoomsLoading(true);
+    const result = await api.dealRooms.listMyRooms();
+    if (result.data) setMyRooms(result.data.deal_rooms || []);
+    setRoomsLoading(false);
+  }, []);
+
   useEffect(() => {
     loadOpportunities();
     loadMyDeals();
-  }, [loadOpportunities, loadMyDeals]);
+    loadMyRooms();
+  }, [loadOpportunities, loadMyDeals, loadMyRooms]);
 
   const activeDeals = myDeals.filter(d => ['funded', 'in_progress', 'submitted', 'revision'].includes(d.status));
   const completedDeals = myDeals.filter(d => ['approved', 'completed'].includes(d.status));
+  const activeRooms = myRooms.filter(r => r.status !== 'completed' && r.status !== 'cancelled');
 
   const getTabCount = (tab: Tab): number | string => {
     if (tab === 'opportunities') return loadingOpps ? '...' : opportunities.length;
     if (tab === 'active') return loadingDeals ? '...' : activeDeals.length;
+    if (tab === 'chats') return roomsLoading ? '...' : activeRooms.length;
     return loadingDeals ? '...' : completedDeals.length;
   };
 
@@ -148,7 +152,7 @@ export default function DealsPage() {
 
         {/* Tabs */}
         <div style={{ display: 'flex', borderBottom: '1px solid var(--ig-separator)', padding: '0 16px' }}>
-          {(['opportunities', 'active', 'completed'] as Tab[]).map(tab => (
+          {(['opportunities', 'chats', 'active', 'completed'] as Tab[]).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -160,7 +164,7 @@ export default function DealsPage() {
                 cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
               }}
             >
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              {tab === 'chats' ? 'Chats' : tab.charAt(0).toUpperCase() + tab.slice(1)}
               <span style={{ background: activeTab === tab ? accentColor : 'var(--ig-separator)', color: activeTab === tab ? '#fff' : 'var(--ig-text-tertiary)', padding: '2px 6px', borderRadius: 10, fontSize: 11, fontWeight: 600 }}>
                 {getTabCount(tab)}
               </span>
@@ -217,6 +221,48 @@ export default function DealsPage() {
                     : completedDeals.map((deal, i) => (
                       <CreatorDealCard key={deal.id} deal={deal} type="completed" accentColor={accentColor} index={i} onClick={() => router.push(`/deals/${deal.id}`)} />
                     ))
+              }
+            </div>
+          )}
+
+          {activeTab === 'chats' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {roomsLoading
+                ? Array.from({ length: 2 }).map((_, i) => <DealSkeletonCard key={i} />)
+                : activeRooms.length === 0
+                  ? <EmptyState title="No active chats" description="Once a brand opens a deal room with you, it will appear here" />
+                  : activeRooms.map(room => (
+                    <div
+                      key={room.id}
+                      onClick={() => router.push(`/deals/${room.id}`)}
+                      style={{ background: 'var(--ig-card)', borderRadius: 12, border: '1px solid var(--ig-separator)', padding: 14, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                    >
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 4 }}>
+                          {room.opportunity_title || `Deal Room #${room.id}`}
+                        </div>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                          <span style={{ fontSize: 12, color: 'var(--ig-text-tertiary)' }}>with {room.brand_name}</span>
+                          <span style={{ padding: '2px 6px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: room.status === 'negotiation' ? `${accentColor}20` : 'rgba(34,197,94,0.15)', color: room.status === 'negotiation' ? accentColor : '#22c55e' }}>
+                            {room.status}
+                          </span>
+                        </div>
+                        {room.last_message && (
+                          <div style={{ fontSize: 12, color: 'var(--ig-text-tertiary)', marginTop: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 260 }}>
+                            {room.last_message}
+                          </div>
+                        )}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                        {(room.unread_count ?? 0) > 0 && (
+                          <span style={{ background: accentColor, color: '#fff', borderRadius: '50%', width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700 }}>
+                            {room.unread_count}
+                          </span>
+                        )}
+                        <span style={{ fontSize: 18, color: 'var(--ig-text-tertiary)' }}>→</span>
+                      </div>
+                    </div>
+                  ))
               }
             </div>
           )}
