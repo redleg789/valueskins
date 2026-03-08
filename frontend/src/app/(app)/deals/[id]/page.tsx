@@ -46,6 +46,8 @@ export default function DealRoomPage() {
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
+  const [performanceClause, setPerformanceClause] = useState(false);
+  const [advancePercent, setAdvancePercent] = useState(70);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -139,6 +141,66 @@ export default function DealRoomPage() {
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
           <div style={{ width: 8, height: 8, borderRadius: '50%', background: C.green }} />
           <span style={{ fontSize: 12, color: C.green }}>Recorded</span>
+        </div>
+      </div>
+
+      {/* Payment Status Panel */}
+      <div style={{
+        padding: '16px',
+        background: 'rgba(34, 197, 94, 0.05)',
+        borderBottom: `1px solid ${C.green}40`,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 12,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: C.green }} />
+          <div style={{ fontWeight: 600, fontSize: 14, color: C.green }}>Payment Escrowed & Locked</div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div style={{ padding: '10px 12px', background: C.card, borderRadius: 8, border: `1px solid ${C.border}` }}>
+            <div style={{ fontSize: 11, color: C.textSecondary, marginBottom: 4 }}>Advance Payment</div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: C.green }}>{advancePercent}%</div>
+            <div style={{ fontSize: 10, color: C.textSecondary, marginTop: 2 }}>Paid on upload</div>
+          </div>
+          <div style={{ padding: '10px 12px', background: C.card, borderRadius: 8, border: `1px solid ${C.border}` }}>
+            <div style={{ fontSize: 11, color: C.textSecondary, marginBottom: 4 }}>Performance Bonus</div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: C.blue }}>{100 - advancePercent}%</div>
+            <div style={{ fontSize: 10, color: C.textSecondary, marginTop: 2 }}>After approval (max 30%)</div>
+          </div>
+        </div>
+
+        <div style={{ padding: '10px 12px', background: C.card, borderRadius: 8, border: `1px solid ${C.border}` }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={performanceClause}
+              onChange={(e) => {
+                setPerformanceClause(e.target.checked);
+                if (!e.target.checked) setAdvancePercent(100);
+              }}
+              style={{ width: 16, height: 16, cursor: 'pointer' }}
+            />
+            <span style={{ fontSize: 13, color: C.text }}>Enable performance-based payment clause (optional)</span>
+          </label>
+          {performanceClause && (
+            <div style={{ marginTop: 8, paddingTop: 8, borderTop: `1px solid ${C.border}` }}>
+              <div style={{ fontSize: 11, color: C.textSecondary, marginBottom: 6 }}>Advance: {advancePercent}% | Performance: {100 - advancePercent}%</div>
+              <input
+                type="range"
+                min="70"
+                max="100"
+                value={advancePercent}
+                onChange={(e) => setAdvancePercent(Number(e.target.value))}
+                style={{ width: '100%', cursor: 'pointer' }}
+              />
+            </div>
+          )}
+        </div>
+
+        <div style={{ fontSize: 11, color: C.textSecondary, background: 'rgba(255,255,255,0.03)', padding: '8px 10px', borderRadius: 6 }}>
+          ✓ Creator gets paid in <strong>days</strong>, not 60 days. Payment locked before work starts. No waiting.
         </div>
       </div>
 
