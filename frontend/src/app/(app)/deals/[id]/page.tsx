@@ -246,49 +246,87 @@ export default function DealRoomPage() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
-      <form onSubmit={handleSend} style={{
+      {/* Done Banner + Input */}
+      <div style={{
         padding: '12px 16px',
         borderTop: `1px solid ${C.border}`,
         background: C.surface,
         display: 'flex',
+        flexDirection: 'column',
         gap: 10,
-        alignItems: 'center',
       }}>
-        <input
-          type="text"
-          placeholder="Type a message..."
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          maxLength={5000}
-          style={{
-            flex: 1,
-            padding: '10px 14px',
-            background: C.card,
-            border: `1px solid ${C.border}`,
-            borderRadius: 20,
-            color: C.text,
-            fontSize: 14,
-            outline: 'none',
-          }}
-        />
-        <button
-          type="submit"
-          disabled={!newMessage.trim() || sending}
-          style={{
-            padding: '10px 20px',
-            background: !newMessage.trim() || sending ? 'rgba(0,149,246,0.3)' : C.blue,
-            color: '#fff',
-            border: 'none',
-            borderRadius: 20,
-            fontWeight: 600,
-            fontSize: 14,
-            cursor: !newMessage.trim() || sending ? 'not-allowed' : 'pointer',
-          }}
-        >
-          {sending ? '...' : 'Send'}
-        </button>
-      </form>
+        <div style={{
+          padding: '12px',
+          background: 'rgba(34, 197, 94, 0.1)',
+          border: `1px solid ${C.green}40`,
+          borderRadius: 8,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}>
+          <div style={{ fontSize: 13, color: C.green, fontWeight: 500 }}>
+            Both parties satisfied? Finalize the deal.
+          </div>
+          <button
+            onClick={() => {
+              alert('Deal accepted! Proceeding to payment and contract signing.');
+              router.push('/deals');
+            }}
+            style={{
+              padding: '6px 14px',
+              background: C.green,
+              color: '#fff',
+              border: 'none',
+              borderRadius: 6,
+              fontWeight: 600,
+              fontSize: 12,
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Done, Accept Now
+          </button>
+        </div>
+        <form onSubmit={handleSend} style={{
+          display: 'flex',
+          gap: 10,
+          alignItems: 'center',
+        }}>
+          <input
+            type="text"
+            placeholder="Type a message..."
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            maxLength={5000}
+            style={{
+              flex: 1,
+              padding: '10px 14px',
+              background: C.card,
+              border: `1px solid ${C.border}`,
+              borderRadius: 20,
+              color: C.text,
+              fontSize: 14,
+              outline: 'none',
+            }}
+          />
+          <button
+            type="submit"
+            disabled={!newMessage.trim() || sending}
+            style={{
+              padding: '10px 20px',
+              background: !newMessage.trim() || sending ? 'rgba(0,149,246,0.3)' : C.blue,
+              color: '#fff',
+              border: 'none',
+              borderRadius: 20,
+              fontWeight: 600,
+              fontSize: 14,
+              cursor: !newMessage.trim() || sending ? 'not-allowed' : 'pointer',
+            }}
+          >
+            {sending ? '...' : 'Send'}
+          </button>
+        </form>
+      </div>
 
       {sendError && (
         <div style={{
