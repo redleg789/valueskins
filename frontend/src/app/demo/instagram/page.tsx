@@ -247,13 +247,20 @@ export default function InstagramDemoPage() {
   const [negotiatingCreator, setNegotiatingCreator] = useState<number | null>(null);
 
   // Deal room state for active negotiations
-  type DealRoomPhase = 'brief' | 'offer' | 'counter' | 'checklist' | 'accepted' | 'softhold';
+  type DealRoomPhase = 'brief' | 'offer' | 'counter' | 'chatroom' | 'checklist' | 'accepted' | 'softhold';
   const [dealRoomPhase, setDealRoomPhase] = useState<DealRoomPhase>('brief');
   const [dealIntent, setDealIntent] = useState<'explore' | 'campaign' | 'long-term'>('campaign');
   const [dealBriefFilled, setDealBriefFilled] = useState(false);
   const [dealBriefTitle, setDealBriefTitle] = useState('');
   const [dealOfferAmount, setDealOfferAmount] = useState('');
   const [dealCounterAmount, setDealCounterAmount] = useState('');
+  // Chat messages for the deal room
+  const [chatMessages, setChatMessages] = useState<{id: number; sender: 'me' | 'brand'; text: string; time: string}[]>([
+    { id: 1, sender: 'brand', text: 'Hey! Excited to work together on this campaign.', time: 'just now' },
+  ]);
+  const [chatInput, setChatInput] = useState('');
+  const [performanceClause, setPerformanceClause] = useState(false);
+  const [advancePercent, setAdvancePercent] = useState(70);
   // Simulated offer expiry: 23h 47m remaining
   const [offerExpiresLabel] = useState('23h 47m');
   // Energy state (creator)
@@ -1354,10 +1361,120 @@ export default function InstagramDemoPage() {
                                     <>
                                       <div style={{ padding: '12px', background: 'rgba(46,125,50,0.08)', borderRadius: '8px', marginBottom: '10px' }}>
                                         <div style={{ fontSize: '13px', fontWeight: 700, color: '#2E7D32', marginBottom: '4px' }}>Deal accepted!</div>
-                                        <div style={{ fontSize: '12px', color: C.textSecondary }}>Both sides must confirm the expectation checklist before the deal is finalised.</div>
+                                        <div style={{ fontSize: '12px', color: C.textSecondary }}>Enter the chat room to negotiate details and finalize.</div>
                                       </div>
-                                      <button onClick={() => setDealRoomPhase('checklist')} style={{ width: '100%', background: C.primary, border: 'none', padding: '10px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}>
-                                        Review Checklist
+                                      <button onClick={() => setDealRoomPhase('chatroom')} style={{ width: '100%', background: C.primary, border: 'none', padding: '10px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}>
+                                        Enter Chat Room
+                                      </button>
+                                    </>
+                                  )}
+
+                                  {dealRoomPhase === 'chatroom' && (
+                                    <>
+                                      {/* Chat + Sidebar layout */}
+                                      <div style={{ display: 'flex', gap: '8px', minHeight: '340px' }}>
+                                        {/* Chat area */}
+                                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: C.bg, borderRadius: '8px', border: `1px solid ${C.border}`, overflow: 'hidden' }}>
+                                          <div style={{ padding: '8px 10px', borderBottom: `1px solid ${C.border}`, fontSize: '11px', fontWeight: 700, color: C.primary, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#2E7D32' }} />
+                                            Live Chat
+                                          </div>
+                                          {/* Messages */}
+                                          <div style={{ flex: 1, overflowY: 'auto', padding: '8px', display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '220px' }}>
+                                            {chatMessages.map(msg => (
+                                              <div key={msg.id} style={{ display: 'flex', justifyContent: msg.sender === 'me' ? 'flex-end' : 'flex-start' }}>
+                                                <div style={{
+                                                  maxWidth: '80%',
+                                                  padding: '6px 10px',
+                                                  borderRadius: msg.sender === 'me' ? '10px 10px 2px 10px' : '10px 10px 10px 2px',
+                                                  background: msg.sender === 'me' ? C.primary : C.surfaceAlt,
+                                                  color: msg.sender === 'me' ? '#fff' : C.text,
+                                                  fontSize: '12px',
+                                                  lineHeight: 1.4,
+                                                }}>
+                                                  {msg.text}
+                                                  <div style={{ fontSize: '9px', color: msg.sender === 'me' ? 'rgba(255,255,255,0.5)' : C.textMuted, marginTop: '2px', textAlign: 'right' }}>{msg.time}</div>
+                                                </div>
+                                              </div>
+                                            ))}
+                                          </div>
+                                          {/* Input */}
+                                          <form onSubmit={(e) => {
+                                            e.preventDefault();
+                                            if (!chatInput.trim()) return;
+                                            setChatMessages(prev => [...prev, { id: Date.now(), sender: 'me', text: chatInput.trim(), time: 'just now' }]);
+                                            setChatInput('');
+                                            // Simulate brand reply after 1.5s
+                                            setTimeout(() => {
+                                              const replies = [
+                                                'Sounds good! Let me check with my team.',
+                                                'Great point. We can work with that.',
+                                                'Agreed. Let\'s finalize the terms.',
+                                                'Perfect, I\'ll update the brief.',
+                                                'That works for us. Ready to proceed?',
+                                              ];
+                                              setChatMessages(prev => [...prev, { id: Date.now(), sender: 'brand', text: replies[Math.floor(Math.random() * replies.length)], time: 'just now' }]);
+                                            }, 1500);
+                                          }} style={{ display: 'flex', gap: '4px', padding: '6px', borderTop: `1px solid ${C.border}` }}>
+                                            <input
+                                              type="text"
+                                              value={chatInput}
+                                              onChange={(e) => setChatInput(e.target.value)}
+                                              placeholder="Type a message..."
+                                              style={{ flex: 1, padding: '6px 10px', background: C.surfaceAlt, border: `1px solid ${C.border}`, borderRadius: '14px', color: C.text, fontSize: '12px', outline: 'none' }}
+                                            />
+                                            <button type="submit" disabled={!chatInput.trim()} style={{ padding: '6px 12px', background: chatInput.trim() ? C.primary : `${C.primary}40`, color: '#fff', border: 'none', borderRadius: '14px', fontSize: '11px', fontWeight: 600, cursor: chatInput.trim() ? 'pointer' : 'not-allowed' }}>Send</button>
+                                          </form>
+                                        </div>
+
+                                        {/* Sidebar: checklist + payment */}
+                                        <div style={{ width: '160px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                          {/* Checklist */}
+                                          <div style={{ background: C.bg, borderRadius: '8px', border: `1px solid ${C.border}`, padding: '8px' }}>
+                                            <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Checklist</div>
+                                            {[
+                                              'Deliverables',
+                                              'Timeline',
+                                              'Payment terms',
+                                              'Contract',
+                                            ].map((item, i) => (
+                                              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '3px 0', fontSize: '11px', color: C.text }}>
+                                                <div style={{ width: 12, height: 12, borderRadius: 3, background: '#2E7D32', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                                  <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+                                                </div>
+                                                {item}
+                                              </div>
+                                            ))}
+                                          </div>
+
+                                          {/* Payment */}
+                                          <div style={{ background: C.bg, borderRadius: '8px', border: `1px solid ${C.border}`, padding: '8px' }}>
+                                            <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Payment</div>
+                                            <div style={{ display: 'flex', gap: '4px', marginBottom: '6px' }}>
+                                              <div style={{ flex: 1, textAlign: 'center', padding: '4px', background: C.surfaceAlt, borderRadius: '4px' }}>
+                                                <div style={{ fontSize: '12px', fontWeight: 700, color: '#2E7D32' }}>{advancePercent}%</div>
+                                                <div style={{ fontSize: '8px', color: C.textMuted }}>Advance</div>
+                                              </div>
+                                              <div style={{ flex: 1, textAlign: 'center', padding: '4px', background: C.surfaceAlt, borderRadius: '4px' }}>
+                                                <div style={{ fontSize: '12px', fontWeight: 700, color: C.primary }}>{100 - advancePercent}%</div>
+                                                <div style={{ fontSize: '8px', color: C.textMuted }}>Perf.</div>
+                                              </div>
+                                            </div>
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '10px', color: C.text }}>
+                                              <input type="checkbox" checked={performanceClause} onChange={(e) => { setPerformanceClause(e.target.checked); if (!e.target.checked) setAdvancePercent(100); }} style={{ width: 10, height: 10 }} />
+                                              Perf. clause
+                                            </label>
+                                            {performanceClause && (
+                                              <input type="range" min="70" max="100" value={advancePercent} onChange={(e) => setAdvancePercent(Number(e.target.value))} style={{ width: '100%', marginTop: '4px' }} />
+                                            )}
+                                            <div style={{ fontSize: '9px', color: '#2E7D32', marginTop: '4px', textAlign: 'center' }}>✓ Payment locked</div>
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      {/* Done button */}
+                                      <button onClick={() => { setDealRoomPhase('checklist'); }} style={{ width: '100%', background: '#2E7D32', border: 'none', padding: '10px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px', marginTop: '10px' }}>
+                                        Done, Accept Now
                                       </button>
                                     </>
                                   )}
@@ -1430,14 +1547,14 @@ export default function InstagramDemoPage() {
                                           <div style={{ fontSize:'11px', color:C.textMuted, marginBottom:'2px' }}>Earnings</div>
                                           <div style={{ fontSize:'22px', fontWeight:800, color:'#2E7D32' }}>${parseInt(dealCounterAmount || '5000').toLocaleString()}</div>
                                         </div>
-                                        <button onClick={() => { setNegotiatingOpp(null); setDealRoomPhase('brief'); setCreatorDealLifecycle('checklist'); setDealUploadSimulated(false); }} style={{ width:'100%', background:C.primary, border:'none', padding:'10px', borderRadius:'8px', color:'#fff', fontWeight:600, cursor:'pointer', fontSize:'13px' }}>
+                                        <button onClick={() => { setNegotiatingOpp(null); setDealRoomPhase('brief'); setCreatorDealLifecycle('checklist'); setDealUploadSimulated(false); setChatMessages([{ id: 1, sender: 'brand', text: 'Hey! Excited to work together on this campaign.', time: 'just now' }]); setChatInput(''); }} style={{ width:'100%', background:C.primary, border:'none', padding:'10px', borderRadius:'8px', color:'#fff', fontWeight:600, cursor:'pointer', fontSize:'13px' }}>
                                           Withdraw to Bank
                                         </button>
                                       </div>
                                     </>
                                   )}
 
-                                  {!['offer','counter','accepted','checklist','softhold'].includes(dealRoomPhase) && (
+                                  {!['offer','counter','accepted','chatroom','checklist','softhold'].includes(dealRoomPhase) && (
                                     <button onClick={() => setNegotiatingOpp(null)} style={{ width: '100%', background: 'none', border: `1px solid ${C.border}`, padding: '8px', borderRadius: '8px', color: C.textSecondary, cursor: 'pointer', fontSize: '12px' }}>Close</button>
                                   )}
                                 </div>
