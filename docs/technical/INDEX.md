@@ -5,12 +5,12 @@
 ### Quick Start (5 minutes)
 1. Read [PROJECT_SUMMARY.md](PROJECT_SUMMARY.md) - High-level overview
 2. Skim [DEVELOPER_QUICK_REFERENCE.md](DEVELOPER_QUICK_REFERENCE.md) - Bookmark it
-3. Check [claude.md](claude.md) - Team standards
+3. Check [CODING_STANDARDS.md](CODING_STANDARDS.md) - Team standards
 
 ### First Day as Developer (30 minutes)
-1. Read [claude.md](claude.md) completely - 15 mins
+1. Read [CODING_STANDARDS.md](CODING_STANDARDS.md) completely - 15 mins
 2. Read [DEVELOPER_QUICK_REFERENCE.md](DEVELOPER_QUICK_REFERENCE.md) - 15 mins
-3. Review Anti-Vibe-Coder Master Checklist in [claude.md](claude.md)
+3. Review Production Quality Checklist in [CODING_STANDARDS.md](CODING_STANDARDS.md)
 4. Ask questions!
 
 ---
@@ -18,14 +18,14 @@
 ## 📚 Documentation Files
 
 ### Core Standards
-**[claude.md](claude.md)** (4.8 KB)
+**[CODING_STANDARDS.md](CODING_STANDARDS.md)** (4.8 KB)
 - SOLID principles (S, O, L, I, D)
 - DRY, KISS, YAGNI principles
 - Error handling and validation
 - Code organization
 - Testing discipline
 - Performance and security
-- **Anti-Vibe-Coder Master Checklist** (45 items)
+- **Production Quality Checklist** (45 items)
 
 **When to use:** Source of truth for coding standards
 
@@ -90,15 +90,15 @@
 
 ### For New Team Members
 1. Start: [PROJECT_SUMMARY.md](PROJECT_SUMMARY.md)
-2. Learn: [claude.md](claude.md)
+2. Learn: [CODING_STANDARDS.md](CODING_STANDARDS.md)
 3. Reference: [DEVELOPER_QUICK_REFERENCE.md](DEVELOPER_QUICK_REFERENCE.md)
 4. Deep dive: [IMPLEMENTATION_COMPLETE.md](IMPLEMENTATION_COMPLETE.md)
 
 ### For Code Reviewers
-1. Checklist: Anti-Vibe-Coder items in [claude.md](claude.md)
+1. Checklist: Production Quality items in [CODING_STANDARDS.md](CODING_STANDARDS.md)
 2. Examples: [DEVELOPER_QUICK_REFERENCE.md](DEVELOPER_QUICK_REFERENCE.md)
 3. Red flags: [DEVELOPER_QUICK_REFERENCE.md#red-flags](DEVELOPER_QUICK_REFERENCE.md)
-4. Standards: [claude.md](claude.md)
+4. Standards: [CODING_STANDARDS.md](CODING_STANDARDS.md)
 
 ### For Project Managers
 1. Status: [PROJECT_SUMMARY.md](PROJECT_SUMMARY.md)
@@ -109,7 +109,7 @@
 ### For Architects
 1. Design: [IMPLEMENTATION_COMPLETE.md](IMPLEMENTATION_COMPLETE.md)
 2. Patterns: [DEVELOPER_QUICK_REFERENCE.md#architecture-patterns](DEVELOPER_QUICK_REFERENCE.md)
-3. SOLID: [claude.md](claude.md)
+3. SOLID: [CODING_STANDARDS.md](CODING_STANDARDS.md)
 4. Changes: [IMPLEMENTATION_COMPLETE.md](IMPLEMENTATION_COMPLETE.md)
 
 ---
@@ -139,7 +139,7 @@ See: [CODE_IMPROVEMENTS_SUMMARY.md](CODE_IMPROVEMENTS_SUMMARY.md)
 See: [IMPLEMENTATION_COMPLETE.md#major-improvement](IMPLEMENTATION_COMPLETE.md)
 
 ### Documentation
-- Created [claude.md](claude.md) - Team standards
+- Created [CODING_STANDARDS.md](CODING_STANDARDS.md) - Team standards
 - Created [DEVELOPER_QUICK_REFERENCE.md](DEVELOPER_QUICK_REFERENCE.md) - Daily guide
 - Created [CODE_IMPROVEMENTS_SUMMARY.md](CODE_IMPROVEMENTS_SUMMARY.md) - Change tracking
 - Created [IMPLEMENTATION_COMPLETE.md](IMPLEMENTATION_COMPLETE.md) - Detailed report
@@ -172,7 +172,7 @@ See: [IMPLEMENTATION_COMPLETE.md#code-quality-metrics](IMPLEMENTATION_COMPLETE.m
 
 Use this before starting any work:
 
-- [ ] Read [claude.md](claude.md) SOLID section
+- [ ] Read [CODING_STANDARDS.md](CODING_STANDARDS.md) SOLID section
 - [ ] Review [DEVELOPER_QUICK_REFERENCE.md](DEVELOPER_QUICK_REFERENCE.md) relevant section
 - [ ] Plan your approach
 - [ ] Check for code duplication (DRY)
@@ -186,7 +186,7 @@ Use this before starting any work:
 - [ ] Handled errors explicitly
 - [ ] No duplication (DRY)
 - [ ] Tests pass
-- [ ] Reviewed against Anti-Vibe-Coder checklist
+- [ ] Reviewed against Production Quality checklist
 
 See: [DEVELOPER_QUICK_REFERENCE.md](DEVELOPER_QUICK_REFERENCE.md)
 
@@ -197,14 +197,14 @@ See: [DEVELOPER_QUICK_REFERENCE.md](DEVELOPER_QUICK_REFERENCE.md)
 - [ ] No red flags present
 - [ ] Tests included/passing
 - [ ] Follows patterns from [IMPLEMENTATION_COMPLETE.md](IMPLEMENTATION_COMPLETE.md)
-- [ ] Meets Anti-Vibe-Coder standards
+- [ ] Meets Production Quality standards
 
 ---
 
 ## 🎓 Learning Paths
 
 ### Understanding SOLID
-1. Read: [claude.md - SOLID Principles](claude.md)
+1. Read: [CODING_STANDARDS.md - SOLID Principles](CODING_STANDARDS.md)
 2. Examples: [DEVELOPER_QUICK_REFERENCE.md - SOLID Principles](DEVELOPER_QUICK_REFERENCE.md)
 3. Real Code: [IMPLEMENTATION_COMPLETE.md - Smart Contract Improvements](IMPLEMENTATION_COMPLETE.md)
 4. Apply: Use in your code, check in review
@@ -216,7 +216,7 @@ See: [DEVELOPER_QUICK_REFERENCE.md](DEVELOPER_QUICK_REFERENCE.md)
 4. Usage: [IMPLEMENTATION_COMPLETE.md - Migration Guide](IMPLEMENTATION_COMPLETE.md)
 
 ### Understanding Best Practices
-1. Read: [claude.md](claude.md)
+1. Read: [CODING_STANDARDS.md](CODING_STANDARDS.md)
 2. Quick Ref: [DEVELOPER_QUICK_REFERENCE.md](DEVELOPER_QUICK_REFERENCE.md)
 3. Examples: Real code in [IMPLEMENTATION_COMPLETE.md](IMPLEMENTATION_COMPLETE.md)
 4. Apply: Use daily, reference checklist
@@ -258,7 +258,7 @@ See: [PROJECT_SUMMARY.md#-phase-2-roadmap](PROJECT_SUMMARY.md)
 ## ❓ FAQ
 
 ### Where are the coding standards?
-→ [claude.md](claude.md)
+→ [CODING_STANDARDS.md](CODING_STANDARDS.md)
 
 ### What changed in my code?
 → [CODE_IMPROVEMENTS_SUMMARY.md](CODE_IMPROVEMENTS_SUMMARY.md)
@@ -286,7 +286,7 @@ See: [PROJECT_SUMMARY.md#-phase-2-roadmap](PROJECT_SUMMARY.md)
 ## 📞 Support
 
 ### Questions about standards?
-See [claude.md](claude.md) and [DEVELOPER_QUICK_REFERENCE.md](DEVELOPER_QUICK_REFERENCE.md)
+See [CODING_STANDARDS.md](CODING_STANDARDS.md) and [DEVELOPER_QUICK_REFERENCE.md](DEVELOPER_QUICK_REFERENCE.md)
 
 ### Questions about changes?
 See [CODE_IMPROVEMENTS_SUMMARY.md](CODE_IMPROVEMENTS_SUMMARY.md) and [IMPLEMENTATION_COMPLETE.md](IMPLEMENTATION_COMPLETE.md)
@@ -316,7 +316,7 @@ Keep it:
 
 | Document | Size | Purpose |
 |----------|------|---------|
-| claude.md | 4.8 KB | Team standards |
+| CODING_STANDARDS.md | 4.8 KB | Team standards |
 | DEVELOPER_QUICK_REFERENCE.md | 17 KB | Daily guide |
 | CODE_IMPROVEMENTS_SUMMARY.md | 8.1 KB | Change tracking |
 | IMPLEMENTATION_COMPLETE.md | 27 KB | Detailed report |

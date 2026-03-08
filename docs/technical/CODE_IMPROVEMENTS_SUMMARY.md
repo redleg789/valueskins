@@ -1,6 +1,6 @@
 # Code Improvements Summary
 
-This document tracks all improvements made to align the codebase with SOLID principles and the Anti-Vibe-Coder Master Checklist.
+This document tracks all improvements made to align the codebase with SOLID principles and the Production Quality Checklist.
 
 ## Date: February 10, 2026
 
@@ -8,8 +8,8 @@ This document tracks all improvements made to align the codebase with SOLID prin
 
 ## Updates Made
 
-### 1. Claude.md File
-**Location:** `claude.md`
+### 1. Coding Standards File
+**Location:** `CODING_STANDARDS.md`
 
 Added comprehensive coding guidelines including:
 - SOLID Principles (existing)
@@ -20,7 +20,7 @@ Added comprehensive coding guidelines including:
 - Code Organization & Structure
 - Testing Principles
 - Performance & Security
-- **Anti-Vibe-Coder Master Checklist** with detailed items on:
+- **Production Quality Checklist** with detailed items on:
   - Structure & Design
   - Clarity & Readability
   - Correctness & Safety
@@ -201,7 +201,7 @@ Now:
 
 ## Compliance Checklist
 
-Using the Anti-Vibe-Coder Master Checklist:
+Using the Production Quality Checklist:
 
 ### Structure & Design
 - ✅ Each class/module has one responsibility
@@ -234,7 +234,7 @@ Using the Anti-Vibe-Coder Master Checklist:
 
 ## Files Modified
 
-1. `claude.md` - Added comprehensive coding guidelines
+1. `CODING_STANDARDS.md` - Added comprehensive coding guidelines
 2. `contracts/core/PersonaRegistry.sol` - DRY refactoring + optimization
 3. `contracts/core/ProfessionRegistry.sol` - DRY refactoring + optimization
 4. `frontend/src/lib/api.ts` - Major refactoring: god object → 10 focused clients

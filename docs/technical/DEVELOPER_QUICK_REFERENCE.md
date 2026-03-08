@@ -1,7 +1,7 @@
 # Developer Quick Reference Guide
 
 **Valueskins Code Quality Standards**
-Use this as your daily guide for writing code that passes the Anti-Vibe-Coder Master Checklist.
+Use this as your daily guide for writing code that passes the Production Quality Checklist.
 
 ---
 
@@ -12,7 +12,7 @@ Use this as your daily guide for writing code that passes the Anti-Vibe-Coder Ma
 - [ ] Is there duplication I can remove (DRY)?
 - [ ] Am I overcomplicating? (KISS)
 - [ ] Do I actually need this? (YAGNI)
-- [ ] Can I explain this in 60 seconds?
+- [ ] Can I explain this in 60 seconds to someone else?
 
 ### 2. While You Code
 - [ ] One responsibility per function/class
@@ -592,8 +592,8 @@ If you see ANY of these, refactor immediately:
 ## 🔄 Development Workflow
 
 ### Before You Start
-1. Check `claude.md` for principles
-2. Check Anti-Vibe-Coder Master Checklist
+1. Check `CODING_STANDARDS.md` for principles
+2. Check Production Quality Checklist
 3. Plan your changes
 4. Write tests first (TDD)
 
@@ -622,10 +622,10 @@ If you see ANY of these, refactor immediately:
 
 ## 📚 Files to Reference
 
-- **claude.md** - Full coding guidelines
+- **CODING_STANDARDS.md** - Full coding guidelines
 - **CODE_IMPROVEMENTS_SUMMARY.md** - What we improved and why
 - **IMPLEMENTATION_COMPLETE.md** - Detailed implementation report
-- **Anti-Vibe-Coder Master Checklist** - Full checklist (in claude.md)
+- **Production Quality Checklist** - Full checklist (in CODING_STANDARDS.md)
 
 ---
 
@@ -764,7 +764,7 @@ return PRECISION - remaining;
 
 ## 🎯 Your Action Items
 
-1. **Today:** Read `claude.md` completely
+1. **Today:** Read `CODING_STANDARDS.md` completely
 2. **This Week:** Apply checklist to your code
 3. **Going Forward:** Reference this guide daily
 4. **Code Review:** Use this as PR review checklist

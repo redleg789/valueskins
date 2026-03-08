@@ -470,4 +470,4 @@ Completed user's explicit request:
 4. ✅ **Platform Settings** — Admin can enable/disable features and configure behavior
 5. ✅ **Production-Ready Code** — Deterministic, auditable, scalable, secure
 
-All code follows CLAUDE.md production standards and is ready for integration into a real platform.
+All code follows production standards and is ready for integration into a real platform.

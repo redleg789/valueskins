@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS brand_creator_matches (
     level_bonus_score INT NOT NULL DEFAULT 0,        -- Weighted differently per perspective
 
     -- Match metadata
-    match_reason TEXT,                               -- AI-generated explanation
+    match_reason TEXT,                               -- System-generated explanation
     price_estimate INT,                              -- Estimated deal value in cents
     status TEXT NOT NULL DEFAULT 'pending',           -- pending, contacted, accepted, rejected
 
