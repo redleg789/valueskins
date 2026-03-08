@@ -28,6 +28,7 @@ COPY backend/pricing_service ./pricing_service
 COPY backend/credit_service ./credit_service
 COPY backend/contract_service ./contract_service
 COPY backend/reputation_service ./reputation_service
+COPY backend/migrations ./migrations
 
 # Build
 RUN cargo build --release -p api_gateway
