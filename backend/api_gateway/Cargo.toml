@@ -42,3 +42,8 @@ reputation_service = { path = "../reputation_service" }
 ed25519-dalek = { version = "2.1", features = ["rand_core"] }
 base64 = "0.21"
 rand = "0.8"
+hmac = "0.12"
+sha2 = "0.10"
+subtle = "2.5"
+hex = "0.4"
+reqwest = { version = "0.11", features = ["json"] }

@@ -1,13 +1,13 @@
 //! Creator Equity System — token balance, vesting, dividends, pool stats.
 //! All endpoints require authenticated user.
 
-use actix_web::{web, HttpRequest, HttpResponse, Responder};
+use actix_web::{web, HttpMessage, HttpRequest, HttpResponse, Responder};
 use sqlx::PgPool;
 
 fn get_user_id(req: &HttpRequest) -> Result<i64, HttpResponse> {
     req.extensions()
         .get::<auth_service::token::Claims>()
-        .map(|c| c.user_id)
+        .map(|c| c.sub.parse::<i64>().unwrap_or(0))
         .ok_or_else(|| HttpResponse::Unauthorized().json(serde_json::json!({"error": "Authentication required"})))
 }
 

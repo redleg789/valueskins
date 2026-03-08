@@ -346,10 +346,10 @@ impl ContractService {
             template_type: String,
             description: String,
             template_body: String,
-            default_revision_cap: i32,
+            default_revision_cap: i16,
             default_kill_fee_pct: i16,
             default_advance_pct: i16,
-            default_exclusivity_days: i16,
+            default_exclusivity_days: i32,
             usage_rights_description: String,
             created_at: chrono::DateTime<chrono::Utc>,
             updated_at: chrono::DateTime<chrono::Utc>,
@@ -360,7 +360,7 @@ impl ContractService {
             sqlx::query_as::<_, TemplateWithCount>(
                 r#"SELECT id, template_name, template_type, description, template_body,
                           default_revision_cap, default_kill_fee_pct, default_advance_pct,
-                          default_exclusivity_days, usage_rights_description, created_at, updated_at,
+                          default_exclusivity_days::int4, usage_rights_description, created_at, updated_at,
                           COUNT(*) OVER()::int8 AS total_count
                    FROM contract_templates
                    WHERE ($1::text IS NULL OR template_type = $1)

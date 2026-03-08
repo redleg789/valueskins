@@ -340,7 +340,7 @@ impl CreditService {
             deal_room_id: i64,
             amount_cents: i64,
             repayment_auto_deduct: bool,
-            repayment_due_at: chrono::DateTime<chrono::Utc>,
+            repayment_due_at: Option<chrono::DateTime<chrono::Utc>>,
             repaid_at: Option<chrono::DateTime<chrono::Utc>>,
             status: String,
             created_at: chrono::DateTime<chrono::Utc>,

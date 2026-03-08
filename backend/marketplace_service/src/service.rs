@@ -1,7 +1,7 @@
 //! Marketplace Service Core Logic
 
 use sqlx::PgPool;
-use chrono::{Utc, Duration};
+use chrono::{DateTime, Utc, Duration};
 use crate::models::{
     Opportunity, OpportunityResponse, OpportunityFilters,
     CreateOpportunityRequest, ApplyRequest,

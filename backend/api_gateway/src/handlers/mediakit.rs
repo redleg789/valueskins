@@ -1,13 +1,13 @@
 //! Media Kit — auto-generated creator portfolios.
 
-use actix_web::{web, HttpRequest, HttpResponse, Responder};
+use actix_web::{web, HttpMessage, HttpRequest, HttpResponse, Responder};
 use serde::Deserialize;
-use sqlx::PgPool;
+use sqlx::{PgPool, Row};
 
 fn get_user_id(req: &HttpRequest) -> Result<i64, HttpResponse> {
     req.extensions()
         .get::<auth_service::token::Claims>()
-        .map(|c| c.user_id)
+        .map(|c| c.sub.parse::<i64>().unwrap_or(0))
         .ok_or_else(|| HttpResponse::Unauthorized().json(serde_json::json!({"error": "Authentication required"})))
 }
 
@@ -27,27 +27,25 @@ pub async fn get_my_mediakit(req: HttpRequest, pool: web::Data<PgPool>) -> impl 
     .await
     .ok();
 
-    let kit: Option<(i32, String, String, Option<String>, String, String, i64, f64, i64, bool, Option<String>, i32, i32, bool, String, String, String, String)> =
-        sqlx::query_as(
+    let kit_row = match sqlx::query(
             "SELECT mk.id, mk.tagline, mk.bio, mk.location, mk.niche,
-                    array_to_string(mk.specialties, ','),
-                    mk.total_followers, mk.avg_engagement_rate::float8, mk.monthly_reach,
+                    array_to_string(mk.specialties, ',') AS specialties_str,
+                    mk.total_followers, mk.avg_engagement_rate::float8 AS avg_engagement_rate, mk.monthly_reach,
                     mk.is_public, mk.custom_slug, mk.views, mk.downloads, mk.show_rates,
                     mk.brand_color_primary, mk.brand_color_secondary, mk.brand_color_accent,
-                    array_to_string(mk.languages, ',')
+                    array_to_string(mk.languages, ',') AS languages_str
              FROM creator_media_kits mk WHERE mk.user_id = $1"
         )
         .bind(user_id)
         .fetch_optional(pool.get_ref())
         .await
-        .unwrap_or(None);
-
-    let kit = match kit {
-        Some(k) => k,
-        None => return HttpResponse::InternalServerError().json(serde_json::json!({"error": "Kit not found"})),
+    {
+        Ok(Some(row)) => row,
+        Ok(None) => return HttpResponse::InternalServerError().json(serde_json::json!({"error": "Kit not found"})),
+        Err(_) => return HttpResponse::InternalServerError().json(serde_json::json!({"error": "Kit not found"})),
     };
 
-    let kit_id = kit.0;
+    let kit_id: i32 = kit_row.get(0);
 
     // Rates
     let rates: Vec<(i32, String, String, i64, String)> = sqlx::query_as(
@@ -89,31 +87,49 @@ pub async fn get_my_mediakit(req: HttpRequest, pool: web::Data<PgPool>) -> impl 
     .await
     .unwrap_or(None);
 
-    let specialties: Vec<&str> = kit.5.split(',').filter(|s| !s.is_empty()).collect();
-    let languages: Vec<&str> = kit.17.split(',').filter(|s| !s.is_empty()).collect();
+    let specialties_str: String = kit_row.get(5);
+    let languages_str: String = kit_row.get(17);
+    let tagline: String = kit_row.get(1);
+    let bio: String = kit_row.get(2);
+    let location: Option<String> = kit_row.get(3);
+    let niche: String = kit_row.get(4);
+    let total_followers: i64 = kit_row.get(6);
+    let avg_engagement_rate: f64 = kit_row.get(7);
+    let monthly_reach: i64 = kit_row.get(8);
+    let is_public: bool = kit_row.get(9);
+    let custom_slug: Option<String> = kit_row.get(10);
+    let views: i32 = kit_row.get(11);
+    let downloads: i32 = kit_row.get(12);
+    let show_rates: bool = kit_row.get(13);
+    let brand_color_primary: String = kit_row.get(14);
+    let brand_color_secondary: String = kit_row.get(15);
+    let brand_color_accent: String = kit_row.get(16);
+
+    let specialties: Vec<&str> = specialties_str.split(',').filter(|s| !s.is_empty()).collect();
+    let languages: Vec<&str> = languages_str.split(',').filter(|s| !s.is_empty()).collect();
 
     HttpResponse::Ok().json(serde_json::json!({
         "id": kit_id,
-        "tagline": kit.1,
-        "bio": kit.2,
-        "location": kit.3,
-        "niche": kit.4,
+        "tagline": tagline,
+        "bio": bio,
+        "location": location,
+        "niche": niche,
         "specialties": specialties,
-        "total_followers": kit.6,
-        "avg_engagement_rate": kit.7,
-        "monthly_reach": kit.8,
-        "is_public": kit.9,
-        "custom_slug": kit.10,
-        "views": kit.11,
-        "downloads": kit.12,
-        "show_rates": kit.13,
+        "total_followers": total_followers,
+        "avg_engagement_rate": avg_engagement_rate,
+        "monthly_reach": monthly_reach,
+        "is_public": is_public,
+        "custom_slug": custom_slug,
+        "views": views,
+        "downloads": downloads,
+        "show_rates": show_rates,
         "brand_colors": {
-            "primary": kit.14,
-            "secondary": kit.15,
-            "accent": kit.16
+            "primary": brand_color_primary,
+            "secondary": brand_color_secondary,
+            "accent": brand_color_accent
         },
         "languages": languages,
-        "public_url": format!("/creators/{}", kit.10.as_deref().unwrap_or(
+        "public_url": format!("/creators/{}", custom_slug.as_deref().unwrap_or(
             username.as_ref().map(|u| u.0.as_str()).unwrap_or("unknown")
         )),
         "rates": rates.iter().map(|r| serde_json::json!({

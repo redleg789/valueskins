@@ -268,15 +268,15 @@ impl MatchingService {
         .fetch_all(&self.read_pool)).await?;
 
         let total_count = rows.first().map(|r| r.total_count).unwrap_or(0);
-        let creators = rows.into_iter().map(|r| MatchedCreator {
+        let creators: Vec<MatchedCreator> = rows.into_iter().map(|r| MatchedCreator {
             user_id: r.user_id,
             username: r.username,
             display_name: r.display_name,
             avatar_url: r.avatar_url,
             profession: r.profession,
-            slot: r.slot,
+            slot: r.slot.map(|s| s.to_string()).unwrap_or_default(),
             level: r.level,
-            score: r.score,
+            score: r.score as i64,
             willing_to_barter: r.willing_to_barter,
             energy_state: r.energy_state,
             price_band: r.price_band,
@@ -403,7 +403,7 @@ impl MatchingService {
             opportunity_id: r.opportunity_id,
             brand_name: r.brand_name,
             title: r.title,
-            description: r.description,
+            description: Some(r.description),
             campaign_type: r.campaign_type,
             required_profession: r.required_profession,
             min_level: r.min_level,

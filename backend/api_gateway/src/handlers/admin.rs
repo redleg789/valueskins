@@ -3,9 +3,17 @@
 //!
 //! All handlers enforce admin role via claims check.
 
-use actix_web::{web, HttpRequest, HttpResponse, Responder};
+use actix_web::{web, HttpMessage, HttpRequest, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
+
+/// Extract user_id from JWT claims (any authenticated user).
+fn get_user_id(req: &HttpRequest) -> Result<i64, HttpResponse> {
+    req.extensions()
+        .get::<auth_service::token::Claims>()
+        .map(|c| c.sub.parse::<i64>().unwrap_or(0))
+        .ok_or_else(|| HttpResponse::Unauthorized().json(serde_json::json!({"error": "Authentication required"})))
+}
 
 /// Extract and validate admin role from JWT claims.
 fn require_admin(req: &HttpRequest) -> Result<i64, HttpResponse> {
@@ -22,7 +30,7 @@ fn require_admin(req: &HttpRequest) -> Result<i64, HttpResponse> {
         })));
     }
 
-    Ok(claims.user_id)
+    Ok(claims.sub.parse::<i64>().unwrap_or(0))
 }
 
 #[derive(Deserialize)]
@@ -700,9 +708,9 @@ pub async fn list_my_contracts(
 #[derive(Debug, Serialize, sqlx::FromRow)]
 pub struct PlatformConfig {
     pub platform_name:                   String,
-    pub platform_fee_percentage:         sqlx::types::BigDecimal,
-    pub min_payout_amount:               sqlx::types::BigDecimal,
-    pub max_payout_amount:               sqlx::types::BigDecimal,
+    pub platform_fee_percentage:         f64,
+    pub min_payout_amount:               f64,
+    pub max_payout_amount:               f64,
     pub payout_currency:                 String,
     pub notification_email_from:         String,
     pub support_contact_email:           String,

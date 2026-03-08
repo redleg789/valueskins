@@ -1,4 +1,4 @@
-use actix_web::{web, HttpResponse, Responder};
+use actix_web::{web, HttpMessage, HttpResponse, Responder};
 use actix_web::cookie::{Cookie, SameSite};
 use actix_web::cookie::time::Duration as CookieDuration;
 use serde::Deserialize;
@@ -398,9 +398,10 @@ pub async fn logout(
     if req.logout_all.unwrap_or(false) {
         // Extract user_id from JWT claims in request extensions
         if let Some(claims) = http_req.extensions().get::<auth_service::token::Claims>() {
-            match refresh_svc.revoke_all_for_user(claims.user_id).await {
+            let uid = claims.sub.parse::<i64>().unwrap_or(0);
+            match refresh_svc.revoke_all_for_user(uid).await {
                 Ok(n) => {
-                    info!(user_id = claims.user_id, revoked = n, "All sessions revoked");
+                    info!(user_id = uid, revoked = n, "All sessions revoked");
                     let expired_cookie = Cookie::build("valueskins_session", "")
                         .http_only(true)
                         .secure(is_production())

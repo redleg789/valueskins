@@ -69,7 +69,7 @@ pub async fn recompute_benchmarks(
         Some(c) => c.clone(),
         None => return HttpResponse::Unauthorized().json(serde_json::json!({"error": "Unauthorized"})),
     };
-    if claims.role.as_deref() != Some("admin") {
+    if claims.role != "admin" {
         return HttpResponse::Forbidden().json(serde_json::json!({"error": "Admin access required"}));
     }
     let service = PricingService::new(router.write_pool().clone(), router.read_pool().clone());

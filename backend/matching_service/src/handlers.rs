@@ -290,7 +290,7 @@ pub async fn get_persona_matched_opportunities(
         "SELECT EXISTS(SELECT 1 FROM personas WHERE id = $1 AND exists = TRUE)"
     )
     .bind(persona_id)
-    .fetch_one(router.read_pool().as_ref())
+    .fetch_one(&*router.read_pool())
     .await
     .unwrap_or(false);
 
@@ -320,7 +320,7 @@ pub async fn get_persona_matched_opportunities(
         "#
     )
     .bind(persona_id)
-    .fetch_all(router.read_pool().as_ref())
+    .fetch_all(&*router.read_pool())
     .await
     {
         Ok(profs) => profs,
@@ -389,7 +389,7 @@ pub async fn get_persona_matched_opportunities(
     .bind(query.compensation_filter.as_deref())
     .bind(limit)
     .bind(offset)
-    .fetch_all(router.read_pool().as_ref())
+    .fetch_all(&*router.read_pool())
     .await
     {
         Ok(rows) => rows,
