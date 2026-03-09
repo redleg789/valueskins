@@ -13,6 +13,21 @@ fn get_user_id(req: &HttpRequest) -> Result<i64, HttpResponse> {
         .ok_or_else(|| HttpResponse::Unauthorized().json(serde_json::json!({"error": "Unauthorized"})))
 }
 
+fn require_admin(req: &HttpRequest) -> Result<i64, HttpResponse> {
+    let claims = req.extensions()
+        .get::<Claims>()
+        .cloned()
+        .ok_or_else(|| HttpResponse::Unauthorized().json(serde_json::json!({"error": "Unauthorized"})))?;
+
+    if claims.role != "admin" {
+        return Err(HttpResponse::Forbidden().json(serde_json::json!({"error": "Admin access required"})));
+    }
+
+    claims.sub.parse::<i64>()
+        .ok()
+        .ok_or_else(|| HttpResponse::InternalServerError().json(serde_json::json!({"error": "Invalid user ID"})))
+}
+
 // ── Helper: Map ServiceError to HttpResponse ───────────────────────────
 
 fn map_error(err: ServiceError) -> HttpResponse {
@@ -80,15 +95,13 @@ pub async fn update_csuite_settings(
     body: web::Json<UpdateCSuiteSettingsRequest>,
     pool: web::Data<PgPool>,
 ) -> HttpResponse {
-    let user_id = match get_user_id(&req) {
+    let user_id = match require_admin(&req) {
         Ok(id) => id,
         Err(response) => return response,
     };
 
     let platform_id = path.into_inner();
     let service = PlatformService::new((**pool).clone());
-
-    // TODO: Add admin role check here
     match service
         .update_csuite_settings(&platform_id, body.into_inner(), user_id)
         .await
@@ -191,7 +204,7 @@ pub async fn verify_title(
     req: HttpRequest,
     pool: web::Data<PgPool>,
 ) -> HttpResponse {
-    let user_id = match get_user_id(&req) {
+    let user_id = match require_admin(&req) {
         Ok(id) => id,
         Err(response) => return response,
     };
@@ -199,7 +212,6 @@ pub async fn verify_title(
     let title_id = path.into_inner();
     let service = PlatformService::new((**pool).clone());
 
-    // TODO: Add admin role check here
     match service.verify_title(title_id, user_id).await {
         Ok(title) => {
             let response = PersonaTitleResponse {

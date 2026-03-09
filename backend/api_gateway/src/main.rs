@@ -77,7 +77,10 @@ async fn main() -> std::io::Result<()> {
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     let jwt_secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set — refusing to start with default secret");
     let allowed_origins = env::var("ALLOWED_ORIGINS")
-        .unwrap_or_else(|_| "http://localhost:3000,http://localhost:3001".to_string());
+        .unwrap_or_else(|_| {
+            tracing::warn!("ALLOWED_ORIGINS not set — defaulting to production origins only (no localhost)");
+            "https://valueskins.io,https://www.valueskins.io".to_string()
+        });
 
     tracing::info!("Connecting to database...");
     let pool = match get_db_pool(&database_url).await {
