@@ -4,12 +4,12 @@
 ---
 
 ## TITLE OF THE INVENTION
-**Deterministic Creator-Brand Marketplace with Escrow-Gated Deal Workflows, Server-Authoritative Reputation Scoring, and Tamper-Evident Contract Architecture**
+**Deterministic Creator-Brand Marketplace that can be attached to existing social media platforms, with Escrow-Gated Deal Workflows, Server-Authoritative Reputation Scoring, and Tamper-Evident Contract Architecture**
 
 ---
 
 ## FIELD OF THE INVENTION
-This invention relates to a digital marketplace platform designed for negotiation, contracting, and performance verification between content creators and brands. Specifically, it addresses automated deal room state machines, legal contract generation tied to acceptance triggers, distributed reputation computation, and cryptographically verifiable deal evidence trails.
+This invention relates to a digital marketplace platform designed for negotiation, contracting, and performance verification between content creators and brands. Specifically, it addresses automated deal room state machines, legal contract generation tied to acceptance triggers, distributed reputation computation, and cryptographically verifiable deal evidence trails. 
 
 ---
 

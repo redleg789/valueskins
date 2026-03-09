@@ -438,3 +438,39 @@ pub struct BarterPreferenceResponse {
 
 /// Allowed compensation types — validated at the service boundary
 pub const VALID_COMPENSATION_TYPES: [&str; 4] = ["paid", "barter", "exposure", "hybrid"];
+
+// ── Escrow Disputes (user-facing) ──────────────────────────
+
+#[derive(Debug, Deserialize)]
+pub struct CreateDisputeRequest {
+    pub escrow_stage_id: i64,
+    pub reason: String,
+    #[serde(default)]
+    pub evidence_urls: Vec<String>,
+}
+
+// ── Payment Preferences ────────────────────────────────────
+
+#[derive(Debug, Deserialize)]
+pub struct SavePaymentPreferencesRequest {
+    /// Advance percentage (70-100). Performance clause = 100 - advance_pct.
+    pub advance_pct: i16,
+    /// Whether brand opts into offering a performance clause.
+    pub performance_clause_enabled: bool,
+}
+
+#[derive(Debug, Serialize)]
+pub struct PaymentPreferencesResponse {
+    pub deal_room_id: i64,
+    pub advance_pct: i16,
+    pub performance_clause_enabled: bool,
+    pub performance_pct: i16,
+}
+
+// ── Deal Finalization ──────────────────────────────────────
+
+#[derive(Debug, Deserialize)]
+pub struct FinalizeDealRequest {
+    /// Optional message to include when finalizing
+    pub message: Option<String>,
+}

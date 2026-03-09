@@ -283,28 +283,28 @@ class MarketplaceClient {
 class DealRoomsClient {
     constructor(private http: HttpClient) {}
 
-    async getChatHistory(dealRoomId: number, query?: { limit?: number; offset?: number }) {
+    async getChatHistory(dealRoomId: number, query?: { limit?: number; before_id?: number }) {
         const params = new URLSearchParams();
         if (query?.limit) params.append('limit', query.limit.toString());
-        if (query?.offset) params.append('offset', query.offset.toString());
+        if (query?.before_id) params.append('before_id', query.before_id.toString());
 
         const queryStr = params.toString();
         const endpoint = queryStr
-            ? `/deal-rooms/${dealRoomId}/chat?${queryStr}`
-            : `/deal-rooms/${dealRoomId}/chat`;
+            ? `/deal-rooms/${dealRoomId}/messages?${queryStr}`
+            : `/deal-rooms/${dealRoomId}/messages`;
 
-        return this.http.request<{ messages: DealRoomMessage[]; count: number }>(endpoint);
+        return this.http.request<{ messages: DealRoomMessage[]; deal_room_id: number }>(endpoint);
     }
 
     async sendMessage(dealRoomId: number, message: string) {
-        return this.http.request<{ message_id: number; sent_at: string }>(`/deal-rooms/${dealRoomId}/chat`, {
+        return this.http.request<DealRoomMessage>(`/deal-rooms/${dealRoomId}/messages`, {
             method: 'POST',
-            body: JSON.stringify({ message }),
+            body: JSON.stringify({ content: message }),
         });
     }
 
     async listMyRooms() {
-        return this.http.request<{ deal_rooms: DealRoomSummary[] }>('/marketplace/deal-rooms');
+        return this.http.request<{ deal_rooms: DealRoomSummary[] }>('/deal-rooms');
     }
 
     async openDealRoom(data: {
@@ -318,11 +318,75 @@ class DealRoomsClient {
         brief_campaign_type: string;
         compensation_type?: string;
     }) {
-        return this.http.request<{ deal_room_id: number }>('/marketplace/deal-rooms', {
+        return this.http.request<{ deal_room_id: number }>('/deal-rooms', {
             method: 'POST',
             body: JSON.stringify(data),
         });
     }
+
+    // Payment preferences
+    async savePaymentPreferences(dealRoomId: number, data: { advance_pct: number; performance_clause_enabled: boolean }) {
+        return this.http.request<PaymentPreferencesResponse>(`/deal-rooms/${dealRoomId}/payment-preferences`, {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+    }
+
+    async getPaymentPreferences(dealRoomId: number) {
+        return this.http.request<PaymentPreferencesResponse>(`/deal-rooms/${dealRoomId}/payment-preferences`);
+    }
+
+    // Deal finalization
+    async finalizeDeal(dealRoomId: number, message?: string) {
+        return this.http.request<{ deal_room_id: number; status: string; message: string }>(`/deal-rooms/${dealRoomId}/finalize`, {
+            method: 'POST',
+            body: JSON.stringify({ message }),
+        });
+    }
+
+    async getDealRoomStatus(dealRoomId: number) {
+        return this.http.request<DealRoomStatusResponse>(`/deal-rooms/${dealRoomId}/status`);
+    }
+
+    // Disputes
+    async createDispute(dealRoomId: number, data: { escrow_stage_id: number; reason: string; evidence_urls?: string[] }) {
+        return this.http.request<{ id: number; deal_room_id: number; status: string }>(`/deal-rooms/${dealRoomId}/disputes`, {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+    }
+
+    async listDisputes(dealRoomId: number) {
+        return this.http.request<{ disputes: EscrowDispute[] }>(`/deal-rooms/${dealRoomId}/disputes`);
+    }
+}
+
+// Types for new endpoints
+interface PaymentPreferencesResponse {
+    deal_room_id: number;
+    advance_pct: number;
+    performance_clause_enabled: boolean;
+    performance_pct: number;
+}
+
+interface DealRoomStatusResponse {
+    deal_room_id: number;
+    status: string;
+    creator_user_id: number;
+    brand_user_id: number;
+    created_at: string;
+    updated_at: string;
+}
+
+interface EscrowDispute {
+    id: number;
+    escrow_stage_id: number;
+    raised_by_user_id: number;
+    against_user_id: number;
+    reason: string;
+    status: string;
+    resolution_notes: string | null;
+    created_at: string;
 }
 
 // Brand API client — brand dashboard and opportunity management
@@ -701,6 +765,42 @@ class SuggestionClient {
 }
 
 // Facade: Composite API client
+// Settings API client
+class SettingsClient {
+    constructor(private http: HttpClient) {}
+
+    async getSettings() {
+        return this.http.request<UserSettingsData>('/settings');
+    }
+
+    async updateSettings(data: UpdateSettingsData) {
+        return this.http.request<UserSettingsData>('/settings', {
+            method: 'PATCH',
+            body: JSON.stringify(data),
+        });
+    }
+}
+
+interface UserSettingsData {
+    user_id: number;
+    willing_to_barter: boolean;
+    energy_state: string;
+    price_band: string;
+    auto_escalation: boolean;
+    notifications_enabled: boolean;
+    profile_visibility: string;
+    updated_at: string;
+}
+
+interface UpdateSettingsData {
+    willing_to_barter?: boolean;
+    energy_state?: string;
+    price_band?: string;
+    auto_escalation?: boolean;
+    notifications_enabled?: boolean;
+    profile_visibility?: string;
+}
+
 class ApiClient {
     private http: HttpClient;
 
@@ -727,6 +827,7 @@ class ApiClient {
     readonly reputation: ReputationClient;
     readonly suggestions: SuggestionClient;
     readonly dealRooms: DealRoomsClient;
+    readonly settings: SettingsClient;
 
     constructor() {
         this.http = new HttpClient();
@@ -754,6 +855,7 @@ class ApiClient {
         this.reputation = new ReputationClient(this.http);
         this.suggestions = new SuggestionClient(this.http);
         this.dealRooms = new DealRoomsClient(this.http);
+        this.settings = new SettingsClient(this.http);
     }
 }
 
@@ -1668,9 +1770,8 @@ export interface DealRoomMessage {
     deal_room_id: number;
     sender_user_id: number;
     content: string;
-    message_type: 'text' | 'system' | 'offer_made' | 'offer_accepted' | 'deliverable_uploaded' | 'contract_signed' | 'dispute_filed';
+    message_type: 'text' | 'system' | 'offer_made' | 'offer_accepted' | 'offer_rejected' | 'counter_offer' | 'contract_signed' | 'deliverable_uploaded' | 'escrow_released' | 'deal_completed' | 'deal_cancelled';
     server_timestamp: string;
-    is_deleted: boolean;
 }
 
 export interface MessagesResponse {

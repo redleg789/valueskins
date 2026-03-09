@@ -350,6 +350,12 @@ async fn main() -> std::io::Result<()> {
                             .route("/{id}/repeat", web::post().to(marketplace_handlers::repeat_collab))
                             .route("/{id}/messages", web::post().to(handlers::messages::post_message))
                             .route("/{id}/messages", web::get().to(handlers::messages::get_messages))
+                            .route("/{id}/disputes", web::post().to(marketplace_handlers::create_dispute))
+                            .route("/{id}/disputes", web::get().to(marketplace_handlers::list_deal_room_disputes))
+                            .route("/{id}/payment-preferences", web::post().to(marketplace_handlers::save_payment_preferences))
+                            .route("/{id}/payment-preferences", web::get().to(marketplace_handlers::get_payment_preferences))
+                            .route("/{id}/finalize", web::post().to(marketplace_handlers::finalize_deal))
+                            .route("/{id}/status", web::get().to(marketplace_handlers::get_deal_room_status))
                     )
 
                     // Offer round responses

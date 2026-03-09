@@ -54,10 +54,14 @@ export default function DealRoomPage() {
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const [performanceClause, setPerformanceClause] = useState(false);
-  const [advancePercent, setAdvancePercent] = useState(70);
+  const [advancePercent, setAdvancePercent] = useState(100);
   const [checklist, setChecklist] = useState(CHECKLIST_ITEMS);
+  const [savingPrefs, setSavingPrefs] = useState(false);
+  const [finalizing, setFinalizing] = useState(false);
+  const [dealStatus, setDealStatus] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const prefsDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const currentUserId = (() => {
     if (typeof window === 'undefined') return null;
@@ -81,6 +85,36 @@ export default function DealRoomPage() {
       setMessages(result.data?.messages ?? []);
     }
     if (!silent) setLoading(false);
+  }, [dealRoomId]);
+
+  // Load payment preferences and deal status on mount
+  useEffect(() => {
+    async function loadPrefs() {
+      const res = await api.dealRooms.getPaymentPreferences(dealRoomId);
+      if (res.data) {
+        setAdvancePercent(res.data.advance_pct);
+        setPerformanceClause(res.data.performance_clause_enabled);
+      }
+    }
+    async function loadStatus() {
+      const res = await api.dealRooms.getDealRoomStatus(dealRoomId);
+      if (res.data) setDealStatus(res.data.status);
+    }
+    loadPrefs();
+    loadStatus();
+  }, [dealRoomId]);
+
+  // Save payment preferences to backend (debounced)
+  const savePaymentPreferences = useCallback((advPct: number, perfEnabled: boolean) => {
+    if (prefsDebounce.current) clearTimeout(prefsDebounce.current);
+    prefsDebounce.current = setTimeout(async () => {
+      setSavingPrefs(true);
+      await api.dealRooms.savePaymentPreferences(dealRoomId, {
+        advance_pct: advPct,
+        performance_clause_enabled: perfEnabled,
+      });
+      setSavingPrefs(false);
+    }, 500);
   }, [dealRoomId]);
 
   useEffect(() => {
@@ -387,8 +421,11 @@ export default function DealRoomPage() {
                 type="checkbox"
                 checked={performanceClause}
                 onChange={(e) => {
-                  setPerformanceClause(e.target.checked);
-                  if (!e.target.checked) setAdvancePercent(100);
+                  const enabled = e.target.checked;
+                  setPerformanceClause(enabled);
+                  const newAdv = enabled ? 70 : 100;
+                  setAdvancePercent(newAdv);
+                  savePaymentPreferences(newAdv, enabled);
                 }}
                 style={{ width: 14, height: 14, cursor: 'pointer' }}
               />
@@ -402,7 +439,11 @@ export default function DealRoomPage() {
                   min="70"
                   max="100"
                   value={advancePercent}
-                  onChange={(e) => setAdvancePercent(Number(e.target.value))}
+                  onChange={(e) => {
+                    const val = Number(e.target.value);
+                    setAdvancePercent(val);
+                    savePaymentPreferences(val, performanceClause);
+                  }}
                   style={{ width: '100%', cursor: 'pointer' }}
                 />
                 <div style={{ fontSize: 10, color: C.textSecondary, marginTop: 4, textAlign: 'center' }}>
@@ -411,36 +452,41 @@ export default function DealRoomPage() {
               </div>
             )}
 
-            <div style={{ fontSize: 11, color: C.green, background: 'rgba(34, 197, 94, 0.1)', padding: '8px 10px', borderRadius: 6, marginTop: 8, textAlign: 'center' }}>
-              ✓ Payment locked & ready
+            <div style={{ fontSize: 11, color: savingPrefs ? C.textSecondary : C.green, background: savingPrefs ? 'rgba(136,136,136,0.1)' : 'rgba(34, 197, 94, 0.1)', padding: '8px 10px', borderRadius: 6, marginTop: 8, textAlign: 'center' }}>
+              {savingPrefs ? 'Saving...' : 'Saved to deal'}
             </div>
           </div>
 
           {/* Action button */}
           <div style={{ padding: '16px' }}>
             <button
-              onClick={() => {
-                if (!allChecked) {
-                  alert('Please complete all checklist items first.');
-                  return;
+              onClick={async () => {
+                if (!allChecked || finalizing) return;
+                if (!confirm('Are you sure you want to finalize this deal? A contract will be generated automatically.')) return;
+                setFinalizing(true);
+                const res = await api.dealRooms.finalizeDeal(dealRoomId);
+                if (res.error) {
+                  alert(`Failed to finalize: ${res.error}`);
+                } else {
+                  setDealStatus('finalized');
+                  await loadMessages(true);
                 }
-                alert('Deal finalized! Proceeding to contract signing and payment.');
-                router.push('/deals');
+                setFinalizing(false);
               }}
-              disabled={!allChecked}
+              disabled={!allChecked || finalizing || dealStatus === 'finalized'}
               style={{
                 width: '100%',
                 padding: '12px',
-                background: allChecked ? C.green : 'rgba(34, 197, 94, 0.3)',
+                background: dealStatus === 'finalized' ? C.textSecondary : allChecked ? C.green : 'rgba(34, 197, 94, 0.3)',
                 color: '#fff',
                 border: 'none',
                 borderRadius: 8,
                 fontWeight: 600,
                 fontSize: 13,
-                cursor: allChecked ? 'pointer' : 'not-allowed',
+                cursor: !allChecked || finalizing || dealStatus === 'finalized' ? 'not-allowed' : 'pointer',
               }}
             >
-              {allChecked ? '✓ Done, Accept Now' : 'Complete Checklist'}
+              {dealStatus === 'finalized' ? 'Deal Finalized' : finalizing ? 'Finalizing...' : allChecked ? 'Done, Accept Now' : 'Complete Checklist'}
             </button>
           </div>
         </div>

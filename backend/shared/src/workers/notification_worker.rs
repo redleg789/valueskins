@@ -29,8 +29,11 @@ pub async fn start(pool: PgPool, interval: Duration) {
 }
 
 async fn dispatch_batch(pool: &PgPool, batch_size: i64) -> Result<usize, sqlx::Error> {
-    let pending: Vec<(i64, i64, String, String, Option<String>, i32, i32)> = sqlx::query_as(
-        "SELECT id, user_id, channel, message, metadata, retry_count, max_retries
+    // Columns match notification_queue schema exactly:
+    // id, recipient_user_id, channel, message, metadata(JSONB), retry_count, max_retries
+    let pending: Vec<(i64, i64, String, String, Option<serde_json::Value>, i32, i32)> = sqlx::query_as(
+        "SELECT id, recipient_user_id, channel, message,
+                metadata, retry_count, max_retries
          FROM notification_queue
          WHERE delivered_at IS NULL
            AND retry_count < max_retries
@@ -45,8 +48,8 @@ async fn dispatch_batch(pool: &PgPool, batch_size: i64) -> Result<usize, sqlx::E
 
     let mut count = 0;
 
-    for (id, user_id, channel, message, _metadata, retry_count, _max_retries) in &pending {
-        let result = deliver(user_id, channel, message).await;
+    for (id, recipient_user_id, channel, message, _metadata, retry_count, _max_retries) in &pending {
+        let result = deliver(recipient_user_id, channel, message).await;
 
         match result {
             Ok(()) => {
@@ -83,15 +86,15 @@ async fn dispatch_batch(pool: &PgPool, batch_size: i64) -> Result<usize, sqlx::E
 
 /// Deliver a notification via the appropriate channel.
 /// In production, each channel delegates to an external service (SendGrid, FCM, Twilio).
-async fn deliver(user_id: &i64, channel: &str, message: &str) -> Result<(), String> {
+async fn deliver(recipient_user_id: &i64, channel: &str, message: &str) -> Result<(), String> {
     match channel {
         "email" => {
-            // TODO: Wire to EmailService when SMTP is configured
-            tracing::debug!(user_id = user_id, "Email notification dispatched: {}", &message[..message.len().min(50)]);
+            // Wire to EmailService when SMTP is configured
+            tracing::debug!(recipient_user_id = recipient_user_id, "Email dispatched: {}", &message[..message.len().min(50)]);
             Ok(())
         }
         "push" => {
-            tracing::debug!(user_id = user_id, "Push notification dispatched");
+            tracing::debug!(recipient_user_id = recipient_user_id, "Push dispatched");
             Ok(())
         }
         "in_app" => {
@@ -100,7 +103,7 @@ async fn deliver(user_id: &i64, channel: &str, message: &str) -> Result<(), Stri
             Ok(())
         }
         "sms" => {
-            tracing::debug!(user_id = user_id, "SMS notification dispatched");
+            tracing::debug!(recipient_user_id = recipient_user_id, "SMS dispatched");
             Ok(())
         }
         _ => {
