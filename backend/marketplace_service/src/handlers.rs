@@ -1224,3 +1224,426 @@ pub async fn admin_payout_reconciliation(
         Err(e) => { error!("admin_payout_reconciliation: {:?}", e); HttpResponse::InternalServerError().finish() }
     }
 }
+
+// ══════════════════════════════════════════════════════════════
+// Escrow Disputes — user-facing (create + list my disputes)
+// ══════════════════════════════════════════════════════════════
+
+/// POST /deal-rooms/{id}/disputes — raise a dispute on an escrow stage
+pub async fn create_dispute(
+    pool: web::Data<PgPool>,
+    path: web::Path<i64>,
+    body: web::Json<crate::models::CreateDisputeRequest>,
+    req: HttpRequest,
+) -> impl Responder {
+    let (user_id, _) = match get_user_info(&req) {
+        Some(i) => i,
+        None => return HttpResponse::Unauthorized().finish(),
+    };
+    let deal_room_id = path.into_inner();
+
+    if body.reason.trim().is_empty() || body.reason.len() > 2000 {
+        return HttpResponse::BadRequest().json(serde_json::json!({
+            "error": "Reason must be 1-2000 characters"
+        }));
+    }
+
+    // Verify user is participant and get the other party
+    // deal_rooms stores creator_persona_id, resolve via personas table
+    let participant: Option<(i64, i64)> = sqlx::query_as(
+        "SELECT p.user_id, dr.brand_user_id
+         FROM deal_rooms dr
+         JOIN personas p ON p.id = dr.creator_persona_id
+         WHERE dr.id = $1"
+    )
+    .bind(deal_room_id)
+    .fetch_optional(pool.get_ref())
+    .await
+    .unwrap_or(None);
+
+    let (creator_id, brand_id) = match participant {
+        Some(p) => p,
+        None => return HttpResponse::NotFound().json(serde_json::json!({ "error": "Deal room not found" })),
+    };
+
+    if user_id != creator_id && user_id != brand_id {
+        return HttpResponse::Forbidden().json(serde_json::json!({ "error": "Not a participant" }));
+    }
+
+    let against_user_id = if user_id == creator_id { brand_id } else { creator_id };
+
+    // Verify escrow stage belongs to this deal room
+    let stage_exists: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM escrow_stages WHERE id = $1 AND deal_room_id = $2)"
+    )
+    .bind(body.escrow_stage_id)
+    .bind(deal_room_id)
+    .fetch_one(pool.get_ref())
+    .await
+    .unwrap_or(false);
+
+    if !stage_exists {
+        return HttpResponse::BadRequest().json(serde_json::json!({
+            "error": "Escrow stage not found in this deal room"
+        }));
+    }
+
+    match sqlx::query_scalar::<_, i64>(
+        "INSERT INTO escrow_disputes (deal_room_id, escrow_stage_id, raised_by_user_id, against_user_id, reason, evidence_urls)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         RETURNING id"
+    )
+    .bind(deal_room_id)
+    .bind(body.escrow_stage_id)
+    .bind(user_id)
+    .bind(against_user_id)
+    .bind(body.reason.trim())
+    .bind(&body.evidence_urls)
+    .fetch_one(pool.get_ref())
+    .await
+    {
+        Ok(id) => {
+            info!("Dispute {} created on deal_room {} by user {}", id, deal_room_id, user_id);
+            HttpResponse::Created().json(serde_json::json!({
+                "id": id, "deal_room_id": deal_room_id, "status": "open"
+            }))
+        }
+        Err(e) => {
+            if e.to_string().contains("unique") {
+                return HttpResponse::Conflict().json(serde_json::json!({
+                    "error": "A dispute already exists for this escrow stage"
+                }));
+            }
+            error!("create_dispute: {:?}", e);
+            HttpResponse::InternalServerError().finish()
+        }
+    }
+}
+
+/// GET /deal-rooms/{id}/disputes — list disputes for a deal room (participant only)
+pub async fn list_deal_room_disputes(
+    pool: web::Data<PgPool>,
+    path: web::Path<i64>,
+    req: HttpRequest,
+) -> impl Responder {
+    let (user_id, _) = match get_user_info(&req) {
+        Some(i) => i,
+        None => return HttpResponse::Unauthorized().finish(),
+    };
+    let deal_room_id = path.into_inner();
+
+    let is_participant: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM deal_rooms dr JOIN personas p ON p.id = dr.creator_persona_id WHERE dr.id = $1 AND (p.user_id = $2 OR dr.brand_user_id = $2))"
+    )
+    .bind(deal_room_id)
+    .bind(user_id)
+    .fetch_one(pool.get_ref())
+    .await
+    .unwrap_or(false);
+
+    if !is_participant {
+        return HttpResponse::Forbidden().json(serde_json::json!({ "error": "Not a participant" }));
+    }
+
+    let disputes: Vec<(i64, i64, i64, i64, String, String, Option<String>, chrono::DateTime<chrono::Utc>)> =
+        match sqlx::query_as(
+            "SELECT id, escrow_stage_id, raised_by_user_id, against_user_id, reason, status, resolution_notes, created_at
+             FROM escrow_disputes
+             WHERE deal_room_id = $1
+             ORDER BY created_at DESC
+             LIMIT 50"
+        )
+        .bind(deal_room_id)
+        .fetch_all(pool.get_ref())
+        .await {
+            Ok(d) => d,
+            Err(e) => { error!("list_deal_room_disputes: {:?}", e); return HttpResponse::InternalServerError().finish(); }
+        };
+
+    let entries: Vec<serde_json::Value> = disputes.iter().map(|d| {
+        serde_json::json!({
+            "id": d.0, "escrow_stage_id": d.1, "raised_by_user_id": d.2,
+            "against_user_id": d.3, "reason": d.4, "status": d.5,
+            "resolution_notes": d.6, "created_at": d.7.to_rfc3339(),
+        })
+    }).collect();
+
+    HttpResponse::Ok().json(serde_json::json!({ "disputes": entries }))
+}
+
+// ══════════════════════════════════════════════════════════════
+// Payment Preferences — advance % + performance clause
+// ══════════════════════════════════════════════════════════════
+
+/// POST /deal-rooms/{id}/payment-preferences — save payment terms
+pub async fn save_payment_preferences(
+    pool: web::Data<PgPool>,
+    path: web::Path<i64>,
+    body: web::Json<crate::models::SavePaymentPreferencesRequest>,
+    req: HttpRequest,
+) -> impl Responder {
+    let (user_id, _) = match get_user_info(&req) {
+        Some(i) => i,
+        None => return HttpResponse::Unauthorized().finish(),
+    };
+    let deal_room_id = path.into_inner();
+
+    // Enforce: advance_pct between 70 and 100 (performance clause max 30%)
+    if body.advance_pct < 70 || body.advance_pct > 100 {
+        return HttpResponse::BadRequest().json(serde_json::json!({
+            "error": "Advance percentage must be between 70 and 100 (performance clause max 30%)"
+        }));
+    }
+
+    // If performance clause disabled, force advance to 100%
+    let advance_pct = if body.performance_clause_enabled { body.advance_pct } else { 100 };
+    let performance_pct = 100 - advance_pct;
+
+    // Verify participant
+    let is_participant: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM deal_rooms dr JOIN personas p ON p.id = dr.creator_persona_id WHERE dr.id = $1 AND (p.user_id = $2 OR dr.brand_user_id = $2))"
+    )
+    .bind(deal_room_id)
+    .bind(user_id)
+    .fetch_one(pool.get_ref())
+    .await
+    .unwrap_or(false);
+
+    if !is_participant {
+        return HttpResponse::Forbidden().json(serde_json::json!({ "error": "Not a participant" }));
+    }
+
+    // Upsert into a deal_room_payment_preferences table
+    match sqlx::query(
+        "INSERT INTO deal_room_payment_preferences (deal_room_id, advance_pct, performance_clause_enabled, updated_by_user_id)
+         VALUES ($1, $2, $3, $4)
+         ON CONFLICT (deal_room_id) DO UPDATE SET
+             advance_pct = EXCLUDED.advance_pct,
+             performance_clause_enabled = EXCLUDED.performance_clause_enabled,
+             updated_by_user_id = EXCLUDED.updated_by_user_id,
+             updated_at = NOW()"
+    )
+    .bind(deal_room_id)
+    .bind(advance_pct)
+    .bind(body.performance_clause_enabled)
+    .bind(user_id)
+    .execute(pool.get_ref())
+    .await
+    {
+        Ok(_) => HttpResponse::Ok().json(serde_json::json!({
+            "deal_room_id": deal_room_id,
+            "advance_pct": advance_pct,
+            "performance_clause_enabled": body.performance_clause_enabled,
+            "performance_pct": performance_pct,
+        })),
+        Err(e) => { error!("save_payment_preferences: {:?}", e); HttpResponse::InternalServerError().finish() }
+    }
+}
+
+/// GET /deal-rooms/{id}/payment-preferences — fetch payment terms
+pub async fn get_payment_preferences(
+    pool: web::Data<PgPool>,
+    path: web::Path<i64>,
+    req: HttpRequest,
+) -> impl Responder {
+    let (user_id, _) = match get_user_info(&req) {
+        Some(i) => i,
+        None => return HttpResponse::Unauthorized().finish(),
+    };
+    let deal_room_id = path.into_inner();
+
+    let is_participant: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM deal_rooms dr JOIN personas p ON p.id = dr.creator_persona_id WHERE dr.id = $1 AND (p.user_id = $2 OR dr.brand_user_id = $2))"
+    )
+    .bind(deal_room_id)
+    .bind(user_id)
+    .fetch_one(pool.get_ref())
+    .await
+    .unwrap_or(false);
+
+    if !is_participant {
+        return HttpResponse::Forbidden().json(serde_json::json!({ "error": "Not a participant" }));
+    }
+
+    let prefs: Option<(i16, bool)> = sqlx::query_as(
+        "SELECT advance_pct, performance_clause_enabled
+         FROM deal_room_payment_preferences
+         WHERE deal_room_id = $1"
+    )
+    .bind(deal_room_id)
+    .fetch_optional(pool.get_ref())
+    .await
+    .unwrap_or(None);
+
+    match prefs {
+        Some((advance_pct, perf_enabled)) => {
+            HttpResponse::Ok().json(serde_json::json!({
+                "deal_room_id": deal_room_id,
+                "advance_pct": advance_pct,
+                "performance_clause_enabled": perf_enabled,
+                "performance_pct": 100 - advance_pct,
+            }))
+        }
+        None => {
+            // Default: 100% advance, no performance clause
+            HttpResponse::Ok().json(serde_json::json!({
+                "deal_room_id": deal_room_id,
+                "advance_pct": 100,
+                "performance_clause_enabled": false,
+                "performance_pct": 0,
+            }))
+        }
+    }
+}
+
+// ══════════════════════════════════════════════════════════════
+// Deal Finalization — Accept → auto-generate contract → update status
+// ══════════════════════════════════════════════════════════════
+
+/// POST /deal-rooms/{id}/finalize — mark deal as accepted, trigger contract generation
+pub async fn finalize_deal(
+    pool: web::Data<PgPool>,
+    path: web::Path<i64>,
+    body: web::Json<crate::models::FinalizeDealRequest>,
+    req: HttpRequest,
+) -> impl Responder {
+    let (user_id, _) = match get_user_info(&req) {
+        Some(i) => i,
+        None => return HttpResponse::Unauthorized().finish(),
+    };
+    let deal_room_id = path.into_inner();
+
+    // Verify participant — deal_rooms uses creator_persona_id, resolve to user_id via personas table
+    let room: Option<(i64, i64, String)> = sqlx::query_as(
+        "SELECT p.user_id, dr.brand_user_id, dr.status
+         FROM deal_rooms dr
+         JOIN personas p ON p.id = dr.creator_persona_id
+         WHERE dr.id = $1"
+    )
+    .bind(deal_room_id)
+    .fetch_optional(pool.get_ref())
+    .await
+    .unwrap_or(None);
+
+    let (creator_id, brand_id, status) = match room {
+        Some(r) => r,
+        None => return HttpResponse::NotFound().json(serde_json::json!({ "error": "Deal room not found" })),
+    };
+
+    if user_id != creator_id && user_id != brand_id {
+        return HttpResponse::Forbidden().json(serde_json::json!({ "error": "Not a participant" }));
+    }
+
+    // Only finalize from active/negotiating status
+    if status != "active" && status != "negotiating" && status != "offer_accepted" {
+        return HttpResponse::BadRequest().json(serde_json::json!({
+            "error": format!("Cannot finalize deal in '{}' status", status)
+        }));
+    }
+
+    // Start transaction: update status + insert system message
+    let mut tx = match pool.begin().await {
+        Ok(tx) => tx,
+        Err(e) => { error!("finalize_deal tx begin: {:?}", e); return HttpResponse::InternalServerError().finish(); }
+    };
+
+    // Update deal room status to 'finalized'
+    if let Err(e) = sqlx::query(
+        "UPDATE deal_rooms SET status = 'finalized', last_action_at = NOW() WHERE id = $1"
+    )
+    .bind(deal_room_id)
+    .execute(&mut *tx)
+    .await
+    {
+        error!("finalize_deal update: {:?}", e);
+        return HttpResponse::InternalServerError().finish();
+    }
+
+    // Insert system message announcing finalization
+    let finalize_msg = body.message.as_deref().unwrap_or("Deal finalized. Contract generation initiated.");
+    if let Err(e) = sqlx::query(
+        "INSERT INTO deal_room_messages (deal_room_id, sender_user_id, message_type, content)
+         VALUES ($1, $2, 'deal_completed', $3)"
+    )
+    .bind(deal_room_id)
+    .bind(user_id)
+    .bind(finalize_msg)
+    .execute(&mut *tx)
+    .await
+    {
+        error!("finalize_deal message: {:?}", e);
+        return HttpResponse::InternalServerError().finish();
+    }
+
+    // Insert event into outbox for contract generation
+    if let Err(e) = sqlx::query(
+        "INSERT INTO event_outbox (aggregate_type, aggregate_id, event_type, payload, created_at)
+         VALUES ('deal_room', $1, 'deal_finalized', $2, NOW())"
+    )
+    .bind(deal_room_id)
+    .bind(serde_json::json!({
+        "deal_room_id": deal_room_id,
+        "finalized_by": user_id,
+        "creator_user_id": creator_id,
+        "brand_user_id": brand_id,
+    }))
+    .execute(&mut *tx)
+    .await
+    {
+        error!("finalize_deal outbox: {:?}", e);
+        return HttpResponse::InternalServerError().finish();
+    }
+
+    match tx.commit().await {
+        Ok(_) => {
+            info!("Deal room {} finalized by user {}", deal_room_id, user_id);
+            HttpResponse::Ok().json(serde_json::json!({
+                "deal_room_id": deal_room_id,
+                "status": "finalized",
+                "message": "Deal finalized. Contract will be generated automatically.",
+            }))
+        }
+        Err(e) => { error!("finalize_deal commit: {:?}", e); HttpResponse::InternalServerError().finish() }
+    }
+}
+
+/// GET /deal-rooms/{id}/status — get deal room status
+pub async fn get_deal_room_status(
+    pool: web::Data<PgPool>,
+    path: web::Path<i64>,
+    req: HttpRequest,
+) -> impl Responder {
+    let (user_id, _) = match get_user_info(&req) {
+        Some(i) => i,
+        None => return HttpResponse::Unauthorized().finish(),
+    };
+    let deal_room_id = path.into_inner();
+
+    let room: Option<(i64, i64, String, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>)> = sqlx::query_as(
+        "SELECT p.user_id, dr.brand_user_id, dr.status, dr.created_at, COALESCE(dr.last_action_at, dr.created_at)
+         FROM deal_rooms dr
+         JOIN personas p ON p.id = dr.creator_persona_id
+         WHERE dr.id = $1"
+    )
+    .bind(deal_room_id)
+    .fetch_optional(pool.get_ref())
+    .await
+    .unwrap_or(None);
+
+    match room {
+        Some((creator_id, brand_id, status, created_at, last_action_at)) => {
+            if user_id != creator_id && user_id != brand_id {
+                return HttpResponse::Forbidden().json(serde_json::json!({ "error": "Not a participant" }));
+            }
+            HttpResponse::Ok().json(serde_json::json!({
+                "deal_room_id": deal_room_id,
+                "status": status,
+                "creator_user_id": creator_id,
+                "brand_user_id": brand_id,
+                "created_at": created_at.to_rfc3339(),
+                "updated_at": last_action_at.to_rfc3339(),
+            }))
+        }
+        None => HttpResponse::NotFound().json(serde_json::json!({ "error": "Deal room not found" })),
+    }
+}

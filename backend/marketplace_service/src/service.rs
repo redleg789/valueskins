@@ -21,7 +21,9 @@ impl MarketplaceService {
         Self { pool }
     }
 
-    /// Lists opportunities with filters
+    /// Lists opportunities with filters.
+    /// Single multi-join query replaces N+1 enrich_opportunity loop.
+    /// At 1B DAU: old approach = 120 queries per page load; new = 3 queries total.
     pub async fn list_opportunities(
         &self,
         filters: OpportunityFilters,
@@ -30,9 +32,54 @@ impl MarketplaceService {
         let limit = filters.limit.unwrap_or(20).min(100);
         let offset = filters.offset.unwrap_or(0);
 
-        let opportunities = sqlx::query_as::<_, Opportunity>(
+        // Single query: joins brands, professions, application counts, barter prefs
+        #[derive(sqlx::FromRow)]
+        struct OppRow {
+            id: i64,
+            brand_id: Option<i64>,
+            brand_user_id: i64,
+            title: String,
+            description: Option<String>,
+            category: String,
+            required_profession_id: i64,
+            required_level: i32,
+            reward_amount: String,
+            reward_currency: Option<String>,
+            deadline: DateTime<Utc>,
+            status: String,
+            compensation_type: String,
+            barter_description: Option<String>,
+            created_at: DateTime<Utc>,
+            gating_type: Option<String>,
+            visibility_for_non_matching: Option<String>,
+            access_message_for_blocked: Option<String>,
+            brand_name: Option<String>,
+            brand_logo_uri: Option<String>,
+            brand_is_verified: Option<bool>,
+            profession_name: Option<String>,
+            application_count: Option<i64>,
+            brand_willing_to_barter: Option<bool>,
+        }
+
+        let rows: Vec<OppRow> = sqlx::query_as::<_, OppRow>(
             r#"
-            SELECT o.* FROM opportunities o
+            SELECT
+                o.id, o.brand_id, o.brand_user_id, o.title, o.description, o.category,
+                o.required_profession_id, o.required_level, o.reward_amount, o.reward_currency,
+                o.deadline, o.status, o.compensation_type, o.barter_description, o.created_at,
+                o.gating_type, o.visibility_for_non_matching, o.access_message_for_blocked,
+                b.name as brand_name, b.logo_uri as brand_logo_uri, b.is_verified as brand_is_verified,
+                pr.name as profession_name,
+                ac.cnt as application_count,
+                u.willing_to_barter as brand_willing_to_barter
+            FROM opportunities o
+            LEFT JOIN brands b ON b.id = o.brand_id
+            LEFT JOIN professions pr ON pr.id = o.required_profession_id
+            LEFT JOIN LATERAL (
+                SELECT COUNT(*) AS cnt FROM opportunity_applications
+                WHERE opportunity_id = o.id
+            ) ac ON TRUE
+            LEFT JOIN users u ON u.id = o.brand_user_id
             WHERE ($1::bigint IS NULL OR o.required_profession_id = $1)
               AND ($2::int IS NULL OR o.required_level >= $2)
               AND ($3::int IS NULL OR o.required_level <= $3)
@@ -61,18 +108,108 @@ impl MarketplaceService {
         .fetch_all(&self.pool)
         .await?;
 
+        // Batch: applied set + user levels (2 queries instead of 2N)
+        let mut applied_set = std::collections::HashSet::new();
+        let mut user_levels = std::collections::HashMap::new();
+
+        if let Some(pid) = persona_id {
+            let opp_ids: Vec<i64> = rows.iter().map(|r| r.id).collect();
+            if !opp_ids.is_empty() {
+                let applied: Vec<(i64,)> = sqlx::query_as(
+                    "SELECT opportunity_id FROM opportunity_applications
+                     WHERE persona_id = $1 AND opportunity_id = ANY($2)"
+                )
+                .bind(pid)
+                .bind(&opp_ids)
+                .fetch_all(&self.pool)
+                .await?;
+                for (oid,) in applied {
+                    applied_set.insert(oid);
+                }
+            }
+
+            let levels: Vec<(i64, i32)> = sqlx::query_as(
+                "SELECT profession_id, level FROM persona_professions WHERE persona_id = $1"
+            )
+            .bind(pid)
+            .fetch_all(&self.pool)
+            .await?;
+            for (prof_id, level) in levels {
+                user_levels.insert(prof_id, level);
+            }
+        }
+
         let mut responses = Vec::new();
-        for opp in opportunities {
-            let enriched = self.enrich_opportunity(opp, persona_id).await?;
-            // If campaign is 'hidden' and viewer is not explicitly "visible", skip entirely.
-            // Covers both: (a) authenticated user who fails gating, (b) unauthenticated user
-            // who cannot be evaluated. Without this, hidden campaigns leak to logged-out users.
-            if enriched.visibility_mode.as_deref() == Some("hidden")
-                && enriched.gating_decision.as_deref() != Some("visible")
+        for row in rows {
+            let OppRow {
+                id, title, description, category,
+                required_profession_id, required_level, reward_amount, reward_currency,
+                deadline, status, compensation_type, barter_description, created_at,
+                gating_type, visibility_for_non_matching, access_message_for_blocked,
+                brand_name, brand_logo_uri: brand_logo, brand_is_verified: brand_verified,
+                profession_name, application_count: app_count, brand_willing_to_barter: brand_barter,
+                ..
+            } = row;
+
+            // Inline gating (no per-row DB call)
+            let (gating_decision, visibility_mode, access_message, gating_blocked) =
+                if gating_type.is_some() {
+                    if let Some(_pid) = persona_id {
+                        let user_level = user_levels.get(&required_profession_id).copied();
+                        let can_view = user_level.map(|l| l >= required_level).unwrap_or(false);
+                        let decision = if can_view { "visible" } else { "blocked_no_profession" };
+                        (Some(decision.to_string()), visibility_for_non_matching.clone(), access_message_for_blocked.clone(), !can_view)
+                    } else {
+                        let hidden = visibility_for_non_matching.as_deref() == Some("hidden");
+                        (Some("blocked_no_auth".to_string()), visibility_for_non_matching.clone(), access_message_for_blocked.clone(), hidden)
+                    }
+                } else {
+                    (None, None, None, false)
+                };
+
+            if visibility_mode.as_deref() == Some("hidden")
+                && gating_decision.as_deref() != Some("visible")
             {
                 continue;
             }
-            responses.push(enriched);
+
+            let can_apply = if gating_blocked {
+                false
+            } else if persona_id.is_some() {
+                !applied_set.contains(&id)
+                    && user_levels.get(&required_profession_id)
+                        .map(|l| *l >= required_level)
+                        .unwrap_or(false)
+            } else {
+                false
+            };
+
+            responses.push(OpportunityResponse {
+                id,
+                brand_name,
+                brand_logo,
+                brand_verified: brand_verified.unwrap_or(false),
+                title,
+                description: description.unwrap_or_default(),
+                category,
+                required_profession_id,
+                required_profession_name: profession_name.unwrap_or_else(|| "Unknown".to_string()),
+                required_level,
+                reward_amount,
+                reward_currency: reward_currency.unwrap_or_else(|| "USD".to_string()),
+                compensation_type,
+                barter_description,
+                deadline,
+                status,
+                application_count: app_count.unwrap_or(0) as i32,
+                created_at,
+                can_apply,
+                creator_open_to_barter: brand_barter.unwrap_or(false),
+                gating_type,
+                visibility_mode,
+                access_message,
+                gating_decision,
+            });
         }
 
         Ok(responses)

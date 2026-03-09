@@ -41,7 +41,7 @@ pub async fn post_message(
 
     // Verify user is participant in this deal room
     let is_participant: bool = sqlx::query_scalar(
-        "SELECT EXISTS(SELECT 1 FROM deal_rooms WHERE id = $1 AND (creator_user_id = $2 OR brand_user_id = $2))"
+        "SELECT EXISTS(SELECT 1 FROM deal_rooms dr JOIN personas p ON p.id = dr.creator_persona_id WHERE dr.id = $1 AND (p.user_id = $2 OR dr.brand_user_id = $2))"
     )
     .bind(deal_room_id)
     .bind(user_id)
@@ -96,7 +96,7 @@ pub async fn get_messages(
 
     // Verify user is participant
     let is_participant: bool = sqlx::query_scalar(
-        "SELECT EXISTS(SELECT 1 FROM deal_rooms WHERE id = $1 AND (creator_user_id = $2 OR brand_user_id = $2))"
+        "SELECT EXISTS(SELECT 1 FROM deal_rooms dr JOIN personas p ON p.id = dr.creator_persona_id WHERE dr.id = $1 AND (p.user_id = $2 OR dr.brand_user_id = $2))"
     )
     .bind(deal_room_id)
     .bind(user_id)

@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import PlatformLayout from '@/components/PlatformLayout';
 import { usePlatform } from '@/lib/context';
 import { PLATFORM_CONFIGS, Platform } from '@/lib/professions';
+import { api } from '@/lib/api';
 
 const LANGUAGES = ['English', 'Spanish', 'French', 'Hindi', 'Portuguese', 'Arabic', 'Mandarin', 'German', 'Japanese', 'Korean'];
 const CONTENT_FORMATS = ['Video', 'Photo', 'Text', 'Podcast', 'Live'];
@@ -89,6 +90,56 @@ export default function SettingsPage() {
   });
 
   const setA = <K extends keyof typeof attrs>(field: K, value: typeof attrs[K]) => setAttrs(prev => ({ ...prev, [field]: value }));
+
+  // Backend-synced settings
+  const [backendSettings, setBackendSettings] = useState({
+    willing_to_barter: false,
+    energy_state: 'available',
+    price_band: 'mid-tier',
+    auto_escalation: false,
+    notifications_enabled: true,
+    profile_visibility: 'public',
+  });
+  const [settingsSaving, setSettingsSaving] = useState(false);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
+  const saveDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Load settings from backend on mount
+  useEffect(() => {
+    async function load() {
+      const res = await api.settings.getSettings();
+      if (res.data) {
+        setBackendSettings({
+          willing_to_barter: res.data.willing_to_barter,
+          energy_state: res.data.energy_state,
+          price_band: res.data.price_band,
+          auto_escalation: res.data.auto_escalation,
+          notifications_enabled: res.data.notifications_enabled,
+          profile_visibility: res.data.profile_visibility,
+        });
+        setSettingsLoaded(true);
+      }
+    }
+    load();
+  }, []);
+
+  // Auto-save backend settings (debounced)
+  const saveBackendSettings = useCallback((updated: typeof backendSettings) => {
+    if (saveDebounce.current) clearTimeout(saveDebounce.current);
+    saveDebounce.current = setTimeout(async () => {
+      setSettingsSaving(true);
+      await api.settings.updateSettings(updated);
+      setSettingsSaving(false);
+    }, 600);
+  }, []);
+
+  const setBS = <K extends keyof typeof backendSettings>(field: K, value: typeof backendSettings[K]) => {
+    setBackendSettings(prev => {
+      const next = { ...prev, [field]: value };
+      saveBackendSettings(next);
+      return next;
+    });
+  };
 
   const toggleSection = (s: string) => setExpandedSection(prev => prev === s ? null : s);
 
@@ -393,12 +444,36 @@ export default function SettingsPage() {
           </>}
         </div>
 
-        {/* Notifications */}
+        {/* Synced Settings */}
         <div style={{ borderBottom: '1px solid var(--ig-separator)' }}>
-          <div style={sectionHeaderStyle}>Notifications</div>
-          <ToggleSetting label="New Matches" enabled={true} />
-          <ToggleSetting label="Brand Messages" enabled={true} />
-          <ToggleSetting label="Marketing" enabled={false} />
+          <div style={{ ...sectionHeaderStyle, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>Synced Settings</span>
+            {settingsSaving && <span style={{ fontSize: 10, color: 'var(--ig-text-tertiary)' }}>Saving...</span>}
+            {settingsLoaded && !settingsSaving && <span style={{ fontSize: 10, color: '#22c55e' }}>Synced</span>}
+          </div>
+          <SectionRow>
+            <InlineToggle value={backendSettings.willing_to_barter} onChange={v => setBS('willing_to_barter', v)} label="Open to barter deals" />
+            <InlineToggle value={backendSettings.auto_escalation} onChange={v => setBS('auto_escalation', v)} label="Auto-escalate lowball offers" />
+            <InlineToggle value={backendSettings.notifications_enabled} onChange={v => setBS('notifications_enabled', v)} label="Notifications enabled" />
+          </SectionRow>
+          <SectionRow>
+            <label style={labelStyle}>Energy State</label>
+            <select style={inputStyle} value={backendSettings.energy_state} onChange={e => setBS('energy_state', e.target.value)}>
+              {['available', 'limited', 'burnout', 'pause'].map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
+            </select>
+          </SectionRow>
+          <SectionRow>
+            <label style={labelStyle}>Price Band</label>
+            <select style={inputStyle} value={backendSettings.price_band} onChange={e => setBS('price_band', e.target.value)}>
+              {['experimental', 'mid-tier', 'premium', 'exclusive'].map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
+            </select>
+          </SectionRow>
+          <SectionRow>
+            <label style={labelStyle}>Profile Visibility</label>
+            <select style={inputStyle} value={backendSettings.profile_visibility} onChange={e => setBS('profile_visibility', e.target.value)}>
+              {['public', 'private', 'connections_only'].map(s => <option key={s} value={s}>{s.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</option>)}
+            </select>
+          </SectionRow>
         </div>
 
         {/* Information */}

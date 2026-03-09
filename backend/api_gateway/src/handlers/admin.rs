@@ -138,14 +138,21 @@ pub async fn get_platform_stats(
 pub async fn list_feature_flags(
     req: HttpRequest,
     pool: web::Data<PgPool>,
+    params: web::Query<PaginationParams>,
 ) -> impl Responder {
     if let Err(resp) = require_admin(&req) { return resp; }
+
+    let limit = params.limit.unwrap_or(50).min(100);
+    let offset = params.offset.unwrap_or(0);
 
     let flags: Vec<(i64, String, bool, Option<i32>, Option<String>, bool, Option<String>)> =
         match sqlx::query_as(
             "SELECT id, name, enabled, rollout_percentage, allowed_roles, shadow_mode, description
-             FROM feature_flags WHERE deleted_at IS NULL ORDER BY name"
+             FROM feature_flags WHERE deleted_at IS NULL ORDER BY name
+             LIMIT $1 OFFSET $2"
         )
+        .bind(limit)
+        .bind(offset)
         .fetch_all(pool.get_ref())
         .await {
             Ok(f) => f,
@@ -157,6 +164,11 @@ pub async fn list_feature_flags(
             }
         };
 
+    let total: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM feature_flags WHERE deleted_at IS NULL")
+        .fetch_one(pool.get_ref())
+        .await
+        .unwrap_or(0);
+
     let entries: Vec<serde_json::Value> = flags.iter().map(|f| {
         serde_json::json!({
             "id": f.0, "name": f.1, "enabled": f.2,
@@ -165,7 +177,11 @@ pub async fn list_feature_flags(
         })
     }).collect();
 
-    HttpResponse::Ok().json(serde_json::json!({ "flags": entries }))
+    HttpResponse::Ok().json(serde_json::json!({
+        "flags": entries,
+        "total": total,
+        "pagination": { "limit": limit, "offset": offset }
+    }))
 }
 
 #[derive(Deserialize)]
@@ -288,7 +304,8 @@ pub async fn list_users(
         })
     }).collect();
 
-    let total: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM users")
+    // Count only active users to avoid COUNT(*) on full table at scale
+    let total: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM users WHERE deleted_at IS NULL")
         .fetch_one(pool.get_ref())
         .await
         .unwrap_or(0);
