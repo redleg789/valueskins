@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import PlatformLayout from '@/components/PlatformLayout';
 import { getTrendingProfessions } from '@/lib/professions';
+import { api } from '@/lib/api';
 
 /*
  * PATENT-RELEVANT: Credential-Gated Marketplace System
@@ -108,6 +109,36 @@ export default function SkinStorePage() {
     const [showRequestModal, setShowRequestModal] = useState(false);
     const [requestText, setRequestText] = useState('');
     const [requestSubmitted, setRequestSubmitted] = useState(false);
+    const [professions, setProfessions] = useState<any[]>(PROFESSIONS);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        // Fetch professions with images from backend
+        const fetchProfessions = async () => {
+            try {
+                const response = await api.marketplace.getProfessions();
+                if (response.data?.professions && Array.isArray(response.data.professions)) {
+                    // Map backend professions to frontend format, merging with hardcoded data
+                    const merged = PROFESSIONS.map(prof => {
+                        const backendProf = response.data!.professions.find((p: any) => p.name === prof.name);
+                        return {
+                            ...prof,
+                            image_uri: backendProf?.image_uri || prof.badge,
+                        };
+                    });
+                    setProfessions(merged);
+                }
+            } catch (error) {
+                console.error('Failed to fetch professions:', error);
+                // Fallback to hardcoded professions
+                setProfessions(PROFESSIONS);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchProfessions();
+    }, []);
 
     const trending = getTrendingProfessions(4);
 
@@ -484,7 +515,13 @@ function ProfessionCard({
                     justifyContent: 'center',
                     flexShrink: 0,
                 }}>
-                    <img src={p.badge} alt="" width={26} height={26} style={{ filter: 'brightness(0) invert(1)' }} />
+                    <img
+                        src={p.image_uri || p.badge}
+                        alt={p.name}
+                        width={26}
+                        height={26}
+                        style={{ filter: 'brightness(0) invert(1)' }}
+                    />
                 </div>
 
                 {/* Text */}
@@ -497,12 +534,29 @@ function ProfessionCard({
                     </div>
                 </div>
 
-                {/* Right side — price + brands count */}
-                <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                    <div style={{ fontSize: 15, fontWeight: 700 }}>{p.price}</div>
-                    <div style={{ fontSize: 11, color: 'var(--ig-text-tertiary)' }}>
-                        {p.activeBrands} brands
+                {/* Right side — ValueSkin sticker preview + price */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8, flexShrink: 0 }}>
+                    {/* ValueSkin sticker preview */}
+                    <div style={{
+                        width: 42,
+                        height: 42,
+                        borderRadius: 10,
+                        background: `linear-gradient(135deg, ${p.gradientFrom}, ${p.gradientTo})`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        border: '2px solid rgba(255,255,255,0.2)',
+                        overflow: 'hidden',
+                    }}>
+                        <img
+                            src={p.image_uri || p.badge}
+                            alt={`${p.name} sticker`}
+                            width={28}
+                            height={28}
+                            style={{ filter: 'brightness(0) invert(1)' }}
+                        />
                     </div>
+                    <div style={{ fontSize: 12, fontWeight: 600 }}>{p.price}</div>
                 </div>
 
                 {/* Chevron */}

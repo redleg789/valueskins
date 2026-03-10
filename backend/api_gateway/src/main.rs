@@ -331,6 +331,7 @@ async fn main() -> std::io::Result<()> {
                     // Marketplace (authenticated — requires ValueSkin)
                     .service(
                         web::scope("/marketplace")
+                            .route("/professions", web::get().to(marketplace_handlers::list_professions))
                             .route("/opportunities", web::get().to(marketplace_handlers::list_opportunities))
                             .route("/opportunities", web::post().to(marketplace_handlers::create_opportunity))
                             .route("/opportunities/{id}", web::get().to(marketplace_handlers::get_opportunity))
