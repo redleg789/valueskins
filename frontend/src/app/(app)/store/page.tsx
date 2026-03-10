@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import PlatformLayout from '@/components/PlatformLayout';
 import { getTrendingProfessions } from '@/lib/professions';
@@ -38,7 +38,7 @@ interface Profession {
 
 // Inline SVG stickers - no file loading issues on Vercel standalone mode
 const StickerIcon = ({ id }: { id: string }) => {
-    const svgs: Record<string, JSX.Element> = {
+    const svgs: Record<string, React.ReactElement> = {
         'general': <svg width="26" height="26" viewBox="0 0 32 32" fill="none"><rect x="4" y="10" width="24" height="16" rx="3" fill="#8b5cf6" stroke="#fff" strokeWidth="1.5"/><circle cx="16" cy="18" r="4" fill="#fff"/><circle cx="16" cy="18" r="2.5" fill="#8b5cf6"/><rect x="10" y="6" width="12" height="4" rx="1" fill="#8b5cf6"/><circle cx="24" cy="13" r="1.5" fill="#fff"/></svg>,
         'art': <svg width="26" height="26" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="12" fill="#ec4899" stroke="#fff" strokeWidth="1.5"/><path d="M10 22l6-12l6 12" stroke="#fff" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/><circle cx="14" cy="14" r="1.5" fill="#fff"/><circle cx="18" cy="14" r="1.5" fill="#fff"/></svg>,
         'law': <svg width="26" height="26" viewBox="0 0 32 32" fill="none"><rect x="6" y="4" width="20" height="24" rx="2" fill="#6366f1" stroke="#fff" strokeWidth="1.5"/><line x1="16" y1="8" x2="16" y2="26" stroke="#fff" strokeWidth="1.5"/><circle cx="16" cy="12" r="2" fill="#fff"/></svg>,

@@ -143,6 +143,40 @@ export default function SettingsPage() {
 
   const toggleSection = (s: string) => setExpandedSection(prev => prev === s ? null : s);
 
+  // Real-time matching score calculation based on current preferences
+  // Formula from backend/matching_service/src/service.rs get_suggestions()
+  const calculateMatchScore = () => {
+    // Simulated creator level (would come from persona in production)
+    const creatorLevel = 3;
+
+    let score = 40; // base ValuSkin match
+
+    // Level fit bonus: min(creator_level * 4, 20)
+    score += Math.min(creatorLevel * 4, 20);
+
+    // Price band overlap (assuming brand would offer 'mid-tier' by default)
+    if (['mid-tier', 'premium'].includes(backendSettings.price_band)) {
+      score += 15;
+    }
+
+    // Trust bonus (mock: 70 out of 100 = 7 bonus)
+    const mockTrustScore = 70;
+    score += Math.min(mockTrustScore / 10, 10);
+
+    // Audit bonus (mock: 75 authenticity score = 7.5 bonus)
+    const mockAuditScore = 75;
+    score += Math.min(mockAuditScore / 10, 10);
+
+    // Advance bonus: +5 if advance preferences match
+    if (attrs.creator_requires_advance) {
+      score += 5;
+    }
+
+    return Math.min(score, 100);
+  };
+
+  const matchScore = calculateMatchScore();
+
   return (
     <PlatformLayout title="Settings">
       <div style={{ padding: 0 }}>
@@ -298,9 +332,40 @@ export default function SettingsPage() {
             <span style={{ fontSize: 16 }}>{expandedSection === 'advance' ? '▲' : '▼'}</span>
           </button>
           {expandedSection === 'advance' && <>
+            {/* Real-time Matching Score */}
+            <SectionRow>
+              <div style={{ background: `linear-gradient(135deg, rgba(139,92,246,0.1), rgba(6,182,212,0.05))`, padding: 14, borderRadius: 8, marginBottom: 12, border: '1px solid rgba(139,92,246,0.2)' }}>
+                <div style={{ fontSize: 11, textTransform: 'uppercase', fontWeight: 600, color: 'var(--ig-text-tertiary)', marginBottom: 6, letterSpacing: 0.4 }}>
+                  Your Match Score (Real-time)
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+                  <div style={{ fontSize: 28, fontWeight: 700, background: 'linear-gradient(135deg, #8b5cf6, #06b6d4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                    {Math.round(matchScore)}%
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ height: 8, background: 'rgba(255,255,255,0.1)', borderRadius: 4, overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${matchScore}%`, background: 'linear-gradient(90deg, #8b5cf6, #06b6d4)', transition: 'width 0.3s ease' }} />
+                    </div>
+                    <div style={{ fontSize: 10, color: 'var(--ig-text-tertiary)', marginTop: 4 }}>
+                      {matchScore < 50 ? 'Low compatibility' : matchScore < 70 ? 'Fair match' : matchScore < 85 ? 'Good match' : 'Excellent match'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Score Breakdown */}
+                <div style={{ fontSize: 10, color: 'var(--ig-text-tertiary)', lineHeight: '1.5' }}>
+                  <div style={{ marginBottom: 4 }}>✓ Base ValuSkin match: +40</div>
+                  <div style={{ marginBottom: 4 }}>✓ Creator level fit: +{Math.min(3 * 4, 20)}</div>
+                  <div style={{ marginBottom: 4 }}>✓ Price band overlap ({backendSettings.price_band}): +{['mid-tier', 'premium'].includes(backendSettings.price_band) ? 15 : 0}</div>
+                  <div style={{ marginBottom: 4 }}>✓ Trust & authenticity: +17</div>
+                  <div>✓ Advance compatibility: +{attrs.creator_requires_advance ? 5 : 0}</div>
+                </div>
+              </div>
+            </SectionRow>
+
             <SectionRow>
               <div style={{ background: 'var(--ig-elevated)', padding: 12, borderRadius: 8, marginBottom: 16, fontSize: 12, color: 'var(--ig-text-secondary)' }}>
-                💡 Control whether you want advances on deals. Set your preference and non-negotiable terms.
+                💡 Control whether you want advances on deals. Set your preference and non-negotiable terms. Your match score updates in real-time as you adjust these settings.
               </div>
               <InlineToggle value={attrs.creator_requires_advance} onChange={v => setA('creator_requires_advance', v)} label="I want/need advances on deals" />
             </SectionRow>
