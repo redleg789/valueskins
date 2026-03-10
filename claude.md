@@ -45,6 +45,27 @@ Always verify the end-to-end user flow works before optimizing internals.
 ### 8. Never ship partial work as complete
 If you find 30 issues, fix all 30. Don't fix 14 and present it as done. The 100/100 rule applies to audits too.
 
+### 9. State vs Constants: Always render from state, not hardcoded arrays
+When you fetch data into state but still render from hardcoded constants, the fetch is invisible to users.
+- **Bug**: Store page fetched `professions` state from backend but rendered `PROFESSIONS` constant (line 303)
+- **Impact**: Stickers with API-fetched `image_uri` never displayed, fallback data looked empty
+- **Fix**: Always use the state variable that was populated from the async fetch
+- **Pattern**: If you `setState(fetchedData)`, then render `state.map()`, not the original array
+
+### 10. CSS brightness filters invert white SVGs to invisible black
+When applying `filter: 'brightness(0) invert(1)'` to SVGs that already have white strokes/fills, the inversion makes them black and invisible against dark backgrounds.
+- **Bug**: SVG badges had white fill + colored background, then we inverted them to black on dark gradients = invisible
+- **Impact**: Sticker icons not visible in store cards even though files existed and rendered
+- **Fix**: Removed the brightness filter; SVGs already had intentional coloring that works on any background
+- **Pattern**: Don't blindly apply filters to convert colors. Check the SVG source first. White on colored is visible; don't invert it to black.
+
+### 11. Graceful fallback when async API fetch fails silently
+React components that fetch data must fall back to hardcoded data if the API returns empty or errors.
+- **Bug**: `professions` state remained as empty array after failed fetch, but component didn't re-render from hardcoded PROFESSIONS
+- **Impact**: Users saw blank store after Vercel deploy (API might be slow/unreachable, but UI should still work)
+- **Fix**: Added conditional fallback: `const displayProfessions = professions.length > 0 ? professions : PROFESSIONS`
+- **Pattern**: For critical UI data, always have a hardcoded fallback. Check `state.length > 0` before using async data.
+
 ---
 
 **claude.md — Production-grade implementation rules**

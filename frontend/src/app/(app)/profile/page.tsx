@@ -1,175 +1,393 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { api, type CreatorProfile } from '@/lib/api';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import PlatformLayout from '@/components/PlatformLayout';
 
-const LEVEL_NAMES = ['Newcomer', 'Rising', 'Established', 'Expert', 'Legend'];
-const LEVEL_COLORS = ['#6b7280', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444'];
+interface Highlight {
+    id: string;
+    name: string;
+    icon: string;
+    color: string;
+}
 
-function ProfileSkeleton() {
+export default function MyProfilePage() {
+    const router = useRouter();
+    const [activeTab, setActiveTab] = useState<'posts' | 'reels' | 'tagged'>('posts');
+
+    // Mock user data
+    const profile = {
+        username: 'yourprofile',
+        name: 'Your Name',
+        bio: 'Creator on Valueskins\nJoin the future of creator economy',
+        profession: 'Creator',
+        professionIcon: '🎨',
+        level: 3,
+        followers: '5.2K',
+        following: '342',
+        posts: 24,
+        verified: false,
+        highlights: [
+            { id: '1', name: 'Valueskins', icon: '🎨', color: '#8b5cf6' },
+            { id: '2', name: 'collabs', icon: '🤝', color: '#ec4899' },
+            { id: '3', name: 'moments', icon: '✨', color: '#06b6d4' },
+        ] as Highlight[],
+        recentPosts: [
+            { id: '1', gradient: 'linear-gradient(135deg, #0ea5e9, #8b5cf6)', likes: 124, comments: 12 },
+            { id: '2', gradient: 'linear-gradient(135deg, #8b5cf6, #ec4899)', likes: 89, comments: 8 },
+            { id: '3', gradient: 'linear-gradient(135deg, #ec4899, #f59e0b)', likes: 201, comments: 23 },
+            { id: '4', gradient: 'linear-gradient(135deg, #f59e0b, #ef4444)', likes: 156, comments: 14 },
+            { id: '5', gradient: 'linear-gradient(135deg, #0ea5e9, #10b981)', likes: 234, comments: 28 },
+            { id: '6', gradient: 'linear-gradient(135deg, #7c3aed, #0ea5e9)', likes: 92, comments: 9 },
+        ],
+    };
+
     return (
-        <div style={{ minHeight: '100vh', background: '#0a0a0f', color: 'white', padding: '2rem' }}>
-            <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}`}</style>
-            <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-                <div style={{ display: 'flex', gap: '2rem', marginBottom: '2rem', padding: '2rem', background: 'rgba(255,255,255,0.02)', borderRadius: '20px', animation: 'pulse 1.5s ease-in-out infinite' }}>
-                    <div style={{ width: '120px', height: '120px', background: 'rgba(255,255,255,0.07)', borderRadius: '50%', flexShrink: 0 }} />
-                    <div style={{ flex: 1 }}>
-                        <div style={{ height: '32px', background: 'rgba(255,255,255,0.07)', borderRadius: '6px', marginBottom: '0.75rem', maxWidth: '300px' }} />
-                        <div style={{ height: '16px', background: 'rgba(255,255,255,0.07)', borderRadius: '4px', marginBottom: '0.5rem', maxWidth: '200px' }} />
-                        <div style={{ height: '16px', background: 'rgba(255,255,255,0.07)', borderRadius: '4px', maxWidth: '400px' }} />
+        <PlatformLayout title={profile.username}>
+            {/* ── Profile Header ──────────────── */}
+            <div style={{ padding: '16px' }}>
+                {/* Username & Menu */}
+                <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: 16,
+                }}>
+                    <span style={{ fontSize: 15, fontWeight: 600 }}>{profile.username}</span>
+                    <button style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#fff',
+                        fontSize: 18,
+                        cursor: 'pointer',
+                        padding: 0,
+                    }}>
+                        ⋯
+                    </button>
+                </div>
+
+                {/* Avatar + Stats */}
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginBottom: 16 }}>
+                    {/* Avatar with story ring */}
+                    <div style={{
+                        width: 88,
+                        height: 88,
+                        borderRadius: '50%',
+                        background: 'conic-gradient(from 0deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888, #8b5cf6, #0095f6, #f09433)',
+                        padding: 2,
+                        flexShrink: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                    }}>
+                        <div style={{
+                            width: '100%',
+                            height: '100%',
+                            borderRadius: '50%',
+                            background: '#0a0a0f',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: 36,
+                            fontWeight: 700,
+                        }}>
+                            {profile.name.charAt(0)}
+                        </div>
+                    </div>
+
+                    {/* Stats */}
+                    <div style={{
+                        display: 'flex',
+                        gap: 24,
+                        flex: 1,
+                        justifyContent: 'space-around',
+                    }}>
+                        <StatBlock value={profile.posts} label="posts" />
+                        <StatBlock value={profile.followers} label="followers" />
+                        <StatBlock value={profile.following} label="following" />
                     </div>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '1rem', marginBottom: '2rem' }}>
-                    {[0,1,2,3].map(i => (
-                        <div key={i} style={{ height: '80px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', animation: 'pulse 1.5s ease-in-out infinite' }} />
+
+                {/* Name, Profession Badge & Bio */}
+                <div style={{ marginBottom: 16 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                        <span style={{ fontSize: 15, fontWeight: 600 }}>{profile.name}</span>
+                        {profile.verified && (
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="#0095f6">
+                                <circle cx="12" cy="12" r="10" />
+                                <path d="M8 12l2 2 4-4" stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                        )}
+                    </div>
+
+                    {/* Profession badge */}
+                    <div style={{
+                        display: 'inline-block',
+                        background: 'rgba(139, 92, 246, 0.15)',
+                        border: '1px solid rgba(139, 92, 246, 0.3)',
+                        borderRadius: 6,
+                        padding: '2px 8px',
+                        fontSize: 12,
+                        fontWeight: 600,
+                        color: '#a855f7',
+                        marginBottom: 8,
+                    }}>
+                        {profile.professionIcon} {profile.profession}
+                    </div>
+
+                    {/* Bio */}
+                    <p style={{
+                        fontSize: 14,
+                        color: '#fff',
+                        lineHeight: 1.5,
+                        whiteSpace: 'pre-line',
+                    }}>
+                        {profile.bio}
+                    </p>
+                </div>
+
+                {/* Action Buttons - Owner view */}
+                <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+                    <button style={{
+                        flex: 1,
+                        padding: '8px',
+                        background: 'rgba(255, 255, 255, 0.1)',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        borderRadius: 8,
+                        color: '#fff',
+                        fontSize: 14,
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                    }}>
+                        Edit profile
+                    </button>
+                    <button style={{
+                        flex: 1,
+                        padding: '8px',
+                        background: 'rgba(255, 255, 255, 0.1)',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        borderRadius: 8,
+                        color: '#fff',
+                        fontSize: 14,
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                    }}>
+                        Share profile
+                    </button>
+                    <button style={{
+                        width: 40,
+                        height: 40,
+                        padding: 0,
+                        background: 'rgba(255, 255, 255, 0.1)',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        borderRadius: 8,
+                        color: '#fff',
+                        fontSize: 18,
+                        cursor: 'pointer',
+                    }}>
+                        ⋯
+                    </button>
+                </div>
+
+                {/* Story Highlights */}
+                <div style={{
+                    display: 'flex',
+                    gap: 12,
+                    overflowX: 'auto',
+                    paddingBottom: 8,
+                    marginBottom: 16,
+                    scrollBehavior: 'smooth',
+                    scrollbarWidth: 'none',
+                }}>
+                    {profile.highlights.map((highlight) => (
+                        <div
+                            key={highlight.id}
+                            style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                gap: 4,
+                                flexShrink: 0,
+                                cursor: 'pointer',
+                            }}
+                        >
+                            <div style={{
+                                width: 60,
+                                height: 60,
+                                borderRadius: '50%',
+                                background: `conic-gradient(${highlight.color}, #333)`,
+                                padding: 2,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                            }}>
+                                <div style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    borderRadius: '50%',
+                                    background: '#0a0a0f',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: 24,
+                                }}>
+                                    {highlight.icon}
+                                </div>
+                            </div>
+                            <span style={{
+                                fontSize: 12,
+                                color: '#fff',
+                                textAlign: 'center',
+                                maxWidth: 60,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                            }}>
+                                {highlight.name}
+                            </span>
+                        </div>
                     ))}
                 </div>
             </div>
+
+            {/* ── Tab Bar ─────────────────── */}
+            <div style={{
+                display: 'flex',
+                borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+            }}>
+                <TabButton
+                    active={activeTab === 'posts'}
+                    onClick={() => setActiveTab('posts')}
+                    icon="⊞"
+                    label="Posts"
+                />
+                <TabButton
+                    active={activeTab === 'reels'}
+                    onClick={() => setActiveTab('reels')}
+                    icon="▶"
+                    label="Reels"
+                />
+                <TabButton
+                    active={activeTab === 'tagged'}
+                    onClick={() => setActiveTab('tagged')}
+                    icon="👤"
+                    label="Tagged"
+                />
+            </div>
+
+            {/* ── Content Grid ─────────────────── */}
+            {activeTab === 'posts' ? (
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(3, 1fr)',
+                    gap: 1,
+                }}>
+                    {profile.recentPosts.map((post) => (
+                        <div
+                            key={post.id}
+                            style={{
+                                aspectRatio: '1 / 1',
+                                background: post.gradient,
+                                position: 'relative',
+                                cursor: 'pointer',
+                                overflow: 'hidden',
+                            }}
+                        >
+                            <div style={{
+                                position: 'absolute',
+                                bottom: 0,
+                                left: 0,
+                                right: 0,
+                                padding: '12px 8px',
+                                background: 'linear-gradient(to top, rgba(0,0,0,0.7), transparent)',
+                                display: 'flex',
+                                gap: 12,
+                                justifyContent: 'center',
+                                opacity: 0,
+                                transition: 'opacity 0.2s ease',
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.opacity = '1';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.opacity = '0';
+                            }}
+                            >
+                                <span style={{ fontSize: 12, color: '#fff', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 2 }}>
+                                    ❤️ {post.likes >= 1000 ? `${(post.likes / 1000).toFixed(1)}K` : post.likes}
+                                </span>
+                                <span style={{ fontSize: 12, color: '#fff', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 2 }}>
+                                    💬 {post.comments}
+                                </span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            ) : activeTab === 'reels' ? (
+                <div style={{
+                    padding: 16,
+                    textAlign: 'center',
+                    color: 'var(--ig-text-tertiary)',
+                }}>
+                    <p style={{ fontSize: 14 }}>No reels yet</p>
+                </div>
+            ) : (
+                <div style={{
+                    padding: 16,
+                    textAlign: 'center',
+                    color: 'var(--ig-text-tertiary)',
+                }}>
+                    <p style={{ fontSize: 14 }}>No tagged posts</p>
+                </div>
+            )}
+        </PlatformLayout>
+    );
+}
+
+function StatBlock({ value, label }: { value: string | number; label: string }) {
+    return (
+        <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 18, fontWeight: 700, color: '#fff' }}>{value}</div>
+            <div style={{ fontSize: 12, color: '#a1a1aa', marginTop: 2 }}>{label}</div>
         </div>
     );
 }
 
-export default function ProfilePage() {
-    const [profile, setProfile] = useState<CreatorProfile | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-
-    const loadProfile = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        const result = await api.persona.getMyProfile();
-        if (result.error) {
-            setError(result.error);
-        } else if (result.data) {
-            setProfile(result.data);
-        }
-        setLoading(false);
-    }, []);
-
-    useEffect(() => { loadProfile(); }, [loadProfile]);
-
-    if (loading) return <ProfileSkeleton />;
-
-    if (error) {
-        return (
-            <div style={{ minHeight: '100vh', background: '#0a0a0f', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '1rem' }}>
-                <div style={{ fontSize: '3rem' }}>⚠️</div>
-                <h2>Failed to load profile</h2>
-                <p style={{ color: '#a1a1aa' }}>{error}</p>
-                <button onClick={loadProfile} style={{ padding: '0.75rem 1.5rem', background: 'rgba(139,92,246,0.2)', border: '1px solid #8b5cf6', borderRadius: '10px', color: 'white', cursor: 'pointer' }}>Try Again</button>
-            </div>
-        );
-    }
-
-    if (!profile) {
-        return (
-            <div style={{ minHeight: '100vh', background: '#0a0a0f', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '1rem' }}>
-                <div style={{ fontSize: '3rem' }}>👤</div>
-                <h2>Profile not found</h2>
-                <p style={{ color: '#a1a1aa' }}>Complete your onboarding to set up your profile.</p>
-                <a href="/onboarding" style={{ padding: '0.75rem 1.5rem', background: 'linear-gradient(135deg,#8b5cf6,#7c3aed)', borderRadius: '10px', color: 'white', textDecoration: 'none', fontWeight: 600 }}>Get Started</a>
-            </div>
-        );
-    }
-
-    const levelColor = LEVEL_COLORS[Math.min(profile.level - 1, LEVEL_COLORS.length - 1)] ?? '#6b7280';
-
+function TabButton({
+    active,
+    onClick,
+    icon,
+    label,
+}: {
+    active: boolean;
+    onClick: () => void;
+    icon: string;
+    label: string;
+}) {
     return (
-        <div style={{ minHeight: '100vh', background: '#0a0a0f', color: 'white', padding: '2rem' }}>
-            <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-                {/* Profile Header */}
-                <div style={{ display: 'flex', gap: '2rem', marginBottom: '2rem', padding: '2rem', background: `linear-gradient(135deg, ${levelColor}15, transparent)`, border: `1px solid ${levelColor}30`, borderRadius: '20px' }}>
-                    <div style={{ width: '120px', height: '120px', background: `linear-gradient(135deg, ${levelColor}, ${levelColor}80)`, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3rem', fontWeight: 800, flexShrink: 0 }}>
-                        {profile.display_name.charAt(0)}
-                    </div>
-                    <div style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
-                            <h1 style={{ fontSize: '2rem', fontWeight: 800 }}>{profile.display_name}</h1>
-                            <span style={{ padding: '0.25rem 0.75rem', background: `${levelColor}20`, border: `1px solid ${levelColor}40`, borderRadius: '100px', fontSize: '0.85rem', color: levelColor, fontWeight: 600 }}>
-                                L{profile.level} {LEVEL_NAMES[profile.level - 1] ?? 'Unknown'}
-                            </span>
-                        </div>
-                        <p style={{ color: '#a1a1aa', marginBottom: '0.5rem' }}>{profile.handle}{profile.profession ? ` • ${profile.profession}` : ''}</p>
-                        {profile.bio && <p style={{ marginBottom: '1rem' }}>{profile.bio}</p>}
-                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                            {profile.badges.map(badge => (
-                                <span key={badge} style={{ padding: '0.25rem 0.75rem', background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.2)', borderRadius: '100px', fontSize: '0.75rem', color: '#8b5cf6' }}>{badge}</span>
-                            ))}
-                        </div>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem', flexShrink: 0 }}>
-                        <div style={{ fontSize: '2.5rem', fontWeight: 800, background: `linear-gradient(135deg, ${levelColor}, #06b6d4)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{profile.score.toLocaleString()}</div>
-                        <div style={{ color: '#71717a', fontSize: '0.9rem' }}>Total Score</div>
-                        <button style={{ marginTop: '0.5rem', padding: '0.5rem 1rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'white', fontSize: '0.85rem', cursor: 'pointer' }}>Share Profile</button>
-                    </div>
-                </div>
-
-                {/* Stats Row */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
-                    {[
-                        { label: 'Total Earnings', value: '$' + profile.stats.total_earnings, color: '#22c55e' },
-                        { label: 'Completed Deals', value: profile.stats.completed_deals, color: '#8b5cf6' },
-                        { label: 'Avg Rating', value: profile.stats.avg_rating + '★', color: '#f59e0b' },
-                        { label: 'Referrals', value: profile.stats.referrals, color: '#06b6d4' },
-                    ].map((stat, i) => (
-                        <div key={i} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '12px', padding: '1.5rem', textAlign: 'center' }}>
-                            <div style={{ fontSize: '2rem', fontWeight: 700, color: stat.color }}>{stat.value}</div>
-                            <div style={{ color: '#71717a', fontSize: '0.85rem' }}>{stat.label}</div>
-                        </div>
-                    ))}
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
-                    {/* Score Breakdown */}
-                    <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px', padding: '1.5rem' }}>
-                        <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '1.5rem' }}>Score Breakdown</h2>
-                        {Object.entries(profile.score_breakdown).map(([key, value]) => (
-                            <div key={key} style={{ marginBottom: '1rem' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                                    <span style={{ textTransform: 'capitalize' }}>{key}</span>
-                                    <span style={{ fontWeight: 600 }}>{value}%</span>
-                                </div>
-                                <div style={{ height: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', overflow: 'hidden' }}>
-                                    <div style={{ height: '100%', width: `${value}%`, background: `linear-gradient(90deg, ${levelColor}, #06b6d4)`, borderRadius: '4px' }} />
-                                </div>
-                            </div>
-                        ))}
-                        <a href="/scoring" style={{ display: 'block', marginTop: '1rem', color: '#8b5cf6', fontSize: '0.9rem' }}>How is my score calculated? →</a>
-                    </div>
-
-                    {/* Recent Activity */}
-                    <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px', padding: '1.5rem' }}>
-                        <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '1.5rem' }}>Recent Activity</h2>
-                        {profile.recent_activity.length === 0 ? (
-                            <p style={{ color: '#71717a', textAlign: 'center', padding: '2rem 0' }}>No activity yet. Start by applying to opportunities!</p>
-                        ) : (
-                            profile.recent_activity.map((activity, i) => (
-                                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 0', borderBottom: i < profile.recent_activity.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
-                                    <div>
-                                        <div style={{ fontWeight: 500 }}>{activity.title}</div>
-                                        <div style={{ fontSize: '0.85rem', color: '#71717a' }}>{activity.date}</div>
-                                    </div>
-                                    {activity.amount && <span style={{ color: '#22c55e', fontWeight: 600 }}>{activity.amount}</span>}
-                                </div>
-                            ))
-                        )}
-                    </div>
-                </div>
-
-                {/* Connected Platforms */}
-                <div style={{ marginTop: '2rem', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px', padding: '1.5rem' }}>
-                    <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '1rem' }}>Connected Platforms</h2>
-                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                        {profile.connected_platforms.map(platform => (
-                            <div key={platform} style={{ padding: '0.75rem 1.5rem', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <span style={{ color: '#22c55e' }}>✓</span>
-                                <span>{platform}</span>
-                            </div>
-                        ))}
-                        <button style={{ padding: '0.75rem 1.5rem', background: 'rgba(255,255,255,0.05)', border: '1px dashed rgba(255,255,255,0.2)', borderRadius: '10px', color: '#a1a1aa', cursor: 'pointer' }}>+ Add Platform</button>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <button
+            onClick={onClick}
+            style={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+                padding: '12px 0',
+                color: active ? '#fff' : '#a1a1aa',
+                borderBottom: active ? '1px solid #fff' : '1px solid transparent',
+                fontSize: 12,
+                fontWeight: 600,
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                transition: 'color 0.15s ease',
+                letterSpacing: '0.5px',
+            }}
+        >
+            <span>{icon}</span>
+            {label}
+        </button>
     );
 }
