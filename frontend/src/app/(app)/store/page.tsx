@@ -300,7 +300,7 @@ export default function SkinStorePage() {
 
             {/* Profession Cards */}
             <div style={{ padding: '8px 16px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {PROFESSIONS.map((prof, i) => (
+                {professions.map((prof, i) => (
                     <ProfessionCard
                         key={prof.id}
                         profession={prof}
