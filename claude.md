@@ -68,6 +68,38 @@ React components that fetch data must fall back to hardcoded data if the API ret
 
 ---
 
+## Settings Page — UI-Only Changes (Prod-Ready Implementation Pending)
+
+**File**: `frontend/src/app/(app)/settings/page.tsx`
+
+### Location & Availability section:
+- [ ] Country: text input → dropdown with ALL countries
+- [ ] Availability Hours: text input → time picker dropdowns with timezone labels (e.g., "9:00 AM PST")
+- [ ] Add "Available To" date field (users can specify vacation periods: from X to Y)
+- [ ] Make toggles FUNCTIONAL: "Willing to relocate", "Willing to travel", "Available for live events"
+
+### Identity & Content section:
+- [ ] REMOVE "Content Niche" multi-chip selector (niche is determined by ValuSkin, not redundant options)
+- [ ] Make "Content Format" multi-chip FUNCTIONAL (currently non-responsive)
+
+### Your Audience section:
+- [ ] REMOVE "Primary Platform" field (Instagram + ValuSkin credential is enough)
+- [ ] Rename "Audience Primary Location" → "Audience Languages"
+- [ ] Change to dropdown with ALL languages + enable multiple selection
+
+### Deal Preferences section:
+- [ ] REMOVE "Deal Type Preference" section (ValuSkins is ALWAYS deal-mode-only)
+- [ ] Make all toggles FUNCTIONAL: "Open to brand exclusivity", "Willing to sign NDA", "Willing to grant usage rights"
+
+### Advance Preferences section:
+- [ ] Already functional (no changes)
+
+### General:
+- [ ] Remove GitHub credentials/buttons if present
+- [ ] Ensure all dropdowns, toggles, and date pickers persist state on backend
+
+---
+
 **claude.md — Production-grade implementation rules**
 
 You are not writing demos, mockups, placeholders, or tutorial code.
