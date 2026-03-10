@@ -277,6 +277,10 @@ class MarketplaceClient {
             body: JSON.stringify({ deal_id: dealId, deliverable_id: deliverableId, content_url: contentUrl }),
         });
     }
+
+    async getProfessions() {
+        return this.http.request<{ professions: Array<{ id: number; name: string; category: string; image_uri?: string }>; count: number }>('/marketplace/professions');
+    }
 }
 
 // Deal Rooms Chat Client — real-time chat and messaging for deal negotiation

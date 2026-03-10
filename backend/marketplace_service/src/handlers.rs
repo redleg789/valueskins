@@ -1647,3 +1647,38 @@ pub async fn get_deal_room_status(
         None => HttpResponse::NotFound().json(serde_json::json!({ "error": "Deal room not found" })),
     }
 }
+
+/// GET /marketplace/professions — List all professions with their ValueSkin images
+/// Used by store page to dynamically display sticker images
+pub async fn list_professions(
+    pool: web::Data<PgPool>,
+) -> impl Responder {
+    match sqlx::query_as::<_, (i64, String, String, Option<String>)>(
+        "SELECT id, name, category, image_uri FROM professions WHERE is_active = TRUE ORDER BY name"
+    )
+    .fetch_all(pool.get_ref())
+    .await
+    {
+        Ok(rows) => {
+            let professions: Vec<serde_json::Value> = rows.iter().map(|(id, name, category, image_uri)| {
+                serde_json::json!({
+                    "id": id,
+                    "name": name,
+                    "category": category,
+                    "image_uri": image_uri,
+                })
+            }).collect();
+
+            HttpResponse::Ok().json(serde_json::json!({
+                "professions": professions,
+                "count": professions.len()
+            }))
+        }
+        Err(e) => {
+            error!("Failed to list professions: {:?}", e);
+            HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": "Failed to fetch professions"
+            }))
+        }
+    }
+}
