@@ -6,13 +6,34 @@ import { usePlatform } from '@/lib/context';
 import { PLATFORM_CONFIGS, Platform } from '@/lib/professions';
 import { api } from '@/lib/api';
 
-const LANGUAGES = ['English', 'Spanish', 'French', 'Hindi', 'Portuguese', 'Arabic', 'Mandarin', 'German', 'Japanese', 'Korean'];
+const LANGUAGES = ['English', 'Spanish', 'French', 'Hindi', 'Portuguese', 'Arabic', 'Mandarin', 'German', 'Japanese', 'Korean', 'Russian', 'Italian', 'Dutch', 'Turkish', 'Polish', 'Swedish', 'Thai', 'Vietnamese', 'Indonesian', 'Tagalog'];
 const CONTENT_FORMATS = ['Video', 'Photo', 'Text', 'Podcast', 'Live'];
-const NICHES = ['Fashion', 'Beauty', 'Tech', 'Finance', 'Fitness', 'Food', 'Travel', 'Gaming', 'Education', 'Lifestyle', 'Business', 'Entertainment', 'Health', 'Sports', 'Music', 'Art'];
-const DEAL_TYPES = ['Paid', 'Gifted', 'Equity'];
 const GENDERS = ['Male', 'Female', 'Non-binary', 'Prefer not to say'];
-const TIMEZONES = ['UTC-8 (PST)', 'UTC-5 (EST)', 'UTC+0 (GMT)', 'UTC+1 (CET)', 'UTC+3 (MSK)', 'UTC+5:30 (IST)', 'UTC+8 (CST)', 'UTC+9 (JST)', 'UTC+10 (AEST)'];
+const TIMEZONES = ['UTC-12 (BIT)', 'UTC-11 (SST)', 'UTC-10 (HST)', 'UTC-9 (AKST)', 'UTC-8 (PST)', 'UTC-7 (MST)', 'UTC-6 (CST)', 'UTC-5 (EST)', 'UTC-4 (AST)', 'UTC-3 (ART)', 'UTC-2 (GST)', 'UTC-1 (CVT)', 'UTC+0 (GMT)', 'UTC+1 (CET)', 'UTC+2 (EET)', 'UTC+3 (MSK)', 'UTC+3:30 (IRST)', 'UTC+4 (GST)', 'UTC+4:30 (AFT)', 'UTC+5 (PKT)', 'UTC+5:30 (IST)', 'UTC+5:45 (NPT)', 'UTC+6 (BST)', 'UTC+6:30 (MMT)', 'UTC+7 (ICT)', 'UTC+8 (CST)', 'UTC+8:45 (ACWST)', 'UTC+9 (JST)', 'UTC+9:30 (ACST)', 'UTC+10 (AEST)', 'UTC+10:30 (LHST)', 'UTC+11 (SBT)', 'UTC+12 (NZST)', 'UTC+13 (PHOT)', 'UTC+14 (LINT)'];
 const AUDIENCE_AGE_RANGES = ['13-17', '18-24', '25-34', '35-44', '45-54', '55+'];
+const COUNTRIES = [
+  'Afghanistan', 'Albania', 'Algeria', 'Andorra', 'Angola', 'Antigua and Barbuda', 'Argentina', 'Armenia', 'Australia', 'Austria',
+  'Azerbaijan', 'Bahamas', 'Bahrain', 'Bangladesh', 'Barbados', 'Belarus', 'Belgium', 'Belize', 'Benin', 'Bhutan',
+  'Bolivia', 'Bosnia and Herzegovina', 'Botswana', 'Brazil', 'Brunei', 'Bulgaria', 'Burkina Faso', 'Burundi', 'Cabo Verde', 'Cambodia',
+  'Cameroon', 'Canada', 'Central African Republic', 'Chad', 'Chile', 'China', 'Colombia', 'Comoros', 'Congo (DRC)', 'Congo (Republic)',
+  'Costa Rica', 'Croatia', 'Cuba', 'Cyprus', 'Czech Republic', 'Denmark', 'Djibouti', 'Dominica', 'Dominican Republic', 'Ecuador',
+  'Egypt', 'El Salvador', 'Equatorial Guinea', 'Eritrea', 'Estonia', 'Eswatini', 'Ethiopia', 'Fiji', 'Finland', 'France',
+  'Gabon', 'Gambia', 'Georgia', 'Germany', 'Ghana', 'Greece', 'Grenada', 'Guatemala', 'Guinea', 'Guinea-Bissau',
+  'Guyana', 'Haiti', 'Honduras', 'Hungary', 'Iceland', 'India', 'Indonesia', 'Iran', 'Iraq', 'Ireland',
+  'Israel', 'Italy', 'Jamaica', 'Japan', 'Jordan', 'Kazakhstan', 'Kenya', 'Kiribati', 'Kosovo', 'Kuwait',
+  'Kyrgyzstan', 'Laos', 'Latvia', 'Lebanon', 'Lesotho', 'Liberia', 'Libya', 'Liechtenstein', 'Lithuania', 'Luxembourg',
+  'Madagascar', 'Malawi', 'Malaysia', 'Maldives', 'Mali', 'Malta', 'Marshall Islands', 'Mauritania', 'Mauritius', 'Mexico',
+  'Micronesia', 'Moldova', 'Monaco', 'Mongolia', 'Montenegro', 'Morocco', 'Mozambique', 'Myanmar', 'Namibia', 'Nauru',
+  'Nepal', 'Netherlands', 'New Zealand', 'Nicaragua', 'Niger', 'Nigeria', 'North Korea', 'North Macedonia', 'Norway', 'Oman',
+  'Pakistan', 'Palau', 'Palestine', 'Panama', 'Papua New Guinea', 'Paraguay', 'Peru', 'Philippines', 'Poland', 'Portugal',
+  'Qatar', 'Romania', 'Russia', 'Rwanda', 'Saint Kitts and Nevis', 'Saint Lucia', 'Saint Vincent and the Grenadines', 'Samoa', 'San Marino', 'Sao Tome and Principe',
+  'Saudi Arabia', 'Senegal', 'Serbia', 'Seychelles', 'Sierra Leone', 'Singapore', 'Slovakia', 'Slovenia', 'Solomon Islands', 'Somalia',
+  'South Africa', 'South Korea', 'South Sudan', 'Spain', 'Sri Lanka', 'Sudan', 'Suriname', 'Sweden', 'Switzerland', 'Syria',
+  'Taiwan', 'Tajikistan', 'Tanzania', 'Thailand', 'Timor-Leste', 'Togo', 'Tonga', 'Trinidad and Tobago', 'Tunisia', 'Turkey',
+  'Turkmenistan', 'Tuvalu', 'Uganda', 'Ukraine', 'United Arab Emirates', 'United Kingdom', 'United States', 'Uruguay', 'Uzbekistan', 'Vanuatu',
+  'Vatican City', 'Venezuela', 'Vietnam', 'Yemen', 'Zambia', 'Zimbabwe',
+];
+const HOURS = ['12:00 AM', '1:00 AM', '2:00 AM', '3:00 AM', '4:00 AM', '5:00 AM', '6:00 AM', '7:00 AM', '8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM', '6:00 PM', '7:00 PM', '8:00 PM', '9:00 PM', '10:00 PM', '11:00 PM'];
 
 const sectionHeaderStyle = {
   padding: '16px',
@@ -77,12 +98,13 @@ export default function SettingsPage() {
 
   // Creator attributes state
   const [attrs, setAttrs] = useState({
-    location_city: '', location_country: '', timezone: '', availability_hours: '',
+    location_city: '', location_country: '', timezone: '',
+    availability_from: '9:00 AM', availability_to: '6:00 PM', available_until: '',
     willing_to_relocate: false, willing_to_travel: false, willing_to_appear_at_events: false,
     age: '', gender: '', languages_spoken: [] as string[], content_language: '',
-    content_niche: [] as string[], content_format: [] as string[], posting_frequency: '',
-    audience_age_range: '', audience_location_primary: '', primary_platform: '',
-    deal_type_preference: [] as string[], min_deal_size_usd: '', response_time_hours: '',
+    content_format: [] as string[], posting_frequency: '',
+    audience_age_range: '', audience_languages: [] as string[],
+    min_deal_size_usd: '', response_time_hours: '',
     exclusivity_available: false, willing_to_sign_nda: false, willing_to_sign_usage_rights: false,
     on_camera_willing: true, product_preference: '', content_rights_owned: true,
     // Advance preferences
@@ -197,20 +219,46 @@ export default function SettingsPage() {
           {expandedSection === 'location' && <>
             <SectionRow>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                <div><label style={labelStyle}>City</label><input style={inputStyle} placeholder="New York" value={attrs.location_city} onChange={e => setA('location_city', e.target.value)} /></div>
-                <div><label style={labelStyle}>Country</label><input style={inputStyle} placeholder="USA" value={attrs.location_country} onChange={e => setA('location_country', e.target.value)} /></div>
+                <div>
+                  <label style={labelStyle}>City</label>
+                  <input style={inputStyle} placeholder="New York" value={attrs.location_city} onChange={e => setA('location_city', e.target.value)} />
+                </div>
+                <div>
+                  <label style={labelStyle}>Country</label>
+                  <select style={inputStyle} value={attrs.location_country} onChange={e => setA('location_country', e.target.value)}>
+                    <option value="">Select country...</option>
+                    {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
               </div>
             </SectionRow>
             <SectionRow>
               <label style={labelStyle}>Timezone</label>
               <select style={inputStyle} value={attrs.timezone} onChange={e => setA('timezone', e.target.value)}>
-                <option value="">Select...</option>
-                {TIMEZONES.map(t => <option key={t}>{t}</option>)}
+                <option value="">Select timezone...</option>
+                {TIMEZONES.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
             </SectionRow>
             <SectionRow>
-              <label style={labelStyle}>Availability Hours</label>
-              <input style={inputStyle} placeholder="e.g. 9am–6pm EST" value={attrs.availability_hours} onChange={e => setA('availability_hours', e.target.value)} />
+              <label style={labelStyle}>Availability Hours {attrs.timezone && <span style={{ fontWeight: 400, textTransform: 'none', color: 'var(--ig-text-secondary)' }}>({attrs.timezone})</span>}</label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 8, alignItems: 'center' }}>
+                <select style={inputStyle} value={attrs.availability_from} onChange={e => setA('availability_from', e.target.value)}>
+                  {HOURS.map(h => <option key={h} value={h}>{h}</option>)}
+                </select>
+                <span style={{ fontSize: 12, color: 'var(--ig-text-tertiary)', padding: '0 4px' }}>to</span>
+                <select style={inputStyle} value={attrs.availability_to} onChange={e => setA('availability_to', e.target.value)}>
+                  {HOURS.map(h => <option key={h} value={h}>{h}</option>)}
+                </select>
+              </div>
+            </SectionRow>
+            <SectionRow>
+              <label style={labelStyle}>Available Until (vacation / break end date)</label>
+              <input style={inputStyle} type="date" value={attrs.available_until} onChange={e => setA('available_until', e.target.value)} />
+              {attrs.available_until && (
+                <div style={{ fontSize: 11, color: '#f59e0b', marginTop: 6 }}>
+                  You will appear as unavailable after this date until you clear it.
+                </div>
+              )}
             </SectionRow>
             <SectionRow>
               <InlineToggle value={attrs.willing_to_relocate} onChange={v => setA('willing_to_relocate', v)} label="Willing to relocate for a project" />
@@ -250,10 +298,6 @@ export default function SettingsPage() {
               </select>
             </SectionRow>
             <SectionRow>
-              <label style={labelStyle}>Content Niche</label>
-              <MultiChips options={NICHES} selected={attrs.content_niche} onChange={v => setA('content_niche', v)} />
-            </SectionRow>
-            <SectionRow>
               <label style={labelStyle}>Content Format</label>
               <MultiChips options={CONTENT_FORMATS} selected={attrs.content_format} onChange={v => setA('content_format', v)} />
             </SectionRow>
@@ -283,12 +327,11 @@ export default function SettingsPage() {
               </select>
             </SectionRow>
             <SectionRow>
-              <label style={labelStyle}>Audience Primary Location</label>
-              <input style={inputStyle} placeholder="USA" value={attrs.audience_location_primary} onChange={e => setA('audience_location_primary', e.target.value)} />
-            </SectionRow>
-            <SectionRow>
-              <label style={labelStyle}>Primary Platform</label>
-              <input style={inputStyle} placeholder="Instagram" value={attrs.primary_platform} onChange={e => setA('primary_platform', e.target.value)} />
+              <label style={labelStyle}>Audience Languages</label>
+              <MultiChips options={LANGUAGES} selected={attrs.audience_languages} onChange={v => setA('audience_languages', v)} />
+              <div style={{ fontSize: 10, color: 'var(--ig-text-tertiary)', marginTop: 6 }}>
+                Select all languages your audience primarily speaks.
+              </div>
             </SectionRow>
           </>}
         </div>
@@ -300,10 +343,6 @@ export default function SettingsPage() {
             <span style={{ fontSize: 16 }}>{expandedSection === 'deals' ? '▲' : '▼'}</span>
           </button>
           {expandedSection === 'deals' && <>
-            <SectionRow>
-              <label style={labelStyle}>Deal Type Preference</label>
-              <MultiChips options={DEAL_TYPES} selected={attrs.deal_type_preference} onChange={v => setA('deal_type_preference', v)} />
-            </SectionRow>
             <SectionRow>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                 <div><label style={labelStyle}>Min Deal Size (USD)</label><input style={inputStyle} type="number" placeholder="500" value={attrs.min_deal_size_usd} onChange={e => setA('min_deal_size_usd', e.target.value)} /></div>
