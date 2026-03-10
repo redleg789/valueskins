@@ -33,6 +33,7 @@ interface Profession {
     gradientTo: string;
     activeBrands: number;
     avgDealSize: string;
+    image_uri?: string;
 }
 
 const PROFESSIONS: Profession[] = [
