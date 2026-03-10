@@ -1,7 +1,6 @@
 'use client';
 
 import React, { ReactNode } from 'react';
-import { Navigation } from '@/components/Navigation';
 
 class ErrorBoundary extends React.Component<
     { children: ReactNode },
@@ -60,12 +59,9 @@ class ErrorBoundary extends React.Component<
         }
 
         return (
-            <>
-                <Navigation />
-                <main style={{ paddingTop: '80px' }}>
-                    {this.props.children}
-                </main>
-            </>
+            <main>
+                {this.props.children}
+            </main>
         );
     }
 }
