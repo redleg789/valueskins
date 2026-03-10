@@ -151,6 +151,9 @@ export default function SkinStorePage() {
         }, 1500);
     };
 
+    // Always use PROFESSIONS with fallback if API fetch fails
+    const displayProfessions = professions.length > 0 && professions[0].image_uri ? professions : PROFESSIONS;
+
     const handleRequestSubmit = () => {
         if (requestText.trim()) {
             // Mock API call
@@ -300,7 +303,7 @@ export default function SkinStorePage() {
 
             {/* Profession Cards */}
             <div style={{ padding: '8px 16px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {professions.map((prof, i) => (
+                {displayProfessions.map((prof, i) => (
                     <ProfessionCard
                         key={prof.id}
                         profession={prof}
@@ -521,7 +524,6 @@ function ProfessionCard({
                         alt={p.name}
                         width={26}
                         height={26}
-                        style={{ filter: 'brightness(0) invert(1)' }}
                     />
                 </div>
 
@@ -554,7 +556,6 @@ function ProfessionCard({
                             alt={`${p.name} sticker`}
                             width={28}
                             height={28}
-                            style={{ filter: 'brightness(0) invert(1)' }}
                         />
                     </div>
                     <div style={{ fontSize: 12, fontWeight: 600 }}>{p.price}</div>
