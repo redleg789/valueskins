@@ -36,6 +36,21 @@ interface Profession {
     image_uri?: string;
 }
 
+// Inline SVG stickers - no file loading issues on Vercel standalone mode
+const StickerIcon = ({ id }: { id: string }) => {
+    const svgs: Record<string, JSX.Element> = {
+        'general': <svg width="26" height="26" viewBox="0 0 32 32" fill="none"><rect x="4" y="10" width="24" height="16" rx="3" fill="#8b5cf6" stroke="#fff" strokeWidth="1.5"/><circle cx="16" cy="18" r="4" fill="#fff"/><circle cx="16" cy="18" r="2.5" fill="#8b5cf6"/><rect x="10" y="6" width="12" height="4" rx="1" fill="#8b5cf6"/><circle cx="24" cy="13" r="1.5" fill="#fff"/></svg>,
+        'art': <svg width="26" height="26" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="12" fill="#ec4899" stroke="#fff" strokeWidth="1.5"/><path d="M10 22l6-12l6 12" stroke="#fff" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/><circle cx="14" cy="14" r="1.5" fill="#fff"/><circle cx="18" cy="14" r="1.5" fill="#fff"/></svg>,
+        'law': <svg width="26" height="26" viewBox="0 0 32 32" fill="none"><rect x="6" y="4" width="20" height="24" rx="2" fill="#6366f1" stroke="#fff" strokeWidth="1.5"/><line x1="16" y1="8" x2="16" y2="26" stroke="#fff" strokeWidth="1.5"/><circle cx="16" cy="12" r="2" fill="#fff"/></svg>,
+        'medical': <svg width="26" height="26" viewBox="0 0 32 32" fill="none"><rect x="6" y="6" width="20" height="20" rx="2" fill="#10b981" stroke="#fff" strokeWidth="1.5"/><line x1="16" y1="10" x2="16" y2="22" stroke="#fff" strokeWidth="2" strokeLinecap="round"/><line x1="10" y1="16" x2="22" y2="16" stroke="#fff" strokeWidth="2" strokeLinecap="round"/></svg>,
+        'gaming': <svg width="26" height="26" viewBox="0 0 32 32" fill="none"><rect x="4" y="8" width="24" height="16" rx="2" fill="#7c3aed" stroke="#fff" strokeWidth="1.5"/><circle cx="12" cy="16" r="1.5" fill="#fff"/><circle cx="20" cy="14" r="1.5" fill="#fff"/><circle cx="22" cy="16" r="1.5" fill="#fff"/><circle cx="20" cy="18" r="1.5" fill="#fff"/></svg>,
+        'tech': <svg width="26" height="26" viewBox="0 0 32 32" fill="none"><rect x="6" y="6" width="20" height="20" rx="2" fill="#0ea5e9" stroke="#fff" strokeWidth="1.5"/><circle cx="11" cy="11" r="2" fill="#fff"/><circle cx="21" cy="11" r="2" fill="#fff"/><circle cx="11" cy="21" r="2" fill="#fff"/><circle cx="21" cy="21" r="2" fill="#fff"/><line x1="11" y1="13" x2="11" y2="19" stroke="#fff" strokeWidth="1.5"/><line x1="21" y1="13" x2="21" y2="19" stroke="#fff" strokeWidth="1.5"/><line x1="13" y1="11" x2="19" y2="11" stroke="#fff" strokeWidth="1.5"/><line x1="13" y1="21" x2="19" y2="21" stroke="#fff" strokeWidth="1.5"/></svg>,
+        'finance': <svg width="26" height="26" viewBox="0 0 32 32" fill="none"><path d="M8 16h16M12 10v12M20 10v12M10 8h12v16H10z" fill="#f59e0b" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+        'fitness': <svg width="26" height="26" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="10" r="2.5" fill="#ef4444" stroke="#fff" strokeWidth="1.5"/><path d="M10 14h12M12 14v10M20 14v10M8 24h16" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>,
+    };
+    return svgs[id] || svgs['general'];
+};
+
 const PROFESSIONS: Profession[] = [
     {
         id: 'general', name: 'Content Creator', subtitle: 'General / Lifestyle',
@@ -519,12 +534,7 @@ function ProfessionCard({
                     justifyContent: 'center',
                     flexShrink: 0,
                 }}>
-                    <img
-                        src={p.image_uri || p.badge}
-                        alt={p.name}
-                        width={26}
-                        height={26}
-                    />
+                    <StickerIcon id={p.id} />
                 </div>
 
                 {/* Text */}
@@ -551,12 +561,9 @@ function ProfessionCard({
                         border: '2px solid rgba(255,255,255,0.2)',
                         overflow: 'hidden',
                     }}>
-                        <img
-                            src={p.image_uri || p.badge}
-                            alt={`${p.name} sticker`}
-                            width={28}
-                            height={28}
-                        />
+                        <div style={{ transform: 'scale(0.9)' }}>
+                            <StickerIcon id={p.id} />
+                        </div>
                     </div>
                     <div style={{ fontSize: 12, fontWeight: 600 }}>{p.price}</div>
                 </div>
