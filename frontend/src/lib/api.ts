@@ -300,10 +300,12 @@ class DealRoomsClient {
         return this.http.request<{ messages: DealRoomMessage[]; deal_room_id: number }>(endpoint);
     }
 
-    async sendMessage(dealRoomId: number, message: string) {
+    async sendMessage(dealRoomId: number, message: string, messageType?: string) {
+        const body: Record<string, string> = { content: message };
+        if (messageType) body.message_type = messageType;
         return this.http.request<DealRoomMessage>(`/deal-rooms/${dealRoomId}/messages`, {
             method: 'POST',
-            body: JSON.stringify({ content: message }),
+            body: JSON.stringify(body),
         });
     }
 
@@ -329,7 +331,7 @@ class DealRoomsClient {
     }
 
     // Payment preferences
-    async savePaymentPreferences(dealRoomId: number, data: { advance_pct: number; performance_clause_enabled: boolean }) {
+    async savePaymentPreferences(dealRoomId: number, data: { advance_pct: number; after_submission_pct?: number; performance_pct?: number; performance_clause_enabled: boolean }) {
         return this.http.request<PaymentPreferencesResponse>(`/deal-rooms/${dealRoomId}/payment-preferences`, {
             method: 'POST',
             body: JSON.stringify(data),
@@ -369,8 +371,15 @@ class DealRoomsClient {
 interface PaymentPreferencesResponse {
     deal_room_id: number;
     advance_pct: number;
-    performance_clause_enabled: boolean;
+    after_submission_pct: number;
     performance_pct: number;
+    performance_clause_enabled: boolean;
+    your_ask_cents?: number;
+    brand_offer_cents?: number;
+    counter_history?: Array<{ amount: number; by: 'creator' | 'brand'; at: string }>;
+    creator_country?: string;
+    brand_country?: string;
+    is_international?: boolean;
 }
 
 interface DealRoomStatusResponse {
@@ -1112,6 +1121,8 @@ export interface CreatorDeal {
     application_deadline: string;
     delivery_deadline: string;
     applicant_count: number;
+    currency?: string;
+    is_international?: boolean;
     deliverables: Array<{
         id: number;
         type: DeliverableType;

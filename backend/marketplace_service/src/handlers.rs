@@ -1375,7 +1375,7 @@ pub async fn list_deal_room_disputes(
 // Payment Preferences — advance % + performance clause
 // ══════════════════════════════════════════════════════════════
 
-/// POST /deal-rooms/{id}/payment-preferences — save payment terms
+/// POST /deal-rooms/{id}/payment-preferences — save payment terms (3-way split)
 pub async fn save_payment_preferences(
     pool: web::Data<PgPool>,
     path: web::Path<i64>,
@@ -1388,16 +1388,24 @@ pub async fn save_payment_preferences(
     };
     let deal_room_id = path.into_inner();
 
-    // Enforce: advance_pct between 70 and 100 (performance clause max 30%)
-    if body.advance_pct < 70 || body.advance_pct > 100 {
+    let advance_pct = body.advance_pct;
+    let after_submission_pct = body.after_submission_pct.unwrap_or(0);
+    let performance_pct = body.performance_pct.unwrap_or(100 - advance_pct - after_submission_pct);
+
+    // Validate: each must be 0-100 and all three must sum to 100
+    if advance_pct < 0 || advance_pct > 100
+        || after_submission_pct < 0 || after_submission_pct > 100
+        || performance_pct < 0 || performance_pct > 100
+    {
         return HttpResponse::BadRequest().json(serde_json::json!({
-            "error": "Advance percentage must be between 70 and 100 (performance clause max 30%)"
+            "error": "Each payment percentage must be between 0 and 100"
         }));
     }
-
-    // If performance clause disabled, force advance to 100%
-    let advance_pct = if body.performance_clause_enabled { body.advance_pct } else { 100 };
-    let performance_pct = 100 - advance_pct;
+    if advance_pct + after_submission_pct + performance_pct != 100 {
+        return HttpResponse::BadRequest().json(serde_json::json!({
+            "error": format!("Payment split must sum to 100%, got {}%", advance_pct + after_submission_pct + performance_pct)
+        }));
+    }
 
     // Verify participant
     let is_participant: bool = sqlx::query_scalar(
@@ -1413,18 +1421,22 @@ pub async fn save_payment_preferences(
         return HttpResponse::Forbidden().json(serde_json::json!({ "error": "Not a participant" }));
     }
 
-    // Upsert into a deal_room_payment_preferences table
+    // Upsert 3-way split into deal_room_payment_preferences
     match sqlx::query(
-        "INSERT INTO deal_room_payment_preferences (deal_room_id, advance_pct, performance_clause_enabled, updated_by_user_id)
-         VALUES ($1, $2, $3, $4)
+        "INSERT INTO deal_room_payment_preferences (deal_room_id, advance_pct, after_submission_pct, performance_pct, performance_clause_enabled, updated_by_user_id)
+         VALUES ($1, $2, $3, $4, $5, $6)
          ON CONFLICT (deal_room_id) DO UPDATE SET
              advance_pct = EXCLUDED.advance_pct,
+             after_submission_pct = EXCLUDED.after_submission_pct,
+             performance_pct = EXCLUDED.performance_pct,
              performance_clause_enabled = EXCLUDED.performance_clause_enabled,
              updated_by_user_id = EXCLUDED.updated_by_user_id,
              updated_at = NOW()"
     )
     .bind(deal_room_id)
     .bind(advance_pct)
+    .bind(after_submission_pct)
+    .bind(performance_pct)
     .bind(body.performance_clause_enabled)
     .bind(user_id)
     .execute(pool.get_ref())
@@ -1433,8 +1445,9 @@ pub async fn save_payment_preferences(
         Ok(_) => HttpResponse::Ok().json(serde_json::json!({
             "deal_room_id": deal_room_id,
             "advance_pct": advance_pct,
-            "performance_clause_enabled": body.performance_clause_enabled,
+            "after_submission_pct": after_submission_pct,
             "performance_pct": performance_pct,
+            "performance_clause_enabled": body.performance_clause_enabled,
         })),
         Err(e) => { error!("save_payment_preferences: {:?}", e); HttpResponse::InternalServerError().finish() }
     }
@@ -1465,8 +1478,8 @@ pub async fn get_payment_preferences(
         return HttpResponse::Forbidden().json(serde_json::json!({ "error": "Not a participant" }));
     }
 
-    let prefs: Option<(i16, bool)> = sqlx::query_as(
-        "SELECT advance_pct, performance_clause_enabled
+    let prefs: Option<(i16, i16, i16, bool)> = sqlx::query_as(
+        "SELECT advance_pct, after_submission_pct, performance_pct, performance_clause_enabled
          FROM deal_room_payment_preferences
          WHERE deal_room_id = $1"
     )
@@ -1476,21 +1489,23 @@ pub async fn get_payment_preferences(
     .unwrap_or(None);
 
     match prefs {
-        Some((advance_pct, perf_enabled)) => {
+        Some((advance_pct, after_submission_pct, performance_pct, perf_enabled)) => {
             HttpResponse::Ok().json(serde_json::json!({
                 "deal_room_id": deal_room_id,
                 "advance_pct": advance_pct,
+                "after_submission_pct": after_submission_pct,
+                "performance_pct": performance_pct,
                 "performance_clause_enabled": perf_enabled,
-                "performance_pct": 100 - advance_pct,
             }))
         }
         None => {
-            // Default: 100% advance, no performance clause
+            // Default: 30% advance, 50% after submission, 20% performance
             HttpResponse::Ok().json(serde_json::json!({
                 "deal_room_id": deal_room_id,
-                "advance_pct": 100,
+                "advance_pct": 30,
+                "after_submission_pct": 50,
+                "performance_pct": 20,
                 "performance_clause_enabled": false,
-                "performance_pct": 0,
             }))
         }
     }

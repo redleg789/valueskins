@@ -5,6 +5,7 @@ import PlatformLayout from '@/components/PlatformLayout';
 import { usePlatform } from '@/lib/context';
 import { PLATFORM_CONFIGS, Platform } from '@/lib/professions';
 import { api } from '@/lib/api';
+import { getCurrencyForCountry } from '@/lib/deals';
 
 const LANGUAGES = ['English', 'Spanish', 'French', 'Hindi', 'Portuguese', 'Arabic', 'Mandarin', 'German', 'Japanese', 'Korean', 'Russian', 'Italian', 'Dutch', 'Turkish', 'Polish', 'Swedish', 'Thai', 'Vietnamese', 'Indonesian', 'Tagalog'];
 const CONTENT_FORMATS = ['Video', 'Photo', 'Text', 'Podcast', 'Live'];
@@ -32,6 +33,18 @@ const COUNTRIES = [
   'Taiwan', 'Tajikistan', 'Tanzania', 'Thailand', 'Timor-Leste', 'Togo', 'Tonga', 'Trinidad and Tobago', 'Tunisia', 'Turkey',
   'Turkmenistan', 'Tuvalu', 'Uganda', 'Ukraine', 'United Arab Emirates', 'United Kingdom', 'United States', 'Uruguay', 'Uzbekistan', 'Vanuatu',
   'Vatican City', 'Venezuela', 'Vietnam', 'Yemen', 'Zambia', 'Zimbabwe',
+];
+const POSTING_RULES = [
+  'No posting between 10 PM–7 AM local time',
+  'No reposting within 48 hours of original post',
+  'No competitor mentions in same post',
+  'Must keep sponsored post live for 30+ days',
+  'No editing caption after brand approval',
+  'No archiving/deleting within 90 days',
+  'Must disclose sponsorship (#ad or #sponsored)',
+  'No cross-posting to other platforms without approval',
+  'No political/controversial content alongside brand content',
+  'Must respond to brand comments within 24 hours',
 ];
 const HOURS = ['12:00 AM', '1:00 AM', '2:00 AM', '3:00 AM', '4:00 AM', '5:00 AM', '6:00 AM', '7:00 AM', '8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM', '6:00 PM', '7:00 PM', '8:00 PM', '9:00 PM', '10:00 PM', '11:00 PM'];
 
@@ -91,6 +104,8 @@ function InlineToggle({ value, onChange, label }: { value: boolean; onChange: (v
   );
 }
 
+// getCurrencyForCountry imported from @/lib/deals
+
 export default function SettingsPage() {
   const { activePlatform, setPlatform } = usePlatform();
   const [showPlatformSelector, setShowPlatformSelector] = useState(false);
@@ -107,8 +122,15 @@ export default function SettingsPage() {
     min_deal_size_usd: '', response_time_hours: '',
     exclusivity_available: false, willing_to_sign_nda: false, willing_to_sign_usage_rights: false,
     on_camera_willing: true, product_preference: '', content_rights_owned: true,
+    // International deals
+    allow_international_deals: false,
+    // Payment plan preferences (must total 100)
+    payment_advance_pct: 30, payment_after_submission_pct: 50, payment_performance_pct: 20,
+    payment_plan_negotiable: true,
     // Advance preferences
     creator_requires_advance: false, creator_advance_pct_wanted: 30, creator_advance_negotiable: true,
+    // Content posting rules
+    posting_rules: [] as string[],
   });
 
   const setA = <K extends keyof typeof attrs>(field: K, value: typeof attrs[K]) => setAttrs(prev => ({ ...prev, [field]: value }));
@@ -345,7 +367,7 @@ export default function SettingsPage() {
           {expandedSection === 'deals' && <>
             <SectionRow>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                <div><label style={labelStyle}>Min Deal Size (USD)</label><input style={inputStyle} type="number" placeholder="500" value={attrs.min_deal_size_usd} onChange={e => setA('min_deal_size_usd', e.target.value)} /></div>
+                <div><label style={labelStyle}>Min Deal Size</label><input style={inputStyle} type="number" placeholder="500" value={attrs.min_deal_size_usd} onChange={e => setA('min_deal_size_usd', e.target.value)} /></div>
                 <div><label style={labelStyle}>Response Time (hrs)</label><input style={inputStyle} type="number" placeholder="24" value={attrs.response_time_hours} onChange={e => setA('response_time_hours', e.target.value)} /></div>
               </div>
             </SectionRow>
@@ -360,6 +382,113 @@ export default function SettingsPage() {
               <InlineToggle value={attrs.exclusivity_available} onChange={v => setA('exclusivity_available', v)} label="Open to brand exclusivity" />
               <InlineToggle value={attrs.willing_to_sign_nda} onChange={v => setA('willing_to_sign_nda', v)} label="Willing to sign NDA" />
               <InlineToggle value={attrs.willing_to_sign_usage_rights} onChange={v => setA('willing_to_sign_usage_rights', v)} label="Willing to grant usage rights" />
+            </SectionRow>
+            <SectionRow>
+              <InlineToggle value={attrs.allow_international_deals} onChange={v => setA('allow_international_deals', v)} label="Open to international deals" />
+              {attrs.allow_international_deals && (
+                <div style={{ fontSize: 11, color: '#06b6d4', marginTop: 4 }}>
+                  International deals show amounts in the brand's local currency. Your home currency ({attrs.location_country ? getCurrencyForCountry(attrs.location_country) : 'set your country first'}) is used for domestic deals.
+                </div>
+              )}
+            </SectionRow>
+          </>}
+        </div>
+
+        {/* Payment Plan */}
+        <div style={{ borderBottom: '1px solid var(--ig-separator)' }}>
+          <button onClick={() => toggleSection('payment_plan')} style={{ width: '100%', ...sectionHeaderStyle, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>Payment Plan</span>
+            <span style={{ fontSize: 16 }}>{expandedSection === 'payment_plan' ? '▲' : '▼'}</span>
+          </button>
+          {expandedSection === 'payment_plan' && <>
+            <SectionRow>
+              <div style={{ background: 'var(--ig-elevated)', padding: 12, borderRadius: 8, marginBottom: 12, fontSize: 12, color: 'var(--ig-text-secondary)' }}>
+                Set your default payment split across three stages. Must total 100%. Brands see this when reviewing your profile.
+              </div>
+
+              {/* Advance */}
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                  <label style={{ ...labelStyle, marginBottom: 0 }}>Advance (upfront)</label>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: '#8b5cf6' }}>{attrs.payment_advance_pct}%</span>
+                </div>
+                <input type="range" min="0" max="100" value={attrs.payment_advance_pct} onChange={e => {
+                  const adv = parseInt(e.target.value);
+                  const remaining = 100 - adv;
+                  const sub = Math.min(attrs.payment_after_submission_pct, remaining);
+                  setAttrs(prev => ({ ...prev, payment_advance_pct: adv, payment_after_submission_pct: sub, payment_performance_pct: remaining - sub }));
+                }} style={{ width: '100%' }} />
+              </div>
+
+              {/* After Submission */}
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                  <label style={{ ...labelStyle, marginBottom: 0 }}>After Submission</label>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: '#06b6d4' }}>{attrs.payment_after_submission_pct}%</span>
+                </div>
+                <input type="range" min="0" max={100 - attrs.payment_advance_pct} value={attrs.payment_after_submission_pct} onChange={e => {
+                  const sub = parseInt(e.target.value);
+                  setAttrs(prev => ({ ...prev, payment_after_submission_pct: sub, payment_performance_pct: 100 - prev.payment_advance_pct - sub }));
+                }} style={{ width: '100%' }} />
+              </div>
+
+              {/* Performance Based */}
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                  <label style={{ ...labelStyle, marginBottom: 0 }}>Performance-based</label>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: '#10b981' }}>{attrs.payment_performance_pct}%</span>
+                </div>
+                <div style={{ height: 6, background: 'var(--ig-separator)', borderRadius: 3, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${attrs.payment_performance_pct}%`, background: '#10b981', borderRadius: 3 }} />
+                </div>
+                <div style={{ fontSize: 10, color: 'var(--ig-text-tertiary)', marginTop: 4 }}>Auto-calculated from remaining balance</div>
+              </div>
+
+              {/* Visual split bar */}
+              <div style={{ display: 'flex', height: 28, borderRadius: 6, overflow: 'hidden', marginBottom: 12 }}>
+                {attrs.payment_advance_pct > 0 && <div style={{ width: `${attrs.payment_advance_pct}%`, background: '#8b5cf6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 600, color: '#fff' }}>{attrs.payment_advance_pct}%</div>}
+                {attrs.payment_after_submission_pct > 0 && <div style={{ width: `${attrs.payment_after_submission_pct}%`, background: '#06b6d4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 600, color: '#fff' }}>{attrs.payment_after_submission_pct}%</div>}
+                {attrs.payment_performance_pct > 0 && <div style={{ width: `${attrs.payment_performance_pct}%`, background: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 600, color: '#fff' }}>{attrs.payment_performance_pct}%</div>}
+              </div>
+
+              <InlineToggle value={attrs.payment_plan_negotiable} onChange={v => setA('payment_plan_negotiable', v)} label="Payment split is negotiable" />
+              {!attrs.payment_plan_negotiable && (
+                <div style={{ fontSize: 11, color: '#f59e0b', marginTop: 4 }}>
+                  Brands must accept your exact split. Deals with incompatible payment plans won't match.
+                </div>
+              )}
+            </SectionRow>
+          </>}
+        </div>
+
+        {/* Content Posting Rules */}
+        <div style={{ borderBottom: '1px solid var(--ig-separator)' }}>
+          <button onClick={() => toggleSection('posting_rules')} style={{ width: '100%', ...sectionHeaderStyle, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>Content Posting Rules</span>
+            <span style={{ fontSize: 16 }}>{expandedSection === 'posting_rules' ? '▲' : '▼'}</span>
+          </button>
+          {expandedSection === 'posting_rules' && <>
+            <SectionRow>
+              <div style={{ background: 'var(--ig-elevated)', padding: 12, borderRadius: 8, marginBottom: 12, fontSize: 12, color: 'var(--ig-text-secondary)' }}>
+                Select the rules you follow for sponsored content. Brands see these upfront so there are no surprises during the deal.
+              </div>
+              {POSTING_RULES.map(rule => {
+                const active = attrs.posting_rules.includes(rule);
+                return (
+                  <div key={rule} onClick={() => setA('posting_rules', active ? attrs.posting_rules.filter(r => r !== rule) : [...attrs.posting_rules, rule])}
+                    style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', borderBottom: '1px solid var(--ig-separator)', cursor: 'pointer' }}>
+                    <div style={{ width: 20, height: 20, borderRadius: 4, border: active ? 'none' : '2px solid var(--ig-separator)', background: active ? '#8b5cf6' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      {active && <span style={{ color: '#fff', fontSize: 12, fontWeight: 700 }}>✓</span>}
+                    </div>
+                    <span style={{ fontSize: 13, color: active ? 'var(--ig-text-primary)' : 'var(--ig-text-secondary)' }}>{rule}</span>
+                  </div>
+                );
+              })}
+              {attrs.posting_rules.length > 0 && (
+                <div style={{ fontSize: 11, color: '#8b5cf6', marginTop: 10 }}>
+                  {attrs.posting_rules.length} rule{attrs.posting_rules.length !== 1 ? 's' : ''} active — brands will see these before entering a deal room with you.
+                </div>
+              )}
             </SectionRow>
           </>}
         </div>

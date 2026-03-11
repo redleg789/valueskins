@@ -453,9 +453,13 @@ pub struct CreateDisputeRequest {
 
 #[derive(Debug, Deserialize)]
 pub struct SavePaymentPreferencesRequest {
-    /// Advance percentage (70-100). Performance clause = 100 - advance_pct.
+    /// Advance percentage (0-100).
     pub advance_pct: i16,
-    /// Whether brand opts into offering a performance clause.
+    /// After submission percentage (0-100). Optional, defaults to 0.
+    pub after_submission_pct: Option<i16>,
+    /// Performance percentage (0-100). Optional, auto-calculated as remainder.
+    pub performance_pct: Option<i16>,
+    /// Whether performance clause is enabled.
     pub performance_clause_enabled: bool,
 }
 

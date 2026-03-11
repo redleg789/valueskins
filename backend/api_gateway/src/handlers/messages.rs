@@ -11,9 +11,15 @@ fn get_user_id(req: &HttpRequest) -> Result<i64, HttpResponse> {
         .ok_or_else(|| HttpResponse::Unauthorized().json(serde_json::json!({"error": "Authentication required"})))
 }
 
+/// Allowed message types that a user can send directly.
+/// System-generated types (offer_accepted, contract_signed, etc.) are NOT allowed here
+/// to prevent spoofing — those are only created server-side.
+const ALLOWED_USER_MESSAGE_TYPES: &[&str] = &["text", "offer_made", "counter_offer"];
+
 #[derive(Deserialize)]
 pub struct SendMessageBody {
     pub content: String,
+    pub message_type: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -39,6 +45,14 @@ pub async fn post_message(
         }));
     }
 
+    // Validate message_type — only allow user-sendable types, never system-generated ones
+    let msg_type_str = body.message_type.as_deref().unwrap_or("text");
+    if !ALLOWED_USER_MESSAGE_TYPES.contains(&msg_type_str) {
+        return HttpResponse::BadRequest().json(serde_json::json!({
+            "error": format!("Invalid message_type '{}'. Allowed: {:?}", msg_type_str, ALLOWED_USER_MESSAGE_TYPES)
+        }));
+    }
+
     // Verify user is participant in this deal room
     let is_participant: bool = sqlx::query_scalar(
         "SELECT EXISTS(SELECT 1 FROM deal_rooms dr JOIN personas p ON p.id = dr.creator_persona_id WHERE dr.id = $1 AND (p.user_id = $2 OR dr.brand_user_id = $2))"
@@ -57,11 +71,12 @@ pub async fn post_message(
 
     match sqlx::query_as::<_, (i64, String, i64, String, chrono::DateTime<chrono::Utc>)>(
         r#"INSERT INTO deal_room_messages (deal_room_id, sender_user_id, message_type, content)
-           VALUES ($1, $2, 'text', $3)
+           VALUES ($1, $2, $3, $4)
            RETURNING id, content, sender_user_id, message_type, server_timestamp"#
     )
     .bind(deal_room_id)
     .bind(user_id)
+    .bind(msg_type_str)
     .bind(content)
     .fetch_one(pool.get_ref())
     .await

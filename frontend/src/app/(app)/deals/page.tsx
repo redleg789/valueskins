@@ -129,13 +129,13 @@ export default function DealsPage() {
             <div>
               <div style={{ fontSize: 11, color: 'var(--ig-text-tertiary)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Total Earnings</div>
               <div style={{ fontSize: 28, fontWeight: 700 }}>
-                {loadingDeals ? '—' : formatCurrency(totalEarnings)}
+                {loadingDeals ? '—' : formatCurrency(totalEarnings, myDeals[0]?.currency)}
               </div>
             </div>
             <div style={{ padding: '8px 12px', background: 'var(--ig-card)', borderRadius: 8, textAlign: 'right' }}>
               <div style={{ fontSize: 11, color: 'var(--ig-text-tertiary)' }}>Pending</div>
               <div style={{ fontSize: 16, fontWeight: 600, color: accentColor }}>
-                {loadingDeals ? '—' : formatCurrency(pendingAmount)}
+                {loadingDeals ? '—' : formatCurrency(pendingAmount, myDeals[0]?.currency)}
               </div>
             </div>
           </div>
@@ -353,7 +353,7 @@ function CreatorDealCard({ deal, type, accentColor, index, onClick }: { deal: Cr
           <div style={{ padding: '4px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: statusInfo.bgColor, color: statusInfo.color }}>{statusInfo.label}</div>
         </div>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
-          <Tag label={formatCurrency(deal.total_amount)} color={accentColor} />
+          <Tag label={formatCurrency(deal.total_amount, deal.currency)} color={accentColor} />
           <Tag label={`Level ${deal.required_level}+`} />
           <Tag label={deal.category} />
           {deal.platforms.map(p => <Tag key={p} label={p === 'across' ? 'Multi-Platform' : p.charAt(0).toUpperCase() + p.slice(1)} />)}
@@ -427,13 +427,13 @@ function OpportunityDetailModal({ opportunity, accentColor, onClose, onApply }: 
             <div style={{ display: 'flex', gap: 8 }}>
               {levelPreviews.map(preview => (
                 <div key={preview.level} style={{ flex: 1, textAlign: 'center', padding: '10px 0', background: preview.level === 3 ? `${accentColor}20` : 'var(--ig-elevated)', borderRadius: 8, border: preview.level === 3 ? `1px solid ${accentColor}` : 'none' }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: preview.level === 3 ? accentColor : 'var(--ig-text-primary)' }}>{formatCurrency(preview.amount)}</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: preview.level === 3 ? accentColor : 'var(--ig-text-primary)' }}>{formatCurrency(preview.amount, opportunity.reward_currency)}</div>
                   <div style={{ fontSize: 10, color: 'var(--ig-text-tertiary)', marginTop: 2 }}>Level {preview.level}</div>
                 </div>
               ))}
             </div>
             <div style={{ fontSize: 11, color: 'var(--ig-text-tertiary)', textAlign: 'center', marginTop: 8 }}>
-              Based on base budget of {formatCurrency(parseFloat(opportunity.reward_amount))} × level multiplier
+              Based on base budget of {formatCurrency(parseFloat(opportunity.reward_amount), opportunity.reward_currency)} × level multiplier
             </div>
           </div>
           <div style={{ marginBottom: 16 }}>
