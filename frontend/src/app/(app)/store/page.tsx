@@ -36,7 +36,8 @@ interface Profession {
     image_uri?: string;
 }
 
-// Inline SVG stickers - no file loading issues on Vercel standalone mode
+// Inline SVG stickers — no file loading issues on Vercel standalone mode
+// (Cache invalidation marker)
 const StickerIcon = ({ id }: { id: string }): React.ReactElement | null => {
     const svgs: Record<string, React.ReactElement> = {
         'general': <svg width="26" height="26" viewBox="0 0 32 32" fill="none"><rect x="4" y="10" width="24" height="16" rx="3" fill="#8b5cf6" stroke="#fff" strokeWidth="1.5"/><circle cx="16" cy="18" r="4" fill="#fff"/><circle cx="16" cy="18" r="2.5" fill="#8b5cf6"/><rect x="10" y="6" width="12" height="4" rx="1" fill="#8b5cf6"/><circle cx="24" cy="13" r="1.5" fill="#fff"/></svg>,
