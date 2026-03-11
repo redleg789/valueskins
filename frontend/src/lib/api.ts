@@ -804,6 +804,23 @@ interface UserSettingsData {
     notifications_enabled: boolean;
     profile_visibility: string;
     updated_at: string;
+    // Creator preferences (persisted)
+    allow_international_deals?: boolean;
+    payment_advance_pct?: number;
+    payment_after_submission_pct?: number;
+    payment_performance_pct?: number;
+    payment_plan_negotiable?: boolean;
+    creator_requires_advance?: boolean;
+    creator_advance_pct_wanted?: number;
+    creator_advance_negotiable?: boolean;
+    posting_rules?: string[];
+    exclusivity_available?: boolean;
+    willing_to_sign_nda?: boolean;
+    willing_to_sign_usage_rights?: boolean;
+    min_deal_size_usd?: string;
+    response_time_hours?: string;
+    product_preference?: string;
+    location_country?: string;
 }
 
 interface UpdateSettingsData {
@@ -813,6 +830,23 @@ interface UpdateSettingsData {
     auto_escalation?: boolean;
     notifications_enabled?: boolean;
     profile_visibility?: string;
+    // Creator preferences
+    allow_international_deals?: boolean;
+    payment_advance_pct?: number;
+    payment_after_submission_pct?: number;
+    payment_performance_pct?: number;
+    payment_plan_negotiable?: boolean;
+    creator_requires_advance?: boolean;
+    creator_advance_pct_wanted?: number;
+    creator_advance_negotiable?: boolean;
+    posting_rules?: string[];
+    exclusivity_available?: boolean;
+    willing_to_sign_nda?: boolean;
+    willing_to_sign_usage_rights?: boolean;
+    min_deal_size_usd?: string;
+    response_time_hours?: string;
+    product_preference?: string;
+    location_country?: string;
 }
 
 class ApiClient {
