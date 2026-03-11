@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { api, type DealRoomMessage } from '@/lib/api';
+import { formatCurrency, getCurrencyForCountry } from '@/lib/deals';
 
 const C = {
   bg: '#0A0A0A',
@@ -14,11 +15,14 @@ const C = {
   blue: '#0095F6',
   green: '#22c55e',
   red: '#ef4444',
+  purple: '#8b5cf6',
+  orange: '#f59e0b',
 };
 
 const MSG_TYPE_LABELS: Record<string, { label: string; color: string }> = {
   system: { label: 'System', color: '#f59e0b' },
   offer_made: { label: 'Offer', color: '#8b5cf6' },
+  counter_offer: { label: 'Counter', color: '#f59e0b' },
   offer_accepted: { label: 'Accepted', color: '#22c55e' },
   deliverable_uploaded: { label: 'Deliverable', color: '#3b82f6' },
   contract_signed: { label: 'Contract', color: '#22c55e' },
@@ -54,11 +58,31 @@ export default function DealRoomPage() {
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const [performanceClause, setPerformanceClause] = useState(false);
-  const [advancePercent, setAdvancePercent] = useState(100);
+  const [advancePercent, setAdvancePercent] = useState(30);
+  const [afterSubmissionPercent, setAfterSubmissionPercent] = useState(50);
+  const [performancePercent, setPerformancePercent] = useState(20);
   const [checklist, setChecklist] = useState(CHECKLIST_ITEMS);
   const [savingPrefs, setSavingPrefs] = useState(false);
   const [finalizing, setFinalizing] = useState(false);
   const [dealStatus, setDealStatus] = useState<string | null>(null);
+
+  // Counter-offer state
+  const [counterMode, setCounterMode] = useState(false);
+  const [yourAskCents, setYourAskCents] = useState(0);
+  const [counterAskCents, setCounterAskCents] = useState(0);
+  const [brandOfferCents, setBrandOfferCents] = useState(0);
+  const [counterSubmitting, setCounterSubmitting] = useState(false);
+  const [counterHistory, setCounterHistory] = useState<Array<{ amount: number; by: 'creator' | 'brand'; at: string }>>([]);
+
+  // Currency
+  const [creatorCountry, setCreatorCountry] = useState('United States');
+  const [brandCountry, setBrandCountry] = useState('United States');
+  const [isInternational, setIsInternational] = useState(false);
+
+  const creatorCurrency = getCurrencyForCountry(creatorCountry);
+  const brandCurrency = getCurrencyForCountry(brandCountry);
+  const displayCurrency = isInternational ? brandCurrency : creatorCurrency;
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const prefsDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -87,13 +111,21 @@ export default function DealRoomPage() {
     if (!silent) setLoading(false);
   }, [dealRoomId]);
 
-  // Load payment preferences and deal status on mount
+  // Load payment preferences, deal status, and deal details on mount
   useEffect(() => {
     async function loadPrefs() {
       const res = await api.dealRooms.getPaymentPreferences(dealRoomId);
       if (res.data) {
-        setAdvancePercent(res.data.advance_pct);
+        setAdvancePercent(res.data.advance_pct ?? 30);
+        setAfterSubmissionPercent(res.data.after_submission_pct ?? 50);
+        setPerformancePercent(res.data.performance_pct ?? 20);
         setPerformanceClause(res.data.performance_clause_enabled);
+        if (res.data.your_ask_cents) setYourAskCents(res.data.your_ask_cents);
+        if (res.data.brand_offer_cents) setBrandOfferCents(res.data.brand_offer_cents);
+        if (res.data.counter_history) setCounterHistory(res.data.counter_history);
+        if (res.data.creator_country) setCreatorCountry(res.data.creator_country);
+        if (res.data.brand_country) setBrandCountry(res.data.brand_country);
+        if (res.data.is_international) setIsInternational(res.data.is_international);
       }
     }
     async function loadStatus() {
@@ -105,17 +137,37 @@ export default function DealRoomPage() {
   }, [dealRoomId]);
 
   // Save payment preferences to backend (debounced)
-  const savePaymentPreferences = useCallback((advPct: number, perfEnabled: boolean) => {
+  const savePaymentPreferences = useCallback((advPct: number, subPct: number, perfPct: number, perfEnabled: boolean) => {
     if (prefsDebounce.current) clearTimeout(prefsDebounce.current);
     prefsDebounce.current = setTimeout(async () => {
       setSavingPrefs(true);
       await api.dealRooms.savePaymentPreferences(dealRoomId, {
         advance_pct: advPct,
+        after_submission_pct: subPct,
+        performance_pct: perfPct,
         performance_clause_enabled: perfEnabled,
       });
       setSavingPrefs(false);
     }, 500);
   }, [dealRoomId]);
+
+  // Submit counter-offer
+  const submitCounterOffer = async () => {
+    if (counterAskCents <= 0 || counterSubmitting) return;
+    setCounterSubmitting(true);
+    const result = await api.dealRooms.sendMessage(dealRoomId,
+      `Counter-offer: ${formatCurrency(counterAskCents, displayCurrency)}`,
+      'counter_offer'
+    );
+    if (!result.error) {
+      setCounterHistory(prev => [...prev, { amount: counterAskCents, by: 'creator', at: new Date().toISOString() }]);
+      setYourAskCents(counterAskCents);
+      setCounterMode(false);
+      setCounterAskCents(0);
+      await loadMessages(true);
+    }
+    setCounterSubmitting(false);
+  };
 
   useEffect(() => {
     loadMessages();
@@ -399,60 +451,173 @@ export default function DealRoomPage() {
             )}
           </div>
 
-          {/* Payment Status */}
+          {/* Your Ask & Counter-Offer */}
           <div style={{ padding: '16px', borderBottom: `1px solid ${C.border}` }}>
             <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 12, color: C.text }}>
-              Payment Terms
+              Pricing ({displayCurrency})
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
-              <div style={{ padding: '8px 10px', background: C.card, borderRadius: 6, border: `1px solid ${C.border}` }}>
-                <div style={{ fontSize: 10, color: C.textSecondary, marginBottom: 4 }}>Advance</div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: C.green }}>{advancePercent}%</div>
+            {/* Brand's Offer */}
+            {brandOfferCents > 0 && (
+              <div style={{ padding: '10px 12px', background: `${C.purple}15`, borderRadius: 8, border: `1px solid ${C.purple}30`, marginBottom: 10 }}>
+                <div style={{ fontSize: 10, color: C.textSecondary, marginBottom: 2 }}>Brand&apos;s Offer</div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: C.purple }}>{formatCurrency(brandOfferCents, displayCurrency)}</div>
               </div>
-              <div style={{ padding: '8px 10px', background: C.card, borderRadius: 6, border: `1px solid ${C.border}` }}>
-                <div style={{ fontSize: 10, color: C.textSecondary, marginBottom: 4 }}>Performance</div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: C.blue }}>{100 - advancePercent}%</div>
+            )}
+
+            {/* Your Ask — read-only by default, editable only in counter mode */}
+            <div style={{ padding: '10px 12px', background: `${C.green}15`, borderRadius: 8, border: `1px solid ${C.green}30`, marginBottom: 10 }}>
+              <div style={{ fontSize: 10, color: C.textSecondary, marginBottom: 2 }}>Your Ask</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: C.green }}>
+                {yourAskCents > 0 ? formatCurrency(yourAskCents, displayCurrency) : 'Not set'}
               </div>
             </div>
 
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', background: C.card, borderRadius: 6, cursor: 'pointer', border: `1px solid ${C.border}` }}>
-              <input
-                type="checkbox"
-                checked={performanceClause}
-                onChange={(e) => {
-                  const enabled = e.target.checked;
-                  setPerformanceClause(enabled);
-                  const newAdv = enabled ? 70 : 100;
-                  setAdvancePercent(newAdv);
-                  savePaymentPreferences(newAdv, enabled);
+            {/* Counter-offer section */}
+            {!counterMode ? (
+              <button
+                onClick={() => {
+                  setCounterMode(true);
+                  setCounterAskCents(yourAskCents || brandOfferCents);
                 }}
-                style={{ width: 14, height: 14, cursor: 'pointer' }}
-              />
-              <span style={{ fontSize: 12, color: C.text }}>Performance-based payment</span>
-            </label>
-
-            {performanceClause && (
-              <div style={{ marginTop: 8, paddingTop: 8, borderTop: `1px solid ${C.border}` }}>
-                <input
-                  type="range"
-                  min="70"
-                  max="100"
-                  value={advancePercent}
-                  onChange={(e) => {
-                    const val = Number(e.target.value);
-                    setAdvancePercent(val);
-                    savePaymentPreferences(val, performanceClause);
-                  }}
-                  style={{ width: '100%', cursor: 'pointer' }}
-                />
-                <div style={{ fontSize: 10, color: C.textSecondary, marginTop: 4, textAlign: 'center' }}>
-                  Max performance: 30%
+                disabled={dealStatus === 'finalized'}
+                style={{
+                  width: '100%', padding: '10px', background: `${C.orange}20`, border: `1px solid ${C.orange}40`,
+                  borderRadius: 8, color: C.orange, fontSize: 13, fontWeight: 600, cursor: dealStatus === 'finalized' ? 'not-allowed' : 'pointer',
+                  opacity: dealStatus === 'finalized' ? 0.5 : 1,
+                }}
+              >
+                Counter Offer
+              </button>
+            ) : (
+              <div style={{ background: C.card, borderRadius: 8, padding: 12, border: `1px solid ${C.orange}40` }}>
+                <div style={{ fontSize: 11, color: C.orange, fontWeight: 600, marginBottom: 8 }}>Enter your counter-offer</div>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}>
+                  <span style={{ fontSize: 13, color: C.textSecondary, fontWeight: 600 }}>{displayCurrency}</span>
+                  <input
+                    type="number"
+                    min="0"
+                    value={counterAskCents > 0 ? (counterAskCents / 100).toFixed(0) : ''}
+                    onChange={(e) => setCounterAskCents(Math.round(Number(e.target.value) * 100))}
+                    placeholder="Amount"
+                    style={{
+                      flex: 1, padding: '8px 10px', background: C.bg, border: `1px solid ${C.border}`,
+                      borderRadius: 6, color: C.text, fontSize: 16, fontWeight: 700, outline: 'none',
+                    }}
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    onClick={submitCounterOffer}
+                    disabled={counterAskCents <= 0 || counterSubmitting}
+                    style={{
+                      flex: 1, padding: '8px', background: counterAskCents <= 0 ? 'rgba(249,115,22,0.2)' : C.orange,
+                      color: '#fff', border: 'none', borderRadius: 6, fontWeight: 600, fontSize: 12,
+                      cursor: counterAskCents <= 0 || counterSubmitting ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    {counterSubmitting ? 'Submitting...' : 'Submit Counter'}
+                  </button>
+                  <button
+                    onClick={() => { setCounterMode(false); setCounterAskCents(0); }}
+                    style={{ padding: '8px 12px', background: 'transparent', border: `1px solid ${C.border}`, borderRadius: 6, color: C.textSecondary, fontSize: 12, cursor: 'pointer' }}
+                  >
+                    Cancel
+                  </button>
                 </div>
               </div>
             )}
 
-            <div style={{ fontSize: 11, color: savingPrefs ? C.textSecondary : C.green, background: savingPrefs ? 'rgba(136,136,136,0.1)' : 'rgba(34, 197, 94, 0.1)', padding: '8px 10px', borderRadius: 6, marginTop: 8, textAlign: 'center' }}>
+            {/* Counter history */}
+            {counterHistory.length > 0 && (
+              <div style={{ marginTop: 10 }}>
+                <div style={{ fontSize: 10, color: C.textSecondary, marginBottom: 6, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>Negotiation History</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  {counterHistory.map((entry, i) => (
+                    <div key={i} style={{ fontSize: 11, padding: '4px 8px', background: `${entry.by === 'creator' ? C.green : C.purple}10`, borderRadius: 4, display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: entry.by === 'creator' ? C.green : C.purple }}>
+                        {entry.by === 'creator' ? 'You' : 'Brand'}: {formatCurrency(entry.amount, displayCurrency)}
+                      </span>
+                      <span style={{ color: C.textSecondary }}>{new Date(entry.at).toLocaleDateString()}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {isInternational && (
+              <div style={{ marginTop: 8, padding: '6px 10px', background: `${C.blue}15`, borderRadius: 6, fontSize: 11, color: C.blue, textAlign: 'center' }}>
+                International deal — amounts shown in {displayCurrency}
+              </div>
+            )}
+          </div>
+
+          {/* Payment Plan — 3-way split */}
+          <div style={{ padding: '16px', borderBottom: `1px solid ${C.border}` }}>
+            <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 12, color: C.text }}>
+              Payment Plan
+            </div>
+
+            {/* Visual split bar */}
+            <div style={{ display: 'flex', height: 8, borderRadius: 4, overflow: 'hidden', marginBottom: 12 }}>
+              {advancePercent > 0 && <div style={{ width: `${advancePercent}%`, background: C.green, transition: 'width 0.2s' }} />}
+              {afterSubmissionPercent > 0 && <div style={{ width: `${afterSubmissionPercent}%`, background: C.blue, transition: 'width 0.2s' }} />}
+              {performancePercent > 0 && <div style={{ width: `${performancePercent}%`, background: C.orange, transition: 'width 0.2s' }} />}
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, marginBottom: 12 }}>
+              <div style={{ padding: '8px 6px', background: C.card, borderRadius: 6, border: `1px solid ${C.border}`, textAlign: 'center' }}>
+                <div style={{ fontSize: 9, color: C.green, marginBottom: 2, fontWeight: 600 }}>Advance</div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: C.green }}>{advancePercent}%</div>
+              </div>
+              <div style={{ padding: '8px 6px', background: C.card, borderRadius: 6, border: `1px solid ${C.border}`, textAlign: 'center' }}>
+                <div style={{ fontSize: 9, color: C.blue, marginBottom: 2, fontWeight: 600 }}>Submission</div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: C.blue }}>{afterSubmissionPercent}%</div>
+              </div>
+              <div style={{ padding: '8px 6px', background: C.card, borderRadius: 6, border: `1px solid ${C.border}`, textAlign: 'center' }}>
+                <div style={{ fontSize: 9, color: C.orange, marginBottom: 2, fontWeight: 600 }}>Performance</div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: C.orange }}>{performancePercent}%</div>
+              </div>
+            </div>
+
+            {/* Advance slider */}
+            <div style={{ marginBottom: 8 }}>
+              <div style={{ fontSize: 11, color: C.textSecondary, marginBottom: 4 }}>Advance %</div>
+              <input type="range" min="0" max="100" value={advancePercent}
+                onChange={(e) => {
+                  const newAdv = Number(e.target.value);
+                  const remaining = 100 - newAdv;
+                  const newSub = Math.min(afterSubmissionPercent, remaining);
+                  const newPerf = remaining - newSub;
+                  setAdvancePercent(newAdv);
+                  setAfterSubmissionPercent(newSub);
+                  setPerformancePercent(newPerf);
+                  savePaymentPreferences(newAdv, newSub, newPerf, performanceClause);
+                }}
+                style={{ width: '100%', cursor: 'pointer' }}
+              />
+            </div>
+
+            {/* After Submission slider */}
+            <div style={{ marginBottom: 8 }}>
+              <div style={{ fontSize: 11, color: C.textSecondary, marginBottom: 4 }}>After Submission %</div>
+              <input type="range" min="0" max={100 - advancePercent} value={afterSubmissionPercent}
+                onChange={(e) => {
+                  const newSub = Number(e.target.value);
+                  const newPerf = 100 - advancePercent - newSub;
+                  setAfterSubmissionPercent(newSub);
+                  setPerformancePercent(newPerf);
+                  savePaymentPreferences(advancePercent, newSub, newPerf, performanceClause);
+                }}
+                style={{ width: '100%', cursor: 'pointer' }}
+              />
+            </div>
+
+            <div style={{ fontSize: 11, color: C.textSecondary, textAlign: 'center', marginBottom: 8 }}>
+              Performance auto-adjusts to keep total at 100%
+            </div>
+
+            <div style={{ fontSize: 11, color: savingPrefs ? C.textSecondary : C.green, background: savingPrefs ? 'rgba(136,136,136,0.1)' : 'rgba(34, 197, 94, 0.1)', padding: '8px 10px', borderRadius: 6, textAlign: 'center' }}>
               {savingPrefs ? 'Saving...' : 'Saved to deal'}
             </div>
           </div>

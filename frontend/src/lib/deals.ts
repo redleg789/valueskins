@@ -192,8 +192,39 @@ export function calculateDealPricing(
   };
 }
 
-export function formatCurrency(cents: number): string {
-  return `$${(cents / 100).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+export function formatCurrency(cents: number, currencyCode?: string): string {
+  const code = currencyCode || 'USD';
+  try {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency', currency: code, minimumFractionDigits: 0, maximumFractionDigits: 0,
+    }).format(cents / 100);
+  } catch {
+    return `${code} ${(cents / 100).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+  }
+}
+
+// ═════════════════════════════════════════════════════════════════════════
+// CURRENCY HELPERS
+// ═════════════════════════════════════════════════════════════════════════
+
+const COUNTRY_CURRENCY_MAP: Record<string, string> = {
+  'United States': 'USD', 'India': 'INR', 'United Kingdom': 'GBP', 'Canada': 'CAD',
+  'Australia': 'AUD', 'Japan': 'JPY', 'Germany': 'EUR', 'France': 'EUR', 'Italy': 'EUR',
+  'Spain': 'EUR', 'Netherlands': 'EUR', 'Belgium': 'EUR', 'Austria': 'EUR', 'Ireland': 'EUR',
+  'Portugal': 'EUR', 'Finland': 'EUR', 'Greece': 'EUR', 'Luxembourg': 'EUR',
+  'Brazil': 'BRL', 'Mexico': 'MXN', 'South Korea': 'KRW', 'China': 'CNY',
+  'Russia': 'RUB', 'South Africa': 'ZAR', 'Nigeria': 'NGN', 'Kenya': 'KES',
+  'Singapore': 'SGD', 'Malaysia': 'MYR', 'Thailand': 'THB', 'Indonesia': 'IDR',
+  'Philippines': 'PHP', 'Vietnam': 'VND', 'Pakistan': 'PKR', 'Bangladesh': 'BDT',
+  'Turkey': 'TRY', 'Saudi Arabia': 'SAR', 'United Arab Emirates': 'AED',
+  'Switzerland': 'CHF', 'Sweden': 'SEK', 'Norway': 'NOK', 'Denmark': 'DKK',
+  'Poland': 'PLN', 'Czech Republic': 'CZK', 'Hungary': 'HUF', 'Romania': 'RON',
+  'Israel': 'ILS', 'Egypt': 'EGP', 'Argentina': 'ARS', 'Colombia': 'COP',
+  'Chile': 'CLP', 'Peru': 'PEN', 'New Zealand': 'NZD', 'Taiwan': 'TWD',
+};
+
+export function getCurrencyForCountry(country: string): string {
+  return COUNTRY_CURRENCY_MAP[country] || 'USD';
 }
 
 // ═════════════════════════════════════════════════════════════════════════
