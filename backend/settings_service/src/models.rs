@@ -28,6 +28,9 @@ pub struct UserSettings {
     pub response_time_hours: String,
     pub product_preference: String,
     pub location_country: String,
+    pub willing_to_relocate: bool,
+    pub willing_to_travel: bool,
+    pub willing_to_appear_at_events: bool,
 }
 
 /// Partial update — only specified fields are changed.
@@ -57,6 +60,9 @@ pub struct UpdateSettingsRequest {
     pub response_time_hours: Option<String>,
     pub product_preference: Option<String>,
     pub location_country: Option<String>,
+    pub willing_to_relocate: Option<bool>,
+    pub willing_to_travel: Option<bool>,
+    pub willing_to_appear_at_events: Option<bool>,
 }
 
 impl UpdateSettingsRequest {

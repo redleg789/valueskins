@@ -57,3 +57,12 @@ ALTER TABLE user_settings
 
 ALTER TABLE user_settings
     ADD COLUMN IF NOT EXISTS location_country TEXT NOT NULL DEFAULT '';
+
+ALTER TABLE user_settings
+    ADD COLUMN IF NOT EXISTS willing_to_relocate BOOLEAN NOT NULL DEFAULT FALSE;
+
+ALTER TABLE user_settings
+    ADD COLUMN IF NOT EXISTS willing_to_travel BOOLEAN NOT NULL DEFAULT FALSE;
+
+ALTER TABLE user_settings
+    ADD COLUMN IF NOT EXISTS willing_to_appear_at_events BOOLEAN NOT NULL DEFAULT FALSE;
