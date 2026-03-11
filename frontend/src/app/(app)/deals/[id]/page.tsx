@@ -465,15 +465,20 @@ export default function DealRoomPage() {
               </div>
             )}
 
-            {/* Your Ask — read-only by default, editable only in counter mode */}
-            <div style={{ padding: '10px 12px', background: `${C.green}15`, borderRadius: 8, border: `1px solid ${C.green}30`, marginBottom: 10 }}>
-              <div style={{ fontSize: 10, color: C.textSecondary, marginBottom: 2 }}>Your Ask</div>
+            {/* Your Ask — always read-only; price changes only via Counter Offer */}
+            <div style={{ padding: '10px 12px', background: `${C.green}15`, borderRadius: 8, border: `1px solid ${C.green}30`, marginBottom: 10, position: 'relative' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
+                <span style={{ fontSize: 10, color: C.textSecondary }}>Your Ask</span>
+                <span style={{ fontSize: 9, color: C.textSecondary, background: `${C.border}`, padding: '1px 6px', borderRadius: 3 }}>
+                  {counterMode ? '✎ Editing via counter' : '🔒 Locked'}
+                </span>
+              </div>
               <div style={{ fontSize: 18, fontWeight: 700, color: C.green }}>
                 {yourAskCents > 0 ? formatCurrency(yourAskCents, displayCurrency) : 'Not set'}
               </div>
             </div>
 
-            {/* Counter-offer section */}
+            {/* Counter-offer section — only way to change the ask price */}
             {!counterMode ? (
               <button
                 onClick={() => {
@@ -487,7 +492,7 @@ export default function DealRoomPage() {
                   opacity: dealStatus === 'finalized' ? 0.5 : 1,
                 }}
               >
-                Counter Offer
+                ✎ Counter Offer — Change Your Ask
               </button>
             ) : (
               <div style={{ background: C.card, borderRadius: 8, padding: 12, border: `1px solid ${C.orange}40` }}>

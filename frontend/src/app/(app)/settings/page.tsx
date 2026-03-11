@@ -133,7 +133,40 @@ export default function SettingsPage() {
     posting_rules: [] as string[],
   });
 
-  const setA = <K extends keyof typeof attrs>(field: K, value: typeof attrs[K]) => setAttrs(prev => ({ ...prev, [field]: value }));
+  const attrsDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Persist creator preferences to backend (debounced)
+  const saveCreatorPreferences = useCallback((updated: typeof attrs) => {
+    if (attrsDebounce.current) clearTimeout(attrsDebounce.current);
+    attrsDebounce.current = setTimeout(async () => {
+      setSettingsSaving(true);
+      await api.settings.updateSettings({
+        allow_international_deals: updated.allow_international_deals,
+        payment_advance_pct: updated.payment_advance_pct,
+        payment_after_submission_pct: updated.payment_after_submission_pct,
+        payment_performance_pct: updated.payment_performance_pct,
+        payment_plan_negotiable: updated.payment_plan_negotiable,
+        creator_requires_advance: updated.creator_requires_advance,
+        creator_advance_pct_wanted: updated.creator_advance_pct_wanted,
+        creator_advance_negotiable: updated.creator_advance_negotiable,
+        posting_rules: updated.posting_rules,
+        exclusivity_available: updated.exclusivity_available,
+        willing_to_sign_nda: updated.willing_to_sign_nda,
+        willing_to_sign_usage_rights: updated.willing_to_sign_usage_rights,
+        min_deal_size_usd: updated.min_deal_size_usd,
+        response_time_hours: updated.response_time_hours,
+        product_preference: updated.product_preference,
+        location_country: updated.location_country,
+      });
+      setSettingsSaving(false);
+    }, 600);
+  }, []);
+
+  const setA = <K extends keyof typeof attrs>(field: K, value: typeof attrs[K]) => setAttrs(prev => {
+    const next = { ...prev, [field]: value };
+    saveCreatorPreferences(next);
+    return next;
+  });
 
   // Backend-synced settings
   const [backendSettings, setBackendSettings] = useState({
@@ -161,6 +194,26 @@ export default function SettingsPage() {
           notifications_enabled: res.data.notifications_enabled,
           profile_visibility: res.data.profile_visibility,
         });
+        // Restore creator preferences from backend
+        setAttrs(prev => ({
+          ...prev,
+          allow_international_deals: res.data!.allow_international_deals ?? prev.allow_international_deals,
+          payment_advance_pct: res.data!.payment_advance_pct ?? prev.payment_advance_pct,
+          payment_after_submission_pct: res.data!.payment_after_submission_pct ?? prev.payment_after_submission_pct,
+          payment_performance_pct: res.data!.payment_performance_pct ?? prev.payment_performance_pct,
+          payment_plan_negotiable: res.data!.payment_plan_negotiable ?? prev.payment_plan_negotiable,
+          creator_requires_advance: res.data!.creator_requires_advance ?? prev.creator_requires_advance,
+          creator_advance_pct_wanted: res.data!.creator_advance_pct_wanted ?? prev.creator_advance_pct_wanted,
+          creator_advance_negotiable: res.data!.creator_advance_negotiable ?? prev.creator_advance_negotiable,
+          posting_rules: res.data!.posting_rules ?? prev.posting_rules,
+          exclusivity_available: res.data!.exclusivity_available ?? prev.exclusivity_available,
+          willing_to_sign_nda: res.data!.willing_to_sign_nda ?? prev.willing_to_sign_nda,
+          willing_to_sign_usage_rights: res.data!.willing_to_sign_usage_rights ?? prev.willing_to_sign_usage_rights,
+          min_deal_size_usd: res.data!.min_deal_size_usd ?? prev.min_deal_size_usd,
+          response_time_hours: res.data!.response_time_hours ?? prev.response_time_hours,
+          product_preference: res.data!.product_preference ?? prev.product_preference,
+          location_country: res.data!.location_country ?? prev.location_country,
+        }));
         setSettingsLoaded(true);
       }
     }
