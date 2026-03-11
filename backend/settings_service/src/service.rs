@@ -25,7 +25,8 @@ const SELECT_ALL_COLS: &str = r#"
     payment_plan_negotiable,
     creator_requires_advance, creator_advance_pct_wanted, creator_advance_negotiable,
     posting_rules, exclusivity_available, willing_to_sign_nda, willing_to_sign_usage_rights,
-    min_deal_size_usd, response_time_hours, product_preference, location_country
+    min_deal_size_usd, response_time_hours, product_preference, location_country,
+    willing_to_relocate, willing_to_travel, willing_to_appear_at_events
 "#;
 
 impl SettingsService {
@@ -99,6 +100,9 @@ impl SettingsService {
                 response_time_hours = COALESCE($21, response_time_hours),
                 product_preference = COALESCE($22, product_preference),
                 location_country = COALESCE($23, location_country),
+                willing_to_relocate = COALESCE($24, willing_to_relocate),
+                willing_to_travel = COALESCE($25, willing_to_travel),
+                willing_to_appear_at_events = COALESCE($26, willing_to_appear_at_events),
                 updated_at = NOW()
             WHERE user_id = $1
             RETURNING {}"#,
@@ -129,6 +133,9 @@ impl SettingsService {
             .bind(req.response_time_hours.as_deref())
             .bind(req.product_preference.as_deref())
             .bind(req.location_country.as_deref())
+            .bind(req.willing_to_relocate)
+            .bind(req.willing_to_travel)
+            .bind(req.willing_to_appear_at_events)
             .fetch_one(&self.pool)
             .await?;
 

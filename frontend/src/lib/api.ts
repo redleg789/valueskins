@@ -821,6 +821,9 @@ interface UserSettingsData {
     response_time_hours?: string;
     product_preference?: string;
     location_country?: string;
+    willing_to_relocate?: boolean;
+    willing_to_travel?: boolean;
+    willing_to_appear_at_events?: boolean;
 }
 
 interface UpdateSettingsData {
@@ -847,6 +850,9 @@ interface UpdateSettingsData {
     response_time_hours?: string;
     product_preference?: string;
     location_country?: string;
+    willing_to_relocate?: boolean;
+    willing_to_travel?: boolean;
+    willing_to_appear_at_events?: boolean;
 }
 
 class ApiClient {

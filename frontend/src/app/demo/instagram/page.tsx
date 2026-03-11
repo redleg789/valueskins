@@ -1311,19 +1311,20 @@ export default function InstagramDemoPage() {
                                   {dealRoomPhase === 'offer' && (
                                     <>
                                       <div style={{ fontSize: '12px', color: C.textSecondary, marginBottom: '8px', lineHeight: 1.5 }}>
-                                        Brand offer has arrived. Set your ask and respond — prices are only visible inside this room.
+                                        Brand offer has arrived. Respond to their offer or submit a counter-offer — prices are only visible inside this room.
                                       </div>
-                                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '10px' }}>
+                                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '10px', position: 'relative' }}>
                                         <span style={{ fontSize: '13px', color: C.textMuted }}>Your ask ($):</span>
-                                        <input
-                                          type="text"
-                                          value={dealOfferAmount}
-                                          onChange={(e) => setDealOfferAmount(e.target.value.replace(/[^0-9]/g, ''))}
-                                          placeholder={creatorRate}
-                                          style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: '8px', color: C.text, padding: '6px 10px', fontSize: '15px', fontWeight: 700, fontFamily: 'inherit', outline: 'none', width: '100px' }}
-                                          onFocus={(e) => { e.currentTarget.style.borderColor = C.primary; }}
-                                          onBlur={(e) => { e.currentTarget.style.borderColor = C.border; }}
-                                        />
+                                        <div style={{ position: 'relative', flex: 1 }}>
+                                          <input
+                                            type="text"
+                                            disabled={true}
+                                            value={creatorRate}
+                                            placeholder={creatorRate}
+                                            style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: '8px', color: C.textSecondary, padding: '6px 10px', fontSize: '15px', fontWeight: 700, fontFamily: 'inherit', outline: 'none', width: '100px', opacity: 0.6, cursor: 'not-allowed' }}
+                                          />
+                                          <span style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', fontSize: '11px', color: C.textMuted, fontWeight: 600 }}>🔒 Locked</span>
+                                        </div>
                                       </div>
                                       <div style={{ fontSize: '10px', color: C.textMuted, marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={C.textMuted} strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -1331,7 +1332,7 @@ export default function InstagramDemoPage() {
                                       </div>
                                       <div style={{ display: 'flex', gap: '6px' }}>
                                         <button onClick={() => setDealRoomPhase('accepted')} style={{ flex: 1, background: '#2E7D32', border: 'none', padding: '8px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '12px' }}>Accept</button>
-                                        <button onClick={() => setDealRoomPhase('counter')} style={{ flex: 1, background: C.primary, border: 'none', padding: '8px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '12px' }}>Counter</button>
+                                        <button onClick={() => setDealRoomPhase('counter')} style={{ flex: 1, background: C.primary, border: 'none', padding: '8px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '12px' }}>✎ Counter Offer</button>
                                         <button onClick={() => setNegotiatingOpp(null)} style={{ flex: 1, background: 'none', border: `1px solid ${C.border}`, padding: '8px', borderRadius: '8px', color: C.textSecondary, fontWeight: 500, cursor: 'pointer', fontSize: '12px' }}>Decline</button>
                                       </div>
                                     </>
@@ -1339,19 +1340,22 @@ export default function InstagramDemoPage() {
 
                                   {dealRoomPhase === 'counter' && (
                                     <>
-                                      <div style={{ fontSize: '12px', color: C.textSecondary, marginBottom: '8px' }}>Send a counter-offer. Brand has 24h to respond or it auto-expires.</div>
+                                      <div style={{ fontSize: '12px', color: C.textSecondary, marginBottom: '8px' }}>Enter your counter-offer. Brand has 24h to respond or it auto-expires.</div>
+                                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '10px', padding: '8px 10px', background: C.card, borderRadius: '8px', border: `1px solid ${C.border}` }}>
+                                        <div style={{ fontSize: '11px', color: C.textMuted }}>Your current ask: <strong style={{ color: C.text }}>${creatorRate}</strong></div>
+                                      </div>
                                       <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '10px' }}>
-                                        <span style={{ fontSize: '13px', color: C.textMuted }}>Counter ($):</span>
+                                        <span style={{ fontSize: '13px', color: C.textMuted }}>New ask ($):</span>
                                         <input
                                           type="text"
                                           value={dealCounterAmount}
                                           onChange={(e) => setDealCounterAmount(e.target.value.replace(/[^0-9]/g, ''))}
-                                          placeholder="6500"
+                                          placeholder={creatorRate}
                                           style={{ background: C.bg, border: `1px solid ${C.primary}`, borderRadius: '8px', color: C.text, padding: '6px 10px', fontSize: '15px', fontWeight: 700, fontFamily: 'inherit', outline: 'none', width: '100px' }}
                                         />
                                       </div>
                                       <div style={{ display: 'flex', gap: '6px' }}>
-                                        <button onClick={() => setDealRoomPhase('offer')} style={{ flex: 1, background: C.primary, border: 'none', padding: '8px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '12px' }}>Send Counter</button>
+                                        <button onClick={() => { setDealRoomPhase('offer'); setDealOfferAmount(dealCounterAmount); }} style={{ flex: 1, background: C.primary, border: 'none', padding: '8px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '12px' }}>Send Counter</button>
                                         <button onClick={() => setDealRoomPhase('offer')} style={{ background: 'none', border: `1px solid ${C.border}`, padding: '8px 12px', borderRadius: '8px', color: C.textSecondary, cursor: 'pointer', fontSize: '12px' }}>Back</button>
                                       </div>
                                     </>
