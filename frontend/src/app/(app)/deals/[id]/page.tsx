@@ -502,12 +502,14 @@ export default function DealRoomPage() {
                   <input
                     type="number"
                     min="0"
+                    disabled={!counterMode}
                     value={counterAskCents > 0 ? (counterAskCents / 100).toFixed(0) : ''}
-                    onChange={(e) => setCounterAskCents(Math.round(Number(e.target.value) * 100))}
+                    onChange={(e) => counterMode && setCounterAskCents(Math.round(Number(e.target.value) * 100))}
                     placeholder="Amount"
                     style={{
                       flex: 1, padding: '8px 10px', background: C.bg, border: `1px solid ${C.border}`,
                       borderRadius: 6, color: C.text, fontSize: 16, fontWeight: 700, outline: 'none',
+                      opacity: counterMode ? 1 : 0.5, cursor: counterMode ? 'text' : 'not-allowed',
                     }}
                   />
                 </div>
