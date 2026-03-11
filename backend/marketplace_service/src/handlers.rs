@@ -1407,13 +1407,31 @@ pub async fn save_payment_preferences(
         }));
     }
 
-    // Verify participant
+    // Open transaction: participant check + upsert must be atomic.
+    // Without a transaction, a concurrent request could remove the user from
+    // the deal room between the SELECT and the INSERT/UPDATE (TOCTOU race).
+    let mut tx = match pool.begin().await {
+        Ok(tx) => tx,
+        Err(e) => {
+            error!("save_payment_preferences: failed to begin transaction: {:?}", e);
+            return HttpResponse::InternalServerError().finish();
+        }
+    };
+
+    // Verify participant — lock the deal room row to prevent removal racing
+    // with the upsert below.
     let is_participant: bool = sqlx::query_scalar(
-        "SELECT EXISTS(SELECT 1 FROM deal_rooms dr JOIN personas p ON p.id = dr.creator_persona_id WHERE dr.id = $1 AND (p.user_id = $2 OR dr.brand_user_id = $2))"
+        r#"SELECT EXISTS(
+            SELECT 1 FROM deal_rooms dr
+            JOIN personas p ON p.id = dr.creator_persona_id
+            WHERE dr.id = $1
+              AND (p.user_id = $2 OR dr.brand_user_id = $2)
+            FOR UPDATE
+        )"#
     )
     .bind(deal_room_id)
     .bind(user_id)
-    .fetch_one(pool.get_ref())
+    .fetch_one(&mut *tx)
     .await
     .unwrap_or(false);
 
@@ -1421,17 +1439,30 @@ pub async fn save_payment_preferences(
         return HttpResponse::Forbidden().json(serde_json::json!({ "error": "Not a participant" }));
     }
 
-    // Upsert 3-way split into deal_room_payment_preferences
-    match sqlx::query(
-        "INSERT INTO deal_room_payment_preferences (deal_room_id, advance_pct, after_submission_pct, performance_pct, performance_clause_enabled, updated_by_user_id)
-         VALUES ($1, $2, $3, $4, $5, $6)
-         ON CONFLICT (deal_room_id) DO UPDATE SET
-             advance_pct = EXCLUDED.advance_pct,
-             after_submission_pct = EXCLUDED.after_submission_pct,
-             performance_pct = EXCLUDED.performance_pct,
-             performance_clause_enabled = EXCLUDED.performance_clause_enabled,
-             updated_by_user_id = EXCLUDED.updated_by_user_id,
-             updated_at = NOW()"
+    // Upsert 3-way split into deal_room_payment_preferences.
+    //
+    // `version` uses optimistic concurrency: each successful update increments
+    // it. The client receives the new version and must supply it on the next
+    // write if conflict detection is needed (future: add `expected_version`
+    // parameter and reject if version != expected_version).
+    //
+    // ON CONFLICT targets the unique index on deal_room_id. Without the
+    // version increment, concurrent writes silently overwrite each other with
+    // no way to detect the conflict — a data-integrity hole in negotiation flows.
+    let new_version: i32 = match sqlx::query_scalar(
+        r#"INSERT INTO deal_room_payment_preferences
+               (deal_room_id, advance_pct, after_submission_pct, performance_pct,
+                performance_clause_enabled, updated_by_user_id, version)
+           VALUES ($1, $2, $3, $4, $5, $6, 1)
+           ON CONFLICT (deal_room_id) DO UPDATE SET
+               advance_pct               = EXCLUDED.advance_pct,
+               after_submission_pct      = EXCLUDED.after_submission_pct,
+               performance_pct           = EXCLUDED.performance_pct,
+               performance_clause_enabled= EXCLUDED.performance_clause_enabled,
+               updated_by_user_id        = EXCLUDED.updated_by_user_id,
+               updated_at                = NOW(),
+               version                   = deal_room_payment_preferences.version + 1
+           RETURNING version"#
     )
     .bind(deal_room_id)
     .bind(advance_pct)
@@ -1439,18 +1470,29 @@ pub async fn save_payment_preferences(
     .bind(performance_pct)
     .bind(body.performance_clause_enabled)
     .bind(user_id)
-    .execute(pool.get_ref())
+    .fetch_one(&mut *tx)
     .await
     {
-        Ok(_) => HttpResponse::Ok().json(serde_json::json!({
-            "deal_room_id": deal_room_id,
-            "advance_pct": advance_pct,
-            "after_submission_pct": after_submission_pct,
-            "performance_pct": performance_pct,
-            "performance_clause_enabled": body.performance_clause_enabled,
-        })),
-        Err(e) => { error!("save_payment_preferences: {:?}", e); HttpResponse::InternalServerError().finish() }
+        Ok(v) => v,
+        Err(e) => {
+            error!("save_payment_preferences: upsert failed: {:?}", e);
+            return HttpResponse::InternalServerError().finish();
+        }
+    };
+
+    if let Err(e) = tx.commit().await {
+        error!("save_payment_preferences: commit failed: {:?}", e);
+        return HttpResponse::InternalServerError().finish();
     }
+
+    HttpResponse::Ok().json(serde_json::json!({
+        "deal_room_id": deal_room_id,
+        "advance_pct": advance_pct,
+        "after_submission_pct": after_submission_pct,
+        "performance_pct": performance_pct,
+        "performance_clause_enabled": body.performance_clause_enabled,
+        "version": new_version,
+    }))
 }
 
 /// GET /deal-rooms/{id}/payment-preferences — fetch payment terms
@@ -1478,8 +1520,10 @@ pub async fn get_payment_preferences(
         return HttpResponse::Forbidden().json(serde_json::json!({ "error": "Not a participant" }));
     }
 
-    let prefs: Option<(i16, i16, i16, bool)> = sqlx::query_as(
-        "SELECT advance_pct, after_submission_pct, performance_pct, performance_clause_enabled
+    // Include `version` so the client can use it for optimistic concurrency
+    // on subsequent writes (compare against the version returned by save_payment_preferences).
+    let prefs: Option<(i16, i16, i16, bool, i32)> = sqlx::query_as(
+        "SELECT advance_pct, after_submission_pct, performance_pct, performance_clause_enabled, version
          FROM deal_room_payment_preferences
          WHERE deal_room_id = $1"
     )
@@ -1489,23 +1533,26 @@ pub async fn get_payment_preferences(
     .unwrap_or(None);
 
     match prefs {
-        Some((advance_pct, after_submission_pct, performance_pct, perf_enabled)) => {
+        Some((advance_pct, after_submission_pct, performance_pct, perf_enabled, version)) => {
             HttpResponse::Ok().json(serde_json::json!({
                 "deal_room_id": deal_room_id,
                 "advance_pct": advance_pct,
                 "after_submission_pct": after_submission_pct,
                 "performance_pct": performance_pct,
                 "performance_clause_enabled": perf_enabled,
+                "version": version,
             }))
         }
         None => {
-            // Default: 30% advance, 50% after submission, 20% performance
+            // Default: 30% advance, 50% after submission, 20% performance.
+            // version=0 signals "not yet saved" so clients know this is a default.
             HttpResponse::Ok().json(serde_json::json!({
                 "deal_room_id": deal_room_id,
                 "advance_pct": 30,
                 "after_submission_pct": 50,
                 "performance_pct": 20,
                 "performance_clause_enabled": false,
+                "version": 0,
             }))
         }
     }

@@ -287,17 +287,17 @@ class MarketplaceClient {
 class DealRoomsClient {
     constructor(private http: HttpClient) {}
 
-    async getChatHistory(dealRoomId: number, query?: { limit?: number; before_id?: number }) {
+    async getChatHistory(dealRoomId: number, query?: { limit?: number; after_id?: number }) {
         const params = new URLSearchParams();
         if (query?.limit) params.append('limit', query.limit.toString());
-        if (query?.before_id) params.append('before_id', query.before_id.toString());
+        if (query?.after_id) params.append('after_id', query.after_id.toString());
 
         const queryStr = params.toString();
         const endpoint = queryStr
             ? `/deal-rooms/${dealRoomId}/messages?${queryStr}`
             : `/deal-rooms/${dealRoomId}/messages`;
 
-        return this.http.request<{ messages: DealRoomMessage[]; deal_room_id: number }>(endpoint);
+        return this.http.request<{ messages: DealRoomMessage[]; deal_room_id: number; next_after_id: number | null }>(endpoint);
     }
 
     async sendMessage(dealRoomId: number, message: string, messageType?: string) {
@@ -374,6 +374,7 @@ interface PaymentPreferencesResponse {
     after_submission_pct: number;
     performance_pct: number;
     performance_clause_enabled: boolean;
+    version: number;
     your_ask_cents?: number;
     brand_offer_cents?: number;
     counter_history?: Array<{ amount: number; by: 'creator' | 'brand'; at: string }>;
