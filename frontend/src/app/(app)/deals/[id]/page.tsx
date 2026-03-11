@@ -478,7 +478,7 @@ export default function DealRoomPage() {
               </div>
             </div>
 
-            {/* Counter-offer section — only way to change the ask price */}
+            {/* Counter-offer section — ONLY way to change the ask price. Input hidden until clicked. */}
             {!counterMode ? (
               <button
                 onClick={() => {
