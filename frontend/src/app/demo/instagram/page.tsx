@@ -254,6 +254,17 @@ export default function InstagramDemoPage() {
   // Which ValueSkin the creator is viewing the marketplace for
   const [selectedMarketplaceSkin, setSelectedMarketplaceSkin] = useState<string | null>(null);
 
+  // Auto-select single skin if only one is owned
+  useEffect(() => {
+    const ownedProfessions = Object.values(valueSkins)
+      .map(entry => entry?.profession)
+      .filter(Boolean) as string[];
+
+    if (ownedProfessions.length === 1 && !selectedMarketplaceSkin) {
+      setSelectedMarketplaceSkin(ownedProfessions[0]);
+    }
+  }, [valueSkins, selectedMarketplaceSkin]);
+
   // Negotiation state — tracks which opportunity/creator has opened negotiation
   const [negotiatingOpp, setNegotiatingOpp] = useState<number | null>(null);
   const [negotiatingCreator, setNegotiatingCreator] = useState<number | null>(null);
@@ -1889,7 +1900,8 @@ export default function InstagramDemoPage() {
                     )}
                     </>)}
 
-                    {/* Open Campaigns — always visible below opportunities */}
+                    {/* Open Campaigns — only visible when a skin is selected */}
+                    {selectedMarketplaceSkin && (
                     <div style={{ marginTop:'24px', paddingTop:'20px', borderTop:`1px solid ${C.border}` }}>
                       <div style={{ fontSize:'12px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.6px', marginBottom:'14px' }}>Open Campaigns</div>
                         {liveCampaigns.filter(c=>c.status==='open').length === 0 ? (
@@ -1953,9 +1965,10 @@ export default function InstagramDemoPage() {
                           );
                         })}
                     </div>
+                    )}
 
                     {/* Deals You Missed — expired campaigns the creator could have applied to */}
-                    {missedDeals.length > 0 && (
+                    {selectedMarketplaceSkin && missedDeals.length > 0 && (
                       <div style={{ marginTop:'20px', paddingTop:'20px', borderTop:`1px solid ${C.border}` }}>
                         <div style={{ fontSize:'12px', fontWeight:700, color:'#ef4444', textTransform:'uppercase', letterSpacing:'0.6px', marginBottom:'14px', display:'flex', alignItems:'center', gap:'6px' }}>
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
