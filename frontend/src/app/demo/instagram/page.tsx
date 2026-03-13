@@ -211,6 +211,7 @@ export default function InstagramDemoPage() {
 
   // 3-slot ValueSkin state — persisted to localStorage
   const [valueSkins, setValueSkins] = useState<ValueSkinMap>({});
+  const [skinsLoaded, setSkinsLoaded] = useState(false);
 
   // Restore valueSkins from localStorage on mount
   useEffect(() => {
@@ -218,14 +219,16 @@ export default function InstagramDemoPage() {
       const stored = localStorage.getItem('vs_demo_value_skins');
       if (stored) setValueSkins(JSON.parse(stored));
     } catch (e) { /* ignore corrupted data */ }
+    setSkinsLoaded(true);
   }, []);
 
-  // Persist valueSkins to localStorage whenever they change
+  // Persist valueSkins to localStorage — only after initial load
   useEffect(() => {
+    if (!skinsLoaded) return;
     try {
       localStorage.setItem('vs_demo_value_skins', JSON.stringify(valueSkins));
     } catch (e) { /* quota exceeded — safe to ignore */ }
-  }, [valueSkins]);
+  }, [valueSkins, skinsLoaded]);
 
   // Which slot is being assigned in the Store modal
   const [assigningSlot, setAssigningSlot] = useState<ValueSkinSlot | null>(null);
@@ -236,19 +239,22 @@ export default function InstagramDemoPage() {
 
   // ValueSkin hide/delete management — also persisted
   const [hiddenSkins, setHiddenSkins] = useState<Set<ValueSkinSlot>>(new Set());
+  const [hiddenLoaded, setHiddenLoaded] = useState(false);
 
   useEffect(() => {
     try {
       const stored = localStorage.getItem('vs_demo_hidden_skins');
       if (stored) setHiddenSkins(new Set(JSON.parse(stored)));
     } catch (e) { /* ignore */ }
+    setHiddenLoaded(true);
   }, []);
 
   useEffect(() => {
+    if (!hiddenLoaded) return;
     try {
       localStorage.setItem('vs_demo_hidden_skins', JSON.stringify([...hiddenSkins]));
     } catch (e) { /* ignore */ }
-  }, [hiddenSkins]);
+  }, [hiddenSkins, hiddenLoaded]);
   const [showSkinManageModal, setShowSkinManageModal] = useState<ValueSkinSlot | null>(null);
 
   const { levels, isLoaded: levelsLoaded } = useLevelConfig();
@@ -312,6 +318,7 @@ export default function InstagramDemoPage() {
     advancePercent: number;
   };
   const [dealStates, setDealStates] = useState<Record<string, DealState>>({});
+  const [dealsLoaded, setDealsLoaded] = useState(false);
 
   // Restore dealStates from localStorage on mount
   useEffect(() => {
@@ -321,19 +328,17 @@ export default function InstagramDemoPage() {
         const parsed = JSON.parse(stored) as Record<string, DealState>;
         setDealStates(parsed);
       }
-    } catch (e) {
-      console.error('Failed to restore dealStates from localStorage:', e);
-    }
+    } catch (e) { /* ignore corrupted data */ }
+    setDealsLoaded(true);
   }, []);
 
-  // Persist dealStates to localStorage whenever it changes
+  // Persist dealStates to localStorage — only after initial load
   useEffect(() => {
+    if (!dealsLoaded) return;
     try {
       localStorage.setItem('vs_demo_deal_states', JSON.stringify(dealStates));
-    } catch (e) {
-      console.error('Failed to save dealStates to localStorage:', e);
-    }
-  }, [dealStates]);
+    } catch (e) { /* ignore */ }
+  }, [dealStates, dealsLoaded]);
 
   // Active deal key derived from current skin + opp
   const activeDealKey = selectedMarketplaceSkin && negotiatingOpp !== null ? `${selectedMarketplaceSkin}:${negotiatingOpp}` : null;
@@ -700,9 +705,11 @@ export default function InstagramDemoPage() {
     .filter(([, entry]) => entry?.profession)
     .map(([slot, entry]) => ({ slot: slot as ValueSkinSlot, profession: entry!.profession }));
 
-  // Opportunities for the currently selected skin
+  // Opportunities for the currently selected skin — sorted by match % descending
   const activeOpportunities = selectedMarketplaceSkin
     ? (OPPORTUNITIES_BY_PROFESSION[selectedMarketplaceSkin] ?? DEFAULT_OPPORTUNITIES)
+        .slice()
+        .sort((a, b) => parseInt(b.match) - parseInt(a.match))
     : [];
 
   // Auto-expire campaigns past deadline
