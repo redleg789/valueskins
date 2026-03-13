@@ -924,3 +924,26 @@ If you can identify a problem, you fix it. Period. There is no "identify now, fi
 Every deliverable must be **complete on first pass**. If you find 16 edge cases, fix all 16 AND fix the architecture that caused them. If you find 6 bottlenecks, resolve all 6 in code — not in a markdown recommendations list.
 
 **If it's not 100/100, you're not done.**
+
+---
+
+## Things Left To Do Later
+
+### 1. Counter-offer lock: apply EVERYWHERE, not just one page
+- The demo page (`frontend/src/app/demo/instagram/page.tsx`) was fixed — "Your ask" input is now locked until Counter is clicked.
+- The production deal room (`frontend/src/app/(app)/deals/[id]/page.tsx`) already had triple-safety locking.
+- **Rule going forward**: Any change requested by the user must be applied to ALL pages that have the same UI pattern. Never fix one page and leave duplicates broken. Treat demo and production as the same codebase — no distinction.
+
+### 2. Settings toggles not yet verified end-to-end on live
+- Backend columns added: `willing_to_relocate`, `willing_to_travel`, `willing_to_appear_at_events` (migration + Rust models + service)
+- Frontend toggles wired to `setA()` which debounce-saves to backend
+- DB migration needs to be run on production Postgres for columns to exist
+- Toggles to verify: "Willing to relocate", "Willing to travel", "Available for live events", "Open to brand exclusivity", "Willing to sign NDA", "Willing to grant usage rights"
+
+### 3. International deals + 3-way payment split — verify on live
+- Settings page has: "Open to international deals" toggle, 3-slider payment split (advance/after_submission/performance), "Payment split is negotiable" toggle
+- Backend has CHECK constraint: `advance + after_submission + performance = 100`
+- Needs live verification that sliders persist and reload correctly
+
+### 4. Hard rule: demo = production
+- User does NOT distinguish between demo and prod pages. Any UI fix must be applied uniformly across ALL pages containing the same pattern. Search the entire codebase before declaring done.

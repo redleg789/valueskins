@@ -239,6 +239,15 @@ export default function InstagramDemoPage() {
   const [showBrandStoreModal, setShowBrandStoreModal] = useState(false);
   const [brandStoreCategory, setBrandStoreCategory] = useState<string | null>(null);
 
+  // Brand ValuSkin as marketing — brands can promote products/campaigns via their skin
+  const [brandSkinMode, setBrandSkinMode] = useState<'static' | 'promo'>('static');
+  const [brandPromoText, setBrandPromoText] = useState('');
+  const [brandPromoUrl, setBrandPromoUrl] = useState('');
+
+  // Creator ValuSkin showcase — creators can add a pitch to their skin
+  const [creatorSkinMode, setCreatorSkinMode] = useState<'static' | 'showcase'>('static');
+  const [creatorPitchText, setCreatorPitchText] = useState('');
+
   // Which ValueSkin the creator is viewing the marketplace for
   const [selectedMarketplaceSkin, setSelectedMarketplaceSkin] = useState<string | null>(null);
 
@@ -246,23 +255,70 @@ export default function InstagramDemoPage() {
   const [negotiatingOpp, setNegotiatingOpp] = useState<number | null>(null);
   const [negotiatingCreator, setNegotiatingCreator] = useState<number | null>(null);
 
-  // Deal room state for active negotiations
+  // Per-deal state map: key = `${skin}:${oppIndex}`, preserves progress when switching skins
   type DealRoomPhase = 'brief' | 'offer' | 'counter' | 'chatroom' | 'checklist' | 'accepted' | 'softhold';
-  const [dealRoomPhase, setDealRoomPhase] = useState<DealRoomPhase>('brief');
-  const [dealIntent, setDealIntent] = useState<'explore' | 'campaign' | 'long-term'>('campaign');
-  const [dealBriefFilled, setDealBriefFilled] = useState(false);
-  const [dealBriefTitle, setDealBriefTitle] = useState('');
-  const [dealOfferAmount, setDealOfferAmount] = useState('');
-  const [dealCounterAmount, setDealCounterAmount] = useState('');
-  // Chat messages for the deal room
-  const [chatMessages, setChatMessages] = useState<{id: number; sender: 'me' | 'brand'; text: string; time: string}[]>([
-    { id: 1, sender: 'brand', text: 'Hey! Excited to work together on this campaign.', time: 'just now' },
-  ]);
-  const [chatInput, setChatInput] = useState('');
-  const [performanceClause, setPerformanceClause] = useState(false);
-  const [advancePercent, setAdvancePercent] = useState(70);
-  // Simulated offer expiry: 23h 47m remaining
-  const [offerExpiresLabel] = useState('23h 47m');
+  type DealState = {
+    phase: DealRoomPhase;
+    intent: 'explore' | 'campaign' | 'long-term';
+    briefFilled: boolean;
+    briefTitle: string;
+    offerAmount: string;
+    counterAmount: string;
+    chatMessages: { id: number; sender: 'me' | 'brand'; text: string; time: string; seen?: boolean }[];
+    chatInput: string;
+    performanceClause: boolean;
+    advancePercent: number;
+  };
+  const [dealStates, setDealStates] = useState<Record<string, DealState>>({});
+
+  // Active deal key derived from current skin + opp
+  const activeDealKey = selectedMarketplaceSkin && negotiatingOpp !== null ? `${selectedMarketplaceSkin}:${negotiatingOpp}` : null;
+  const getOrCreateDeal = (key: string): DealState => dealStates[key] ?? {
+    phase: 'brief', intent: 'campaign', briefFilled: false, briefTitle: '', offerAmount: '', counterAmount: '',
+    chatMessages: [{ id: 1, sender: 'brand' as const, text: 'Hey! Excited to work together on this campaign.', time: 'just now', seen: false }],
+    chatInput: '', performanceClause: false, advancePercent: 70,
+  };
+  const activeDeal = activeDealKey ? getOrCreateDeal(activeDealKey) : null;
+  const updateDeal = (key: string, patch: Partial<DealState>) => {
+    setDealStates(prev => ({ ...prev, [key]: { ...getOrCreateDeal(key), ...prev[key], ...patch } }));
+  };
+
+  // Convenience accessors for the active deal (backward compat with existing render code)
+  const dealRoomPhase = activeDeal?.phase ?? 'brief';
+  const setDealRoomPhase = (p: DealRoomPhase) => { if (activeDealKey) updateDeal(activeDealKey, { phase: p }); };
+  const dealIntent = activeDeal?.intent ?? 'campaign';
+  const setDealIntent = (i: 'explore' | 'campaign' | 'long-term') => { if (activeDealKey) updateDeal(activeDealKey, { intent: i }); };
+  const dealBriefFilled = activeDeal?.briefFilled ?? false;
+  const setDealBriefFilled = (v: boolean) => { if (activeDealKey) updateDeal(activeDealKey, { briefFilled: v }); };
+  const dealBriefTitle = activeDeal?.briefTitle ?? '';
+  const setDealBriefTitle = (v: string) => { if (activeDealKey) updateDeal(activeDealKey, { briefTitle: v }); };
+  const dealOfferAmount = activeDeal?.offerAmount ?? '';
+  const setDealOfferAmount = (v: string) => { if (activeDealKey) updateDeal(activeDealKey, { offerAmount: v }); };
+  const dealCounterAmount = activeDeal?.counterAmount ?? '';
+  const setDealCounterAmount = (v: string) => { if (activeDealKey) updateDeal(activeDealKey, { counterAmount: v }); };
+  const chatMessages = activeDeal?.chatMessages ?? [];
+  const setChatMessages = (fn: ((prev: DealState['chatMessages']) => DealState['chatMessages']) | DealState['chatMessages']) => {
+    if (!activeDealKey) return;
+    setDealStates(prev => {
+      const deal = { ...getOrCreateDeal(activeDealKey), ...prev[activeDealKey] };
+      const newMsgs = typeof fn === 'function' ? fn(deal.chatMessages) : fn;
+      return { ...prev, [activeDealKey]: { ...deal, chatMessages: newMsgs } };
+    });
+  };
+  const chatInput = activeDeal?.chatInput ?? '';
+  const setChatInput = (v: string) => { if (activeDealKey) updateDeal(activeDealKey, { chatInput: v }); };
+  const performanceClause = activeDeal?.performanceClause ?? false;
+  const setPerformanceClause = (v: boolean) => { if (activeDealKey) updateDeal(activeDealKey, { performanceClause: v }); };
+  const advancePercent = activeDeal?.advancePercent ?? 70;
+  const setAdvancePercent = (v: number) => { if (activeDealKey) updateDeal(activeDealKey, { advancePercent: v }); };
+  const offerExpiresLabel = '23h 47m';
+
+  // Active deals indicator: count of in-progress deals across all skins
+  const activeDeals = Object.entries(dealStates).filter(([, d]) => d.phase !== 'brief');
+
+  // Tooltip state for intent/campaign type badges
+  const [hoveredTooltip, setHoveredTooltip] = useState<string | null>(null);
+
   // Energy state (creator)
   const [creatorEnergy, setCreatorEnergy] = useState<'available' | 'limited' | 'burnout' | 'pause'>('available');
   // Price band (creator public signal)
@@ -404,12 +460,13 @@ export default function InstagramDemoPage() {
     description: string;
     requiredProfessions: string[];
     minLevel: number;
+    maxLevel: number;
     budget: string;
     deadline: string;
     location: string;
     nonNegotiables: string[];
     deliverables: string;
-    status: 'open' | 'closed';
+    status: 'open' | 'closed' | 'expired';
     applicants: number;
   };
 
@@ -429,9 +486,9 @@ export default function InstagramDemoPage() {
   const BC_NAME = 'vs_demo_sync';
 
   const defaultCampaigns: Campaign[] = [
-    { id:1, brandProfession:'Software Engineer', title:'React Expert for SaaS Launch', description:'We need an authentic Software Engineer to demo our dev tool to a tech audience. 2x Reels.', requiredProfessions:['Software Engineer','Data Scientist'], minLevel:2, budget:'5000', deadline:'2026-03-15', location:'USA', nonNegotiables:['NDA required','Usage rights: 90 days'], deliverables:'2x Instagram Reels', status:'open', applicants:3 },
-    { id:2, brandProfession:'UX/UI Designer', title:'Mobile App Design Review', description:'UI/UX designer to review and showcase our new mobile app. 1x Reel, 3x Stories.', requiredProfessions:['UX/UI Designer','Product Manager'], minLevel:1, budget:'4500', deadline:'2026-03-20', location:'Remote', nonNegotiables:['Exclusivity: 30 days'], deliverables:'1x Reel, 3x Stories', status:'open', applicants:1 },
-    { id:3, brandProfession:'Fitness Coach', title:'Spring Fitness Challenge', description:'Fitness coach to lead a 7-day challenge campaign. 3x Reels.', requiredProfessions:['Fitness Coach','Nutritionist'], minLevel:1, budget:'3800', deadline:'2026-04-01', location:'Remote', nonNegotiables:[], deliverables:'3x Instagram Reels', status:'open', applicants:2 },
+    { id:1, brandProfession:'Software Engineer', title:'React Expert for SaaS Launch', description:'We need an authentic Software Engineer to demo our dev tool to a tech audience. 2x Reels.', requiredProfessions:['Software Engineer','Data Scientist'], minLevel:2, maxLevel:5, budget:'5000', deadline:'2026-03-15', location:'USA', nonNegotiables:['NDA required','Usage rights: 90 days'], deliverables:'2x Instagram Reels', status:'expired', applicants:3 },
+    { id:2, brandProfession:'UX/UI Designer', title:'Mobile App Design Review', description:'UI/UX designer to review and showcase our new mobile app. 1x Reel, 3x Stories.', requiredProfessions:['UX/UI Designer','Product Manager'], minLevel:1, maxLevel:5, budget:'4500', deadline:'2026-03-20', location:'Remote', nonNegotiables:['Exclusivity: 30 days'], deliverables:'1x Reel, 3x Stories', status:'open', applicants:1 },
+    { id:3, brandProfession:'Fitness Coach', title:'Spring Fitness Challenge', description:'Fitness coach to lead a 7-day challenge campaign. 3x Reels.', requiredProfessions:['Fitness Coach','Nutritionist'], minLevel:1, maxLevel:3, budget:'3800', deadline:'2026-04-01', location:'Remote', nonNegotiables:[], deliverables:'3x Instagram Reels', status:'open', applicants:2 },
   ];
 
   const loadCampaigns = (): Campaign[] => {
@@ -453,6 +510,7 @@ export default function InstagramDemoPage() {
   const [newCampaignDeadline, setNewCampaignDeadline] = useState('');
   const [newCampaignProfessions, setNewCampaignProfessions] = useState<string[]>([]);
   const [newCampaignMinLevel, setNewCampaignMinLevel] = useState(1);
+  const [newCampaignMaxLevel, setNewCampaignMaxLevel] = useState(5);
   const [newCampaignLocation, setNewCampaignLocation] = useState('');
   const [newCampaignDeliverables, setNewCampaignDeliverables] = useState('');
   const [newCampaignNonNeg, setNewCampaignNonNeg] = useState<string[]>([]);
@@ -581,6 +639,17 @@ export default function InstagramDemoPage() {
   // Opportunities for the currently selected skin
   const activeOpportunities = selectedMarketplaceSkin
     ? (OPPORTUNITIES_BY_PROFESSION[selectedMarketplaceSkin] ?? DEFAULT_OPPORTUNITIES)
+    : [];
+
+  // Auto-expire campaigns past deadline
+  const today = new Date().toISOString().split('T')[0];
+  const liveCampaigns = campaigns.map(c => {
+    if (c.status === 'open' && c.deadline && c.deadline < today) return { ...c, status: 'expired' as const };
+    return c;
+  });
+  // Deals the creator missed (expired campaigns matching their skins)
+  const missedDeals = selectedMarketplaceSkin
+    ? liveCampaigns.filter(c => c.status === 'expired' && c.requiredProfessions.includes(selectedMarketplaceSkin))
     : [];
 
   return (
@@ -1171,7 +1240,7 @@ export default function InstagramDemoPage() {
                       Marketplace
                       <span style={{ fontSize: '11px', fontWeight: 600, color: '#2E7D32', background: 'rgba(46,125,50,0.1)', padding: '3px 8px', borderRadius: '6px' }}>Creator</span>
                     </div>
-                    <button onClick={() => { setMarketplaceRole('none'); setSelectedMarketplaceSkin(null); setNegotiatingOpp(null); setDealRoomPhase('brief'); }} style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: '6px', padding: '4px 10px', fontSize: '11px', color: C.textSecondary, cursor: 'pointer' }}>Switch Role</button>
+                    <button onClick={() => { setMarketplaceRole('none'); setSelectedMarketplaceSkin(null); setNegotiatingOpp(null); }} style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: '6px', padding: '4px 10px', fontSize: '11px', color: C.textSecondary, cursor: 'pointer' }}>Switch Role</button>
                   </div>
                   <div style={{ padding: '16px' }}>
                     {(<>
@@ -1184,6 +1253,7 @@ export default function InstagramDemoPage() {
                           const abbr = badge?.abbreviation ?? profession.split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0, 3);
                           const badgeColor = badge?.color ?? SLOT_COLORS[slot];
                           const isActive = selectedMarketplaceSkin === profession;
+                          const skinDeals = Object.entries(dealStates).filter(([k, d]) => k.startsWith(`${profession}:`) && d.phase !== 'brief');
                           return (
                             <button
                               key={slot}
@@ -1194,8 +1264,12 @@ export default function InstagramDemoPage() {
                                 background: isActive ? `${badgeColor}20` : C.card,
                                 border: `2px solid ${isActive ? badgeColor : C.border}`,
                                 transition: 'all 0.15s',
+                                position: 'relative',
                               }}
                             >
+                              {skinDeals.length > 0 && (
+                                <span style={{ position: 'absolute', top: -4, right: -4, width: 16, height: 16, borderRadius: '50%', background: '#ef4444', color: '#fff', fontSize: 9, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{skinDeals.length}</span>
+                              )}
                               <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '22px', height: '22px', borderRadius: '5px', background: badgeColor, color: '#fff', fontSize: '8px', fontWeight: 700, flexShrink: 0 }}>{abbr}</span>
                               <div style={{ textAlign: 'left' }}>
                                 <div style={{ fontSize: '13px', fontWeight: 600, color: isActive ? C.text : C.textSecondary }}>{profession}</div>
@@ -1206,6 +1280,51 @@ export default function InstagramDemoPage() {
                         })}
                       </div>
                     </div>
+
+                    {/* Creator Skin Showcase — add pitch to your skin */}
+                    {selectedMarketplaceSkin && (
+                      <div style={{ background:C.card, borderRadius:10, padding:'12px 14px', marginBottom:14, border:`1px solid ${C.border}` }}>
+                        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6 }}>
+                          <span style={{ fontSize:10, fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.5px' }}>Your Skin Showcase</span>
+                          <div style={{ display:'flex', gap:4 }}>
+                            <button onClick={()=>setCreatorSkinMode('static')} style={{ padding:'3px 8px', borderRadius:4, fontSize:10, fontWeight:600, cursor:'pointer', background:creatorSkinMode==='static'?C.primary:C.bg, color:creatorSkinMode==='static'?'#fff':C.textSecondary, border:`1px solid ${creatorSkinMode==='static'?C.primary:C.border}` }}>Static</button>
+                            <button onClick={()=>setCreatorSkinMode('showcase')} style={{ padding:'3px 8px', borderRadius:4, fontSize:10, fontWeight:600, cursor:'pointer', background:creatorSkinMode==='showcase'?'#8b5cf6':C.bg, color:creatorSkinMode==='showcase'?'#fff':C.textSecondary, border:`1px solid ${creatorSkinMode==='showcase'?'#8b5cf6':C.border}` }}>Showcase</button>
+                          </div>
+                        </div>
+                        {creatorSkinMode === 'showcase' && (
+                          <>
+                            <div style={{ fontSize:10, color:C.textMuted, marginBottom:6 }}>Brands see this when they view your {selectedMarketplaceSkin} skin — tell them why they should collab with you</div>
+                            <textarea
+                              value={creatorPitchText}
+                              onChange={e=>setCreatorPitchText(e.target.value)}
+                              placeholder={`e.g. "I've built products used by 50K+ devs. Let me authentically showcase yours."`}
+                              rows={2}
+                              style={{ width:'100%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:6, color:C.text, padding:'6px 8px', fontSize:12, fontFamily:'inherit', outline:'none', resize:'none', boxSizing:'border-box' as const }}
+                            />
+                            {creatorPitchText && (
+                              <div style={{ marginTop:6, padding:6, background:'rgba(139,92,246,0.08)', border:'1px solid rgba(139,92,246,0.2)', borderRadius:6, fontSize:11, color:C.text }}>
+                                <span style={{ fontWeight:700, color:'#8b5cf6', fontSize:10 }}>Preview for brands:</span> {creatorPitchText}
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Active Deals Banner */}
+                    {activeDeals.length > 0 && (
+                      <div style={{ background:'rgba(245,158,11,0.06)', border:'1px solid rgba(245,158,11,0.2)', borderRadius:10, padding:'10px 14px', marginBottom:14, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                          <span style={{ fontSize:16 }}>&#128293;</span>
+                          <div>
+                            <div style={{ fontSize:12, fontWeight:700, color:C.text }}>{activeDeals.length} Active Deal{activeDeals.length>1?'s':''}</div>
+                            <div style={{ fontSize:10, color:C.textSecondary }}>
+                              {activeDeals.map(([k]) => { const [skin] = k.split(':'); return skin; }).filter((v,i,a)=>a.indexOf(v)===i).join(', ')}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Matching Rule Banner */}
                     <div style={{ background: 'rgba(46,125,50,0.06)', border: `1px solid rgba(46,125,50,0.15)`, borderRadius: '10px', padding: '12px 16px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -1304,8 +1423,39 @@ export default function InstagramDemoPage() {
                                     </div>
                                   )}
                                   <div style={{ fontSize: '11px', color: C.textMuted, marginBottom: '10px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                                    <span style={{ background: C.bg, padding: '2px 8px', borderRadius: '4px', border: `1px solid ${C.border}` }}>Intent: <strong style={{ color: C.text }}>Campaign</strong></span>
-                                    <span style={{ background: C.bg, padding: '2px 8px', borderRadius: '4px', border: `1px solid ${C.border}` }}>Type: <strong style={{ color: C.text }}>{brandCampaignType}</strong></span>
+                                    <span
+                                      onMouseEnter={() => setHoveredTooltip('intent')}
+                                      onMouseLeave={() => setHoveredTooltip(null)}
+                                      style={{ background: C.bg, padding: '2px 8px', borderRadius: '4px', border: `1px solid ${C.border}`, cursor: 'help', position: 'relative' }}
+                                    >
+                                      Intent: <strong style={{ color: C.text }}>Campaign</strong>
+                                      {hoveredTooltip === 'intent' && (
+                                        <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: 4, background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, padding: '8px 10px', width: 220, zIndex: 10, fontSize: 11, lineHeight: 1.5, color: C.text, boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}>
+                                          <strong>What is Intent?</strong><br/>
+                                          How the brand wants to work with you:<br/>
+                                          <span style={{ color: '#8b5cf6' }}>Explore</span> — just browsing, no commitment<br/>
+                                          <span style={{ color: C.primary }}>Campaign</span> — specific paid project<br/>
+                                          <span style={{ color: '#22c55e' }}>Long-term</span> — ongoing partnership/retainer
+                                        </div>
+                                      )}
+                                    </span>
+                                    <span
+                                      onMouseEnter={() => setHoveredTooltip('campaign_type')}
+                                      onMouseLeave={() => setHoveredTooltip(null)}
+                                      style={{ background: C.bg, padding: '2px 8px', borderRadius: '4px', border: `1px solid ${C.border}`, cursor: 'help', position: 'relative' }}
+                                    >
+                                      Type: <strong style={{ color: C.text }}>{brandCampaignType}</strong>
+                                      {hoveredTooltip === 'campaign_type' && (
+                                        <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: 4, background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, padding: '8px 10px', width: 240, zIndex: 10, fontSize: 11, lineHeight: 1.5, color: C.text, boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}>
+                                          <strong>Campaign Types:</strong><br/>
+                                          <span style={{ color: '#8b5cf6' }}>Product Review</span> — showcase/review their product<br/>
+                                          <span style={{ color: C.primary }}>Sponsored Content</span> — branded post/reel<br/>
+                                          <span style={{ color: '#22c55e' }}>Brand Ambassador</span> — represent the brand over time<br/>
+                                          <span style={{ color: '#f59e0b' }}>UGC</span> — user-generated content for their ads<br/>
+                                          <span style={{ color: '#ef4444' }}>Affiliate</span> — earn per sale/click you drive
+                                        </div>
+                                      )}
+                                    </span>
                                   </div>
 
                                   {dealRoomPhase === 'offer' && (
@@ -1379,13 +1529,19 @@ export default function InstagramDemoPage() {
                                       <div style={{ display: 'flex', gap: '8px', minHeight: '340px' }}>
                                         {/* Chat area */}
                                         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: C.bg, borderRadius: '8px', border: `1px solid ${C.border}`, overflow: 'hidden' }}>
-                                          <div style={{ padding: '8px 10px', borderBottom: `1px solid ${C.border}`, fontSize: '11px', fontWeight: 700, color: C.primary, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#2E7D32' }} />
-                                            Live Chat
+                                          <div style={{ padding: '8px 10px', borderBottom: `1px solid ${C.border}`, fontSize: '11px', fontWeight: 700, color: C.primary, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                              <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#2E7D32' }} />
+                                              Deal Room Chat
+                                            </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                              <span style={{ fontSize: 9, color: C.textMuted, fontWeight: 400 }}>All messages are recorded and legally documented</span>
+                                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={C.textMuted} strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                            </div>
                                           </div>
                                           {/* Messages */}
                                           <div style={{ flex: 1, overflowY: 'auto', padding: '8px', display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '220px' }}>
-                                            {chatMessages.map(msg => (
+                                            {chatMessages.map((msg, mi) => (
                                               <div key={msg.id} style={{ display: 'flex', justifyContent: msg.sender === 'me' ? 'flex-end' : 'flex-start' }}>
                                                 <div style={{
                                                   maxWidth: '80%',
@@ -1397,7 +1553,19 @@ export default function InstagramDemoPage() {
                                                   lineHeight: 1.4,
                                                 }}>
                                                   {msg.text}
-                                                  <div style={{ fontSize: '9px', color: msg.sender === 'me' ? 'rgba(255,255,255,0.5)' : C.textMuted, marginTop: '2px', textAlign: 'right' }}>{msg.time}</div>
+                                                  <div style={{ fontSize: '9px', color: msg.sender === 'me' ? 'rgba(255,255,255,0.5)' : C.textMuted, marginTop: '2px', textAlign: 'right', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 3 }}>
+                                                    {msg.time}
+                                                    {msg.sender === 'me' && (
+                                                      <span style={{ display: 'inline-flex', gap: 1 }}>
+                                                        {/* Double check = seen, single = delivered */}
+                                                        {(msg.seen || mi < chatMessages.length - 1) ? (
+                                                          <span style={{ color: '#4fc3f7', fontWeight: 700, fontSize: 10 }}>✓✓</span>
+                                                        ) : (
+                                                          <span style={{ color: 'rgba(255,255,255,0.4)', fontWeight: 700, fontSize: 10 }}>✓</span>
+                                                        )}
+                                                      </span>
+                                                    )}
+                                                  </div>
                                                 </div>
                                               </div>
                                             ))}
@@ -1406,9 +1574,11 @@ export default function InstagramDemoPage() {
                                           <form onSubmit={(e) => {
                                             e.preventDefault();
                                             if (!chatInput.trim()) return;
-                                            setChatMessages(prev => [...prev, { id: Date.now(), sender: 'me', text: chatInput.trim(), time: 'just now' }]);
+                                            const now = new Date();
+                                            const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                                            setChatMessages(prev => [...prev, { id: Date.now(), sender: 'me', text: chatInput.trim(), time: timeStr, seen: false }]);
                                             setChatInput('');
-                                            // Simulate brand reply after 1.5s
+                                            // Mark previous messages as seen when brand replies, then add reply
                                             setTimeout(() => {
                                               const replies = [
                                                 'Sounds good! Let me check with my team.',
@@ -1417,7 +1587,12 @@ export default function InstagramDemoPage() {
                                                 'Perfect, I\'ll update the brief.',
                                                 'That works for us. Ready to proceed?',
                                               ];
-                                              setChatMessages(prev => [...prev, { id: Date.now(), sender: 'brand', text: replies[Math.floor(Math.random() * replies.length)], time: 'just now' }]);
+                                              const replyTime = new Date();
+                                              const replyTimeStr = replyTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                                              setChatMessages(prev => [
+                                                ...prev.map(m => m.sender === 'me' ? { ...m, seen: true } : m),
+                                                { id: Date.now(), sender: 'brand' as const, text: replies[Math.floor(Math.random() * replies.length)], time: replyTimeStr, seen: false },
+                                              ]);
                                             }, 1500);
                                           }} style={{ display: 'flex', gap: '4px', padding: '6px', borderTop: `1px solid ${C.border}` }}>
                                             <input
@@ -1551,7 +1726,7 @@ export default function InstagramDemoPage() {
                                           <div style={{ fontSize:'11px', color:C.textMuted, marginBottom:'2px' }}>Earnings</div>
                                           <div style={{ fontSize:'22px', fontWeight:800, color:'#2E7D32' }}>${parseInt(dealCounterAmount || '5000').toLocaleString()}</div>
                                         </div>
-                                        <button onClick={() => { setNegotiatingOpp(null); setDealRoomPhase('brief'); setCreatorDealLifecycle('checklist'); setDealUploadSimulated(false); setChatMessages([{ id: 1, sender: 'brand', text: 'Hey! Excited to work together on this campaign.', time: 'just now' }]); setChatInput(''); }} style={{ width:'100%', background:C.primary, border:'none', padding:'10px', borderRadius:'8px', color:'#fff', fontWeight:600, cursor:'pointer', fontSize:'13px' }}>
+                                        <button onClick={() => { if (activeDealKey) { setDealStates(prev => { const next = {...prev}; delete next[activeDealKey]; return next; }); } setNegotiatingOpp(null); setCreatorDealLifecycle('checklist'); setDealUploadSimulated(false); }} style={{ width:'100%', background:C.primary, border:'none', padding:'10px', borderRadius:'8px', color:'#fff', fontWeight:600, cursor:'pointer', fontSize:'13px' }}>
                                           Withdraw to Bank
                                         </button>
                                       </div>
@@ -1573,9 +1748,9 @@ export default function InstagramDemoPage() {
                     {/* Open Campaigns — always visible below opportunities */}
                     <div style={{ marginTop:'24px', paddingTop:'20px', borderTop:`1px solid ${C.border}` }}>
                       <div style={{ fontSize:'12px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.6px', marginBottom:'14px' }}>Open Campaigns</div>
-                        {campaigns.filter(c=>c.status==='open').length === 0 ? (
+                        {liveCampaigns.filter(c=>c.status==='open').length === 0 ? (
                           <div style={{ textAlign:'center', padding:'40px 20px', color:C.textMuted }}>No open campaigns yet. Check back soon.</div>
-                        ) : campaigns.filter(c=>c.status==='open').map((c,i) => {
+                        ) : liveCampaigns.filter(c=>c.status==='open').map((c,i) => {
                           const myProfs = Object.values(valueSkins).map(v=>v?.profession).filter(Boolean) as string[];
                           const profMatch = c.requiredProfessions.some(p => myProfs.includes(p));
                           const alreadyApplied = sharedApplications.some(a=>a.campaignId===c.id && a.creatorHandle==="@creator_demo");
@@ -1634,6 +1809,30 @@ export default function InstagramDemoPage() {
                           );
                         })}
                     </div>
+
+                    {/* Deals You Missed — expired campaigns the creator could have applied to */}
+                    {missedDeals.length > 0 && (
+                      <div style={{ marginTop:'20px', paddingTop:'20px', borderTop:`1px solid ${C.border}` }}>
+                        <div style={{ fontSize:'12px', fontWeight:700, color:'#ef4444', textTransform:'uppercase', letterSpacing:'0.6px', marginBottom:'14px', display:'flex', alignItems:'center', gap:'6px' }}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                          Deals You Missed
+                        </div>
+                        {missedDeals.map((c,i) => (
+                          <div key={i} style={{ background:C.card, borderRadius:'12px', padding:'14px', marginBottom:'10px', border:'1px solid rgba(239,68,68,0.2)', opacity:0.7 }}>
+                            <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'6px' }}>
+                              <span style={{ fontSize:'13px', fontWeight:700, color:C.text }}>{c.title}</span>
+                              <span style={{ fontSize:'10px', color:'#ef4444', fontWeight:600, background:'rgba(239,68,68,0.1)', padding:'2px 8px', borderRadius:'4px' }}>Expired</span>
+                            </div>
+                            <div style={{ fontSize:'11px', color:C.textSecondary, marginBottom:'6px' }}>{c.description}</div>
+                            <div style={{ fontSize:'10px', color:C.textMuted, display:'flex', gap:'10px' }}>
+                              <span>Budget: ${c.budget}</span>
+                              <span>Deadline was: {c.deadline}</span>
+                              <span>{c.applicants} applied</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
 
                     {/* My Applications — always visible below campaigns */}
                     <div style={{ marginTop:'20px', paddingTop:'20px', borderTop:`1px solid ${C.border}` }}>
@@ -1696,12 +1895,21 @@ export default function InstagramDemoPage() {
                             <div style={{ fontSize:'10px', color:C.textMuted, marginTop:'5px' }}>Only creators with a matching ValueSkin can enter negotiation.</div>
                           </div>
                           <div style={{ marginBottom:'12px' }}>
-                            <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>Minimum creator level *</div>
-                            <div style={{ display:'flex', gap:'6px' }}>
+                            <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>Creator level range *</div>
+                            <div style={{ fontSize:'10px', color:C.textMuted, marginBottom:'6px' }}>Select min and max level. Only creators within this range can apply.</div>
+                            <div style={{ display:'flex', gap:'6px', alignItems:'center' }}>
+                              <span style={{ fontSize:'10px', color:C.textMuted, fontWeight:600, width:24 }}>Min</span>
                               {[1,2,3,4,5].map(l => (
-                                <button key={l} onClick={()=>setNewCampaignMinLevel(l)} style={{ flex:1, padding:'7px 0', borderRadius:'6px', fontSize:'12px', fontWeight:700, cursor:'pointer', background:newCampaignMinLevel===l?C.primary:C.bg, color:newCampaignMinLevel===l?'#fff':C.textSecondary, border:`1px solid ${newCampaignMinLevel===l?C.primary:C.border}` }}>L{l}</button>
+                                <button key={l} onClick={()=>{ setNewCampaignMinLevel(l); if (l > newCampaignMaxLevel) setNewCampaignMaxLevel(l); }} style={{ flex:1, padding:'7px 0', borderRadius:'6px', fontSize:'12px', fontWeight:700, cursor:'pointer', background:newCampaignMinLevel===l?C.primary:C.bg, color:newCampaignMinLevel===l?'#fff':C.textSecondary, border:`1px solid ${newCampaignMinLevel===l?C.primary:C.border}` }}>L{l}</button>
                               ))}
                             </div>
+                            <div style={{ display:'flex', gap:'6px', alignItems:'center', marginTop:'6px' }}>
+                              <span style={{ fontSize:'10px', color:C.textMuted, fontWeight:600, width:24 }}>Max</span>
+                              {[1,2,3,4,5].map(l => (
+                                <button key={l} onClick={()=>{ setNewCampaignMaxLevel(l); if (l < newCampaignMinLevel) setNewCampaignMinLevel(l); }} disabled={l < newCampaignMinLevel} style={{ flex:1, padding:'7px 0', borderRadius:'6px', fontSize:'12px', fontWeight:700, cursor: l < newCampaignMinLevel ? 'not-allowed' : 'pointer', background:newCampaignMaxLevel===l?'#22c55e':C.bg, color:newCampaignMaxLevel===l?'#fff': l < newCampaignMinLevel ? C.border : C.textSecondary, border:`1px solid ${newCampaignMaxLevel===l?'#22c55e':C.border}`, opacity: l < newCampaignMinLevel ? 0.4 : 1 }}>L{l}</button>
+                              ))}
+                            </div>
+                            <div style={{ fontSize:'10px', color:C.primary, marginTop:'4px', fontWeight:600 }}>Accepting Level {newCampaignMinLevel}{newCampaignMaxLevel !== newCampaignMinLevel ? ` to ${newCampaignMaxLevel}` : ' only'}</div>
                           </div>
                           <div style={{ display:'flex', gap:'10px', marginBottom:'12px' }}>
                             <div style={{ flex:1 }}>
@@ -1731,10 +1939,15 @@ export default function InstagramDemoPage() {
                           </div>
                           <button
                             onClick={() => {
-                              if (!newCampaignTitle.trim() || !newCampaignDesc.trim() || !newCampaignBudget || newCampaignProfessions.length===0) { setPurchaseToast('Fill in all required fields'); setTimeout(()=>setPurchaseToast(null),3000); return; }
-                              const newC: Campaign = { id:Date.now(), brandProfession:brandValueSkin??'', title:newCampaignTitle, description:newCampaignDesc, requiredProfessions:newCampaignProfessions, minLevel:newCampaignMinLevel, budget:newCampaignBudget, deadline:newCampaignDeadline, location:newCampaignLocation, nonNegotiables:newCampaignNonNeg, deliverables:newCampaignDeliverables, status:'open', applicants:0 };
+                              const missing: string[] = [];
+                              if (!newCampaignTitle.trim()) missing.push('Title');
+                              if (!newCampaignDesc.trim()) missing.push('Description');
+                              if (!newCampaignBudget) missing.push('Budget');
+                              if (newCampaignProfessions.length===0) missing.push('Required ValueSkin');
+                              if (missing.length > 0) { setPurchaseToast(`Missing: ${missing.join(', ')}`); setTimeout(()=>setPurchaseToast(null),4000); return; }
+                              const newC: Campaign = { id:Date.now(), brandProfession:brandValueSkin??'', title:newCampaignTitle, description:newCampaignDesc, requiredProfessions:newCampaignProfessions, minLevel:newCampaignMinLevel, maxLevel:newCampaignMaxLevel, budget:newCampaignBudget, deadline:newCampaignDeadline, location:newCampaignLocation, nonNegotiables:newCampaignNonNeg, deliverables:newCampaignDeliverables, status:'open', applicants:0 };
                               persistCampaigns([...campaigns, newC]);
-                              setShowCampaignCreator(false); setNewCampaignTitle(''); setNewCampaignDesc(''); setNewCampaignBudget(''); setNewCampaignDeadline(''); setNewCampaignProfessions([]); setNewCampaignMinLevel(1); setNewCampaignLocation(''); setNewCampaignDeliverables(''); setNewCampaignNonNeg([]);
+                              setShowCampaignCreator(false); setNewCampaignTitle(''); setNewCampaignDesc(''); setNewCampaignBudget(''); setNewCampaignDeadline(''); setNewCampaignProfessions([]); setNewCampaignMinLevel(1); setNewCampaignMaxLevel(5); setNewCampaignLocation(''); setNewCampaignDeliverables(''); setNewCampaignNonNeg([]);
                               setPurchaseToast('Campaign published — visible to matching creators now'); setTimeout(()=>setPurchaseToast(null),3000);
                             }}
                             style={{ width:'100%', background:C.primary, border:'none', borderRadius:'8px', padding:'11px', color:'#fff', fontWeight:700, fontSize:'14px', cursor:'pointer' }}
@@ -1748,13 +1961,37 @@ export default function InstagramDemoPage() {
                     <div style={{ background:C.card, border:`1px solid ${brandValueSkin ? 'rgba(230,81,0,0.3)' : C.border}`, borderRadius:'12px', padding:'14px 16px', marginBottom:'14px' }}>
                       <div style={{ fontSize:'10px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.6px', marginBottom:'8px' }}>Your Brand Identity</div>
                       {brandValueSkin ? (
-                        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                          <div>
-                            <div style={{ fontSize:'14px', fontWeight:700, color:C.text }}>{brandValueSkin}</div>
-                            <div style={{ fontSize:'11px', color:C.textSecondary, marginTop:'2px' }}>You match with creators in this profession</div>
+                        <>
+                          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: 10 }}>
+                            <div>
+                              <div style={{ fontSize:'14px', fontWeight:700, color:C.text }}>{brandValueSkin}</div>
+                              <div style={{ fontSize:'11px', color:C.textSecondary, marginTop:'2px' }}>You match with creators in this profession</div>
+                            </div>
+                            <button onClick={() => setShowBrandStoreModal(true)} style={{ background:'none', border:`1px solid ${C.border}`, borderRadius:'6px', padding:'5px 10px', fontSize:'11px', color:C.textSecondary, cursor:'pointer' }}>Change</button>
                           </div>
-                          <button onClick={() => setShowBrandStoreModal(true)} style={{ background:'none', border:`1px solid ${C.border}`, borderRadius:'6px', padding:'5px 10px', fontSize:'11px', color:C.textSecondary, cursor:'pointer' }}>Change</button>
-                        </div>
+                          {/* Brand Skin Mode — static or promo (like Google Doodles) */}
+                          <div style={{ borderTop:`1px solid ${C.border}`, paddingTop:10 }}>
+                            <div style={{ fontSize:'10px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:6 }}>Skin Mode</div>
+                            <div style={{ display:'flex', gap:6, marginBottom:8 }}>
+                              <button onClick={()=>setBrandSkinMode('static')} style={{ flex:1, padding:'6px', borderRadius:6, fontSize:11, fontWeight:600, cursor:'pointer', background:brandSkinMode==='static'?C.primary:C.bg, color:brandSkinMode==='static'?'#fff':C.textSecondary, border:`1px solid ${brandSkinMode==='static'?C.primary:C.border}` }}>Static</button>
+                              <button onClick={()=>setBrandSkinMode('promo')} style={{ flex:1, padding:'6px', borderRadius:6, fontSize:11, fontWeight:600, cursor:'pointer', background:brandSkinMode==='promo'?'#f59e0b':C.bg, color:brandSkinMode==='promo'?'#000':C.textSecondary, border:`1px solid ${brandSkinMode==='promo'?'#f59e0b':C.border}` }}>Promotional</button>
+                            </div>
+                            {brandSkinMode === 'promo' && (
+                              <div style={{ background:C.bg, borderRadius:8, padding:8, border:`1px solid ${C.border}` }}>
+                                <div style={{ fontSize:10, color:C.textMuted, marginBottom:4 }}>Promote a product or campaign — creators see this when they click your ValuSkin</div>
+                                <input type="text" value={brandPromoText} onChange={e=>setBrandPromoText(e.target.value)} placeholder="e.g. Try our new McPlant burger!" style={{ width:'100%', background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:6, color:C.text, padding:'6px 8px', fontSize:12, fontFamily:'inherit', outline:'none', marginBottom:6, boxSizing:'border-box' as const }} />
+                                <input type="text" value={brandPromoUrl} onChange={e=>setBrandPromoUrl(e.target.value)} placeholder="Link (optional)" style={{ width:'100%', background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:6, color:C.text, padding:'6px 8px', fontSize:12, fontFamily:'inherit', outline:'none', boxSizing:'border-box' as const }} />
+                                {brandPromoText && (
+                                  <div style={{ marginTop:8, padding:8, background:'rgba(245,158,11,0.08)', border:'1px solid rgba(245,158,11,0.2)', borderRadius:6, fontSize:11, color:C.text }}>
+                                    <div style={{ fontWeight:700, marginBottom:2, color:'#f59e0b' }}>Live Preview</div>
+                                    {brandPromoText}
+                                    {brandPromoUrl && <div style={{ fontSize:10, color:C.primary, marginTop:4, textDecoration:'underline' }}>{brandPromoUrl}</div>}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </>
                       ) : (
                         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                           <div style={{ fontSize:'12px', color:C.textMuted }}>No profession set — brands need a ValueSkin to contact creators</div>
@@ -2602,7 +2839,7 @@ export default function InstagramDemoPage() {
                             {c.requiredProfessions.map(p => <span key={p} style={{ fontSize:'10px', fontWeight:600, color:C.primary, background:`${C.primary}12`, padding:'2px 7px', borderRadius:'6px', border:`1px solid ${C.primary}30` }}>{p}</span>)}
                           </div>
                           <div style={{ display:'flex', gap:'12px', flexWrap:'wrap', fontSize:'10px', color:C.textMuted, marginBottom: c.nonNegotiables?.length ? '6px':'8px' }}>
-                            <span>Min: L{c.minLevel||1}</span>
+                            <span>Level: L{c.minLevel||1}{(c.maxLevel && c.maxLevel !== c.minLevel) ? `–L${c.maxLevel}` : ''}</span>
                             {c.location && <span>{c.location}</span>}
                             {c.deliverables && <span>{c.deliverables}</span>}
                           </div>
@@ -2613,7 +2850,7 @@ export default function InstagramDemoPage() {
                           )}
                           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                             <span style={{ fontSize:'10px', color:C.textMuted }}>{c.applicants} applicant{c.applicants!==1?'s':''}{c.deadline?` · Deadline ${c.deadline}`:''}</span>
-                            <span style={{ fontSize:'10px', fontWeight:700, color:'#2E7D32', background:'rgba(46,125,50,0.1)', padding:'2px 8px', borderRadius:'6px', textTransform:'uppercase' }}>{c.status}</span>
+                            <span style={{ fontSize:'10px', fontWeight:700, color:c.status==='expired'?'#ef4444':c.status==='open'?'#2E7D32':'#888', background:c.status==='expired'?'rgba(239,68,68,0.1)':c.status==='open'?'rgba(46,125,50,0.1)':'rgba(136,136,136,0.1)', padding:'2px 8px', borderRadius:'6px', textTransform:'uppercase' }}>{c.status}</span>
                           </div>
                         </div>
                       ))}
