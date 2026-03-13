@@ -274,6 +274,28 @@ export default function InstagramDemoPage() {
   };
   const [dealStates, setDealStates] = useState<Record<string, DealState>>({});
 
+  // Restore dealStates from localStorage on mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('vs_demo_deal_states');
+      if (stored) {
+        const parsed = JSON.parse(stored) as Record<string, DealState>;
+        setDealStates(parsed);
+      }
+    } catch (e) {
+      console.error('Failed to restore dealStates from localStorage:', e);
+    }
+  }, []);
+
+  // Persist dealStates to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem('vs_demo_deal_states', JSON.stringify(dealStates));
+    } catch (e) {
+      console.error('Failed to save dealStates to localStorage:', e);
+    }
+  }, [dealStates]);
+
   // Active deal key derived from current skin + opp
   const activeDealKey = selectedMarketplaceSkin && negotiatingOpp !== null ? `${selectedMarketplaceSkin}:${negotiatingOpp}` : null;
   const getOrCreateDeal = (key: string): DealState => dealStates[key] ?? {
