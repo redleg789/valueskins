@@ -144,7 +144,7 @@ const MOCK_COMMUNITIES = [
     memberCount: 2847, postCount: 1203,
     posts: [
       { id: 0, author: 'Alex R.', handle: '@alex_codes', profession: 'Software Engineer', content: 'Hot take: Rust > Go for anything that matters. Fight me.', likes: 312, pinned: false, announcement: false, time: '2h' },
-      { id: 1, author: 'Priya S.', handle: '@priya_builds', profession: 'DevOps Engineer', content: '📢 Monthly hiring board is live — drop your referral links below.', likes: 89, pinned: true, announcement: true, time: '1d' },
+      { id: 1, author: 'Priya S.', handle: '@priya_builds', profession: 'DevOps Engineer', content: '[Pinned] Monthly hiring board is live — drop your referral links below.', likes: 89, pinned: true, announcement: true, time: '1d' },
       { id: 2, author: 'Marcus T.', handle: '@ml_marcus', profession: 'AI/ML Specialist', content: 'Just shipped a RAG pipeline that cut hallucination rate by 60%. Happy to share the architecture.', likes: 441, pinned: false, announcement: false, time: '4h' },
     ],
     members: [
@@ -161,7 +161,7 @@ const MOCK_COMMUNITIES = [
     memberCount: 612, postCount: 389,
     posts: [
       { id: 3, author: 'Dr. Chen', handle: '@drchen', profession: 'Surgeon', content: 'Interesting presentation today — 34F with atypical chest pain. What would your differential be?', likes: 56, pinned: false, announcement: false, time: '3h' },
-      { id: 4, author: 'Admin', handle: '@md_lounge', profession: 'Doctor', content: '📢 CME webinar this Friday at 6PM EST. Register in the link below.', likes: 128, pinned: true, announcement: true, time: '2d' },
+      { id: 4, author: 'Admin', handle: '@md_lounge', profession: 'Doctor', content: '[Pinned] CME webinar this Friday at 6PM EST. Register in the link below.', likes: 128, pinned: true, announcement: true, time: '2d' },
     ],
     members: [
       { name: 'Dr. Chen', handle: '@drchen', profession: 'Surgeon', role: 'admin', reputationTier: 'senior' },
@@ -209,8 +209,23 @@ export default function InstagramDemoPage() {
   const [isFollowing, setIsFollowing] = useState(false);
   const [likedPosts, setLikedPosts] = useState<number[]>([]);
 
-  // 3-slot ValueSkin state — starts empty so marketplace gate is demonstrated
+  // 3-slot ValueSkin state — persisted to localStorage
   const [valueSkins, setValueSkins] = useState<ValueSkinMap>({});
+
+  // Restore valueSkins from localStorage on mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('vs_demo_value_skins');
+      if (stored) setValueSkins(JSON.parse(stored));
+    } catch (e) { /* ignore corrupted data */ }
+  }, []);
+
+  // Persist valueSkins to localStorage whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem('vs_demo_value_skins', JSON.stringify(valueSkins));
+    } catch (e) { /* quota exceeded — safe to ignore */ }
+  }, [valueSkins]);
 
   // Which slot is being assigned in the Store modal
   const [assigningSlot, setAssigningSlot] = useState<ValueSkinSlot | null>(null);
@@ -219,8 +234,21 @@ export default function InstagramDemoPage() {
   const [showAvatarSettings, setShowAvatarSettings] = useState(false);
   const [purchaseToast, setPurchaseToast] = useState<string | null>(null);
 
-  // ValueSkin hide/delete management
+  // ValueSkin hide/delete management — also persisted
   const [hiddenSkins, setHiddenSkins] = useState<Set<ValueSkinSlot>>(new Set());
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('vs_demo_hidden_skins');
+      if (stored) setHiddenSkins(new Set(JSON.parse(stored)));
+    } catch (e) { /* ignore */ }
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('vs_demo_hidden_skins', JSON.stringify([...hiddenSkins]));
+    } catch (e) { /* ignore */ }
+  }, [hiddenSkins]);
   const [showSkinManageModal, setShowSkinManageModal] = useState<ValueSkinSlot | null>(null);
 
   const { levels, isLoaded: levelsLoaded } = useLevelConfig();
@@ -1036,7 +1064,7 @@ export default function InstagramDemoPage() {
                         padding: '4px 8px', backgroundColor: '#10b981',
                         borderRadius: '5px', fontSize: '11px', color: 'white', fontWeight: 600,
                       }}>
-                        {platform.toUpperCase()} ✓
+                        {platform.toUpperCase()}
                       </div>
                     );
                   })}
@@ -1437,7 +1465,7 @@ export default function InstagramDemoPage() {
                     {activeDeals.length > 0 && (
                       <div style={{ background:'rgba(245,158,11,0.06)', border:'1px solid rgba(245,158,11,0.2)', borderRadius:10, padding:'10px 14px', marginBottom:14, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
                         <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                          <span style={{ fontSize:16 }}>&#128293;</span>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" stroke="none"><path d="M12 23c-3.866 0-7-2.686-7-6 0-1.954.951-3.677 2.427-5.173C8.853 10.392 10 8.639 10 6.5c0-.381-.044-.756-.127-1.116A9.86 9.86 0 0 1 12 2a9.86 9.86 0 0 1 2.127 3.384A4.725 4.725 0 0 0 14 6.5c0 2.139 1.147 3.892 2.573 5.327C18.049 13.323 19 15.046 19 17c0 3.314-3.134 6-7 6z"/></svg>
                           <div>
                             <div style={{ fontSize:12, fontWeight:700, color:C.text }}>{activeDeals.length} Active Deal{activeDeals.length>1?'s':''}</div>
                             <div style={{ fontSize:10, color:C.textSecondary }}>
@@ -1595,7 +1623,7 @@ export default function InstagramDemoPage() {
                                             placeholder={creatorRate}
                                             style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: '8px', color: C.textSecondary, padding: '6px 10px', fontSize: '15px', fontWeight: 700, fontFamily: 'inherit', outline: 'none', width: '100px', opacity: 0.6, cursor: 'not-allowed' }}
                                           />
-                                          <span style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', fontSize: '11px', color: C.textMuted, fontWeight: 600 }}>🔒 Locked</span>
+                                          <span style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', fontSize: '11px', color: C.textMuted, fontWeight: 600 }}>Locked</span>
                                         </div>
                                       </div>
                                       <div style={{ fontSize: '10px', color: C.textMuted, marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -1604,7 +1632,7 @@ export default function InstagramDemoPage() {
                                       </div>
                                       <div style={{ display: 'flex', gap: '6px' }}>
                                         <button onClick={() => setDealRoomPhase('accepted')} style={{ flex: 1, background: '#2E7D32', border: 'none', padding: '8px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '12px' }}>Accept</button>
-                                        <button onClick={() => setDealRoomPhase('counter')} style={{ flex: 1, background: C.primary, border: 'none', padding: '8px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '12px' }}>✎ Counter Offer</button>
+                                        <button onClick={() => setDealRoomPhase('counter')} style={{ flex: 1, background: C.primary, border: 'none', padding: '8px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '12px' }}>Counter Offer</button>
                                         <button onClick={() => setNegotiatingOpp(null)} style={{ flex: 1, background: 'none', border: `1px solid ${C.border}`, padding: '8px', borderRadius: '8px', color: C.textSecondary, fontWeight: 500, cursor: 'pointer', fontSize: '12px' }}>Decline</button>
                                       </div>
                                     </>
@@ -1681,9 +1709,9 @@ export default function InstagramDemoPage() {
                                                       <span style={{ display: 'inline-flex', gap: 1 }}>
                                                         {/* Double check = seen, single = delivered */}
                                                         {(msg.seen || mi < chatMessages.length - 1) ? (
-                                                          <span style={{ color: '#4fc3f7', fontWeight: 700, fontSize: 10 }}>✓✓</span>
+                                                          <svg width="16" height="10" viewBox="0 0 16 10" fill="none" stroke="#4fc3f7" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="1,5 4,8 8,2"/><polyline points="6,5 9,8 13,2"/></svg>
                                                         ) : (
-                                                          <span style={{ color: 'rgba(255,255,255,0.4)', fontWeight: 700, fontSize: 10 }}>✓</span>
+                                                          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="1,5 3.5,8 9,2"/></svg>
                                                         )}
                                                       </span>
                                                     )}
@@ -1768,7 +1796,7 @@ export default function InstagramDemoPage() {
                                             {performanceClause && (
                                               <input type="range" min="70" max="100" value={advancePercent} onChange={(e) => setAdvancePercent(Number(e.target.value))} style={{ width: '100%', marginTop: '4px' }} />
                                             )}
-                                            <div style={{ fontSize: '9px', color: '#2E7D32', marginTop: '4px', textAlign: 'center' }}>✓ Payment locked</div>
+                                            <div style={{ fontSize: '9px', color: '#2E7D32', marginTop: '4px', textAlign: 'center' }}>Payment locked</div>
                                           </div>
                                         </div>
                                       </div>
@@ -2423,16 +2451,16 @@ export default function InstagramDemoPage() {
                           {/* Audience & Deal meta row */}
                           <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', marginBottom: '8px' }}>
                             <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '10px', background: 'rgba(0,102,204,0.08)', color: C.primary, border: `1px solid rgba(0,102,204,0.2)` }}>
-                              🌍 {creator.audienceLocation}
+                              {creator.audienceLocation}
                             </span>
                             <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '10px', background: 'rgba(0,102,204,0.08)', color: C.primary, border: `1px solid rgba(0,102,204,0.2)` }}>
-                              👥 {creator.audienceAgeRange}
+                              {creator.audienceAgeRange}
                             </span>
                             <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '10px', background: 'rgba(0,102,204,0.08)', color: C.primary, border: `1px solid rgba(0,102,204,0.2)` }}>
-                              💬 {creator.audienceLang}
+                              {creator.audienceLang}
                             </span>
                             <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '10px', background: 'rgba(100,100,100,0.1)', color: C.textSecondary, border: `1px solid ${C.border}` }}>
-                              🕐 {creator.timezone}
+                              {creator.timezone}
                             </span>
                           </div>
                           {/* Deal types + NDA/rights row */}
@@ -2440,8 +2468,8 @@ export default function InstagramDemoPage() {
                             {creator.dealTypes.map(dt => (
                               <span key={dt} style={{ fontSize: '9px', fontWeight: 700, padding: '2px 6px', borderRadius: '8px', background: 'rgba(16,185,129,0.08)', color: '#10b981', border: '1px solid rgba(16,185,129,0.2)', textTransform: 'uppercase' }}>{dt}</span>
                             ))}
-                            {creator.ndaOk && <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 6px', borderRadius: '8px', background: 'rgba(139,92,246,0.08)', color: '#8b5cf6', border: '1px solid rgba(139,92,246,0.2)', textTransform: 'uppercase' }}>NDA ✓</span>}
-                            {creator.usageRightsOk && <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 6px', borderRadius: '8px', background: 'rgba(139,92,246,0.08)', color: '#8b5cf6', border: '1px solid rgba(139,92,246,0.2)', textTransform: 'uppercase' }}>Usage Rights ✓</span>}
+                            {creator.ndaOk && <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 6px', borderRadius: '8px', background: 'rgba(139,92,246,0.08)', color: '#8b5cf6', border: '1px solid rgba(139,92,246,0.2)', textTransform: 'uppercase' }}>NDA</span>}
+                            {creator.usageRightsOk && <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 6px', borderRadius: '8px', background: 'rgba(139,92,246,0.08)', color: '#8b5cf6', border: '1px solid rgba(139,92,246,0.2)', textTransform: 'uppercase' }}>Usage Rights</span>}
                           </div>
 
                           {/* Rate card */}
@@ -2470,7 +2498,7 @@ export default function InstagramDemoPage() {
                             )}
                             {adminShowIncomeTier && (
                               <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 7px', borderRadius: '8px', background: 'rgba(0,102,204,0.08)', color: C.primary, border: `1px solid rgba(0,102,204,0.2)` }}>
-                                💰 ${creator.incomeTier} earned
+                                ${creator.incomeTier} earned
                               </span>
                             )}
                             {adminShowAvailabilityCalendar && (
@@ -2478,10 +2506,10 @@ export default function InstagramDemoPage() {
                                 background: creator.availableFrom === 'Now' ? 'rgba(34,197,94,0.08)' : 'rgba(100,100,100,0.08)',
                                 color: creator.availableFrom === 'Now' ? '#22c55e' : C.textSecondary,
                                 border: `1px solid ${creator.availableFrom === 'Now' ? 'rgba(34,197,94,0.2)' : C.border}`,
-                              }}>📅 {creator.availableFrom === 'Now' ? 'Available now' : `From ${creator.availableFrom}`}</span>
+                              }}>{creator.availableFrom === 'Now' ? 'Available now' : `From ${creator.availableFrom}`}</span>
                             )}
                             {adminShowExclusivitySignal && !creator.exclusivitySlotFree && (
-                              <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 7px', borderRadius: '8px', background: 'rgba(239,68,68,0.08)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)' }}>🔒 Exclusivity taken</span>
+                              <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 7px', borderRadius: '8px', background: 'rgba(239,68,68,0.08)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)' }}>Exclusivity taken</span>
                             )}
                             {adminShowRevisionLimit && (
                               <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 7px', borderRadius: '8px', background: 'rgba(100,100,100,0.08)', color: C.textSecondary, border: `1px solid ${C.border}` }}>{creator.revisionLimit} revisions</span>
@@ -2504,7 +2532,7 @@ export default function InstagramDemoPage() {
                           {/* Platform safety status bar */}
                           <div style={{ display: 'flex', gap: '5px', marginBottom: '8px', flexWrap: 'wrap' }}>
                             {safetyRequireVerifiedBrand && (
-                              <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 7px', borderRadius: '8px', background: 'rgba(16,185,129,0.08)', color: '#10b981', border: '1px solid rgba(16,185,129,0.2)' }}>✓ VERIFIED BRAND</span>
+                              <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 7px', borderRadius: '8px', background: 'rgba(16,185,129,0.08)', color: '#10b981', border: '1px solid rgba(16,185,129,0.2)' }}>VERIFIED BRAND</span>
                             )}
                             {safetyRequireBrief && (
                               <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 7px', borderRadius: '8px', background: 'rgba(0,102,204,0.08)', color: C.primary, border: `1px solid rgba(0,102,204,0.2)` }}>BRIEF REQUIRED</span>
@@ -3093,7 +3121,7 @@ export default function InstagramDemoPage() {
                                     fontSize: '9px', fontWeight: 600, color: C.textMuted,
                                     background: C.surface, padding: '2px 6px', borderRadius: '4px',
                                   }}>
-                                    {comm.visibility === 'public' ? '🌐 Public' : '🔒 Private'}
+                                    {comm.visibility === 'public' ? 'Public' : 'Private'}
                                   </span>
                                 </div>
                                 <div style={{ fontSize: '11px', color: C.textSecondary, marginBottom: '6px', lineHeight: 1.3 }}>
@@ -3277,7 +3305,7 @@ export default function InstagramDemoPage() {
                                       fontSize: '13px', fontWeight: 600, cursor: 'pointer',
                                     }}
                                   >
-                                    {v === 'public' ? '🌐 Public' : '🔒 Private'}
+                                    {v === 'public' ? 'Public' : 'Private'}
                                   </button>
                                 ))}
                               </div>
@@ -3333,7 +3361,7 @@ export default function InstagramDemoPage() {
                                   setNewCommName('');
                                   setNewCommDesc('');
                                   setCommunitiesTab('mine');
-                                  setPurchaseToast('✨ Community created!');
+                                  setPurchaseToast('Community created');
                                   setTimeout(() => setPurchaseToast(null), 3000);
                                 }
                               }}
@@ -3433,7 +3461,7 @@ export default function InstagramDemoPage() {
                                         cursor: 'pointer', fontSize: '12px', padding: 0,
                                       }}
                                     >
-                                      ❤️ {post.likes + (likedCommunityPosts.includes(post.id) ? 1 : 0)}
+                                      <svg width="12" height="12" viewBox="0 0 24 24" fill={likedCommunityPosts.includes(post.id) ? '#e74c3c' : 'none'} stroke={likedCommunityPosts.includes(post.id) ? '#e74c3c' : 'currentColor'} strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> {post.likes + (likedCommunityPosts.includes(post.id) ? 1 : 0)}
                                     </button>
                                   </div>
                                 </div>
@@ -3477,7 +3505,7 @@ export default function InstagramDemoPage() {
                               {community.posts.filter(p => p.announcement).map(post => (
                                 <div key={post.id} style={{ padding: '12px', background: 'rgba(0,102,204,0.06)', borderRadius: '8px', border: `1px solid ${C.primary}30` }}>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                                    <span style={{ fontSize: '14px' }}>📢</span>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
                                     <div style={{ fontSize: '13px', fontWeight: 600, color: C.text }}>{post.author}</div>
                                     <div style={{ fontSize: '11px', color: C.textMuted, marginLeft: 'auto' }}>{post.time}</div>
                                   </div>
@@ -3606,7 +3634,7 @@ export default function InstagramDemoPage() {
 
                   <button
                     onClick={() => {
-                      setPurchaseToast('✅ Pricing updated — takes effect immediately');
+                      setPurchaseToast('Pricing updated');
                       setTimeout(() => setPurchaseToast(null), 3000);
                     }}
                     style={{
@@ -3844,7 +3872,7 @@ export default function InstagramDemoPage() {
                   onClick={() => { setSavedSafetyToast(true); setTimeout(() => setSavedSafetyToast(false), 3000); }}
                   style={{ width: '100%', padding: '12px', background: C.primary, border: 'none', borderRadius: '8px', color: '#fff', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}
                 >
-                  {savedSafetyToast ? '✅ Safety settings saved' : 'Save Safety Settings'}
+                  {savedSafetyToast ? 'Safety settings saved' : 'Save Safety Settings'}
                 </button>
 
                 {/* Live policy summary */}
@@ -3907,7 +3935,7 @@ export default function InstagramDemoPage() {
                   onClick={() => { setAdminSavedFeaturesTab(true); setTimeout(() => setAdminSavedFeaturesTab(false), 3000); }}
                   style={{ width: '100%', marginTop: '16px', padding: '11px', background: C.primary, border: 'none', borderRadius: '8px', color: '#fff', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}
                 >
-                  {adminSavedFeaturesTab ? '✅ Feature flags saved' : 'Save Feature Flags'}
+                  {adminSavedFeaturesTab ? 'Feature flags saved' : 'Save Feature Flags'}
                 </button>
               </div>
             </>
@@ -4592,7 +4620,7 @@ export default function InstagramDemoPage() {
                             <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, marginBottom: '4px', textTransform: 'uppercase' }}>Exclusivity locked until</div>
                             <input type="date" value={exclusivityUntil} onChange={e => setExclusivityUntil(e.target.value)} placeholder="Leave blank if not exclusive"
                               style={{ width: '100%', padding: '7px 9px', background: C.bg, border: `1px solid ${exclusivityUntil ? '#ef4444' : C.border}`, borderRadius: '7px', color: C.text, fontSize: '12px', boxSizing: 'border-box' as const }} />
-                            {exclusivityUntil && <div style={{ fontSize: '10px', color: '#ef4444', marginTop: '3px' }}>🔒 Brands will see "Exclusivity taken until {exclusivityUntil}"</div>}
+                            {exclusivityUntil && <div style={{ fontSize: '10px', color: '#ef4444', marginTop: '3px' }}>Brands will see &quot;Exclusivity taken until {exclusivityUntil}&quot;</div>}
                           </div>
                         </div>
                       )}
@@ -4653,7 +4681,7 @@ export default function InstagramDemoPage() {
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
                           {items.map(({ label, done, pts }) => (
                             <div key={label} style={{ padding: '6px 4px', background: done ? 'rgba(34,197,94,0.08)' : C.surfaceAlt, borderRadius: '6px', textAlign: 'center', border: `1px solid ${done ? 'rgba(34,197,94,0.25)' : C.border}` }}>
-                              <div style={{ fontSize: '14px', marginBottom: '2px' }}>{done ? '✓' : '○'}</div>
+                              <div style={{ fontSize: '14px', marginBottom: '2px' }}>{done ? <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="2,7 5.5,10.5 12,3.5"/></svg> : <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke={C.textMuted} strokeWidth="1.5"><circle cx="7" cy="7" r="5.5"/></svg>}</div>
                               <div style={{ fontSize: '9px', fontWeight: 600, color: done ? '#22c55e' : C.textMuted, textTransform: 'uppercase', letterSpacing: '0.3px' }}>{label}</div>
                               <div style={{ fontSize: '9px', color: C.textMuted }}>+{pts}pt</div>
                             </div>
@@ -4676,8 +4704,8 @@ export default function InstagramDemoPage() {
                   </div>
                   <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: '12px', overflow: 'hidden' }}>
                     {[
-                      { label: 'Download My Data', sub: 'Export all your data in JSON format', action: () => alert('Data export initiated — you will receive an email with download link within 24 hours'), color: C.primary, icon: '⬇' },
-                      { label: 'Request Data Deletion', sub: 'Permanently erase your account (GDPR Art. 17) — 30 day process', action: () => alert('Data deletion request submitted.\n\nYour account will be anonymized within 30 days as required by GDPR.\nYou can cancel this request within 24 hours.'), color: '#ef4444', icon: '🗑' },
+                      { label: 'Download My Data', sub: 'Export all your data in JSON format', action: () => alert('Data export initiated — you will receive an email with download link within 24 hours'), color: C.primary, icon: 'DL' },
+                      { label: 'Request Data Deletion', sub: 'Permanently erase your account (GDPR Art. 17) — 30 day process', action: () => alert('Data deletion request submitted.\n\nYour account will be anonymized within 30 days as required by GDPR.\nYou can cancel this request within 24 hours.'), color: '#ef4444', icon: 'DEL' },
                     ].map(({ label, sub, action, color, icon }, i) => (
                       <div
                         key={label}
@@ -4932,7 +4960,7 @@ export default function InstagramDemoPage() {
           hiddenSkins={hiddenSkins}
           onHide={(slot) => {
             setHiddenSkins(prev => new Set([...prev, slot]));
-            setPurchaseToast(`🙈 ${SLOT_LABELS[slot]} ValueSkin hidden from marketplace`);
+            setPurchaseToast(`${SLOT_LABELS[slot]} ValueSkin hidden from marketplace`);
             setTimeout(() => setPurchaseToast(null), 3000);
           }}
           onUnhide={(slot) => {
@@ -4941,7 +4969,7 @@ export default function InstagramDemoPage() {
               next.delete(slot);
               return next;
             });
-            setPurchaseToast(`👁️ ${SLOT_LABELS[slot]} ValueSkin restored to marketplace`);
+            setPurchaseToast(`${SLOT_LABELS[slot]} ValueSkin restored to marketplace`);
             setTimeout(() => setPurchaseToast(null), 3000);
           }}
           onDelete={(slot) => {
@@ -4955,7 +4983,7 @@ export default function InstagramDemoPage() {
               next.delete(slot);
               return next;
             });
-            setPurchaseToast(`🗑️ ${SLOT_LABELS[slot]} ValueSkin permanently deleted`);
+            setPurchaseToast(`${SLOT_LABELS[slot]} ValueSkin permanently deleted`);
             setTimeout(() => setPurchaseToast(null), 3000);
           }}
         />
@@ -5037,7 +5065,7 @@ function SkinManagementModal({ slot, onClose, valueSkins, hiddenSkins, onHide, o
             </div>
             <div>
               <div style={{ fontSize: '14px', fontWeight: 700, color: C.text }}>{skin.profession}</div>
-              <div style={{ fontSize: '11px', color: C.textMuted }}>{isHidden ? '🙈 Hidden' : '👁️ Visible'}</div>
+              <div style={{ fontSize: '11px', color: C.textMuted }}>{isHidden ? 'Hidden' : 'Visible'}</div>
             </div>
           </div>
         </div>
@@ -5063,7 +5091,7 @@ function SkinManagementModal({ slot, onClose, valueSkins, hiddenSkins, onHide, o
               gap: '8px',
             }}
           >
-            {isHidden ? '👁️ Restore visibility' : '🙈 Hide temporarily'}
+            {isHidden ? 'Restore visibility' : 'Hide temporarily'}
             <span style={{ fontSize: '12px', color: C.textMuted }}>
               {isHidden ? '(Appears in profile)' : '(Hidden from discovery)'}
             </span>
@@ -5072,7 +5100,7 @@ function SkinManagementModal({ slot, onClose, valueSkins, hiddenSkins, onHide, o
           {/* Delete button */}
           <button
             onClick={() => {
-              if (window.confirm('⚠️ Permanently delete this ValueSkin? This cannot be undone and no refund will be issued.')) {
+              if (window.confirm('Permanently delete this ValueSkin? This cannot be undone and no refund will be issued.')) {
                 onDelete(slot);
                 onClose();
               }
@@ -5093,7 +5121,7 @@ function SkinManagementModal({ slot, onClose, valueSkins, hiddenSkins, onHide, o
               gap: '8px',
             }}
           >
-            🗑️ Delete permanently
+            Delete permanently
             <span style={{ fontSize: '12px', color: 'rgba(211, 47, 47, 0.7)' }}>(No refund)</span>
           </button>
 
