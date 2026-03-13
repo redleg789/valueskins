@@ -1433,39 +1433,6 @@ export default function InstagramDemoPage() {
                       </div>
                     </div>
 
-                    {/* Creator Skin Showcase — add pitch to your skin */}
-                    {selectedMarketplaceSkin && (
-                      <div style={{ background:C.card, borderRadius:10, padding:'12px 14px', marginBottom:14, border:`1px solid ${C.border}` }}>
-                        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6 }}>
-                          <span style={{ fontSize:10, fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.5px' }}>Your Skin Showcase</span>
-                          <div style={{ display:'flex', gap:4 }}>
-                            <button onClick={()=>setCreatorSkinMode('static')} style={{ padding:'3px 8px', borderRadius:4, fontSize:10, fontWeight:600, cursor:'pointer', background:creatorSkinMode==='static'?C.primary:C.bg, color:creatorSkinMode==='static'?'#fff':C.textSecondary, border:`1px solid ${creatorSkinMode==='static'?C.primary:C.border}` }}>Static</button>
-                            <button onClick={()=>setCreatorSkinMode('showcase')} style={{ padding:'3px 8px', borderRadius:4, fontSize:10, fontWeight:600, cursor:'pointer', background:creatorSkinMode==='showcase'?'#8b5cf6':C.bg, color:creatorSkinMode==='showcase'?'#fff':C.textSecondary, border:`1px solid ${creatorSkinMode==='showcase'?'#8b5cf6':C.border}` }}>Showcase</button>
-                          </div>
-                        </div>
-                        {creatorSkinMode === 'showcase' && (
-                          <>
-                            <div style={{ fontSize:10, color:C.textMuted, marginBottom:6 }}>
-                              {creatorPitchVideoUrl || creatorPitchText ? 'Your showcase is live — brands see this when they click your skin' : 'Click your ValuSkin sticker on your profile to add a video pitch'}
-                            </div>
-                            {creatorPitchVideoUrl && (
-                              <video src={creatorPitchVideoUrl} controls style={{ width:'100%', borderRadius:6, maxHeight:120, background:'#000', marginBottom:6 }} />
-                            )}
-                            {creatorPitchText && (
-                              <div style={{ padding:6, background:'rgba(139,92,246,0.08)', border:'1px solid rgba(139,92,246,0.2)', borderRadius:6, fontSize:11, color:C.text, marginBottom:6 }}>
-                                {creatorPitchText}
-                              </div>
-                            )}
-                            {!creatorPitchVideoUrl && !creatorPitchText && (
-                              <button onClick={() => setShowSkinShowcaseModal(selectedMarketplaceSkin)} style={{ width:'100%', padding:8, background:C.bg, border:`1px dashed ${C.border}`, borderRadius:6, color:C.textSecondary, fontSize:11, cursor:'pointer', fontWeight:600 }}>
-                                + Add video pitch & bio
-                              </button>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    )}
-
                     {/* Active Deals Banner */}
                     {activeDeals.length > 0 && (
                       <div style={{ background:'rgba(245,158,11,0.06)', border:'1px solid rgba(245,158,11,0.2)', borderRadius:10, padding:'10px 14px', marginBottom:14, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
@@ -4372,6 +4339,62 @@ export default function InstagramDemoPage() {
                               <div style={{ width: '36px', height: '20px', borderRadius: '10px', background: C.border, position: 'relative', cursor: 'pointer' }}><div style={{ width: '16px', height: '16px', borderRadius: '50%', background: '#fff', position: 'absolute', top: '2px', left: '2px' }} /></div>
                             </div>
                           ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* ── SKIN SHOWCASE ─────────────────────────── */}
+                {(() => {
+                  const open = creatorSettingsOpen === ('showcase' as any);
+                  const ownedSkinsList = Object.entries(valueSkins).filter(([, v]) => v?.profession).map(([, v]) => v!.profession);
+                  return (
+                    <div style={{ marginBottom: '16px' }}>
+                      <button onClick={() => setCreatorSettingsOpen(open ? null : 'showcase' as any)} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: C.card, border: `1px solid ${C.border}`, borderRadius: open ? '10px 10px 0 0' : '10px', padding: '12px 14px', cursor: 'pointer', color: C.text }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.textMuted }}>Skin Showcase</span>
+                          {creatorSkinMode === 'showcase' && <span style={{ fontSize: '9px', fontWeight: 700, color: '#fff', background: '#8b5cf6', padding: '1px 6px', borderRadius: '8px' }}>LIVE</span>}
+                        </div>
+                        <span style={{ fontSize: '14px', color: C.textMuted }}>{open ? '▲' : '▼'}</span>
+                      </button>
+                      {open && (
+                        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderTop: 'none', borderRadius: '0 0 10px 10px', padding: '14px' }}>
+                          <div style={{ fontSize: '11px', color: C.textSecondary, marginBottom: '10px', lineHeight: 1.5 }}>
+                            When showcase mode is on, brands see your video pitch and bio when they click your ValuSkin on your profile.
+                          </div>
+
+                          {/* Mode toggle */}
+                          <div style={{ display: 'flex', gap: '6px', marginBottom: '12px' }}>
+                            <button onClick={() => setCreatorSkinMode('static')} style={{ flex: 1, padding: '8px', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', background: creatorSkinMode === 'static' ? C.primary : C.bg, color: creatorSkinMode === 'static' ? '#fff' : C.textSecondary, border: `1px solid ${creatorSkinMode === 'static' ? C.primary : C.border}` }}>Static</button>
+                            <button onClick={() => setCreatorSkinMode('showcase')} style={{ flex: 1, padding: '8px', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', background: creatorSkinMode === 'showcase' ? '#8b5cf6' : C.bg, color: creatorSkinMode === 'showcase' ? '#fff' : C.textSecondary, border: `1px solid ${creatorSkinMode === 'showcase' ? '#8b5cf6' : C.border}` }}>Showcase</button>
+                          </div>
+
+                          {creatorSkinMode === 'showcase' && (
+                            <>
+                              {/* Current showcase preview */}
+                              {creatorPitchVideoUrl && (
+                                <div style={{ marginBottom: '10px' }}>
+                                  <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, marginBottom: '4px', textTransform: 'uppercase' }}>Video Pitch</div>
+                                  <video src={creatorPitchVideoUrl} controls style={{ width: '100%', borderRadius: '8px', maxHeight: '160px', background: '#000' }} />
+                                  <div style={{ fontSize: '10px', color: C.textMuted, marginTop: '4px' }}>{creatorPitchVideoName}</div>
+                                </div>
+                              )}
+                              {creatorPitchText && (
+                                <div style={{ marginBottom: '10px' }}>
+                                  <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, marginBottom: '4px', textTransform: 'uppercase' }}>Written Pitch</div>
+                                  <div style={{ padding: '8px', background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)', borderRadius: '8px', fontSize: '12px', color: C.text, lineHeight: 1.5 }}>
+                                    {creatorPitchText}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Add/edit button */}
+                              <button onClick={() => setShowSkinShowcaseModal(ownedSkinsList[0] ?? 'showcase')} style={{ width: '100%', padding: '10px', background: C.bg, border: `1px dashed ${C.border}`, borderRadius: '8px', color: C.textSecondary, fontSize: '12px', cursor: 'pointer', fontWeight: 600 }}>
+                                {creatorPitchVideoUrl || creatorPitchText ? 'Edit video pitch & bio' : '+ Add video pitch & bio'}
+                              </button>
+                            </>
+                          )}
                         </div>
                       )}
                     </div>
