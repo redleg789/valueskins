@@ -457,7 +457,7 @@ export default function InstagramDemoPage() {
 
   // Creator reputation & verification
   const [showCredentialForm, setShowCredentialForm] = useState(false);
-  const [credentials, setCredentials] = useState([{ platform: 'github', handle: '@alex' }]);
+  const [credentials, setCredentials] = useState<{ platform: string; handle: string }[]>([]);
   const [identityProofs, setIdentityProofs] = useState<Array<{platform: string; handle: string; verified: boolean}>>([]);
   const [resolvedFraudSignals, setResolvedFraudSignals] = useState<number[]>([]);
   // Safety system — Meta admin controls
@@ -1070,13 +1070,13 @@ export default function InstagramDemoPage() {
                   {credentials.map((cred, i) => (
                     <div key={i} style={{
                       padding: '4px 8px',
-                      backgroundColor: cred.platform === 'github' ? '#000' : cred.platform === 'linkedin' ? '#0077b5' : cred.platform === 'leetcode' ? '#ffa723' : '#666',
+                      backgroundColor: cred.platform === 'linkedin' ? '#0077b5' : cred.platform === 'leetcode' ? '#ffa723' : cred.platform === 'twitter' ? '#1DA1F2' : '#666',
                       color: 'white', borderRadius: '5px', fontSize: '11px', fontWeight: 600,
                     }}>
                       {cred.platform.toUpperCase()}
                     </div>
                   ))}
-                  {['twitter', 'github', 'linkedin', 'tiktok'].map((platform) => {
+                  {['twitter', 'linkedin', 'tiktok'].map((platform) => {
                     const proof = identityProofs.find(p => p.platform === platform);
                     if (!proof?.verified) return null;
                     return (
@@ -1544,9 +1544,11 @@ export default function InstagramDemoPage() {
                               {!isNegotiating ? (
                                 <div style={{ display: 'flex', gap: '8px', flexDirection: 'column' }}>
                                   {opp.willingToBarter && !willingToBarter && (
-                                    <div style={{ fontSize: '11px', color: '#f59e0b', background: 'rgba(245,158,11,0.1)', padding: '6px 10px', borderRadius: '6px', textAlign: 'center' }}>
-                                      Enable &quot;Open to Barter&quot; in your profile to apply
-                                    </div>
+                                    <button
+                                      onClick={() => setWillingToBarter(true)}
+                                      style={{ fontSize: '11px', fontWeight: 600, color: '#10b981', background: 'rgba(16,185,129,0.08)', padding: '8px 10px', borderRadius: '6px', textAlign: 'center', border: `1px solid rgba(16,185,129,0.3)`, cursor: 'pointer', width: '100%' }}>
+                                      This brand requires barter — enable barter for this deal
+                                    </button>
                                   )}
                                   <button
                                     onClick={() => {
@@ -4629,7 +4631,7 @@ export default function InstagramDemoPage() {
                         </div>
                         {!hasCredential && (
                           <div style={{ marginTop: '10px', padding: '8px 10px', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: '8px', fontSize: '11px', color: '#f59e0b' }}>
-                            Next: Link a credential (GitHub/LinkedIn) to earn +15 pts
+                            Next: Link a credential (LinkedIn/Twitter) to earn +15 pts
                           </div>
                         )}
                       </div>
