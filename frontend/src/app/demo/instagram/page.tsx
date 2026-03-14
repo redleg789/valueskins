@@ -276,12 +276,12 @@ export default function InstagramDemoPage() {
   const [showBrandStoreModal, setShowBrandStoreModal] = useState(false);
   const [brandStoreCategory, setBrandStoreCategory] = useState<string | null>(null);
 
-  // Brand ValuSkin as marketing — brands can promote products/campaigns via their skin
+  // Brand ValueSkin as marketing — brands can promote products/campaigns via their skin
   const [brandSkinMode, setBrandSkinMode] = useState<'static' | 'promo'>('static');
   const [brandPromoText, setBrandPromoText] = useState('');
   const [brandPromoUrl, setBrandPromoUrl] = useState('');
 
-  // Creator ValuSkin showcase — creators can add a pitch video + text to their skin
+  // Creator ValueSkin showcase — creators can add a pitch video + text to their skin
   const [creatorSkinMode, setCreatorSkinMode] = useState<'static' | 'showcase'>('static');
   const [creatorPitchText, setCreatorPitchText] = useState('');
   const [creatorPitchVideoUrl, setCreatorPitchVideoUrl] = useState('');
@@ -485,7 +485,7 @@ export default function InstagramDemoPage() {
   const [willingToBarter, setWillingToBarter] = useState(false);
   const [filterBarterOnly, setFilterBarterOnly] = useState(false);
 
-  // Brand field filter — which ValuSkin profession the brand wants to target
+  // Brand field filter — which ValueSkin profession the brand wants to target
   const [brandFieldFilter, setBrandFieldFilter] = useState<string | null>(null);
   const [brandSearchQuery, setBrandSearchQuery] = useState('');
   const [brandSearchMode, setBrandSearchMode] = useState<'profession' | 'name' | 'general'>('profession');
@@ -739,14 +739,14 @@ export default function InstagramDemoPage() {
   return (
     <div style={{ background: C.bg, minHeight: '100vh', display: 'flex', color: C.text, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif', overflowX: 'hidden' }}>
 
-      {/* ValuSkin Showcase Modal — add video + pitch when clicking your skin */}
+      {/* ValueSkin Showcase Modal — add video + pitch when clicking your skin */}
       {showSkinShowcaseModal && (
         <div style={{ position:'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.8)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:99999 }}>
           <div style={{ background:C.surface, borderRadius:'16px', padding:'24px', maxWidth:'440px', width:'95vw', maxHeight:'90vh', overflowY:'auto', border:`1px solid ${C.border}`, position:'relative' }}>
             <button onClick={() => setShowSkinShowcaseModal(null)} style={{ position:'absolute', top:'14px', right:'16px', background:'none', border:'none', color:C.textMuted, fontSize:'22px', cursor:'pointer', lineHeight:1 }}>x</button>
 
             <div style={{ fontSize:'16px', fontWeight:700, color:C.text, marginBottom:'4px' }}>{showSkinShowcaseModal} Showcase</div>
-            <div style={{ fontSize:'12px', color:C.textSecondary, marginBottom:'20px' }}>Brands see this when they click your ValuSkin. Tell them why they should collab with you.</div>
+            <div style={{ fontSize:'12px', color:C.textSecondary, marginBottom:'20px' }}>Brands see this when they click your ValueSkin. Tell them why they should collab with you.</div>
 
             {/* Mode toggle */}
             <div style={{ display:'flex', gap:8, marginBottom:16 }}>
@@ -760,7 +760,7 @@ export default function InstagramDemoPage() {
 
             {creatorSkinMode === 'static' && (
               <div style={{ textAlign:'center', padding:'30px 20px', color:C.textMuted, fontSize:13 }}>
-                Your ValuSkin displays as a standard badge. Switch to Showcase to add a video pitch and bio.
+                Your ValueSkin displays as a standard badge. Switch to Showcase to add a video pitch and bio.
               </div>
             )}
 
@@ -1500,8 +1500,8 @@ export default function InstagramDemoPage() {
                     <div style={{ background: 'rgba(46,125,50,0.06)', border: `1px solid rgba(46,125,50,0.15)`, borderRadius: '10px', padding: '12px 16px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2E7D32" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                       <div>
-                        <div style={{ fontSize: '12px', fontWeight: 700, color: C.text }}>ValuSkin Matching Active</div>
-                        <div style={{ fontSize: '11px', color: C.textSecondary }}>You only see opportunities from brands that require your exact ValuSkin. Matching is deterministic and server-enforced.</div>
+                        <div style={{ fontSize: '12px', fontWeight: 700, color: C.text }}>ValueSkin Matching Active</div>
+                        <div style={{ fontSize: '11px', color: C.textSecondary }}>You only see opportunities from brands that require your exact ValueSkin. Matching is deterministic and server-enforced.</div>
                       </div>
                     </div>
 
@@ -1537,7 +1537,7 @@ export default function InstagramDemoPage() {
                               <div style={{ fontSize: '13px', color: C.textSecondary, marginBottom: '6px' }}>{opp.type} | Match: {opp.match}</div>
                               <div style={{ fontSize: '10px', color: '#2E7D32', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '12px' }}>
                                 <svg width="10" height="10" viewBox="0 0 24 24" fill="#2E7D32" stroke="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                                Matched via {selectedMarketplaceSkin} ValuSkin
+                                Matched via {selectedMarketplaceSkin} ValueSkin
                               </div>
 
                               {/* Deal Room — hidden until opened */}
@@ -1666,7 +1666,20 @@ export default function InstagramDemoPage() {
                                         Only visible to you and {opp.brand} · Auto-expires in {offerExpiresLabel}
                                       </div>
                                       <div style={{ display: 'flex', gap: '6px' }}>
-                                        <button onClick={() => setDealRoomPhase('accepted')} style={{ flex: 1, background: '#2E7D32', border: 'none', padding: '8px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '12px' }}>Accept</button>
+                                        <button onClick={() => {
+                                          setDealRoomPhase('accepted');
+                                          // Create a shared application so the brand can see this in "Applications Received"
+                                          const newApp: SharedApplication = {
+                                            id: Date.now(),
+                                            campaignId: -1,
+                                            campaignTitle: `Deal with ${opp.brand}`,
+                                            creatorProfession: selectedMarketplaceSkin || '',
+                                            creatorHandle: '@creator_demo',
+                                            status: 'accepted',
+                                            appliedAt: new Date().toLocaleDateString(),
+                                          };
+                                          persistApplications([...sharedApplications, newApp]);
+                                        }} style={{ flex: 1, background: '#2E7D32', border: 'none', padding: '8px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '12px' }}>Accept</button>
                                         <button onClick={() => setDealRoomPhase('counter')} style={{ flex: 1, background: C.primary, border: 'none', padding: '8px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '12px' }}>Counter Offer</button>
                                         <button onClick={() => setNegotiatingOpp(null)} style={{ flex: 1, background: 'none', border: `1px solid ${C.border}`, padding: '8px', borderRadius: '8px', color: C.textSecondary, fontWeight: 500, cursor: 'pointer', fontSize: '12px' }}>Decline</button>
                                       </div>
@@ -2057,7 +2070,7 @@ export default function InstagramDemoPage() {
                             </div>
                             {brandSkinMode === 'promo' && (
                               <div style={{ background:C.bg, borderRadius:8, padding:8, border:`1px solid ${C.border}` }}>
-                                <div style={{ fontSize:10, color:C.textMuted, marginBottom:4 }}>Promote a product or campaign — creators see this when they click your ValuSkin</div>
+                                <div style={{ fontSize:10, color:C.textMuted, marginBottom:4 }}>Promote a product or campaign — creators see this when they click your ValueSkin</div>
                                 <input type="text" value={brandPromoText} onChange={e=>setBrandPromoText(e.target.value)} placeholder="e.g. Try our new McPlant burger!" style={{ width:'100%', background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:6, color:C.text, padding:'6px 8px', fontSize:12, fontFamily:'inherit', outline:'none', marginBottom:6, boxSizing:'border-box' as const }} />
                                 <input type="text" value={brandPromoUrl} onChange={e=>setBrandPromoUrl(e.target.value)} placeholder="Link (optional)" style={{ width:'100%', background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:6, color:C.text, padding:'6px 8px', fontSize:12, fontFamily:'inherit', outline:'none', boxSizing:'border-box' as const }} />
                                 {brandPromoText && (
@@ -2074,7 +2087,7 @@ export default function InstagramDemoPage() {
                       ) : (
                         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                           <div style={{ fontSize:'12px', color:C.textMuted }}>No profession set — brands need a ValueSkin to contact creators</div>
-                          <button onClick={() => setShowBrandStoreModal(true)} style={{ background:C.primary, border:'none', borderRadius:'6px', padding:'6px 12px', fontSize:'11px', fontWeight:700, color:'#fff', cursor:'pointer' }}>Get ValueSkin</button>
+                          <button onClick={() => setActiveView('store')} style={{ background:C.primary, border:'none', borderRadius:'6px', padding:'6px 12px', fontSize:'11px', fontWeight:700, color:'#fff', cursor:'pointer' }}>Get ValueSkin</button>
                         </div>
                       )}
                     </div>
@@ -2084,8 +2097,8 @@ export default function InstagramDemoPage() {
                     <div style={{ background: 'rgba(0,102,204,0.06)', border: `1px solid rgba(0,102,204,0.15)`, borderRadius: '10px', padding: '12px 16px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                       <div>
-                        <div style={{ fontSize: '12px', fontWeight: 700, color: C.text }}>ValuSkin Matching Active</div>
-                        <div style={{ fontSize: '11px', color: C.textSecondary }}>Only creators holding the ValuSkin you select below will appear. Matching is deterministic and server-enforced.</div>
+                        <div style={{ fontSize: '12px', fontWeight: 700, color: C.text }}>ValueSkin Matching Active</div>
+                        <div style={{ fontSize: '11px', color: C.textSecondary }}>Only creators holding the ValueSkin you select below will appear. Matching is deterministic and server-enforced.</div>
                       </div>
                     </div>
 
@@ -2160,7 +2173,7 @@ export default function InstagramDemoPage() {
 
                     {/* Which Field — profession filter */}
                     <div style={{ marginBottom: '16px' }}>
-                      <div style={{ fontSize: '12px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '8px' }}>Which Field (Required ValuSkin)</div>
+                      <div style={{ fontSize: '12px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '8px' }}>Which Field (Required ValueSkin)</div>
                       <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                         <button
                           onClick={() => setBrandFieldFilter(null)}
@@ -2277,7 +2290,7 @@ export default function InstagramDemoPage() {
 
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                       <div style={{ fontSize: '12px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.6px' }}>
-                        {brandFieldFilter ? `Creators with ${brandFieldFilter} ValuSkin` : 'All Creators'}
+                        {brandFieldFilter ? `Creators with ${brandFieldFilter} ValueSkin` : 'All Creators'}
                       </div>
                       <button
                         onClick={() => setFilterBarterOnly(prev => !prev)}
@@ -2305,21 +2318,17 @@ export default function InstagramDemoPage() {
                         (!filterResponseMax || c.responseTimeHrs <= filterResponseMax)
                       );
                       if (q) {
-                        if (brandSearchMode === 'profession') {
-                          // Exact matches first, then partial, then related (same category words)
-                          const exact = results.filter(c => c.valueSkin.toLowerCase() === q);
-                          const partial = results.filter(c => c.valueSkin.toLowerCase().includes(q) && c.valueSkin.toLowerCase() !== q);
-                          const related = results.filter(c => !c.valueSkin.toLowerCase().includes(q) && q.split(' ').some(word => c.valueSkin.toLowerCase().includes(word)));
-                          results = [...exact, ...partial, ...related];
-                        } else if (brandSearchMode === 'name') {
-                          results = results.filter(c => c.name.toLowerCase().includes(q) || c.handle.toLowerCase().includes(q));
+                        // Always search across name, handle, and profession regardless of mode
+                        const nameMatches = results.filter(c => c.name.toLowerCase().includes(q) || c.handle.toLowerCase().includes(q));
+                        const profExact = results.filter(c => c.valueSkin.toLowerCase() === q && !nameMatches.includes(c));
+                        const profPartial = results.filter(c => c.valueSkin.toLowerCase().includes(q) && c.valueSkin.toLowerCase() !== q && !nameMatches.includes(c));
+                        // Name matches always show first, then profession matches
+                        if (brandSearchMode === 'name') {
+                          results = nameMatches;
+                        } else if (brandSearchMode === 'profession') {
+                          results = [...profExact, ...profPartial, ...nameMatches.filter(c => !profExact.includes(c) && !profPartial.includes(c))];
                         } else {
-                          // General: name, handle, profession — exact skin match first
-                          const exact = results.filter(c => c.valueSkin.toLowerCase() === q);
-                          const rest = results.filter(c => c.valueSkin.toLowerCase() !== q && (
-                            c.name.toLowerCase().includes(q) || c.handle.toLowerCase().includes(q) || c.valueSkin.toLowerCase().includes(q)
-                          ));
-                          results = [...exact, ...rest];
+                          results = [...nameMatches, ...profExact, ...profPartial];
                         }
                       }
                       return (
@@ -2353,7 +2362,7 @@ export default function InstagramDemoPage() {
                               <div style={{ fontSize: '12px', color: C.textSecondary }}>{creator.handle}</div>
                               <div style={{ fontSize: '10px', color: C.primary, display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
                                 <svg width="10" height="10" viewBox="0 0 24 24" fill={C.primary} stroke="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                                Matched by ValuSkin: {creator.valueSkin}
+                                Matched by ValueSkin: {creator.valueSkin}
                               </div>
                             </div>
                             <div style={{ textAlign: 'right' }}>
@@ -2931,12 +2940,12 @@ export default function InstagramDemoPage() {
                     {/* Applications Received — always visible below campaigns */}
                     <div style={{ marginTop:'20px', paddingTop:'20px', borderTop:`1px solid ${C.border}` }}>
                       <div style={{ fontSize:'12px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.6px', marginBottom:'14px' }}>Applications Received</div>
-                      {sharedApplications.filter(a => campaigns.some(c => c.id===a.campaignId)).length === 0 ? (
+                      {sharedApplications.length === 0 ? (
                         <div style={{ textAlign:'center', padding:'24px 20px', color:C.textMuted }}>
                           <div style={{ fontSize:'13px', marginBottom:'4px' }}>No applications yet</div>
-                          <div style={{ fontSize:'11px' }}>Creators will appear here once they apply to your campaigns.</div>
+                          <div style={{ fontSize:'11px' }}>Creators will appear here once they accept deals or apply to campaigns.</div>
                         </div>
-                      ) : sharedApplications.filter(a=>campaigns.some(c=>c.id===a.campaignId)).map((app,i) => {
+                      ) : sharedApplications.map((app,i) => {
                         const camp = campaigns.find(c=>c.id===app.campaignId);
                         return (
                           <div key={i} style={{ background:C.card, borderRadius:'12px', padding:'14px', marginBottom:'10px', border:`1px solid ${app.status==='accepted'?'rgba(46,125,50,0.3)':C.border}` }}>
@@ -2944,7 +2953,7 @@ export default function InstagramDemoPage() {
                               <span style={{ fontSize:'13px', fontWeight:700, color:C.text }}>{app.creatorHandle} ({app.creatorProfession})</span>
                               <span style={{ fontSize:'10px', fontWeight:700, color:app.status==='pending'?'#f59e0b':app.status==='accepted'?'#2E7D32':'#ef4444', background:app.status==='pending'?'rgba(245,158,11,0.1)':app.status==='accepted'?'rgba(46,125,50,0.1)':'rgba(239,68,68,0.1)', padding:'2px 8px', borderRadius:'6px', textTransform:'uppercase' }}>{app.status}</span>
                             </div>
-                            <div style={{ fontSize:'11px', color:C.textSecondary, marginBottom:'8px' }}>Campaign: {camp?.title} · Applied {app.appliedAt}</div>
+                            <div style={{ fontSize:'11px', color:C.textSecondary, marginBottom:'8px' }}>{camp ? `Campaign: ${camp.title}` : app.campaignTitle} · {app.appliedAt}</div>
                             {app.status === 'accepted' && <div style={{ fontSize:'11px', color:'#2E7D32', marginBottom:'8px' }}>Creator has been notified and can now enter negotiation.</div>}
                             {app.status === 'pending' && (
                               <div style={{ display:'flex', gap:'6px' }}>
@@ -2993,7 +3002,7 @@ export default function InstagramDemoPage() {
                   </div>
 
                   <div style={{ padding: '16px' }}>
-                    {/* DISCOVER TAB — only show communities matching user's ValuSkins */}
+                    {/* DISCOVER TAB — only show communities matching user's ValueSkins */}
                     {communitiesTab === 'discover' && (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                         {(() => {
@@ -3004,13 +3013,13 @@ export default function InstagramDemoPage() {
                           );
                           if (!hasValueSkin) return (
                             <div style={{ textAlign: 'center', padding: '40px 20px', color: C.textMuted }}>
-                              <div style={{ fontSize: '14px', marginBottom: '8px' }}>Get a ValuSkin to discover communities</div>
+                              <div style={{ fontSize: '14px', marginBottom: '8px' }}>Get a ValueSkin to discover communities</div>
                               <div style={{ fontSize: '12px' }}>Communities are matched to your profession</div>
                             </div>
                           );
                           if (filtered.length === 0) return (
                             <div style={{ textAlign: 'center', padding: '40px 20px', color: C.textMuted }}>
-                              <div style={{ fontSize: '14px', marginBottom: '8px' }}>No communities match your ValuSkins yet</div>
+                              <div style={{ fontSize: '14px', marginBottom: '8px' }}>No communities match your ValueSkins yet</div>
                               <div style={{ fontSize: '12px' }}>Communities for {userProfessions.join(', ')} will appear here</div>
                             </div>
                           );
@@ -3258,7 +3267,7 @@ export default function InstagramDemoPage() {
                             </div>
 
                             <div>
-                              <div style={{ fontSize: '12px', fontWeight: 700, color: C.textMuted, marginBottom: '8px' }}>Accepted ValuSkin Levels</div>
+                              <div style={{ fontSize: '12px', fontWeight: 700, color: C.textMuted, marginBottom: '8px' }}>Accepted ValueSkin Levels</div>
                               <div style={{ fontSize: '10px', color: C.textSecondary, marginBottom: '8px' }}>Choose which levels can join. Select one or many.</div>
                               <div style={{ display: 'flex', gap: '6px' }}>
                                 {[1, 2, 3, 4, 5].map(lvl => {
@@ -3797,7 +3806,7 @@ export default function InstagramDemoPage() {
                 <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: '10px', padding: '14px 16px', marginBottom: '16px' }}>
                   <div style={{ fontSize: '11px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '12px' }}>Platform-Wide Enforcement</div>
                   {([
-                    { label: 'Require verified Brand ValuSkin to contact', desc: 'Unverified brands cannot initiate any outreach', value: safetyRequireVerifiedBrand, set: setSafetyRequireVerifiedBrand },
+                    { label: 'Require verified Brand ValueSkin to contact', desc: 'Unverified brands cannot initiate any outreach', value: safetyRequireVerifiedBrand, set: setSafetyRequireVerifiedBrand },
                     { label: 'Proposal form required (no free-text cold DMs)', desc: 'All contact must be a structured brief — not a message', value: safetyRequireBrief, set: setSafetyRequireBrief },
                     { label: 'Block off-platform contact requests', desc: 'Auto-flag messages asking for phone/email/WhatsApp', value: safetyOffPlatformBlock, set: setSafetyOffPlatformBlock },
                   ] as const).map(({ label, desc, value, set }) => (
@@ -3830,7 +3839,7 @@ export default function InstagramDemoPage() {
                   • Auto-suspended after <strong style={{ color: C.text }}>{safetyReportThreshold}</strong> creator report{safetyReportThreshold !== 1 ? 's' : ''}<br/>
                   • Minimum brand trust to contact: <strong style={{ color: C.text }}>{'★'.repeat(safetyMinBrandTrust)}</strong><br/>
                   {safetyNewBrandWarmIntro && <>• Brands with &lt;{safetyNewBrandDealCount} deals need warm intro<br/></>}
-                  {safetyRequireVerifiedBrand && <>• Verified Brand ValuSkin required<br/></>}
+                  {safetyRequireVerifiedBrand && <>• Verified Brand ValueSkin required<br/></>}
                   {safetyRequireBrief && <>• Proposal form mandatory — no cold DMs<br/></>}
                   {safetyOffPlatformBlock && <>• Off-platform contact requests auto-flagged<br/></>}
                 </div>
@@ -4048,7 +4057,7 @@ export default function InstagramDemoPage() {
             <>
               <div style={{ height: '60px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', paddingLeft: '20px', fontWeight: 'bold', fontSize: '16px', background: C.surface }}>
                 Settings
-                <span style={{ fontSize: '11px', fontWeight: 600, color: C.textSecondary, marginLeft: '10px' }}>ValuSkins preferences</span>
+                <span style={{ fontSize: '11px', fontWeight: 600, color: C.textSecondary, marginLeft: '10px' }}>ValueSkins preferences</span>
               </div>
               <div style={{ padding: '20px' }}>
 
@@ -4331,7 +4340,7 @@ export default function InstagramDemoPage() {
                       {open && (
                         <div style={{ background: C.card, border: `1px solid ${C.border}`, borderTop: 'none', borderRadius: '0 0 10px 10px', padding: '14px' }}>
                           <div style={{ fontSize: '11px', color: C.textSecondary, marginBottom: '10px', lineHeight: 1.5 }}>
-                            When showcase mode is on, brands see your video pitch and bio when they click your ValuSkin on your profile.
+                            When showcase mode is on, brands see your video pitch and bio when they click your ValueSkin on your profile.
                           </div>
 
                           {/* Mode toggle */}
