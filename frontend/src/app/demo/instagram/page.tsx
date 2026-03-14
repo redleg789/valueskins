@@ -438,6 +438,7 @@ export default function InstagramDemoPage() {
   const [newCommGateType, setNewCommGateType] = useState<'any_valueskin' | 'specific'>('any_valueskin');
   const [newCommProfessions, setNewCommProfessions] = useState<string[]>([]);
   const [newCommTier, setNewCommTier] = useState<'community' | 'marketplace'>('community');
+  const [newCommAcceptedLevels, setNewCommAcceptedLevels] = useState<number[]>([1, 2, 3, 4, 5]);
   const [likedCommunityPosts, setLikedCommunityPosts] = useState<number[]>([]);
   // Admin pricing
   const [communityTierCredits, setCommunityTierCredits] = useState(0);
@@ -2990,15 +2991,29 @@ export default function InstagramDemoPage() {
                   </div>
 
                   <div style={{ padding: '16px' }}>
-                    {/* DISCOVER TAB */}
+                    {/* DISCOVER TAB — only show communities matching user's ValuSkins */}
                     {communitiesTab === 'discover' && (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        {MOCK_COMMUNITIES.map((comm) => {
+                        {(() => {
                           const userProfessions = Object.values(valueSkins).filter(Boolean).map(s => s!.profession);
-                          const canJoin = hasValueSkin && (
+                          const filtered = MOCK_COMMUNITIES.filter(comm =>
                             comm.gateType === 'any_valueskin' ||
                             comm.allowedProfessions.some(p => userProfessions.includes(p))
                           );
+                          if (!hasValueSkin) return (
+                            <div style={{ textAlign: 'center', padding: '40px 20px', color: C.textMuted }}>
+                              <div style={{ fontSize: '14px', marginBottom: '8px' }}>Get a ValuSkin to discover communities</div>
+                              <div style={{ fontSize: '12px' }}>Communities are matched to your profession</div>
+                            </div>
+                          );
+                          if (filtered.length === 0) return (
+                            <div style={{ textAlign: 'center', padding: '40px 20px', color: C.textMuted }}>
+                              <div style={{ fontSize: '14px', marginBottom: '8px' }}>No communities match your ValuSkins yet</div>
+                              <div style={{ fontSize: '12px' }}>Communities for {userProfessions.join(', ')} will appear here</div>
+                            </div>
+                          );
+                          return filtered.map((comm) => {
+                          const canJoin = true;
                           const alreadyJoined = joinedCommunities.includes(comm.id);
 
                           return (
@@ -3056,6 +3071,11 @@ export default function InstagramDemoPage() {
                                       </span>
                                     ))
                                   )}
+                                  {comm.acceptedLevels && !(comm.acceptedLevels.length === 5 && comm.acceptedLevels.includes(1)) && (
+                                    <span style={{ fontSize: '10px', background: 'rgba(139,92,246,0.1)', color: '#8b5cf6', padding: '2px 6px', borderRadius: '4px' }}>
+                                      L{Math.min(...comm.acceptedLevels)}{comm.acceptedLevels.length > 1 ? `–L${Math.max(...comm.acceptedLevels)}` : ''} required
+                                    </span>
+                                  )}
                                 </div>
                                 <div style={{ fontSize: '11px', color: C.textMuted }}>
                                   {comm.memberCount.toLocaleString()} members · {comm.postCount.toLocaleString()} posts
@@ -3086,26 +3106,12 @@ export default function InstagramDemoPage() {
                                   >
                                     Join
                                   </button>
-                                ) : !hasValueSkin ? (
-                                  <button
-                                    onClick={() => setActiveView('store')}
-                                    style={{
-                                      padding: '8px 14px', borderRadius: '6px', border: 'none',
-                                      background: C.textMuted, color: '#fff', fontSize: '11px', fontWeight: 600,
-                                      cursor: 'pointer', whiteSpace: 'nowrap', opacity: 0.6,
-                                    }}
-                                  >
-                                    Get Skin
-                                  </button>
-                                ) : (
-                                  <div style={{ fontSize: '10px', color: C.textMuted, textAlign: 'right', whiteSpace: 'nowrap' }}>
-                                    Requires {comm.allowedProfessions[0]}
-                                  </div>
-                                )}
+                                ) : null}
                               </div>
                             </div>
                           );
-                        })}
+                        });
+                        })()}
                       </div>
                     )}
 
@@ -3246,6 +3252,28 @@ export default function InstagramDemoPage() {
                                     {gt === 'any_valueskin' ? 'Any' : 'Specific'}
                                   </button>
                                 ))}
+                              </div>
+                            </div>
+
+                            <div>
+                              <div style={{ fontSize: '12px', fontWeight: 700, color: C.textMuted, marginBottom: '8px' }}>Accepted ValuSkin Levels</div>
+                              <div style={{ fontSize: '10px', color: C.textSecondary, marginBottom: '8px' }}>Choose which levels can join. Select one or many.</div>
+                              <div style={{ display: 'flex', gap: '6px' }}>
+                                {[1, 2, 3, 4, 5].map(lvl => {
+                                  const active = newCommAcceptedLevels.includes(lvl);
+                                  return (
+                                    <button key={lvl}
+                                      onClick={() => setNewCommAcceptedLevels(prev => active ? prev.filter(l => l !== lvl) : [...prev, lvl].sort())}
+                                      style={{
+                                        flex: 1, padding: '8px 4px', borderRadius: '6px',
+                                        border: `1px solid ${active ? '#8b5cf6' : C.border}`,
+                                        background: active ? 'rgba(139,92,246,0.15)' : C.surface,
+                                        color: active ? '#8b5cf6' : C.textSecondary,
+                                        fontSize: '12px', fontWeight: 600, cursor: 'pointer',
+                                      }}
+                                    >L{lvl}</button>
+                                  );
+                                })}
                               </div>
                             </div>
 
@@ -4096,32 +4124,39 @@ export default function InstagramDemoPage() {
                   </div>
                 </div>
 
-                {/* Energy State */}
+                {/* Availability */}
                 <div style={{ marginBottom: '24px' }}>
                   <div style={{ fontSize: '12px', fontWeight: 700, color: C.textMuted, letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: '12px' }}>
                     Availability
                   </div>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    {([
-                      { key: 'available', label: 'Available', color: '#10b981' },
-                      { key: 'limited', label: 'Limited', color: '#f59e0b' },
-                      { key: 'burnout', label: 'Burnout', color: '#ef4444' },
-                      { key: 'pause', label: 'Paused', color: '#6b7280' },
-                    ] as const).map(({ key, label, color }) => (
-                      <button
-                        key={key}
-                        onClick={() => setCreatorEnergy(key)}
-                        style={{
-                          flex: 1, padding: '10px 8px', borderRadius: '8px',
-                          border: `1px solid ${creatorEnergy === key ? color : C.border}`,
-                          background: creatorEnergy === key ? `${color}15` : C.card,
-                          color: creatorEnergy === key ? color : C.textSecondary,
-                          fontSize: '12px', fontWeight: 600, cursor: 'pointer',
-                        }}
-                      >
-                        {label}
-                      </button>
-                    ))}
+                  <div style={{ fontSize: '11px', color: C.textSecondary, marginBottom: '12px', lineHeight: 1.4 }}>
+                    You are assumed available for deals at all times. Set dates below only if you are taking a break.
+                  </div>
+                  <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: '10px', padding: '14px' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', marginBottom: '10px' }}>Not available from</div>
+                    <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '10px', color: C.textMuted, marginBottom: '4px' }}>From</div>
+                        <input type="date" value={notAvailableFrom} onChange={e => setNotAvailableFrom(e.target.value)}
+                          style={{ width: '100%', background: C.bg, border: `1px solid ${C.border}`, borderRadius: '8px', color: C.text, padding: '8px 10px', fontSize: '12px', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' as const }} />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '10px', color: C.textMuted, marginBottom: '4px' }}>To</div>
+                        <input type="date" value={notAvailableTo} onChange={e => setNotAvailableTo(e.target.value)}
+                          style={{ width: '100%', background: C.bg, border: `1px solid ${C.border}`, borderRadius: '8px', color: C.text, padding: '8px 10px', fontSize: '12px', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' as const }} />
+                      </div>
+                    </div>
+                    {(notAvailableFrom || notAvailableTo) && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ fontSize: '11px', color: '#f59e0b' }}>
+                          You will appear as unavailable during this period.
+                        </div>
+                        <button onClick={() => { setNotAvailableFrom(''); setNotAvailableTo(''); }}
+                          style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: '6px', padding: '4px 10px', fontSize: '10px', color: C.textSecondary, cursor: 'pointer' }}>
+                          Clear
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
 
