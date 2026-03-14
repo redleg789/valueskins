@@ -114,7 +114,7 @@ export default function SettingsPage() {
   // Creator attributes state
   const [attrs, setAttrs] = useState({
     location_city: '', location_country: '', timezone: '',
-    availability_from: '9:00 AM', availability_to: '6:00 PM', available_until: '',
+    availability_from: '9:00 AM', availability_to: '6:00 PM', available_until: '', not_available_from: '',
     willing_to_relocate: false, willing_to_travel: false, willing_to_appear_at_events: false,
     age: '', gender: '', languages_spoken: [] as string[], content_language: '',
     content_format: [] as string[], posting_frequency: '',
@@ -251,10 +251,9 @@ export default function SettingsPage() {
     // Level fit bonus: min(creator_level * 4, 20)
     score += Math.min(creatorLevel * 4, 20);
 
-    // Price band overlap (assuming brand would offer 'mid-tier' by default)
-    if (['mid-tier', 'premium'].includes(backendSettings.price_band)) {
-      score += 15;
-    }
+    // Profile completeness bonus
+    const filledFields = [attrs.location_country, attrs.age, attrs.gender, attrs.content_language, attrs.audience_age_range].filter(Boolean).length;
+    score += Math.min(filledFields * 3, 15);
 
     // Trust bonus (mock: 70 out of 100 = 7 bonus)
     const mockTrustScore = 70;
@@ -327,11 +326,20 @@ export default function SettingsPage() {
               </div>
             </SectionRow>
             <SectionRow>
-              <label style={labelStyle}>Available Until (vacation / break end date)</label>
-              <input style={inputStyle} type="date" value={attrs.available_until} onChange={e => setA('available_until', e.target.value)} />
-              {attrs.available_until && (
+              <label style={labelStyle}>Not available from</label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                <div>
+                  <div style={{ fontSize: 10, color: 'var(--ig-text-tertiary)', marginBottom: 4 }}>From</div>
+                  <input style={inputStyle} type="date" value={attrs.not_available_from ?? ''} onChange={e => setA('not_available_from' as keyof typeof attrs, e.target.value)} />
+                </div>
+                <div>
+                  <div style={{ fontSize: 10, color: 'var(--ig-text-tertiary)', marginBottom: 4 }}>To</div>
+                  <input style={inputStyle} type="date" value={attrs.available_until} onChange={e => setA('available_until', e.target.value)} />
+                </div>
+              </div>
+              {(attrs.not_available_from || attrs.available_until) && (
                 <div style={{ fontSize: 11, color: '#f59e0b', marginTop: 6 }}>
-                  You will appear as unavailable after this date until you clear it.
+                  You will appear as unavailable during this period. Clear both dates when back.
                 </div>
               )}
             </SectionRow>
@@ -549,7 +557,7 @@ export default function SettingsPage() {
         {/* Advance Preferences */}
         <div style={{ borderBottom: '1px solid var(--ig-separator)' }}>
           <button onClick={() => toggleSection('advance')} style={{ width: '100%', ...sectionHeaderStyle, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span>💳 Advance Preferences</span>
+            <span>Advance Preferences</span>
             <span style={{ fontSize: 16 }}>{expandedSection === 'advance' ? '▲' : '▼'}</span>
           </button>
           {expandedSection === 'advance' && <>
@@ -577,7 +585,7 @@ export default function SettingsPage() {
                 <div style={{ fontSize: 10, color: 'var(--ig-text-tertiary)', lineHeight: '1.5' }}>
                   <div style={{ marginBottom: 4 }}>✓ Base ValuSkin match: +40</div>
                   <div style={{ marginBottom: 4 }}>✓ Creator level fit: +{Math.min(3 * 4, 20)}</div>
-                  <div style={{ marginBottom: 4 }}>✓ Price band overlap ({backendSettings.price_band}): +{['mid-tier', 'premium'].includes(backendSettings.price_band) ? 15 : 0}</div>
+                  <div style={{ marginBottom: 4 }}>✓ Profile completeness: +15</div>
                   <div style={{ marginBottom: 4 }}>✓ Trust & authenticity: +17</div>
                   <div>✓ Advance compatibility: +{attrs.creator_requires_advance ? 5 : 0}</div>
                 </div>
@@ -586,7 +594,7 @@ export default function SettingsPage() {
 
             <SectionRow>
               <div style={{ background: 'var(--ig-elevated)', padding: 12, borderRadius: 8, marginBottom: 16, fontSize: 12, color: 'var(--ig-text-secondary)' }}>
-                💡 Control whether you want advances on deals. Set your preference and non-negotiable terms. Your match score updates in real-time as you adjust these settings.
+                Control whether you want advances on deals. Set your preference and non-negotiable terms. Your match score updates in real-time as you adjust these settings.
               </div>
               <InlineToggle value={attrs.creator_requires_advance} onChange={v => setA('creator_requires_advance', v)} label="I want/need advances on deals" />
             </SectionRow>
@@ -746,12 +754,6 @@ export default function SettingsPage() {
             <label style={labelStyle}>Energy State</label>
             <select style={inputStyle} value={backendSettings.energy_state} onChange={e => setBS('energy_state', e.target.value)}>
               {['available', 'limited', 'burnout', 'pause'].map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
-            </select>
-          </SectionRow>
-          <SectionRow>
-            <label style={labelStyle}>Price Band</label>
-            <select style={inputStyle} value={backendSettings.price_band} onChange={e => setBS('price_band', e.target.value)}>
-              {['experimental', 'mid-tier', 'premium', 'exclusive'].map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
             </select>
           </SectionRow>
           <SectionRow>

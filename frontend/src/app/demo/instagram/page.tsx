@@ -141,6 +141,7 @@ const MOCK_COMMUNITIES = [
     description: 'A private space for software engineers to share side projects, job referrals, and raw opinions without the LinkedIn polish.',
     visibility: 'public' as const, gateType: 'specific' as const, requiredTier: 'community' as const,
     allowedProfessions: ['Software Engineer', 'DevOps Engineer', 'AI/ML Specialist'],
+    acceptedLevels: [1, 2, 3, 4, 5] as number[],
     memberCount: 2847, postCount: 1203,
     posts: [
       { id: 0, author: 'Alex R.', handle: '@alex_codes', profession: 'Software Engineer', content: 'Hot take: Rust > Go for anything that matters. Fight me.', likes: 312, pinned: false, announcement: false, time: '2h' },
@@ -158,6 +159,7 @@ const MOCK_COMMUNITIES = [
     description: 'Verified doctors and surgeons only. Clinical discussions, career advice, and the cases that keep you up at night.',
     visibility: 'private' as const, gateType: 'specific' as const, requiredTier: 'marketplace' as const,
     allowedProfessions: ['Doctor', 'Surgeon', 'Nurse'],
+    acceptedLevels: [3, 4, 5] as number[],
     memberCount: 612, postCount: 389,
     posts: [
       { id: 3, author: 'Dr. Chen', handle: '@drchen', profession: 'Surgeon', content: 'Interesting presentation today — 34F with atypical chest pain. What would your differential be?', likes: 56, pinned: false, announcement: false, time: '3h' },
@@ -173,6 +175,7 @@ const MOCK_COMMUNITIES = [
     description: 'Any ValueSkin gets you in. This one is about grit, not credentials.',
     visibility: 'public' as const, gateType: 'any_valueskin' as const, requiredTier: 'community' as const,
     allowedProfessions: [],
+    acceptedLevels: [1, 2, 3, 4, 5] as number[],
     memberCount: 5241, postCount: 4102,
     posts: [
       { id: 5, author: 'Sam K.', handle: '@samk_ceo', profession: 'CEO', content: 'Lesson from year 3: hire for mindset, train for skill. Churn dropped 40%.', likes: 901, pinned: false, announcement: false, time: '5h' },
@@ -390,8 +393,17 @@ export default function InstagramDemoPage() {
 
   // Energy state (creator)
   const [creatorEnergy, setCreatorEnergy] = useState<'available' | 'limited' | 'burnout' | 'pause'>('available');
-  // Price band (creator public signal)
-  const [creatorPriceBand, setCreatorPriceBand] = useState<'experimental' | 'mid-tier' | 'premium' | 'exclusive'>('mid-tier');
+
+  // Deal preference toggles (profile section)
+  const [profileDealTypes, setProfileDealTypes] = useState<string[]>(['Paid']);
+  const [profileExclusivity, setProfileExclusivity] = useState(false);
+  const [profileNda, setProfileNda] = useState(false);
+  const [profileUsageRights, setProfileUsageRights] = useState(false);
+  const [profileOnCamera, setProfileOnCamera] = useState(true);
+
+  // Not available dates (vacation / break)
+  const [notAvailableFrom, setNotAvailableFrom] = useState('');
+  const [notAvailableTo, setNotAvailableTo] = useState('');
   const [creatorSettingsOpen, setCreatorSettingsOpen] = useState<'location' | 'identity' | 'audience' | 'deals' | null>(null);
   // Soft hold active
   const [softHoldActive, setSoftHoldActive] = useState(false);
@@ -1636,16 +1648,14 @@ export default function InstagramDemoPage() {
                                         Brand offer has arrived. Respond to their offer or submit a counter-offer — prices are only visible inside this room.
                                       </div>
                                       <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '10px', position: 'relative' }}>
-                                        <span style={{ fontSize: '13px', color: C.textMuted }}>Your ask ($):</span>
+                                        <span style={{ fontSize: '13px', color: C.textMuted }}>Their offer ($):</span>
                                         <div style={{ position: 'relative', flex: 1 }}>
                                           <input
                                             type="text"
                                             disabled={true}
-                                            value={creatorRate}
-                                            placeholder={creatorRate}
-                                            style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: '8px', color: C.textSecondary, padding: '6px 10px', fontSize: '15px', fontWeight: 700, fontFamily: 'inherit', outline: 'none', width: '100px', opacity: 0.6, cursor: 'not-allowed' }}
+                                            value={dealOfferAmount || creatorRate}
+                                            style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: '8px', color: C.text, padding: '6px 10px', fontSize: '15px', fontWeight: 700, fontFamily: 'inherit', outline: 'none', width: '100px', opacity: 0.8, cursor: 'not-allowed' }}
                                           />
-                                          <span style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', fontSize: '11px', color: C.textMuted, fontWeight: 600 }}>Locked</span>
                                         </div>
                                       </div>
                                       <div style={{ fontSize: '10px', color: C.textMuted, marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -1667,12 +1677,12 @@ export default function InstagramDemoPage() {
                                         <div style={{ fontSize: '11px', color: C.textMuted }}>Your current ask: <strong style={{ color: C.text }}>${creatorRate}</strong></div>
                                       </div>
                                       <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '10px' }}>
-                                        <span style={{ fontSize: '13px', color: C.textMuted }}>New ask ($):</span>
+                                        <span style={{ fontSize: '13px', color: C.textMuted }}>Your counter ($):</span>
                                         <input
                                           type="text"
                                           value={dealCounterAmount}
                                           onChange={(e) => setDealCounterAmount(e.target.value.replace(/[^0-9]/g, ''))}
-                                          placeholder={creatorRate}
+                                          placeholder="Enter amount"
                                           style={{ background: C.bg, border: `1px solid ${C.primary}`, borderRadius: '8px', color: C.text, padding: '6px 10px', fontSize: '15px', fontWeight: 700, fontFamily: 'inherit', outline: 'none', width: '100px' }}
                                         />
                                       </div>
@@ -2590,14 +2600,7 @@ export default function InstagramDemoPage() {
                                     <div style={{ fontSize: '11px', color: C.textMuted, marginTop: '4px', lineHeight: 1.4 }}>{brandBriefDeliverables}</div>
                                   </div>
 
-                                  {/* Creator price band (public signal — no exact number) */}
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
-                                    <div style={{ fontSize: '12px', color: C.textSecondary }}>Creator price band:</div>
-                                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#E65100', background: 'rgba(230,81,0,0.1)', padding: '2px 8px', borderRadius: '4px' }}>mid-tier</span>
-                                    <div style={{ fontSize: '11px', color: C.textMuted }}>(exact rate hidden)</div>
-                                  </div>
-
-                                  <div style={{ marginBottom: '12px' }}>
+<div style={{ marginBottom: '12px' }}>
                                     <div style={{ fontSize: '11px', color: C.textMuted, marginBottom: '4px', fontWeight: 600 }}>Your offer per post</div>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                       <span style={{ fontSize: '18px', fontWeight: 800, color: C.text }}>$</span>
@@ -4122,34 +4125,6 @@ export default function InstagramDemoPage() {
                   </div>
                 </div>
 
-                {/* Price Band */}
-                <div style={{ marginBottom: '24px' }}>
-                  <div style={{ fontSize: '12px', fontWeight: 700, color: C.textMuted, letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: '12px' }}>
-                    Price Band
-                  </div>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    {([
-                      { key: 'experimental', label: 'Experimental' },
-                      { key: 'mid-tier', label: 'Mid-Tier' },
-                      { key: 'premium', label: 'Premium' },
-                      { key: 'exclusive', label: 'Exclusive' },
-                    ] as const).map(({ key, label }) => (
-                      <button
-                        key={key}
-                        onClick={() => setCreatorPriceBand(key)}
-                        style={{
-                          flex: 1, padding: '10px 8px', borderRadius: '8px',
-                          border: `1px solid ${creatorPriceBand === key ? C.primary : C.border}`,
-                          background: creatorPriceBand === key ? `${C.primary}15` : C.card,
-                          color: creatorPriceBand === key ? C.primary : C.textSecondary,
-                          fontSize: '11px', fontWeight: 600, cursor: 'pointer',
-                        }}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
 
                 {/* Location & Availability */}
                 {(() => {
@@ -4266,19 +4241,35 @@ export default function InstagramDemoPage() {
                         <div style={{ background: C.card, border: `1px solid ${C.border}`, borderTop: 'none', borderRadius: '0 0 10px 10px', padding: '14px' }}>
                           <div style={{ marginBottom: '10px' }}><div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, marginBottom: '6px', textTransform: 'uppercase' }}>Deal Type (select all that apply)</div>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
-                              {['Paid','Gifted Product','Equity','Barter','Revenue Share','Ambassador','Licensing'].map(d => (
-                                <span key={d} style={{ padding: '4px 10px', borderRadius: '10px', fontSize: '11px', background: C.bg, border: `1px solid ${C.border}`, color: C.textSecondary, cursor: 'pointer' }}>{d}</span>
-                              ))}
+                              {['Paid','Gifted Product','Equity','Barter','Revenue Share','Ambassador','Licensing'].map(d => {
+                                const active = profileDealTypes.includes(d);
+                                return (
+                                  <span key={d} onClick={() => setProfileDealTypes(prev => active ? prev.filter(x => x !== d) : [...prev, d])}
+                                    style={{ padding: '4px 10px', borderRadius: '10px', fontSize: '11px',
+                                      background: active ? `${C.primary}20` : C.bg,
+                                      border: `1px solid ${active ? C.primary : C.border}`,
+                                      color: active ? C.primary : C.textSecondary,
+                                      cursor: 'pointer', fontWeight: active ? 600 : 400,
+                                      transition: 'all 0.15s',
+                                    }}>{d}</span>
+                                );
+                              })}
                             </div>
                           </div>
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
                             <div><div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, marginBottom: '4px', textTransform: 'uppercase' }}>Min Deal (USD)</div><input type="number" placeholder="500" style={{ width: '100%', padding: '7px 9px', background: C.bg, border: `1px solid ${C.border}`, borderRadius: '7px', color: C.text, fontSize: '12px', boxSizing: 'border-box' as const }} /></div>
                             <div><div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, marginBottom: '4px', textTransform: 'uppercase' }}>Response Time (hrs)</div><input type="number" placeholder="24" style={{ width: '100%', padding: '7px 9px', background: C.bg, border: `1px solid ${C.border}`, borderRadius: '7px', color: C.text, fontSize: '12px', boxSizing: 'border-box' as const }} /></div>
                           </div>
-                          {[['Open to exclusivity','excl'],['Willing to sign NDA','nda'],['Grant usage rights','rights'],['On-camera willing','cam']].map(([lbl]) => (
-                            <div key={lbl} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0', borderTop: `1px solid ${C.border}` }}>
+                          {([['Open to exclusivity', profileExclusivity, (v: boolean) => setProfileExclusivity(v)] as const,
+                            ['Willing to sign NDA', profileNda, (v: boolean) => setProfileNda(v)] as const,
+                            ['Grant usage rights', profileUsageRights, (v: boolean) => setProfileUsageRights(v)] as const,
+                            ['On-camera willing', profileOnCamera, (v: boolean) => setProfileOnCamera(v)] as const,
+                          ]).map(([lbl, val, setter]) => (
+                            <div key={lbl} onClick={() => setter(!val)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0', borderTop: `1px solid ${C.border}`, cursor: 'pointer' }}>
                               <span style={{ fontSize: '12px', color: C.text }}>{lbl}</span>
-                              <div style={{ width: '36px', height: '20px', borderRadius: '10px', background: C.border, position: 'relative', cursor: 'pointer' }}><div style={{ width: '16px', height: '16px', borderRadius: '50%', background: '#fff', position: 'absolute', top: '2px', left: '2px' }} /></div>
+                              <div style={{ width: '36px', height: '20px', borderRadius: '10px', background: val ? C.primary : C.border, position: 'relative', transition: 'background 0.2s' }}>
+                                <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: '#fff', position: 'absolute', top: '2px', left: val ? '18px' : '2px', transition: 'left 0.2s' }} />
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -4557,14 +4548,14 @@ export default function InstagramDemoPage() {
                     const hasAvatar = true;
                     const hasBio = true;
                     const hasValueSkin = Object.values(valueSkins).some(Boolean);
-                    const hasPriceBand = Boolean(creatorPriceBand);
+                    const hasDealPrefs = profileDealTypes.length > 0;
                     const hasCredential = false;
                     const hasTestimonial = false;
                     const hasBarterPref = true;
                     const hasEnergy = Boolean(creatorEnergy);
                     const score =
                       (hasAvatar ? 15 : 0) + (hasBio ? 15 : 0) + (hasValueSkin ? 20 : 0) +
-                      (hasPriceBand ? 10 : 0) + (hasCredential ? 15 : 0) + (hasTestimonial ? 15 : 0) +
+                      (hasDealPrefs ? 10 : 0) + (hasCredential ? 15 : 0) + (hasTestimonial ? 15 : 0) +
                       (hasBarterPref ? 5 : 0) + (hasEnergy ? 5 : 0);
                     const tier = score >= 90 ? 'Elite' : score >= 70 ? 'Established' : score >= 40 ? 'Developing' : 'Incomplete';
                     const tierColor = score >= 90 ? '#f59e0b' : score >= 70 ? '#22c55e' : score >= 40 ? C.primary : '#ef4444';
@@ -4572,7 +4563,7 @@ export default function InstagramDemoPage() {
                       { label: 'Avatar', done: hasAvatar, pts: 15 },
                       { label: 'Bio', done: hasBio, pts: 15 },
                       { label: 'ValueSkin', done: hasValueSkin, pts: 20 },
-                      { label: 'Price Band', done: hasPriceBand, pts: 10 },
+                      { label: 'Deal Preferences', done: hasDealPrefs, pts: 10 },
                       { label: 'Credential', done: hasCredential, pts: 15 },
                       { label: 'Testimonial', done: hasTestimonial, pts: 15 },
                       { label: 'Barter Pref', done: hasBarterPref, pts: 5 },
