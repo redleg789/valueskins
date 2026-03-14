@@ -1508,7 +1508,10 @@ export default function InstagramDemoPage() {
                           Opportunities for {selectedMarketplaceSkin}
                         </div>
                         {activeOpportunities.map((opp, i) => {
-                          const isNegotiating = negotiatingOpp === i;
+                          const dealKey = `${selectedMarketplaceSkin}:${i}`;
+                          const existingDeal = dealStates[dealKey];
+                          const hasActiveDeal = existingDeal && existingDeal.phase !== 'brief';
+                          const isNegotiating = negotiatingOpp === i || hasActiveDeal;
                           return (
                             <div key={i} style={{ background: C.card, borderRadius: '12px', padding: '16px', marginBottom: '12px', border: `1px solid ${opp.featured ? 'rgba(0,102,204,0.3)' : C.border}` }}>
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
@@ -1535,7 +1538,9 @@ export default function InstagramDemoPage() {
                                   <button
                                     onClick={() => {
                                       if (opp.willingToBarter && !willingToBarter) return;
-                                      setNegotiatingOpp(i); setDealRoomPhase('offer'); setDealOfferAmount(''); setDealCounterAmount('');
+                                      const key = `${selectedMarketplaceSkin}:${i}`;
+                                      setNegotiatingOpp(i);
+                                      updateDeal(key, { phase: 'offer', offerAmount: '', counterAmount: '' });
                                     }}
                                     style={{
                                       flex: 1,
@@ -1549,6 +1554,16 @@ export default function InstagramDemoPage() {
                                   >
                                     Enter Deal Room
                                   </button>
+                                </div>
+                              ) : negotiatingOpp !== i && hasActiveDeal ? (
+                                <div onClick={() => setNegotiatingOpp(i)} style={{ background: C.surfaceAlt, borderRadius: '10px', padding: '12px 14px', border: `1px solid rgba(0,102,204,0.3)`, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
+                                    <span style={{ fontSize: '11px', fontWeight: 700, color: C.primary, textTransform: 'uppercase', letterSpacing: '0.6px' }}>Deal Room · {opp.brand}</span>
+                                  </div>
+                                  <span style={{ fontSize: '10px', fontWeight: 600, color: C.textSecondary, background: C.bg, padding: '2px 8px', borderRadius: '4px', border: `1px solid ${C.border}` }}>
+                                    {existingDeal.phase === 'chatroom' ? 'In Chat' : existingDeal.phase === 'offer' ? 'Offer Pending' : existingDeal.phase === 'counter' ? 'Counter Offer' : existingDeal.phase === 'accepted' ? 'Accepted' : existingDeal.phase === 'checklist' ? 'Checklist' : existingDeal.phase === 'softhold' ? 'Soft Hold' : 'Active'}
+                                  </span>
                                 </div>
                               ) : (
                                 <div style={{ background: C.surfaceAlt, borderRadius: '10px', padding: '14px', border: `1px solid rgba(0,102,204,0.3)` }}>
