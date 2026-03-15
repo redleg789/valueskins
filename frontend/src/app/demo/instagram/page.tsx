@@ -27,6 +27,19 @@ const C = {
   textMuted: '#555',
   border: '#262626',
   borderLight: '#333',
+  // Semantic — use these instead of random hex colors
+  success: '#34A853',
+  successBg: 'rgba(52,168,83,0.08)',
+  successBorder: 'rgba(52,168,83,0.25)',
+  warning: '#B86E00',
+  warningBg: 'rgba(184,110,0,0.08)',
+  warningBorder: 'rgba(184,110,0,0.25)',
+  danger: '#C5221F',
+  dangerBg: 'rgba(197,34,31,0.08)',
+  dangerBorder: 'rgba(197,34,31,0.25)',
+  accent: '#5E6AD2',
+  accentBg: 'rgba(94,106,210,0.08)',
+  accentBorder: 'rgba(94,106,210,0.25)',
 };
 
 const PROFESSIONS = {
@@ -847,7 +860,7 @@ export default function InstagramDemoPage() {
               <button onClick={()=>setCreatorSkinMode('static')} style={{ flex:1, padding:'10px', borderRadius:8, fontSize:13, fontWeight:600, cursor:'pointer', background:creatorSkinMode==='static'?C.primary:C.bg, color:creatorSkinMode==='static'?'#fff':C.textSecondary, border:`1px solid ${creatorSkinMode==='static'?C.primary:C.border}` }}>
                 Static Skin
               </button>
-              <button onClick={()=>setCreatorSkinMode('showcase')} style={{ flex:1, padding:'10px', borderRadius:8, fontSize:13, fontWeight:600, cursor:'pointer', background:creatorSkinMode==='showcase'?'#8b5cf6':C.bg, color:creatorSkinMode==='showcase'?'#fff':C.textSecondary, border:`1px solid ${creatorSkinMode==='showcase'?'#8b5cf6':C.border}` }}>
+              <button onClick={()=>setCreatorSkinMode('showcase')} style={{ flex:1, padding:'10px', borderRadius:8, fontSize:13, fontWeight:600, cursor:'pointer', background:creatorSkinMode==='showcase'?C.primary:C.bg, color:creatorSkinMode==='showcase'?'#fff':C.textSecondary, border:`1px solid ${creatorSkinMode==='showcase'?C.primary:C.border}` }}>
                 Showcase Mode
               </button>
             </div>
@@ -901,7 +914,7 @@ export default function InstagramDemoPage() {
                       />
                       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:6 }}>
                         <span style={{ fontSize:11, color:C.textMuted }}>{creatorPitchVideoName}</span>
-                        <button onClick={() => { URL.revokeObjectURL(creatorPitchVideoUrl); setCreatorPitchVideoUrl(''); setCreatorPitchVideoName(''); }} style={{ background:'none', border:`1px solid rgba(239,68,68,0.3)`, borderRadius:6, padding:'4px 10px', fontSize:11, color:'#ef4444', cursor:'pointer', fontWeight:600 }}>Remove</button>
+                        <button onClick={() => { URL.revokeObjectURL(creatorPitchVideoUrl); setCreatorPitchVideoUrl(''); setCreatorPitchVideoName(''); }} style={{ background:'none', border:`1px solid ${C.border}`, borderRadius:6, padding:'4px 10px', fontSize:11, color:C.textMuted, cursor:'pointer', fontWeight:600 }}>Remove</button>
                       </div>
                     </div>
                   )}
@@ -921,8 +934,8 @@ export default function InstagramDemoPage() {
 
                 {/* Preview card */}
                 {(creatorPitchVideoUrl || creatorPitchText) && (
-                  <div style={{ background:C.card, border:`1px solid rgba(139,92,246,0.2)`, borderRadius:10, padding:12, marginBottom:8 }}>
-                    <div style={{ fontSize:10, fontWeight:700, color:'#8b5cf6', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:8 }}>How brands see your skin</div>
+                  <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:10, padding:12, marginBottom:8 }}>
+                    <div style={{ fontSize:10, fontWeight:700, color:C.textSecondary, textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:8 }}>How brands see your skin</div>
                     {creatorPitchVideoUrl && (
                       <video src={creatorPitchVideoUrl} controls style={{ width:'100%', borderRadius:8, maxHeight:160, background:'#000', marginBottom:8 }} />
                     )}
@@ -934,7 +947,7 @@ export default function InstagramDemoPage() {
               </>
             )}
 
-            <button onClick={() => { setShowSkinShowcaseModal(null); setPurchaseToast(creatorSkinMode === 'showcase' ? 'Showcase saved — brands will see your pitch' : 'Skin set to static'); setTimeout(()=>setPurchaseToast(null),3000); }} style={{ width:'100%', background:creatorSkinMode==='showcase'?'#8b5cf6':C.primary, border:'none', borderRadius:8, padding:'12px', color:'#fff', fontWeight:700, fontSize:14, cursor:'pointer', marginTop:8 }}>
+            <button onClick={() => { setShowSkinShowcaseModal(null); setPurchaseToast(creatorSkinMode === 'showcase' ? 'Showcase saved — brands will see your pitch' : 'Skin set to static'); setTimeout(()=>setPurchaseToast(null),3000); }} style={{ width:'100%', background:creatorSkinMode==='showcase'?C.primary:C.primary, border:'none', borderRadius:8, padding:'12px', color:'#fff', fontWeight:700, fontSize:14, cursor:'pointer', marginTop:8 }}>
               {creatorSkinMode === 'showcase' ? 'Save Showcase' : 'Done'}
             </button>
           </div>
@@ -949,7 +962,7 @@ export default function InstagramDemoPage() {
 
             {/* Brand header */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-              <div style={{ width: 44, height: 44, borderRadius: '10px', background: `linear-gradient(135deg, ${C.primary}, #8b5cf6)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700, color: '#fff' }}>
+              <div style={{ width: 44, height: 44, borderRadius: '10px', background: `linear-gradient(135deg, ${C.primary}, ${C.primary})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700, color: '#fff' }}>
                 {askModalOpp.brand.charAt(0)}
               </div>
               <div>
@@ -981,7 +994,7 @@ export default function InstagramDemoPage() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '18px' }}>
               <div style={{ background: C.bg, borderRadius: '10px', padding: '12px', border: `1px solid ${C.border}` }}>
                 <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Budget</div>
-                <div style={{ fontSize: '14px', fontWeight: 700, color: '#10b981' }}>{askModalOpp.budget}</div>
+                <div style={{ fontSize: '14px', fontWeight: 700, color: C.textSecondary }}>{askModalOpp.budget}</div>
               </div>
               <div style={{ background: C.bg, borderRadius: '10px', padding: '12px', border: `1px solid ${C.border}` }}>
                 <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Deadline</div>
@@ -1244,7 +1257,7 @@ export default function InstagramDemoPage() {
                 {hasValueSkin && willingToBarter && (
                   <div style={{
                     borderRadius: '8px',
-                    border: '1px solid #10b981',
+                    border: `1px solid ${C.border}`,
                     padding: '8px 12px',
                     marginTop: '16px',
                     backgroundColor: 'rgba(16,185,129,0.06)',
@@ -1252,7 +1265,7 @@ export default function InstagramDemoPage() {
                     alignItems: 'center',
                     gap: '8px',
                     fontSize: '12px',
-                    color: '#10b981',
+                    color: C.textSecondary,
                     fontWeight: 600,
                   }}>
                     <span>Open to Free / Exposure / Barter</span>
@@ -1271,8 +1284,8 @@ export default function InstagramDemoPage() {
                   {credentials.map((cred, i) => (
                     <div key={i} style={{
                       padding: '4px 8px',
-                      backgroundColor: cred.platform === 'linkedin' ? '#0077b5' : cred.platform === 'leetcode' ? '#ffa723' : cred.platform === 'twitter' ? '#1DA1F2' : '#666',
-                      color: 'white', borderRadius: '5px', fontSize: '11px', fontWeight: 600,
+                      backgroundColor: C.surfaceAlt,
+                      color: C.textSecondary, borderRadius: '5px', fontSize: '11px', fontWeight: 600, border: `1px solid ${C.border}`,
                     }}>
                       {cred.platform.toUpperCase()}
                     </div>
@@ -1282,8 +1295,8 @@ export default function InstagramDemoPage() {
                     if (!proof?.verified) return null;
                     return (
                       <div key={platform} style={{
-                        padding: '4px 8px', backgroundColor: '#10b981',
-                        borderRadius: '5px', fontSize: '11px', color: 'white', fontWeight: 600,
+                        padding: '4px 8px', backgroundColor: C.surfaceAlt,
+                        borderRadius: '5px', fontSize: '11px', color: C.textSecondary, fontWeight: 600, border: `1px solid ${C.border}`,
                       }}>
                         {platform.toUpperCase()}
                       </div>
@@ -1332,12 +1345,12 @@ export default function InstagramDemoPage() {
                       <div key={i} style={{ background:C.card, borderRadius:'10px', padding:'14px', marginBottom:'10px', border:`1px solid ${C.border}` }}>
                         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'6px' }}>
                           <span style={{ fontSize:'13px', fontWeight:700, color:C.text }}>{deal.brand}</span>
-                          <span style={{ fontSize:'14px', fontWeight:800, color:'#2E7D32' }}>${deal.amount.toLocaleString()}</span>
+                          <span style={{ fontSize:'14px', fontWeight:800, color:C.success }}>${deal.amount.toLocaleString()}</span>
                         </div>
                         <div style={{ fontSize:'11px', color:C.textSecondary, marginBottom:'4px' }}>{deal.deliverable}</div>
                         <div style={{ display:'flex', justifyContent:'space-between' }}>
                           <span style={{ fontSize:'10px', color:C.textMuted }}>Completed {deal.completedAt}</span>
-                          <span style={{ fontSize:'10px', fontWeight:700, color:'#2E7D32', background:'rgba(46,125,50,0.1)', padding:'2px 8px', borderRadius:'6px' }}>Approved</span>
+                          <span style={{ fontSize:'10px', fontWeight:700, color:C.success, background:C.surfaceAlt, padding:'2px 8px', borderRadius:'6px' }}>Approved</span>
                         </div>
                       </div>
                     ))
@@ -1385,10 +1398,10 @@ export default function InstagramDemoPage() {
                     {(visibleInsights.engagement || visibleInsights.onTime || visibleInsights.deals || visibleInsights.rating) && (
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
                         {[
-                          visibleInsights.engagement && { label: 'Engagement', value: `${metrics.engagement}%`, color: metrics.engagement >= 5 ? '#2E7D32' : C.textSecondary },
-                          visibleInsights.onTime && { label: 'On-Time', value: `${metrics.onTimeRate}%`, color: metrics.onTimeRate >= 95 ? '#2E7D32' : C.textSecondary },
+                          visibleInsights.engagement && { label: 'Engagement', value: `${metrics.engagement}%`, color: metrics.engagement >= 5 ? C.success : C.textSecondary },
+                          visibleInsights.onTime && { label: 'On-Time', value: `${metrics.onTimeRate}%`, color: metrics.onTimeRate >= 95 ? C.success : C.textSecondary },
                           visibleInsights.deals && { label: 'Deals', value: `${metrics.dealsCompleted}`, color: C.text },
-                          visibleInsights.rating && { label: 'Rating', value: `${metrics.brandRating}`, color: metrics.brandRating >= 4.5 ? '#2E7D32' : C.textSecondary },
+                          visibleInsights.rating && { label: 'Rating', value: `${metrics.brandRating}`, color: metrics.brandRating >= 4.5 ? C.success : C.textSecondary },
                         ].filter(Boolean).map((m: any) => (
                           <div key={m.label} style={{ textAlign: 'center', padding: '8px 4px', background: C.surfaceAlt, borderRadius: '8px' }}>
                             <div style={{ fontSize: '15px', fontWeight: 700, color: m.color, lineHeight: 1, marginBottom: '4px' }}>{m.value}</div>
@@ -1446,12 +1459,12 @@ export default function InstagramDemoPage() {
                                 <div style={{ fontWeight: 700, fontSize: '13px', color: C.text }}>{factor.name}</div>
                               </div>
                               <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: '12px' }}>
-                                <span style={{ fontSize: '15px', fontWeight: 800, color: fillPct >= 90 ? '#2E7D32' : fillPct >= 70 ? C.primary : '#E65100' }}>{earned}</span>
+                                <span style={{ fontSize: '15px', fontWeight: 800, color: fillPct >= 90 ? C.success : fillPct >= 70 ? C.primary : C.warning }}>{earned}</span>
                                 <span style={{ fontSize: '11px', color: C.textMuted }}>/{factor.maxPoints}</span>
                               </div>
                             </div>
                             <div style={{ height: '4px', background: C.border, borderRadius: '2px', overflow: 'hidden' }}>
-                              <div style={{ height: '100%', width: `${fillPct}%`, background: fillPct >= 90 ? '#2E7D32' : fillPct >= 70 ? C.primary : '#E65100', borderRadius: '2px', transition: 'width 0.3s' }} />
+                              <div style={{ height: '100%', width: `${fillPct}%`, background: fillPct >= 90 ? C.success : fillPct >= 70 ? C.primary : C.warning, borderRadius: '2px', transition: 'width 0.3s' }} />
                             </div>
                           </div>
                         );
@@ -1484,7 +1497,7 @@ export default function InstagramDemoPage() {
                         <div style={{
                           fontSize: '32px',
                           fontWeight: 'bold',
-                          color: MOCK_REPUTATION.score >= 80 ? '#10b981' : MOCK_REPUTATION.score >= 50 ? '#f59e0b' : '#ef4444',
+                          color: MOCK_REPUTATION.score >= 80 ? C.textSecondary : MOCK_REPUTATION.score >= 50 ? '#f59e0b' : C.textMuted,
                         }}>
                           {MOCK_REPUTATION.score}
                         </div>
@@ -1497,7 +1510,7 @@ export default function InstagramDemoPage() {
                       }}>
                         <div style={{
                           padding: '6px 12px',
-                          backgroundColor: MOCK_REPUTATION.riskTier === 'A' ? '#10b981' : MOCK_REPUTATION.riskTier === 'B' ? '#3b82f6' : MOCK_REPUTATION.riskTier === 'C' ? '#f59e0b' : '#ef4444',
+                          backgroundColor: MOCK_REPUTATION.riskTier === 'A' ? C.textSecondary : MOCK_REPUTATION.riskTier === 'B' ? '#3b82f6' : MOCK_REPUTATION.riskTier === 'C' ? '#f59e0b' : C.textMuted,
                           color: 'white',
                           borderRadius: '6px',
                           fontSize: '12px',
@@ -1629,7 +1642,7 @@ export default function InstagramDemoPage() {
                   <div style={{ height: '60px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: '20px', paddingRight: '20px', fontWeight: 'bold', fontSize: '16px', background: C.surface }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       Marketplace
-                      <span style={{ fontSize: '11px', fontWeight: 600, color: '#2E7D32', background: 'rgba(46,125,50,0.1)', padding: '3px 8px', borderRadius: '6px' }}>Creator</span>
+                      <span style={{ fontSize: '11px', fontWeight: 600, color: C.textSecondary, background: C.surfaceAlt, padding: '3px 8px', borderRadius: '6px' }}>Creator</span>
                     </div>
                     <button onClick={() => { setMarketplaceRole('none'); setSelectedMarketplaceSkin(null); setNegotiatingOpp(null); }} style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: '6px', padding: '4px 10px', fontSize: '11px', color: C.textSecondary, cursor: 'pointer' }}>Switch Role</button>
                   </div>
@@ -1659,7 +1672,7 @@ export default function InstagramDemoPage() {
                               }}
                             >
                               {skinDeals.length > 0 && (
-                                <span style={{ position: 'absolute', top: -4, right: -4, width: 16, height: 16, borderRadius: '50%', background: '#ef4444', color: '#fff', fontSize: 9, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{skinDeals.length}</span>
+                                <span style={{ position: 'absolute', top: -4, right: -4, width: 16, height: 16, borderRadius: '50%', background: C.textMuted, color: '#fff', fontSize: 9, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{skinDeals.length}</span>
                               )}
                               <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '22px', height: '22px', borderRadius: '5px', background: badgeColor, color: '#fff', fontSize: '8px', fontWeight: 700, flexShrink: 0 }}>{abbr}</span>
                               <div style={{ textAlign: 'left' }}>
@@ -1689,7 +1702,7 @@ export default function InstagramDemoPage() {
 
                     {/* Matching Rule Banner */}
                     <div style={{ background: 'rgba(46,125,50,0.06)', border: `1px solid rgba(46,125,50,0.15)`, borderRadius: '10px', padding: '12px 16px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2E7D32" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.textSecondary} strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                       <div>
                         <div style={{ fontSize: '12px', fontWeight: 700, color: C.text }}>ValueSkin Matching Active</div>
                         <div style={{ fontSize: '11px', color: C.textSecondary }}>You only see opportunities from brands that require your exact ValueSkin. Matching is deterministic and server-enforced.</div>
@@ -1729,13 +1742,13 @@ export default function InstagramDemoPage() {
                                   >Ask</button>
                                 </div>
                                 <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                                  {opp.willingToBarter && <span style={{ fontSize: '10px', fontWeight: 700, color: '#10b981', background: 'rgba(16,185,129,0.1)', padding: '2px 6px', borderRadius: '4px' }}>OPEN TO BARTER</span>}
+                                  {opp.willingToBarter && <span style={{ fontSize: '10px', fontWeight: 700, color: C.textSecondary, background: C.surfaceAlt, padding: '2px 6px', borderRadius: '4px' }}>OPEN TO BARTER</span>}
                                   {opp.featured && <span style={{ fontSize: '10px', fontWeight: 700, color: C.primary, background: `${C.primary}15`, padding: '2px 6px', borderRadius: '4px' }}>TOP MATCH</span>}
                                 </div>
                               </div>
                               <div style={{ fontSize: '13px', color: C.textSecondary, marginBottom: '6px' }}>{opp.type} | Match: {opp.match}</div>
-                              <div style={{ fontSize: '10px', color: '#2E7D32', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '12px' }}>
-                                <svg width="10" height="10" viewBox="0 0 24 24" fill="#2E7D32" stroke="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                              <div style={{ fontSize: '10px', color: C.textSecondary, display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '12px' }}>
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill={C.textSecondary} stroke="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                                 Matched via {selectedMarketplaceSkin} ValueSkin
                               </div>
 
@@ -1745,7 +1758,7 @@ export default function InstagramDemoPage() {
                                   {opp.willingToBarter && !willingToBarter && (
                                     <button
                                       onClick={() => setWillingToBarter(true)}
-                                      style={{ fontSize: '11px', fontWeight: 600, color: '#10b981', background: 'rgba(16,185,129,0.08)', padding: '8px 10px', borderRadius: '6px', textAlign: 'center', border: `1px solid rgba(16,185,129,0.3)`, cursor: 'pointer', width: '100%' }}>
+                                      style={{ fontSize: '11px', fontWeight: 600, color: C.textSecondary, background: C.surfaceAlt, padding: '8px 10px', borderRadius: '6px', textAlign: 'center', border: `1px solid rgba(16,185,129,0.3)`, cursor: 'pointer', width: '100%' }}>
                                       This brand requires barter — enable barter for this deal
                                     </button>
                                   )}
@@ -1791,13 +1804,13 @@ export default function InstagramDemoPage() {
                                     </div>
                                     {/* Offer expiry countdown — both sides see this */}
                                     {dealRoomPhase === 'offer' && (
-                                      <div style={{ fontSize: '11px', fontWeight: 700, color: '#E65100', background: 'rgba(230,81,0,0.1)', padding: '3px 8px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#E65100" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                      <div style={{ fontSize: '11px', fontWeight: 700, color: C.textSecondary, background: C.surfaceAlt, padding: '3px 8px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={C.textSecondary} strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                                         Expires in {offerExpiresLabel}
                                       </div>
                                     )}
                                     {dealRoomPhase === 'accepted' && (
-                                      <div style={{ fontSize: '11px', fontWeight: 700, color: '#2E7D32', background: 'rgba(46,125,50,0.1)', padding: '3px 8px', borderRadius: '6px' }}>Deal Accepted</div>
+                                      <div style={{ fontSize: '11px', fontWeight: 700, color: C.textSecondary, background: C.surfaceAlt, padding: '3px 8px', borderRadius: '6px' }}>Deal Accepted</div>
                                     )}
                                   </div>
 
@@ -1805,7 +1818,7 @@ export default function InstagramDemoPage() {
                                   {brandValueSkin && (
                                     <div style={{ background:'rgba(230,81,0,0.06)', border:'1px solid rgba(230,81,0,0.15)', borderRadius:'8px', padding:'8px 12px', marginBottom:'10px', fontSize:'11px', color:C.textSecondary }}>
                                       Brand identity: <strong style={{ color:C.text }}>{brandValueSkin}</strong>
-                                      {opp && (() => { const myProfs = Object.values(valueSkins).map(v=>v?.profession).filter(Boolean) as string[]; return myProfs.includes(brandValueSkin) ? <span style={{ marginLeft:'8px', color:'#2E7D32', fontWeight:700 }}>Matched</span> : <span style={{ marginLeft:'8px', color:'#E65100', fontWeight:700 }}>No shared ValueSkin</span>; })()}
+                                      {opp && (() => { const myProfs = Object.values(valueSkins).map(v=>v?.profession).filter(Boolean) as string[]; return myProfs.includes(brandValueSkin) ? <span style={{ marginLeft:'8px', color:C.success, fontWeight:700 }}>Matched</span> : <span style={{ marginLeft:'8px', color:C.textSecondary, fontWeight:700 }}>No shared ValueSkin</span>; })()}
                                     </div>
                                   )}
                                   <div style={{ fontSize: '11px', color: C.textMuted, marginBottom: '10px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -1819,7 +1832,7 @@ export default function InstagramDemoPage() {
                                         <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: 4, background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, padding: '8px 10px', width: 220, zIndex: 10, fontSize: 11, lineHeight: 1.5, color: C.text, boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}>
                                           <strong>What is Intent?</strong><br/>
                                           How the brand wants to work with you:<br/>
-                                          <span style={{ color: '#8b5cf6' }}>Explore</span> — just browsing, no commitment<br/>
+                                          <span style={{ color: C.textSecondary }}>Explore</span> — just browsing, no commitment<br/>
                                           <span style={{ color: C.primary }}>Campaign</span> — specific paid project<br/>
                                           <span style={{ color: '#22c55e' }}>Long-term</span> — ongoing partnership/retainer
                                         </div>
@@ -1834,11 +1847,11 @@ export default function InstagramDemoPage() {
                                       {hoveredTooltip === 'campaign_type' && (
                                         <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: 4, background: C.card, border: `1px solid ${C.border}`, borderRadius: 8, padding: '8px 10px', width: 240, zIndex: 10, fontSize: 11, lineHeight: 1.5, color: C.text, boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}>
                                           <strong>Campaign Types:</strong><br/>
-                                          <span style={{ color: '#8b5cf6' }}>Product Review</span> — showcase/review their product<br/>
+                                          <span style={{ color: C.textSecondary }}>Product Review</span> — showcase/review their product<br/>
                                           <span style={{ color: C.primary }}>Sponsored Content</span> — branded post/reel<br/>
                                           <span style={{ color: '#22c55e' }}>Brand Ambassador</span> — represent the brand over time<br/>
                                           <span style={{ color: '#f59e0b' }}>UGC</span> — user-generated content for their ads<br/>
-                                          <span style={{ color: '#ef4444' }}>Affiliate</span> — earn per sale/click you drive
+                                          <span style={{ color: C.textMuted }}>Affiliate</span> — earn per sale/click you drive
                                         </div>
                                       )}
                                     </span>
@@ -1878,7 +1891,7 @@ export default function InstagramDemoPage() {
                                             appliedAt: new Date().toLocaleDateString(),
                                           };
                                           persistApplications([...sharedApplications, newApp]);
-                                        }} style={{ flex: 1, background: '#2E7D32', border: 'none', padding: '8px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '12px' }}>Accept</button>
+                                        }} style={{ flex: 1, background: C.success, border: 'none', padding: '8px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '12px' }}>Accept</button>
                                         <button onClick={() => setDealRoomPhase('counter')} style={{ flex: 1, background: C.primary, border: 'none', padding: '8px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '12px' }}>Counter Offer</button>
                                         <button onClick={() => setNegotiatingOpp(null)} style={{ flex: 1, background: 'none', border: `1px solid ${C.border}`, padding: '8px', borderRadius: '8px', color: C.textSecondary, fontWeight: 500, cursor: 'pointer', fontSize: '12px' }}>Decline</button>
                                       </div>
@@ -1911,7 +1924,7 @@ export default function InstagramDemoPage() {
                                   {dealRoomPhase === 'accepted' && (
                                     <>
                                       <div style={{ padding: '12px', background: 'rgba(46,125,50,0.08)', borderRadius: '8px', marginBottom: '10px' }}>
-                                        <div style={{ fontSize: '13px', fontWeight: 700, color: '#2E7D32', marginBottom: '4px' }}>Deal accepted!</div>
+                                        <div style={{ fontSize: '13px', fontWeight: 700, color: C.textSecondary, marginBottom: '4px' }}>Deal accepted!</div>
                                         <div style={{ fontSize: '12px', color: C.textSecondary }}>Enter the chat room to negotiate details and finalize.</div>
                                       </div>
                                       <button onClick={() => setDealRoomPhase('chatroom')} style={{ width: '100%', background: C.primary, border: 'none', padding: '10px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}>
@@ -1928,7 +1941,7 @@ export default function InstagramDemoPage() {
                                         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: C.bg, borderRadius: '8px', border: `1px solid ${C.border}`, overflow: 'hidden' }}>
                                           <div style={{ padding: '8px 10px', borderBottom: `1px solid ${C.border}`, fontSize: '11px', fontWeight: 700, color: C.primary, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                              <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#2E7D32' }} />
+                                              <div style={{ width: 6, height: 6, borderRadius: '50%', background: C.success }} />
                                               Deal Room Chat
                                             </div>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -2015,7 +2028,7 @@ export default function InstagramDemoPage() {
                                               'Contract',
                                             ].map((item, i) => (
                                               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '3px 0', fontSize: '11px', color: C.text }}>
-                                                <div style={{ width: 12, height: 12, borderRadius: 3, background: '#2E7D32', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                                <div style={{ width: 12, height: 12, borderRadius: 3, background: C.success, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                                   <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
                                                 </div>
                                                 {item}
@@ -2028,7 +2041,7 @@ export default function InstagramDemoPage() {
                                             <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Payment</div>
                                             <div style={{ display: 'flex', gap: '4px', marginBottom: '6px' }}>
                                               <div style={{ flex: 1, textAlign: 'center', padding: '4px', background: C.surfaceAlt, borderRadius: '4px' }}>
-                                                <div style={{ fontSize: '12px', fontWeight: 700, color: '#2E7D32' }}>{advancePercent}%</div>
+                                                <div style={{ fontSize: '12px', fontWeight: 700, color: C.textSecondary }}>{advancePercent}%</div>
                                                 <div style={{ fontSize: '8px', color: C.textMuted }}>Advance</div>
                                               </div>
                                               <div style={{ flex: 1, textAlign: 'center', padding: '4px', background: C.surfaceAlt, borderRadius: '4px' }}>
@@ -2043,13 +2056,13 @@ export default function InstagramDemoPage() {
                                             {performanceClause && (
                                               <input type="range" min="70" max="100" value={advancePercent} onChange={(e) => setAdvancePercent(Number(e.target.value))} style={{ width: '100%', marginTop: '4px' }} />
                                             )}
-                                            <div style={{ fontSize: '9px', color: '#2E7D32', marginTop: '4px', textAlign: 'center' }}>Payment locked</div>
+                                            <div style={{ fontSize: '9px', color: C.textSecondary, marginTop: '4px', textAlign: 'center' }}>Payment locked</div>
                                           </div>
                                         </div>
                                       </div>
 
                                       {/* Done button */}
-                                      <button onClick={() => { setDealRoomPhase('checklist'); }} style={{ width: '100%', background: '#2E7D32', border: 'none', padding: '10px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px', marginTop: '10px' }}>
+                                      <button onClick={() => { setDealRoomPhase('checklist'); }} style={{ width: '100%', background: C.success, border: 'none', padding: '10px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px', marginTop: '10px' }}>
                                         Done, Accept Now
                                       </button>
                                     </>
@@ -2068,7 +2081,7 @@ export default function InstagramDemoPage() {
                                         { key: 'Metrics reporting agreed', req: false },
                                       ].map((item, ci) => (
                                         <div key={ci} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 0', borderBottom: `1px solid ${C.border}` }}>
-                                          <div style={{ width: '16px', height: '16px', borderRadius: '4px', background: '#2E7D32', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                          <div style={{ width: '16px', height: '16px', borderRadius: '4px', background: C.success, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
                                           </div>
                                           <span style={{ fontSize: '12px', color: C.text, flex: 1 }}>{item.key}</span>
@@ -2114,14 +2127,14 @@ export default function InstagramDemoPage() {
                                   {dealRoomPhase === 'softhold' && creatorDealLifecycle === 'approved' && (
                                     <>
                                       <div style={{ textAlign:'center', padding:'12px 0' }}>
-                                        <div style={{ width:'40px', height:'40px', borderRadius:'50%', background:'rgba(46,125,50,0.1)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 10px' }}>
-                                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2E7D32" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                                        <div style={{ width:'40px', height:'40px', borderRadius:'50%', background:C.surfaceAlt, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 10px' }}>
+                                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={C.textSecondary} strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
                                         </div>
                                         <div style={{ fontSize:'15px', fontWeight:700, color:C.text, marginBottom:'4px' }}>Deal Complete</div>
                                         <div style={{ fontSize:'12px', color:C.textSecondary, marginBottom:'16px' }}>Your deliverable was approved.</div>
                                         <div style={{ background:'rgba(46,125,50,0.06)', border:'1px solid rgba(46,125,50,0.2)', borderRadius:'8px', padding:'12px', marginBottom:'14px' }}>
                                           <div style={{ fontSize:'11px', color:C.textMuted, marginBottom:'2px' }}>Earnings</div>
-                                          <div style={{ fontSize:'22px', fontWeight:800, color:'#2E7D32' }}>${parseInt(dealCounterAmount || '5000').toLocaleString()}</div>
+                                          <div style={{ fontSize:'22px', fontWeight:800, color:C.success }}>${parseInt(dealCounterAmount || '5000').toLocaleString()}</div>
                                         </div>
                                         <button onClick={() => { if (activeDealKey) { setDealStates(prev => { const next = {...prev}; delete next[activeDealKey]; return next; }); } setNegotiatingOpp(null); setCreatorDealLifecycle('checklist'); setDealUploadSimulated(false); }} style={{ width:'100%', background:C.primary, border:'none', padding:'10px', borderRadius:'8px', color:'#fff', fontWeight:600, cursor:'pointer', fontSize:'13px' }}>
                                           Withdraw to Bank
@@ -2153,7 +2166,7 @@ export default function InstagramDemoPage() {
                   <div style={{ height: '60px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: '20px', paddingRight: '20px', fontWeight: 'bold', fontSize: '16px', background: C.surface }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       Marketplace
-                      <span style={{ fontSize: '11px', fontWeight: 600, color: '#E65100', background: 'rgba(230,81,0,0.1)', padding: '3px 8px', borderRadius: '6px' }}>Brand</span>
+                      <span style={{ fontSize: '11px', fontWeight: 600, color: C.textSecondary, background: C.surfaceAlt, padding: '3px 8px', borderRadius: '6px' }}>Brand</span>
                     </div>
                     <button onClick={() => { setMarketplaceRole('none'); setNegotiatingCreator(null); }} style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: '6px', padding: '4px 10px', fontSize: '11px', color: C.textSecondary, cursor: 'pointer' }}>Switch Role</button>
                   </div>
@@ -2220,7 +2233,7 @@ export default function InstagramDemoPage() {
                             <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'6px' }}>Non-negotiables</div>
                             <div style={{ display:'flex', flexWrap:'wrap', gap:'6px' }}>
                               {['NDA required','Usage rights: 90 days','Usage rights: 30 days','Exclusivity: 30 days','Exclusivity: 60 days','On-camera required','English only'].map(n => (
-                                <button key={n} onClick={()=>setNewCampaignNonNeg(prev=>prev.includes(n)?prev.filter(x=>x!==n):[...prev,n])} style={{ padding:'4px 9px', borderRadius:'6px', fontSize:'10px', fontWeight:600, cursor:'pointer', background:newCampaignNonNeg.includes(n)?'rgba(239,68,68,0.12)':C.bg, color:newCampaignNonNeg.includes(n)?'#ef4444':C.textSecondary, border:`1px solid ${newCampaignNonNeg.includes(n)?'rgba(239,68,68,0.4)':C.border}` }}>{n}</button>
+                                <button key={n} onClick={()=>setNewCampaignNonNeg(prev=>prev.includes(n)?prev.filter(x=>x!==n):[...prev,n])} style={{ padding:'4px 9px', borderRadius:'6px', fontSize:'10px', fontWeight:600, cursor:'pointer', background:newCampaignNonNeg.includes(n)?'rgba(239,68,68,0.12)':C.bg, color:newCampaignNonNeg.includes(n)?C.textMuted:C.textSecondary, border:`1px solid ${newCampaignNonNeg.includes(n)?'rgba(239,68,68,0.4)':C.border}` }}>{n}</button>
                               ))}
                             </div>
                           </div>
@@ -2328,7 +2341,7 @@ export default function InstagramDemoPage() {
                         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                           {savedDealTemplates.map(t => (
                             <button key={t.id} onClick={() => { setBrandBriefTitle(t.name); setBrandBriefDeliverables(t.deliverables); setBrandBudget(t.budget); setBrandCampaignType(t.type); }}
-                              style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '5px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', background: 'rgba(230,81,0,0.08)', color: '#E65100', border: '1px solid rgba(230,81,0,0.25)' }}>
+                              style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '5px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: 600, cursor: 'pointer', background: 'rgba(230,81,0,0.08)', color: C.textSecondary, border: '1px solid rgba(230,81,0,0.25)' }}>
                               {t.name}
                             </button>
                           ))}
@@ -2496,9 +2509,9 @@ export default function InstagramDemoPage() {
                         onClick={() => setFilterBarterOnly(prev => !prev)}
                         style={{
                           fontSize: '11px', fontWeight: 600,
-                          color: filterBarterOnly ? '#10b981' : C.textSecondary,
+                          color: filterBarterOnly ? C.textSecondary : C.textSecondary,
                           background: filterBarterOnly ? 'rgba(16,185,129,0.1)' : 'transparent',
-                          border: `1px solid ${filterBarterOnly ? '#10b981' : C.border}`,
+                          border: `1px solid ${filterBarterOnly ? C.textSecondary : C.border}`,
                           padding: '4px 10px', borderRadius: '6px', cursor: 'pointer',
                         }}
                       >
@@ -2557,7 +2570,7 @@ export default function InstagramDemoPage() {
                                 <span style={{ fontWeight: 700, fontSize: '14px' }}>{creator.name}</span>
                                 <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '20px', height: '20px', borderRadius: '4px', background: badgeColor, color: '#fff', fontSize: '7px', fontWeight: 700 }}>{abbr}</span>
                                 {creator.featured && <span style={{ fontSize: '10px', fontWeight: 700, color: C.primary, background: `${C.primary}15`, padding: '2px 6px', borderRadius: '4px' }}>TOP MATCH</span>}
-                                {creator.willingToBarter && <span style={{ fontSize: '10px', fontWeight: 700, color: '#10b981', background: 'rgba(16,185,129,0.1)', padding: '2px 6px', borderRadius: '4px' }}>OPEN TO BARTER</span>}
+                                {creator.willingToBarter && <span style={{ fontSize: '10px', fontWeight: 700, color: C.textSecondary, background: C.surfaceAlt, padding: '2px 6px', borderRadius: '4px' }}>OPEN TO BARTER</span>}
                               </div>
                               <div style={{ fontSize: '12px', color: C.textSecondary }}>{creator.handle}</div>
                               <div style={{ fontSize: '10px', color: C.primary, display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
@@ -2602,10 +2615,10 @@ export default function InstagramDemoPage() {
                           {/* Deal types + NDA/rights row */}
                           <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '8px' }}>
                             {creator.dealTypes.map(dt => (
-                              <span key={dt} style={{ fontSize: '9px', fontWeight: 700, padding: '2px 6px', borderRadius: '8px', background: 'rgba(16,185,129,0.08)', color: '#10b981', border: '1px solid rgba(16,185,129,0.2)', textTransform: 'uppercase' }}>{dt}</span>
+                              <span key={dt} style={{ fontSize: '9px', fontWeight: 700, padding: '2px 6px', borderRadius: '8px', background: C.surfaceAlt, color: C.textSecondary, border: '1px solid rgba(16,185,129,0.2)', textTransform: 'uppercase' }}>{dt}</span>
                             ))}
-                            {creator.ndaOk && <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 6px', borderRadius: '8px', background: 'rgba(139,92,246,0.08)', color: '#8b5cf6', border: '1px solid rgba(139,92,246,0.2)', textTransform: 'uppercase' }}>NDA</span>}
-                            {creator.usageRightsOk && <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 6px', borderRadius: '8px', background: 'rgba(139,92,246,0.08)', color: '#8b5cf6', border: '1px solid rgba(139,92,246,0.2)', textTransform: 'uppercase' }}>Usage Rights</span>}
+                            {creator.ndaOk && <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 6px', borderRadius: '8px', background: 'rgba(139,92,246,0.08)', color: C.textSecondary, border: '1px solid rgba(139,92,246,0.2)', textTransform: 'uppercase' }}>NDA</span>}
+                            {creator.usageRightsOk && <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 6px', borderRadius: '8px', background: 'rgba(139,92,246,0.08)', color: C.textSecondary, border: '1px solid rgba(139,92,246,0.2)', textTransform: 'uppercase' }}>Usage Rights</span>}
                           </div>
 
                           {/* Rate card */}
@@ -2645,13 +2658,13 @@ export default function InstagramDemoPage() {
                               }}>{creator.availableFrom === 'Now' ? 'Available now' : `From ${creator.availableFrom}`}</span>
                             )}
                             {adminShowExclusivitySignal && !creator.exclusivitySlotFree && (
-                              <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 7px', borderRadius: '8px', background: 'rgba(239,68,68,0.08)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)' }}>Exclusivity taken</span>
+                              <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 7px', borderRadius: '8px', background: 'rgba(239,68,68,0.08)', color: C.textMuted, border: '1px solid rgba(239,68,68,0.2)' }}>Exclusivity taken</span>
                             )}
                             {adminShowRevisionLimit && (
                               <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 7px', borderRadius: '8px', background: 'rgba(100,100,100,0.08)', color: C.textSecondary, border: `1px solid ${C.border}` }}>{creator.revisionLimit} revisions</span>
                             )}
                             {adminShowUsageRightsDuration && (
-                              <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 7px', borderRadius: '8px', background: 'rgba(139,92,246,0.08)', color: '#8b5cf6', border: '1px solid rgba(139,92,246,0.2)' }}>{creator.usageRightsDays}d rights</span>
+                              <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 7px', borderRadius: '8px', background: 'rgba(139,92,246,0.08)', color: C.textSecondary, border: '1px solid rgba(139,92,246,0.2)' }}>{creator.usageRightsDays}d rights</span>
                             )}
                           </div>
 
@@ -2668,7 +2681,7 @@ export default function InstagramDemoPage() {
                           {/* Platform safety status bar */}
                           <div style={{ display: 'flex', gap: '5px', marginBottom: '8px', flexWrap: 'wrap' }}>
                             {safetyRequireVerifiedBrand && (
-                              <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 7px', borderRadius: '8px', background: 'rgba(16,185,129,0.08)', color: '#10b981', border: '1px solid rgba(16,185,129,0.2)' }}>VERIFIED BRAND</span>
+                              <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 7px', borderRadius: '8px', background: C.surfaceAlt, color: C.textSecondary, border: '1px solid rgba(16,185,129,0.2)' }}>VERIFIED BRAND</span>
                             )}
                             {safetyRequireBrief && (
                               <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 7px', borderRadius: '8px', background: 'rgba(0,102,204,0.08)', color: C.primary, border: `1px solid rgba(0,102,204,0.2)` }}>BRIEF REQUIRED</span>
@@ -2685,12 +2698,12 @@ export default function InstagramDemoPage() {
                               return (
                                 <div>
                                   {!hasMatch && !noBrandSkin && (
-                                    <div style={{ background:'rgba(230,81,0,0.06)', border:'1px solid rgba(230,81,0,0.2)', borderRadius:'8px', padding:'8px 10px', marginBottom:'8px', fontSize:'11px', color:'#E65100' }}>
+                                    <div style={{ background:'rgba(230,81,0,0.06)', border:'1px solid rgba(230,81,0,0.2)', borderRadius:'8px', padding:'8px 10px', marginBottom:'8px', fontSize:'11px', color:C.textSecondary }}>
                                       No shared ValueSkin — you are {brandValueSkin}, this creator is {creator.valueSkin}
                                     </div>
                                   )}
                                   {noBrandSkin && (
-                                    <div style={{ background:'rgba(230,81,0,0.06)', border:'1px solid rgba(230,81,0,0.2)', borderRadius:'8px', padding:'8px 10px', marginBottom:'8px', fontSize:'11px', color:'#E65100' }}>
+                                    <div style={{ background:'rgba(230,81,0,0.06)', border:'1px solid rgba(230,81,0,0.2)', borderRadius:'8px', padding:'8px 10px', marginBottom:'8px', fontSize:'11px', color:C.textSecondary }}>
                                       Get a brand ValueSkin to contact creators
                                     </div>
                                   )}
@@ -2700,7 +2713,7 @@ export default function InstagramDemoPage() {
                                       if (!hasMatch) { setPurchaseToast('No shared ValueSkin with this creator'); setTimeout(() => setPurchaseToast(null), 3000); return; }
                                       setNegotiatingCreator(i); setBrandDealPhase('brief'); setBrandBriefTitle(''); setBrandBriefDeliverables(''); setBrandBudget('4000'); setBrandDealIntent('campaign');
                                     }}
-                                    style={{ background: hasMatch ? (creator.featured ? C.primary : C.surfaceAlt) : C.surfaceAlt, border: hasMatch && creator.featured ? 'none' : `1px solid ${hasMatch ? C.border : 'rgba(230,81,0,0.3)'}`, padding: '10px 16px', borderRadius: '8px', color: hasMatch ? '#fff' : '#E65100', fontWeight: '600', cursor: 'pointer', width: '100%', fontSize: '14px', opacity: hasMatch ? 1 : 0.7 }}
+                                    style={{ background: hasMatch ? (creator.featured ? C.primary : C.surfaceAlt) : C.surfaceAlt, border: hasMatch && creator.featured ? 'none' : `1px solid ${hasMatch ? C.border : 'rgba(230,81,0,0.3)'}`, padding: '10px 16px', borderRadius: '8px', color: hasMatch ? '#fff' : C.warning, fontWeight: '600', cursor: 'pointer', width: '100%', fontSize: '14px', opacity: hasMatch ? 1 : 0.7 }}
                                   >
                                     {noBrandSkin ? 'No ValueSkin' : hasMatch ? 'Send Proposal' : 'No Shared ValueSkin'}
                                   </button>
@@ -2712,8 +2725,8 @@ export default function InstagramDemoPage() {
                               {/* Deal Room Header */}
                               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                                 <div>
-                                  <div style={{ fontSize: '11px', fontWeight: 700, color: '#E65100', textTransform: 'uppercase', letterSpacing: '0.6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#E65100" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                  <div style={{ fontSize: '11px', fontWeight: 700, color: C.textSecondary, textTransform: 'uppercase', letterSpacing: '0.6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.textSecondary} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                                     </svg>
                                     Deal Room
@@ -2721,12 +2734,12 @@ export default function InstagramDemoPage() {
                                   {brandValueSkin && <div style={{ fontSize:'10px', color:C.textMuted, marginTop:'2px' }}>Your identity: {brandValueSkin}</div>}
                                 </div>
                                 {brandDealPhase === 'pending' && (
-                                  <div style={{ fontSize: '10px', color: '#E65100', background: 'rgba(230,81,0,0.1)', padding: '2px 8px', borderRadius: '10px', fontWeight: 600 }}>
+                                  <div style={{ fontSize: '10px', color: C.textSecondary, background: C.surfaceAlt, padding: '2px 8px', borderRadius: '10px', fontWeight: 600 }}>
                                     Expires in 23h 47m
                                   </div>
                                 )}
                                 {brandDealPhase === 'counter' && (
-                                  <div style={{ fontSize: '10px', color: '#E65100', background: 'rgba(230,81,0,0.1)', padding: '2px 8px', borderRadius: '10px', fontWeight: 600 }}>
+                                  <div style={{ fontSize: '10px', color: C.textSecondary, background: C.surfaceAlt, padding: '2px 8px', borderRadius: '10px', fontWeight: 600 }}>
                                     Respond within 23h 12m
                                   </div>
                                 )}
@@ -2747,7 +2760,7 @@ export default function InstagramDemoPage() {
                                         <button
                                           key={intent}
                                           onClick={() => setBrandDealIntent(intent)}
-                                          style={{ flex: 1, padding: '6px 4px', borderRadius: '6px', border: `1px solid ${brandDealIntent === intent ? '#E65100' : C.border}`, background: brandDealIntent === intent ? 'rgba(230,81,0,0.1)' : C.bg, color: brandDealIntent === intent ? '#E65100' : C.textSecondary, fontSize: '10px', fontWeight: 600, cursor: 'pointer', textTransform: 'capitalize' }}
+                                          style={{ flex: 1, padding: '6px 4px', borderRadius: '6px', border: `1px solid ${brandDealIntent === intent ? C.warning : C.border}`, background: brandDealIntent === intent ? 'rgba(230,81,0,0.1)' : C.bg, color: brandDealIntent === intent ? C.warning : C.textSecondary, fontSize: '10px', fontWeight: 600, cursor: 'pointer', textTransform: 'capitalize' }}
                                         >{intent}</button>
                                       ))}
                                     </div>
@@ -2755,7 +2768,7 @@ export default function InstagramDemoPage() {
 
                                   {/* Brief title */}
                                   <div style={{ marginBottom: '10px' }}>
-                                    <div style={{ fontSize: '11px', color: C.textMuted, marginBottom: '4px', fontWeight: 600 }}>Campaign title <span style={{ color: '#E65100' }}>*</span></div>
+                                    <div style={{ fontSize: '11px', color: C.textMuted, marginBottom: '4px', fontWeight: 600 }}>Campaign title <span style={{ color: C.textSecondary }}>*</span></div>
                                     <input
                                       type="text"
                                       placeholder="e.g. Q2 Product Launch Series"
@@ -2767,7 +2780,7 @@ export default function InstagramDemoPage() {
 
                                   {/* Campaign type */}
                                   <div style={{ marginBottom: '10px' }}>
-                                    <div style={{ fontSize: '11px', color: C.textMuted, marginBottom: '4px', fontWeight: 600 }}>Campaign type <span style={{ color: '#E65100' }}>*</span></div>
+                                    <div style={{ fontSize: '11px', color: C.textMuted, marginBottom: '4px', fontWeight: 600 }}>Campaign type <span style={{ color: C.textSecondary }}>*</span></div>
                                     <select
                                       value={brandCampaignType}
                                       onChange={(e) => setBrandCampaignType(e.target.value)}
@@ -2779,7 +2792,7 @@ export default function InstagramDemoPage() {
 
                                   {/* Deliverables */}
                                   <div style={{ marginBottom: '14px' }}>
-                                    <div style={{ fontSize: '11px', color: C.textMuted, marginBottom: '4px', fontWeight: 600 }}>Deliverables <span style={{ color: '#E65100' }}>*</span></div>
+                                    <div style={{ fontSize: '11px', color: C.textMuted, marginBottom: '4px', fontWeight: 600 }}>Deliverables <span style={{ color: C.textSecondary }}>*</span></div>
                                     <textarea
                                       placeholder="e.g. 2 × Instagram Reels, 3 × Stories, 1 × static post"
                                       value={brandBriefDeliverables}
@@ -2792,7 +2805,7 @@ export default function InstagramDemoPage() {
                                   <div style={{ display: 'flex', gap: '8px' }}>
                                     <button
                                       onClick={() => { if (brandBriefTitle.trim() && brandBriefDeliverables.trim()) setBrandDealPhase('offer'); }}
-                                      style={{ flex: 1, background: brandBriefTitle.trim() && brandBriefDeliverables.trim() ? '#E65100' : C.border, border: 'none', padding: '9px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: brandBriefTitle.trim() && brandBriefDeliverables.trim() ? 'pointer' : 'not-allowed', fontSize: '13px' }}
+                                      style={{ flex: 1, background: brandBriefTitle.trim() && brandBriefDeliverables.trim() ? C.warning : C.border, border: 'none', padding: '9px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: brandBriefTitle.trim() && brandBriefDeliverables.trim() ? 'pointer' : 'not-allowed', fontSize: '13px' }}
                                     >
                                       Continue to Offer
                                     </button>
@@ -2821,7 +2834,7 @@ export default function InstagramDemoPage() {
                                         value={brandBudget}
                                         onChange={(e) => setBrandBudget(e.target.value.replace(/[^0-9]/g, ''))}
                                         style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: '8px', color: C.text, padding: '7px 10px', fontSize: '16px', fontWeight: 700, fontFamily: 'inherit', outline: 'none', width: '110px' }}
-                                        onFocus={(e) => { e.currentTarget.style.borderColor = '#E65100'; }}
+                                        onFocus={(e) => { e.currentTarget.style.borderColor = C.warning; }}
                                         onBlur={(e) => { e.currentTarget.style.borderColor = C.border; }}
                                       />
                                       <span style={{ fontSize: '12px', color: C.textMuted }}>/post</span>
@@ -2839,7 +2852,7 @@ export default function InstagramDemoPage() {
                                   <div style={{ display: 'flex', gap: '8px' }}>
                                     <button
                                       onClick={() => setBrandDealPhase('pending')}
-                                      style={{ flex: 1, background: '#E65100', border: 'none', padding: '9px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}
+                                      style={{ flex: 1, background: C.warning, border: 'none', padding: '9px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}
                                     >
                                       Send Offer
                                     </button>
@@ -2852,8 +2865,8 @@ export default function InstagramDemoPage() {
                               {brandDealPhase === 'pending' && (
                                 <>
                                   <div style={{ textAlign: 'center', padding: '10px 0 14px' }}>
-                                    <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(230,81,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px' }}>
-                                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E65100" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: C.surfaceAlt, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px' }}>
+                                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={C.textSecondary} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                         <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
                                       </svg>
                                     </div>
@@ -2875,13 +2888,13 @@ export default function InstagramDemoPage() {
                                         <button
                                           key={h}
                                           onClick={() => setBrandSoftHoldHours(h)}
-                                          style={{ flex: 1, padding: '6px 4px', borderRadius: '6px', border: `1px solid ${brandSoftHoldHours === h ? '#E65100' : C.border}`, background: brandSoftHoldHours === h ? 'rgba(230,81,0,0.1)' : C.bg, color: brandSoftHoldHours === h ? '#E65100' : C.textSecondary, fontSize: '11px', fontWeight: 600, cursor: 'pointer' }}
+                                          style={{ flex: 1, padding: '6px 4px', borderRadius: '6px', border: `1px solid ${brandSoftHoldHours === h ? C.warning : C.border}`, background: brandSoftHoldHours === h ? 'rgba(230,81,0,0.1)' : C.bg, color: brandSoftHoldHours === h ? C.warning : C.textSecondary, fontSize: '11px', fontWeight: 600, cursor: 'pointer' }}
                                         >{h}h</button>
                                       ))}
                                     </div>
                                     <button
                                       onClick={() => setBrandDealPhase('softhold')}
-                                      style={{ width: '100%', background: 'none', border: `1px solid #E65100`, padding: '7px', borderRadius: '8px', color: '#E65100', fontWeight: 600, cursor: 'pointer', fontSize: '12px' }}
+                                      style={{ width: '100%', background: 'none', border: `1px solid ${C.border}`, padding: '7px', borderRadius: '8px', color: C.textSecondary, fontWeight: 600, cursor: 'pointer', fontSize: '12px' }}
                                     >
                                       Activate Soft Hold ({brandSoftHoldHours}h)
                                     </button>
@@ -2927,7 +2940,7 @@ export default function InstagramDemoPage() {
                               {brandDealPhase === 'counter' && (
                                 <>
                                   <div style={{ background: 'rgba(230,81,0,0.06)', borderRadius: '8px', padding: '10px 12px', marginBottom: '12px', border: `1px solid rgba(230,81,0,0.2)` }}>
-                                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#E65100', marginBottom: '6px' }}>Counter-Offer Received</div>
+                                    <div style={{ fontSize: '11px', fontWeight: 700, color: C.textSecondary, marginBottom: '6px' }}>Counter-Offer Received</div>
                                     <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '4px' }}>
                                       <span style={{ fontSize: '22px', fontWeight: 800, color: C.text }}>${simulatedCounterAmount}</span>
                                       <span style={{ fontSize: '12px', color: C.textMuted }}>/post</span>
@@ -2940,7 +2953,7 @@ export default function InstagramDemoPage() {
                                   <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
                                     <button
                                       onClick={() => { setBrandDealPhase('accepted'); setBrandApprovalPhase('accepted'); setPurchaseToast('Deal accepted — review deliverables when creator uploads'); setTimeout(() => setPurchaseToast(null), 3000); }}
-                                      style={{ flex: 1, background: '#2E7D32', border: 'none', padding: '9px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}
+                                      style={{ flex: 1, background: C.success, border: 'none', padding: '9px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}
                                     >
                                       Accept ${simulatedCounterAmount}
                                     </button>
@@ -2988,8 +3001,8 @@ export default function InstagramDemoPage() {
                               {brandDealPhase === 'accepted' && (
                                 <>
                                   <div style={{ textAlign: 'center', padding: '8px 0 12px' }}>
-                                    <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(46,125,50,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px' }}>
-                                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2E7D32" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                    <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: C.surfaceAlt, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px' }}>
+                                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={C.textSecondary} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                                     </div>
                                     <div style={{ fontSize: '14px', fontWeight: 700, color: C.text, marginBottom: '4px' }}>Deal Accepted!</div>
                                     <div style={{ fontSize: '12px', color: C.textSecondary, marginBottom: '16px' }}>
@@ -3020,7 +3033,7 @@ export default function InstagramDemoPage() {
                                   {brandApprovalPhase === 'accepted' && (
                                     <button
                                       onClick={() => setBrandApprovalPhase('reviewing')}
-                                      style={{ width: '100%', background: '#2E7D32', border: 'none', padding: '9px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}
+                                      style={{ width: '100%', background: C.success, border: 'none', padding: '9px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}
                                     >
                                       Proceed to Escrow — Review Deliverables
                                     </button>
@@ -3039,7 +3052,7 @@ export default function InstagramDemoPage() {
                                       <div style={{ display:'flex', gap:'8px' }}>
                                         <button
                                           onClick={() => { setBrandApprovalPhase('approved'); setPurchaseToast('Deliverable approved — payment released'); setTimeout(() => setPurchaseToast(null), 3000); }}
-                                          style={{ flex:1, background:'#2E7D32', border:'none', padding:'9px', borderRadius:'8px', color:'#fff', fontWeight:600, cursor:'pointer', fontSize:'13px' }}
+                                          style={{ flex:1, background:C.success, border:'none', padding:'9px', borderRadius:'8px', color:'#fff', fontWeight:600, cursor:'pointer', fontSize:'13px' }}
                                         >
                                           Approve
                                         </button>
@@ -3054,8 +3067,8 @@ export default function InstagramDemoPage() {
                                   )}
                                   {brandApprovalPhase === 'approved' && (
                                     <div style={{ textAlign:'center', padding:'12px 0', marginTop:'12px' }}>
-                                      <div style={{ width:'36px', height:'36px', borderRadius:'50%', background:'rgba(46,125,50,0.1)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 8px' }}>
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2E7D32" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                                      <div style={{ width:'36px', height:'36px', borderRadius:'50%', background:C.surfaceAlt, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 8px' }}>
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.textSecondary} strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
                                       </div>
                                       <div style={{ fontSize:'14px', fontWeight:700, color:C.text, marginBottom:'4px' }}>Deal Complete</div>
                                       <div style={{ fontSize:'12px', color:C.textSecondary, marginBottom:'12px' }}>Payment released: ${parseInt(simulatedCounterAmount).toLocaleString()}</div>
@@ -3113,7 +3126,7 @@ export default function InstagramDemoPage() {
                         <div key={i} style={{ background:C.card, borderRadius:'12px', padding:'14px', marginBottom:'10px', border:`1px solid ${C.border}` }}>
                           <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'6px', flexWrap:'wrap', gap:'4px' }}>
                             <span style={{ fontSize:'13px', fontWeight:700, color:C.text }}>{c.title}</span>
-                            <span style={{ fontSize:'12px', fontWeight:700, color:'#2E7D32' }}>${parseInt(c.budget||'0').toLocaleString()}</span>
+                            <span style={{ fontSize:'12px', fontWeight:700, color:C.success }}>${parseInt(c.budget||'0').toLocaleString()}</span>
                           </div>
                           <div style={{ fontSize:'11px', color:C.textSecondary, marginBottom:'8px', lineHeight:1.4 }}>{c.description}</div>
                           <div style={{ display:'flex', gap:'5px', flexWrap:'wrap', marginBottom:'6px' }}>
@@ -3126,12 +3139,12 @@ export default function InstagramDemoPage() {
                           </div>
                           {c.nonNegotiables && c.nonNegotiables.length > 0 && (
                             <div style={{ display:'flex', gap:'5px', flexWrap:'wrap', marginBottom:'8px' }}>
-                              {c.nonNegotiables.map(n=><span key={n} style={{ fontSize:'10px', color:'#ef4444', background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.2)', padding:'2px 7px', borderRadius:'6px' }}>{n}</span>)}
+                              {c.nonNegotiables.map(n=><span key={n} style={{ fontSize:'10px', color:C.textMuted, background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.2)', padding:'2px 7px', borderRadius:'6px' }}>{n}</span>)}
                             </div>
                           )}
                           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                             <span style={{ fontSize:'10px', color:C.textMuted }}>{c.applicants} applicant{c.applicants!==1?'s':''}{c.deadline?` · Deadline ${c.deadline}`:''}</span>
-                            <span style={{ fontSize:'10px', fontWeight:700, color:c.status==='expired'?'#ef4444':c.status==='open'?'#2E7D32':'#888', background:c.status==='expired'?'rgba(239,68,68,0.1)':c.status==='open'?'rgba(46,125,50,0.1)':'rgba(136,136,136,0.1)', padding:'2px 8px', borderRadius:'6px', textTransform:'uppercase' }}>{c.status}</span>
+                            <span style={{ fontSize:'10px', fontWeight:700, color:c.status==='expired'?C.textMuted:c.status==='open'?C.success:'#888', background:c.status==='expired'?'rgba(239,68,68,0.1)':c.status==='open'?C.surfaceAlt:'rgba(136,136,136,0.1)', padding:'2px 8px', borderRadius:'6px', textTransform:'uppercase' }}>{c.status}</span>
                           </div>
                         </div>
                       ))}
@@ -3151,13 +3164,13 @@ export default function InstagramDemoPage() {
                           <div key={i} style={{ background:C.card, borderRadius:'12px', padding:'14px', marginBottom:'10px', border:`1px solid ${app.status==='accepted'?'rgba(46,125,50,0.3)':C.border}` }}>
                             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'6px' }}>
                               <span style={{ fontSize:'13px', fontWeight:700, color:C.text }}>{app.creatorHandle} ({app.creatorProfession})</span>
-                              <span style={{ fontSize:'10px', fontWeight:700, color:app.status==='pending'?'#f59e0b':app.status==='accepted'?'#2E7D32':'#ef4444', background:app.status==='pending'?'rgba(245,158,11,0.1)':app.status==='accepted'?'rgba(46,125,50,0.1)':'rgba(239,68,68,0.1)', padding:'2px 8px', borderRadius:'6px', textTransform:'uppercase' }}>{app.status}</span>
+                              <span style={{ fontSize:'10px', fontWeight:700, color:app.status==='pending'?'#f59e0b':app.status==='accepted'?C.success:C.textMuted, background:app.status==='pending'?'rgba(245,158,11,0.1)':app.status==='accepted'?C.surfaceAlt:'rgba(239,68,68,0.1)', padding:'2px 8px', borderRadius:'6px', textTransform:'uppercase' }}>{app.status}</span>
                             </div>
                             <div style={{ fontSize:'11px', color:C.textSecondary, marginBottom:'8px' }}>{camp ? `Campaign: ${camp.title}` : app.campaignTitle} · {app.appliedAt}</div>
-                            {app.status === 'accepted' && <div style={{ fontSize:'11px', color:'#2E7D32', marginBottom:'8px' }}>Creator has been notified and can now enter negotiation.</div>}
+                            {app.status === 'accepted' && <div style={{ fontSize:'11px', color:C.success, marginBottom:'8px' }}>Creator has been notified and can now enter negotiation.</div>}
                             {app.status === 'pending' && (
                               <div style={{ display:'flex', gap:'6px' }}>
-                                <button onClick={() => { persistApplications(sharedApplications.map(a=>a.id===app.id?{...a,status:'accepted' as const}:a)); setPurchaseToast('Accepted — creator can now enter negotiation'); setTimeout(()=>setPurchaseToast(null),3000); }} style={{ flex:1, background:'#2E7D32', border:'none', borderRadius:'6px', padding:'7px', fontSize:'12px', fontWeight:600, color:'#fff', cursor:'pointer' }}>Accept</button>
+                                <button onClick={() => { persistApplications(sharedApplications.map(a=>a.id===app.id?{...a,status:'accepted' as const}:a)); setPurchaseToast('Accepted — creator can now enter negotiation'); setTimeout(()=>setPurchaseToast(null),3000); }} style={{ flex:1, background:C.success, border:'none', borderRadius:'6px', padding:'7px', fontSize:'12px', fontWeight:600, color:'#fff', cursor:'pointer' }}>Accept</button>
                                 <button onClick={() => { persistApplications(sharedApplications.map(a=>a.id===app.id?{...a,status:'rejected' as const}:a)); setPurchaseToast('Application declined'); setTimeout(()=>setPurchaseToast(null),3000); }} style={{ flex:1, background:'none', border:`1px solid ${C.border}`, borderRadius:'6px', padding:'7px', fontSize:'12px', fontWeight:600, color:C.textSecondary, cursor:'pointer' }}>Decline</button>
                               </div>
                             )}
@@ -3283,7 +3296,7 @@ export default function InstagramDemoPage() {
                                     ))
                                   )}
                                   {comm.acceptedLevels && !(comm.acceptedLevels.length === 5 && comm.acceptedLevels.includes(1)) && (
-                                    <span style={{ fontSize: '10px', background: 'rgba(139,92,246,0.1)', color: '#8b5cf6', padding: '2px 6px', borderRadius: '4px' }}>
+                                    <span style={{ fontSize: '10px', background: 'rgba(139,92,246,0.1)', color: C.textSecondary, padding: '2px 6px', borderRadius: '4px' }}>
                                       L{Math.min(...comm.acceptedLevels)}{comm.acceptedLevels.length > 1 ? `–L${Math.max(...comm.acceptedLevels)}` : ''} required
                                     </span>
                                   )}
@@ -3477,9 +3490,9 @@ export default function InstagramDemoPage() {
                                       onClick={() => setNewCommAcceptedLevels(prev => active ? prev.filter(l => l !== lvl) : [...prev, lvl].sort())}
                                       style={{
                                         flex: 1, padding: '8px 4px', borderRadius: '6px',
-                                        border: `1px solid ${active ? '#8b5cf6' : C.border}`,
+                                        border: `1px solid ${active ? C.primary : C.border}`,
                                         background: active ? 'rgba(139,92,246,0.15)' : C.surface,
-                                        color: active ? '#8b5cf6' : C.textSecondary,
+                                        color: active ? C.primary : C.textSecondary,
                                         fontSize: '12px', fontWeight: 600, cursor: 'pointer',
                                       }}
                                     >L{lvl}</button>
@@ -3835,7 +3848,7 @@ export default function InstagramDemoPage() {
                         {' | '}
                         <span style={{
                           padding: '2px 6px',
-                          backgroundColor: signal.severity === 'high' ? '#ef4444' : signal.severity === 'medium' ? '#f59e0b' : '#10b981',
+                          backgroundColor: signal.severity === 'high' ? C.textMuted : signal.severity === 'medium' ? '#f59e0b' : C.textSecondary,
                           color: 'white',
                           borderRadius: '4px',
                           fontSize: '11px',
@@ -3945,8 +3958,8 @@ export default function InstagramDemoPage() {
                         <button key={n} onClick={() => setSafetyReportThreshold(n)}
                           style={{ padding: '4px 7px', borderRadius: '5px', fontSize: '11px', fontWeight: 600, cursor: 'pointer',
                             background: safetyReportThreshold === n ? 'rgba(239,68,68,0.15)' : C.bg,
-                            color: safetyReportThreshold === n ? '#ef4444' : C.textMuted,
-                            border: `1px solid ${safetyReportThreshold === n ? '#ef4444' : C.border}`,
+                            color: safetyReportThreshold === n ? C.textMuted : C.textMuted,
+                            border: `1px solid ${safetyReportThreshold === n ? C.textMuted : C.border}`,
                           }}>{n}</button>
                       ))}
                     </div>
@@ -4203,14 +4216,14 @@ export default function InstagramDemoPage() {
                   {/* Current brand badge */}
                   {brandValueSkin && (
                     <div style={{ background: `rgba(230,81,0,0.08)`, border: `1px solid rgba(230,81,0,0.25)`, borderRadius: '10px', padding: '14px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#E65100', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '10px', fontWeight: 700 }}>
+                      <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: C.warning, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '10px', fontWeight: 700 }}>
                         {brandValueSkin.slice(0, 3).toUpperCase()}
                       </div>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: '14px', fontWeight: 700, color: C.text }}>{brandValueSkin}</div>
                         <div style={{ fontSize: '11px', color: C.textMuted }}>Your active brand identity</div>
                       </div>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2E7D32" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.textSecondary} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
                     </div>
                   )}
 
@@ -4226,15 +4239,15 @@ export default function InstagramDemoPage() {
                           onClick={() => { setBrandStoreCategory(cat.name); setShowBrandStoreModal(true); }}
                           style={{
                             padding: '14px', background: isActive ? `rgba(230,81,0,0.08)` : C.card,
-                            border: `1px solid ${isActive ? '#E65100' : C.border}`,
+                            border: `1px solid ${isActive ? C.warning : C.border}`,
                             borderRadius: '10px', color: C.text, cursor: 'pointer',
                             fontWeight: '600', fontSize: '14px', textAlign: 'left', transition: 'all 0.15s',
                           }}
-                          onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#E65100'; }}
+                          onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.warning; }}
                           onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.borderColor = C.border; }}
                         >
                           <div style={{ marginBottom: '4px' }}>{cat.name}</div>
-                          <div style={{ fontSize: '12px', color: isActive ? '#E65100' : C.textSecondary, fontWeight: 700 }}>
+                          <div style={{ fontSize: '12px', color: isActive ? C.warning : C.textSecondary, fontWeight: 700 }}>
                             {isActive ? brandValueSkin : `${cat.subCategories.length} options`}
                           </div>
                         </button>
@@ -4277,7 +4290,7 @@ export default function InstagramDemoPage() {
                           <button onClick={() => setShowBrandStoreModal(true)} style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: '6px', padding: '5px 10px', fontSize: '11px', color: C.textSecondary, cursor: 'pointer' }}>Change</button>
                         </div>
                       ) : (
-                        <button onClick={() => setShowBrandStoreModal(true)} style={{ width: '100%', background: '#E65100', border: 'none', borderRadius: '8px', padding: '10px', fontSize: '13px', fontWeight: 700, color: '#fff', cursor: 'pointer' }}>
+                        <button onClick={() => setShowBrandStoreModal(true)} style={{ width: '100%', background: C.warning, border: 'none', borderRadius: '8px', padding: '10px', fontSize: '13px', fontWeight: 700, color: '#fff', cursor: 'pointer' }}>
                           Get Brand ValueSkin
                         </button>
                       )}
@@ -4304,7 +4317,7 @@ export default function InstagramDemoPage() {
                   </div>
                   <div style={{
                     borderRadius: '12px',
-                    border: `1px solid ${willingToBarter ? '#10b981' : C.borderLight}`,
+                    border: `1px solid ${willingToBarter ? C.textSecondary : C.borderLight}`,
                     padding: '14px 16px',
                     backgroundColor: willingToBarter ? 'rgba(16,185,129,0.06)' : C.bg,
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px',
@@ -4322,7 +4335,7 @@ export default function InstagramDemoPage() {
                       onClick={() => setWillingToBarter(!willingToBarter)}
                       style={{
                         width: '44px', height: '24px', borderRadius: '12px', border: 'none',
-                        backgroundColor: willingToBarter ? '#10b981' : 'rgba(255,255,255,0.15)',
+                        backgroundColor: willingToBarter ? C.textSecondary : 'rgba(255,255,255,0.15)',
                         cursor: 'pointer', position: 'relative', flexShrink: 0, transition: 'background-color 0.2s',
                       }}
                     >
@@ -4533,7 +4546,7 @@ export default function InstagramDemoPage() {
                       <button onClick={() => setCreatorSettingsOpen(open ? null : 'showcase' as any)} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: C.card, border: `1px solid ${C.border}`, borderRadius: open ? '10px 10px 0 0' : '10px', padding: '12px 14px', cursor: 'pointer', color: C.text }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <span style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.textMuted }}>Skin Showcase</span>
-                          {creatorSkinMode === 'showcase' && <span style={{ fontSize: '9px', fontWeight: 700, color: '#fff', background: '#8b5cf6', padding: '1px 6px', borderRadius: '8px' }}>LIVE</span>}
+                          {creatorSkinMode === 'showcase' && <span style={{ fontSize: '9px', fontWeight: 700, color: '#fff', background: C.primary, padding: '1px 6px', borderRadius: '8px' }}>LIVE</span>}
                         </div>
                         <span style={{ fontSize: '14px', color: C.textMuted }}>{open ? '▲' : '▼'}</span>
                       </button>
@@ -4546,7 +4559,7 @@ export default function InstagramDemoPage() {
                           {/* Mode toggle */}
                           <div style={{ display: 'flex', gap: '6px', marginBottom: '12px' }}>
                             <button onClick={() => setCreatorSkinMode('static')} style={{ flex: 1, padding: '8px', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', background: creatorSkinMode === 'static' ? C.primary : C.bg, color: creatorSkinMode === 'static' ? '#fff' : C.textSecondary, border: `1px solid ${creatorSkinMode === 'static' ? C.primary : C.border}` }}>Static</button>
-                            <button onClick={() => setCreatorSkinMode('showcase')} style={{ flex: 1, padding: '8px', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', background: creatorSkinMode === 'showcase' ? '#8b5cf6' : C.bg, color: creatorSkinMode === 'showcase' ? '#fff' : C.textSecondary, border: `1px solid ${creatorSkinMode === 'showcase' ? '#8b5cf6' : C.border}` }}>Showcase</button>
+                            <button onClick={() => setCreatorSkinMode('showcase')} style={{ flex: 1, padding: '8px', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', background: creatorSkinMode === 'showcase' ? C.primary : C.bg, color: creatorSkinMode === 'showcase' ? '#fff' : C.textSecondary, border: `1px solid ${creatorSkinMode === 'showcase' ? C.primary : C.border}` }}>Showcase</button>
                           </div>
 
                           {creatorSkinMode === 'showcase' && (
@@ -4636,9 +4649,9 @@ export default function InstagramDemoPage() {
                         ) : (
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
                             {creatorBlockedBrands.map(b => (
-                              <span key={b} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '3px 8px', borderRadius: '12px', fontSize: '11px', background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)' }}>
+                              <span key={b} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '3px 8px', borderRadius: '12px', fontSize: '11px', background: 'rgba(239,68,68,0.1)', color: C.textMuted, border: '1px solid rgba(239,68,68,0.2)' }}>
                                 {b}
-                                <button onClick={() => setCreatorBlockedBrands(prev => prev.filter(x => x !== b))} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '12px', padding: 0, lineHeight: 1 }}>×</button>
+                                <button onClick={() => setCreatorBlockedBrands(prev => prev.filter(x => x !== b))} style={{ background: 'none', border: 'none', color: C.textMuted, cursor: 'pointer', fontSize: '12px', padding: 0, lineHeight: 1 }}>×</button>
                               </span>
                             ))}
                           </div>
@@ -4770,8 +4783,8 @@ export default function InstagramDemoPage() {
                           <div>
                             <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, marginBottom: '4px', textTransform: 'uppercase' }}>Exclusivity locked until</div>
                             <input type="date" value={exclusivityUntil} onChange={e => setExclusivityUntil(e.target.value)} placeholder="Leave blank if not exclusive"
-                              style={{ width: '100%', padding: '7px 9px', background: C.bg, border: `1px solid ${exclusivityUntil ? '#ef4444' : C.border}`, borderRadius: '7px', color: C.text, fontSize: '12px', boxSizing: 'border-box' as const }} />
-                            {exclusivityUntil && <div style={{ fontSize: '10px', color: '#ef4444', marginTop: '3px' }}>Brands will see &quot;Exclusivity taken until {exclusivityUntil}&quot;</div>}
+                              style={{ width: '100%', padding: '7px 9px', background: C.bg, border: `1px solid ${exclusivityUntil ? C.textMuted : C.border}`, borderRadius: '7px', color: C.text, fontSize: '12px', boxSizing: 'border-box' as const }} />
+                            {exclusivityUntil && <div style={{ fontSize: '10px', color: C.textMuted, marginTop: '3px' }}>Brands will see &quot;Exclusivity taken until {exclusivityUntil}&quot;</div>}
                           </div>
                         </div>
                       )}
@@ -4804,7 +4817,7 @@ export default function InstagramDemoPage() {
                       (hasDealPrefs ? 10 : 0) + (hasCredential ? 15 : 0) + (hasTestimonial ? 15 : 0) +
                       (hasBarterPref ? 5 : 0) + (hasEnergy ? 5 : 0);
                     const tier = score >= 90 ? 'Elite' : score >= 70 ? 'Established' : score >= 40 ? 'Developing' : 'Incomplete';
-                    const tierColor = score >= 90 ? '#f59e0b' : score >= 70 ? '#22c55e' : score >= 40 ? C.primary : '#ef4444';
+                    const tierColor = score >= 90 ? '#f59e0b' : score >= 70 ? '#22c55e' : score >= 40 ? C.primary : C.textMuted;
                     const items = [
                       { label: 'Avatar', done: hasAvatar, pts: 15 },
                       { label: 'Bio', done: hasBio, pts: 15 },
@@ -4856,7 +4869,7 @@ export default function InstagramDemoPage() {
                   <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: '12px', overflow: 'hidden' }}>
                     {[
                       { label: 'Download My Data', sub: 'Export all your data in JSON format', action: () => alert('Data export initiated — you will receive an email with download link within 24 hours'), color: C.primary, icon: 'DL' },
-                      { label: 'Request Data Deletion', sub: 'Permanently erase your account (GDPR Art. 17) — 30 day process', action: () => alert('Data deletion request submitted.\n\nYour account will be anonymized within 30 days as required by GDPR.\nYou can cancel this request within 24 hours.'), color: '#ef4444', icon: 'DEL' },
+                      { label: 'Request Data Deletion', sub: 'Permanently erase your account (GDPR Art. 17) — 30 day process', action: () => alert('Data deletion request submitted.\n\nYour account will be anonymized within 30 days as required by GDPR.\nYou can cancel this request within 24 hours.'), color: C.textMuted, icon: 'DEL' },
                     ].map(({ label, sub, action, color, icon }, i) => (
                       <div
                         key={label}
@@ -4945,7 +4958,7 @@ export default function InstagramDemoPage() {
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: C.textMuted, marginTop: '4px', fontWeight: 600 }}>
                 <span>0</span>
-                <span style={{ color: pct >= 80 ? '#2E7D32' : C.textSecondary }}>Top {100 - pct + 3}% of creators</span>
+                <span style={{ color: pct >= 80 ? C.success : C.textSecondary }}>Top {100 - pct + 3}% of creators</span>
                 <span>{totalMax}</span>
               </div>
             </div>
@@ -4977,12 +4990,12 @@ export default function InstagramDemoPage() {
                       <div style={{ fontWeight: 700, fontSize: '13px', color: C.text }}>{factor.name}</div>
                     </div>
                     <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: '12px' }}>
-                      <span style={{ fontSize: '15px', fontWeight: 800, color: fillPct >= 90 ? '#2E7D32' : fillPct >= 70 ? C.primary : '#E65100' }}>{earned}</span>
+                      <span style={{ fontSize: '15px', fontWeight: 800, color: fillPct >= 90 ? C.success : fillPct >= 70 ? C.primary : C.warning }}>{earned}</span>
                       <span style={{ fontSize: '11px', color: C.textMuted }}>/{factor.maxPoints}</span>
                     </div>
                   </div>
                   <div style={{ height: '4px', background: C.border, borderRadius: '2px', overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${fillPct}%`, background: fillPct >= 90 ? '#2E7D32' : fillPct >= 70 ? C.primary : '#E65100', borderRadius: '2px', transition: 'width 0.3s' }} />
+                    <div style={{ height: '100%', width: `${fillPct}%`, background: fillPct >= 90 ? C.success : fillPct >= 70 ? C.primary : C.warning, borderRadius: '2px', transition: 'width 0.3s' }} />
                   </div>
                 </div>
               );
@@ -5059,7 +5072,7 @@ export default function InstagramDemoPage() {
         <Modal onClose={() => { setShowBrandStoreModal(false); setBrandStoreCategory(null); }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
             <h2 style={{ fontSize: '22px', fontWeight: 'bold', color: C.text, margin: 0 }}>{brandStoreCategory}</h2>
-            <span style={{ fontSize: '11px', fontWeight: 600, color: '#E65100', background: 'rgba(230,81,0,0.1)', padding: '3px 8px', borderRadius: '6px' }}>Brand</span>
+            <span style={{ fontSize: '11px', fontWeight: 600, color: C.textSecondary, background: C.surfaceAlt, padding: '3px 8px', borderRadius: '6px' }}>Brand</span>
           </div>
           <p style={{ fontSize: '13px', color: C.textSecondary, marginBottom: '16px' }}>
             Tap to purchase ($10) and set as your brand identity.
@@ -5079,19 +5092,19 @@ export default function InstagramDemoPage() {
                   }}
                   style={{
                     background: isActive ? 'rgba(230,81,0,0.12)' : C.card,
-                    border: `1px solid ${isActive ? '#E65100' : C.border}`,
+                    border: `1px solid ${isActive ? C.warning : C.border}`,
                     borderRadius: '8px', color: C.text, padding: '10px 12px', fontSize: '13px',
                     cursor: 'pointer', transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: '8px',
                   }}
-                  onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.borderColor = '#E65100'; }}
+                  onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.borderColor = C.warning; }}
                   onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.borderColor = C.border; }}
                 >
-                  <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '22px', height: '22px', borderRadius: '5px', background: '#E65100', color: '#fff', fontSize: '8px', fontWeight: 700, flexShrink: 0 }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '22px', height: '22px', borderRadius: '5px', background: C.warning, color: '#fff', fontSize: '8px', fontWeight: 700, flexShrink: 0 }}>
                     {sub.slice(0, 3).toUpperCase()}
                   </span>
                   <span style={{ flex: 1, textAlign: 'left' }}>{sub}</span>
                   {isActive && (
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E65100" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.textSecondary} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                       <polyline points="20 6 9 17 4 12" />
                     </svg>
                   )}
