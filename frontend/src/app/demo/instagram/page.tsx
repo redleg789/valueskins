@@ -5020,53 +5020,69 @@ export default function InstagramDemoPage() {
       })()}
 
       {/* Store Modal — shows only the selected category's professions */}
-      {showStoreModal && assigningSlot && storeCategory && (PROFESSIONS as Record<string, typeof PROFESSIONS[keyof typeof PROFESSIONS]>)[storeCategory] && (
+      {showStoreModal && (assigningSlot || marketplaceRole === 'brand') && storeCategory && (PROFESSIONS as Record<string, typeof PROFESSIONS[keyof typeof PROFESSIONS]>)[storeCategory] && (
         <Modal onClose={() => { setShowStoreModal(false); setStoreCategory(null); }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
             <h2 style={{ fontSize: '22px', fontWeight: 'bold', color: C.text, margin: 0 }}>{storeCategory}</h2>
-            <span style={{ fontSize: '11px', fontWeight: 700, color: SLOT_COLORS[assigningSlot], background: `${SLOT_COLORS[assigningSlot]}20`, padding: '3px 8px', borderRadius: '6px', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
-              {SLOT_LABELS[assigningSlot]}
-            </span>
+            {assigningSlot && marketplaceRole !== 'brand' && (
+              <span style={{ fontSize: '11px', fontWeight: 700, color: SLOT_COLORS[assigningSlot], background: `${SLOT_COLORS[assigningSlot]}20`, padding: '3px 8px', borderRadius: '6px', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+                {SLOT_LABELS[assigningSlot]}
+              </span>
+            )}
+            {marketplaceRole === 'brand' && (
+              <span style={{ fontSize: '11px', fontWeight: 700, color: C.textSecondary, background: C.surfaceAlt, padding: '3px 8px', borderRadius: '6px' }}>
+                {brandValueSkins.length}/3 slots
+              </span>
+            )}
           </div>
           <p style={{ fontSize: '13px', color: C.textSecondary, marginBottom: '16px' }}>
-            Tap any badge to purchase ($10) and instantly apply it to your {SLOT_LABELS[assigningSlot].toLowerCase()} slot.
+            {marketplaceRole === 'brand'
+              ? 'Tap any profession to add it to your brand ValueSkins ($10).'
+              : `Tap any badge to purchase ($10) and instantly apply it to your ${assigningSlot ? SLOT_LABELS[assigningSlot].toLowerCase() : ''} slot.`}
           </p>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
             {(PROFESSIONS as Record<string, typeof PROFESSIONS[keyof typeof PROFESSIONS]>)[storeCategory].subProfessions.map((sub) => {
               const defined = PROFESSION_BADGES[sub];
+              const isBrand = marketplaceRole === 'brand';
               const abbr = defined?.abbreviation ?? sub.split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0, 3);
-              const badgeColor = defined?.color ?? SLOT_COLORS[assigningSlot];
-              const isActiveHere = valueSkins[assigningSlot]?.profession === sub;
-              const isUsedElsewhere = !isActiveHere && assignedProfessions.has(sub);
+              const badgeColor = defined?.color ?? (assigningSlot ? SLOT_COLORS[assigningSlot] : C.primary);
+              const isOwned = isBrand && brandValueSkins.includes(sub);
+              const isActiveHere = !isBrand && assigningSlot && valueSkins[assigningSlot]?.profession === sub;
+              const isUsedElsewhere = !isBrand && !isActiveHere && assignedProfessions.has(sub);
+              const isFull = isBrand && brandValueSkins.length >= 3 && !isOwned;
+              const disabled = isUsedElsewhere || isFull;
               return (
                 <button
                   key={sub}
-                  onClick={() => !isUsedElsewhere && purchaseProfession(sub)}
-                  disabled={isUsedElsewhere}
+                  onClick={() => !disabled && purchaseProfession(sub)}
+                  disabled={!!disabled}
                   style={{
-                    background: isActiveHere ? 'rgba(0,102,204,0.15)' : C.card,
-                    border: `1px solid ${isActiveHere ? C.primary : C.border}`,
-                    borderRadius: '8px', color: isUsedElsewhere ? C.textMuted : C.text,
+                    background: (isActiveHere || isOwned) ? 'rgba(0,102,204,0.15)' : C.card,
+                    border: `1px solid ${(isActiveHere || isOwned) ? C.primary : C.border}`,
+                    borderRadius: '8px', color: disabled ? C.textMuted : C.text,
                     padding: '10px 12px', fontSize: '13px',
-                    cursor: isUsedElsewhere ? 'default' : 'pointer',
+                    cursor: disabled ? 'default' : 'pointer',
                     transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: '8px',
-                    opacity: isUsedElsewhere ? 0.45 : 1,
+                    opacity: disabled ? 0.45 : 1,
                   }}
-                  onMouseEnter={(e) => { if (!isUsedElsewhere && !isActiveHere) e.currentTarget.style.borderColor = C.primary; }}
-                  onMouseLeave={(e) => { if (!isActiveHere) e.currentTarget.style.borderColor = C.border; }}
+                  onMouseEnter={(e) => { if (!disabled && !isActiveHere && !isOwned) e.currentTarget.style.borderColor = C.primary; }}
+                  onMouseLeave={(e) => { if (!isActiveHere && !isOwned) e.currentTarget.style.borderColor = C.border; }}
                 >
                   <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '22px', height: '22px', borderRadius: '5px', background: badgeColor, color: '#fff', fontSize: '8px', fontWeight: 700, flexShrink: 0 }}>
                     {abbr}
                   </span>
                   <span style={{ flex: 1, textAlign: 'left' }}>{sub}</span>
-                  {isActiveHere && (
+                  {(isActiveHere || isOwned) && (
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                       <polyline points="20 6 9 17 4 12" />
                     </svg>
                   )}
                   {isUsedElsewhere && (
                     <span style={{ fontSize: '10px', color: C.textMuted }}>used</span>
+                  )}
+                  {isFull && (
+                    <span style={{ fontSize: '10px', color: C.textMuted }}>full</span>
                   )}
                 </button>
               );
