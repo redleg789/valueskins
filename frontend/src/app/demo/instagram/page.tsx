@@ -476,7 +476,6 @@ export default function InstagramDemoPage() {
 
   // Marketplace role & gate
   const [marketplaceRole, setMarketplaceRole] = useState<'none' | 'creator' | 'brand'>('none');
-  const [storeTab, setStoreTab] = useState<'creators' | 'brands'>('creators');
   const [brandValueSkin, setBrandValueSkin] = useState<string | null>(null);
   const [showBrandStoreModal, setShowBrandStoreModal] = useState(false);
   const [brandStoreCategory, setBrandStoreCategory] = useState<string | null>(null);
@@ -4115,27 +4114,8 @@ export default function InstagramDemoPage() {
             <>
               <div style={{ height: '60px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', paddingLeft: '20px', fontWeight: 'bold', fontSize: '16px', background: C.surface }}>Valueskins Store</div>
 
-              {/* Store tabs */}
-              <div style={{ display: 'flex', borderBottom: `1px solid ${C.border}` }}>
-                {(['creators', 'brands'] as const).map(tab => (
-                  <div
-                    key={tab}
-                    onClick={() => setStoreTab(tab)}
-                    style={{
-                      flex: 1, textAlign: 'center', padding: '14px 0', fontSize: '14px',
-                      fontWeight: storeTab === tab ? '700' : '500',
-                      color: storeTab === tab ? C.primary : C.textMuted,
-                      borderBottom: storeTab === tab ? `2px solid ${C.primary}` : '2px solid transparent',
-                      cursor: 'pointer', transition: 'all 0.15s',
-                    }}
-                  >
-                    {tab === 'creators' ? 'For Creators' : 'For Brands'}
-                  </div>
-                ))}
-              </div>
-
-              {/* FOR CREATORS tab — existing store */}
-              {storeTab === 'creators' && (
+              {/* Profession grid — same for creators and brands */}
+              {(
                 <div style={{ padding: '20px' }}>
                   <div style={{ marginBottom: '20px' }}>
                     <div style={{ fontSize: '12px', fontWeight: 700, color: C.textMuted, letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: '10px' }}>
@@ -4206,62 +4186,6 @@ export default function InstagramDemoPage() {
                 </div>
               )}
 
-              {/* FOR BRANDS tab */}
-              {storeTab === 'brands' && (
-                <div style={{ padding: '20px' }}>
-                  <p style={{ fontSize: '13px', color: C.textSecondary, lineHeight: 1.6, marginBottom: '20px' }}>
-                    Establish your brand identity on the creator marketplace. Your ValueSkin tells creators what kind of brand you are and unlocks marketplace access.
-                  </p>
-
-                  {/* Current brand badge */}
-                  {brandValueSkin && (
-                    <div style={{ background: `rgba(230,81,0,0.08)`, border: `1px solid rgba(230,81,0,0.25)`, borderRadius: '10px', padding: '14px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: C.warning, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '10px', fontWeight: 700 }}>
-                        {brandValueSkin.slice(0, 3).toUpperCase()}
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: '14px', fontWeight: 700, color: C.text }}>{brandValueSkin}</div>
-                        <div style={{ fontSize: '11px', color: C.textMuted }}>Your active brand identity</div>
-                      </div>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.textSecondary} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                    </div>
-                  )}
-
-                  <div style={{ fontSize: '12px', fontWeight: 700, color: C.textMuted, letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: '12px' }}>
-                    Choose your brand category
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                    {Object.values(BRAND_CATEGORIES).map((cat) => {
-                      const isActive = brandValueSkin && cat.subCategories.includes(brandValueSkin);
-                      return (
-                        <button
-                          key={cat.name}
-                          onClick={() => { setBrandStoreCategory(cat.name); setShowBrandStoreModal(true); }}
-                          style={{
-                            padding: '14px', background: isActive ? `rgba(230,81,0,0.08)` : C.card,
-                            border: `1px solid ${isActive ? C.warning : C.border}`,
-                            borderRadius: '10px', color: C.text, cursor: 'pointer',
-                            fontWeight: '600', fontSize: '14px', textAlign: 'left', transition: 'all 0.15s',
-                          }}
-                          onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.warning; }}
-                          onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.borderColor = C.border; }}
-                        >
-                          <div style={{ marginBottom: '4px' }}>{cat.name}</div>
-                          <div style={{ fontSize: '12px', color: isActive ? C.warning : C.textSecondary, fontWeight: 700 }}>
-                            {isActive ? brandValueSkin : `${cat.subCategories.length} options`}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  <div style={{ padding: '14px', background: 'rgba(230,81,0,0.06)', borderRadius: '10px', textAlign: 'center', marginTop: '20px' }}>
-                    <div style={{ fontSize: '11px', color: C.textSecondary, lineHeight: 1.5 }}>
-                      $10 one-time purchase. Your brand ValueSkin unlocks the Marketplace and signals your identity to creators.
-                    </div>
-                  </div>
-                </div>
-              )}
             </>
           )}
 
@@ -4307,6 +4231,62 @@ export default function InstagramDemoPage() {
                         />
                       </div>
                     </div>
+                  </div>
+                )}
+
+                {/* Brand Profile — category selection, only for brands */}
+                {marketplaceRole === 'brand' && (
+                  <div style={{ marginBottom: '24px' }}>
+                    {(() => {
+                      const open = creatorSettingsOpen === ('brandProfile' as any);
+                      return (
+                        <>
+                          <button onClick={() => setCreatorSettingsOpen(open ? null : 'brandProfile' as any)} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: C.card, border: `1px solid ${C.border}`, borderRadius: open ? '10px 10px 0 0' : '10px', padding: '12px 14px', cursor: 'pointer', color: C.text }}>
+                            <span style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.textMuted }}>Brand Profile</span>
+                            <span style={{ fontSize: '14px', color: C.textMuted }}>{open ? '\u25B2' : '\u25BC'}</span>
+                          </button>
+                          {open && (
+                            <div style={{ background: C.card, border: `1px solid ${C.border}`, borderTop: 'none', borderRadius: '0 0 10px 10px', padding: '14px' }}>
+                              <div style={{ fontSize: '11px', color: C.textSecondary, marginBottom: '12px', lineHeight: 1.5 }}>
+                                Define your brand profile so creators understand who you are. Select one option from each category.
+                              </div>
+                              {Object.values(BRAND_CATEGORIES).map((cat) => {
+                                const isActive = brandValueSkin && cat.subCategories.includes(brandValueSkin);
+                                return (
+                                  <div key={cat.name} style={{ marginBottom: '14px' }}>
+                                    <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, letterSpacing: '0.6px', textTransform: 'uppercase', marginBottom: '8px' }}>{cat.name}</div>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                      {cat.subCategories.map((sub) => {
+                                        const selected = brandValueSkin === sub;
+                                        return (
+                                          <button
+                                            key={sub}
+                                            onClick={() => {
+                                              setBrandValueSkin(sub);
+                                              setPurchaseToast(`${sub} set as your brand identity`);
+                                              setTimeout(() => setPurchaseToast(null), 3000);
+                                            }}
+                                            style={{
+                                              padding: '5px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: selected ? 600 : 400,
+                                              background: selected ? `${C.primary}15` : C.bg,
+                                              border: `1px solid ${selected ? C.primary : C.border}`,
+                                              color: selected ? C.primary : C.textSecondary,
+                                              cursor: 'pointer', transition: 'all 0.15s',
+                                            }}
+                                          >
+                                            {sub}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
                   </div>
                 )}
 
