@@ -87,6 +87,104 @@ const BRAND_MARKETPLACE_CREATORS = [
     availableFrom: 'Now', contractMode: 'one-off',
     portfolio: ['Nike Training series — 4.1M views', 'MyProtein review — 980K views'],
   },
+  {
+    name: 'Sarah Kim', handle: '@sarah_data', valueSkin: 'Data Scientist',
+    followers: '420K', engagement: '6.5%', rate: '$5,200', matchScore: '92%',
+    featured: true, willingToBarter: false,
+    timezone: 'UTC-8 (PST)', responseTimeHrs: 8, minDealUsd: 3000,
+    audienceAgeRange: '25-34', audienceLocation: 'USA', audienceLang: 'English',
+    dealTypes: ['Paid', 'Equity'], openToDeals: true,
+    ndaOk: true, usageRightsOk: true,
+    dealCompletionRate: 95, incomeTier: '50k+', isFirstDeal: false,
+    rateCard: { reel: '$5,200', story: '$1,500', post: '$3,400' },
+    exclusivitySlotFree: true, revisionLimit: 2, usageRightsDays: 60,
+    availableFrom: 'Now', contractMode: 'both',
+    portfolio: ['DataStack AI tutorial — 1.8M views', 'Kaggle walkthrough — 920K views'],
+  },
+  {
+    name: 'Jordan Blake', handle: '@jordan_devops', valueSkin: 'DevOps Engineer',
+    followers: '310K', engagement: '9.1%', rate: '$3,800', matchScore: '87%',
+    featured: false, willingToBarter: true,
+    timezone: 'UTC+0 (GMT)', responseTimeHrs: 6, minDealUsd: 1500,
+    audienceAgeRange: '25-34', audienceLocation: 'UK', audienceLang: 'English',
+    dealTypes: ['Paid', 'Barter', 'Ambassador'], openToDeals: true,
+    ndaOk: true, usageRightsOk: true,
+    dealCompletionRate: 93, incomeTier: '10k+', isFirstDeal: false,
+    rateCard: { reel: '$3,800', story: '$900', post: '$2,200' },
+    exclusivitySlotFree: true, revisionLimit: 2, usageRightsDays: 45,
+    availableFrom: 'Now', contractMode: 'one-off',
+    portfolio: ['Kubernetes deep dive — 1.4M views', 'CI/CD pipeline build — 670K views'],
+  },
+  {
+    name: 'Elena Rodriguez', handle: '@elena_chef', valueSkin: 'Chef',
+    followers: '780K', engagement: '7.8%', rate: '$4,000', matchScore: '89%',
+    featured: false, willingToBarter: true,
+    timezone: 'UTC-6 (CST)', responseTimeHrs: 12, minDealUsd: 2000,
+    audienceAgeRange: '25-34', audienceLocation: 'USA', audienceLang: 'English',
+    dealTypes: ['Paid', 'Gifted Product', 'Barter'], openToDeals: true,
+    ndaOk: false, usageRightsOk: true,
+    dealCompletionRate: 96, incomeTier: '50k+', isFirstDeal: false,
+    rateCard: { reel: '$4,000', story: '$1,000', post: '$2,500' },
+    exclusivitySlotFree: true, revisionLimit: 2, usageRightsDays: 60,
+    availableFrom: 'Now', contractMode: 'both',
+    portfolio: ['HelloFresh chef upgrade — 2.3M views', 'Street food series — 1.1M views'],
+  },
+  {
+    name: 'Raj Patel', handle: '@raj_product', valueSkin: 'Product Manager',
+    followers: '560K', engagement: '5.4%', rate: '$5,500', matchScore: '88%',
+    featured: false, willingToBarter: false,
+    timezone: 'UTC+5:30 (IST)', responseTimeHrs: 16, minDealUsd: 3500,
+    audienceAgeRange: '25-34', audienceLocation: 'India', audienceLang: 'English',
+    dealTypes: ['Paid', 'Revenue Share'], openToDeals: true,
+    ndaOk: true, usageRightsOk: true,
+    dealCompletionRate: 94, incomeTier: '100k+', isFirstDeal: false,
+    rateCard: { reel: '$5,500', story: '$1,600', post: '$3,600' },
+    exclusivitySlotFree: false, revisionLimit: 3, usageRightsDays: 90,
+    availableFrom: 'Apr 1', contractMode: 'long-term',
+    portfolio: ['Product teardown series — 2.7M views', 'Roadmap workshop — 1.5M views'],
+  },
+  {
+    name: 'Lena Okafor', handle: '@lena_security', valueSkin: 'Security Researcher',
+    followers: '270K', engagement: '10.2%', rate: '$4,800', matchScore: '82%',
+    featured: false, willingToBarter: false,
+    timezone: 'UTC+1 (CET)', responseTimeHrs: 8, minDealUsd: 3000,
+    audienceAgeRange: '25-34', audienceLocation: 'Germany', audienceLang: 'English',
+    dealTypes: ['Paid'], openToDeals: true,
+    ndaOk: true, usageRightsOk: false,
+    dealCompletionRate: 99, incomeTier: '50k+', isFirstDeal: false,
+    rateCard: { reel: '$4,800', story: '$1,400', post: '$3,200' },
+    exclusivitySlotFree: true, revisionLimit: 1, usageRightsDays: 30,
+    availableFrom: 'Now', contractMode: 'one-off',
+    portfolio: ['Bug bounty writeup — 890K views', 'OWASP Top 10 explained — 1.6M views'],
+  },
+  {
+    name: 'Tommy Nguyen', handle: '@tommy_ai', valueSkin: 'AI/ML Specialist',
+    followers: '1.5M', engagement: '6.9%', rate: '$7,500', matchScore: '95%',
+    featured: true, willingToBarter: false,
+    timezone: 'UTC-5 (EST)', responseTimeHrs: 4, minDealUsd: 5000,
+    audienceAgeRange: '25-34', audienceLocation: 'USA', audienceLang: 'English',
+    dealTypes: ['Paid', 'Equity'], openToDeals: true,
+    ndaOk: true, usageRightsOk: true,
+    dealCompletionRate: 98, incomeTier: '100k+', isFirstDeal: false,
+    rateCard: { reel: '$7,500', story: '$2,200', post: '$5,000' },
+    exclusivitySlotFree: false, revisionLimit: 2, usageRightsDays: 120,
+    availableFrom: 'Now', contractMode: 'both',
+    portfolio: ['GPT fine-tuning tutorial — 5.2M views', 'RAG pipeline build — 3.1M views'],
+  },
+  {
+    name: 'Mia Johnson', handle: '@mia_yoga', valueSkin: 'Yoga Instructor',
+    followers: '920K', engagement: '8.7%', rate: '$3,500', matchScore: '86%',
+    featured: false, willingToBarter: true,
+    timezone: 'UTC-7 (MST)', responseTimeHrs: 6, minDealUsd: 1000,
+    audienceAgeRange: '18-24', audienceLocation: 'USA', audienceLang: 'English',
+    dealTypes: ['Paid', 'Gifted Product', 'Barter', 'Ambassador'], openToDeals: true,
+    ndaOk: false, usageRightsOk: true,
+    dealCompletionRate: 92, incomeTier: '50k+', isFirstDeal: false,
+    rateCard: { reel: '$3,500', story: '$900', post: '$2,000' },
+    exclusivitySlotFree: true, revisionLimit: 2, usageRightsDays: 60,
+    availableFrom: 'Now', contractMode: 'one-off',
+    portfolio: ['Morning flow series — 3.8M views', 'Lululemon partnership — 1.9M views'],
+  },
 ];
 
 const BRAND_CATEGORIES: Record<string, { name: string; subCategories: string[] }> = {
@@ -1191,16 +1289,6 @@ export default function InstagramDemoPage() {
                       </div>
                     );
                   })}
-                  <button
-                    onClick={() => setShowCredentialForm(!showCredentialForm)}
-                    style={{
-                      padding: '4px 8px', backgroundColor: 'transparent',
-                      border: `1px dashed ${C.primary}`, borderRadius: '5px',
-                      fontSize: '11px', cursor: 'pointer', color: C.primary,
-                    }}
-                  >
-                    + Add
-                  </button>
                 </div>
 
               </div>
@@ -2264,6 +2352,7 @@ export default function InstagramDemoPage() {
                         <input
                           value={brandSearchQuery}
                           onChange={e => setBrandSearchQuery(e.target.value)}
+                          onKeyDown={e => { if (e.key === 'Enter') e.preventDefault(); }}
                           placeholder={
                             brandSearchMode === 'profession' ? 'Search by profession (e.g. Piano Player, Fitness Coach...)' :
                             brandSearchMode === 'name' ? 'Search by creator name or handle...' :
