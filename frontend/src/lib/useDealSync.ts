@@ -1,0 +1,568 @@
+/**
+ * Deal synchronization hook — bridges localStorage state with backend API.
+ *
+ * Strategy:
+ * 1. On mount, attempt to load deal rooms from backend API
+ * 2. If backend is reachable, use it as source of truth and sync to localStorage
+ * 3. If backend is unreachable, fall back to localStorage (offline mode)
+ * 4. All mutations attempt API first, then update localStorage
+ * 5. BroadcastChannel keeps multiple tabs in sync
+ */
+
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { api } from './api';
+
+// ---- Types matching the demo page's DealState ----
+
+export type DealRoomPhase = 'brief' | 'offer' | 'counter' | 'chatroom' | 'checklist' | 'accepted' | 'softhold';
+
+export type DealState = {
+  phase: DealRoomPhase;
+  intent: 'explore' | 'campaign' | 'long-term';
+  briefFilled: boolean;
+  briefTitle: string;
+  offerAmount: string;
+  counterAmount: string;
+  chatMessages: ChatMessage[];
+  chatInput: string;
+  performanceClause: boolean;
+  advancePercent: number;
+  // Backend IDs — populated when synced with API
+  backendDealRoomId?: number;
+  backendLastMessageId?: number;
+};
+
+export type ChatMessage = {
+  id: number;
+  sender: 'me' | 'brand';
+  text: string;
+  time: string;
+  seen?: boolean;
+};
+
+export type SharedApplication = {
+  id: number;
+  campaignId: number;
+  campaignTitle: string;
+  creatorProfession: string;
+  creatorHandle: string;
+  status: 'pending' | 'accepted' | 'rejected';
+  appliedAt: string;
+};
+
+export type Campaign = {
+  id: number;
+  brandProfession: string;
+  title: string;
+  description: string;
+  requiredProfessions: string[];
+  minLevel: number;
+  maxLevel: number;
+  budget: string;
+  deadline: string;
+  location: string;
+  nonNegotiables: string[];
+  deliverables: string;
+  status: 'open' | 'closed' | 'expired';
+  applicants: number;
+};
+
+// ---- Storage keys ----
+const STORAGE_DEALS = 'vs_demo_deal_states';
+const STORAGE_APPLICATIONS = 'vs_demo_applications';
+const STORAGE_CAMPAIGNS = 'vs_demo_campaigns';
+const BC_NAME = 'vs_demo_sync';
+
+// ---- Backend connectivity check ----
+let backendOnline: boolean | null = null;
+let lastCheck = 0;
+const CHECK_INTERVAL = 30_000; // re-check every 30s
+
+async function isBackendOnline(): Promise<boolean> {
+  const now = Date.now();
+  if (backendOnline !== null && now - lastCheck < CHECK_INTERVAL) {
+    return backendOnline;
+  }
+  try {
+    const res = await api.system.health();
+    backendOnline = !res.error;
+  } catch {
+    backendOnline = false;
+  }
+  lastCheck = now;
+  return backendOnline ?? false;
+}
+
+// ---- localStorage helpers ----
+function loadFromStorage<T>(key: string, fallback: T): T {
+  if (typeof window === 'undefined') return fallback;
+  try {
+    const stored = localStorage.getItem(key);
+    return stored ? JSON.parse(stored) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function saveToStorage<T>(key: string, data: T): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+  } catch { /* quota exceeded — safe to ignore */ }
+}
+
+function broadcastSync(): void {
+  try {
+    new BroadcastChannel(BC_NAME).postMessage('sync');
+  } catch { /* unsupported — safe to ignore */ }
+}
+
+// ---- Main hook ----
+
+export function useDealSync() {
+  const [dealStates, setDealStates] = useState<Record<string, DealState>>({});
+  const [applications, setApplications] = useState<SharedApplication[]>([]);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const [online, setOnline] = useState(false);
+  const syncInProgress = useRef(false);
+
+  // Initial load — try backend, fall back to localStorage
+  useEffect(() => {
+    let cancelled = false;
+
+    async function init() {
+      const backendUp = await isBackendOnline();
+      if (cancelled) return;
+      setOnline(backendUp);
+
+      if (backendUp) {
+        // Try to load deal rooms from backend
+        try {
+          const roomsRes = await api.dealRooms.listMyRooms();
+          if (!cancelled && roomsRes.data?.deal_rooms) {
+            const backendDeals: Record<string, DealState> = {};
+            for (const room of roomsRes.data.deal_rooms) {
+              const key = `${room.opportunity_title || 'deal'}:${room.id}`;
+              backendDeals[key] = {
+                phase: mapStatusToPhase(room.status),
+                intent: 'campaign',
+                briefFilled: true,
+                briefTitle: room.opportunity_title || '',
+                offerAmount: '',
+                counterAmount: '',
+                chatMessages: [],
+                chatInput: '',
+                performanceClause: false,
+                advancePercent: 70,
+                backendDealRoomId: room.id,
+              };
+            }
+            // Merge with localStorage (localStorage has UI state not in backend)
+            const localDeals = loadFromStorage<Record<string, DealState>>(STORAGE_DEALS, {});
+            const merged = { ...localDeals, ...backendDeals };
+            setDealStates(merged);
+            saveToStorage(STORAGE_DEALS, merged);
+          }
+        } catch {
+          // Backend returned error — load from localStorage
+          setDealStates(loadFromStorage(STORAGE_DEALS, {}));
+        }
+
+        // Try to load applications from backend
+        try {
+          const appsRes = await api.marketplace.getMyApplications();
+          if (!cancelled && appsRes.data?.applications) {
+            const backendApps: SharedApplication[] = appsRes.data.applications.map(a => ({
+              id: a.id,
+              campaignId: a.opportunity_id,
+              campaignTitle: a.opportunity_title || '',
+              creatorProfession: '',
+              creatorHandle: a.username || '',
+              status: (a.status === 'applied' ? 'pending' : a.status) as SharedApplication['status'],
+              appliedAt: a.created_at || new Date().toISOString(),
+            }));
+            const localApps = loadFromStorage<SharedApplication[]>(STORAGE_APPLICATIONS, []);
+            // Merge: backend wins for matching IDs, keep local-only entries
+            const backendIds = new Set(backendApps.map(a => a.id));
+            const localOnly = localApps.filter(a => !backendIds.has(a.id));
+            const merged = [...backendApps, ...localOnly];
+            setApplications(merged);
+            saveToStorage(STORAGE_APPLICATIONS, merged);
+          }
+        } catch {
+          setApplications(loadFromStorage(STORAGE_APPLICATIONS, []));
+        }
+      } else {
+        // Offline mode — load everything from localStorage
+        setDealStates(loadFromStorage(STORAGE_DEALS, {}));
+        setApplications(loadFromStorage(STORAGE_APPLICATIONS, []));
+      }
+
+      setCampaigns(loadFromStorage(STORAGE_CAMPAIGNS, []));
+      if (!cancelled) setLoaded(true);
+    }
+
+    init();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Persist deals to localStorage on change
+  useEffect(() => {
+    if (!loaded) return;
+    saveToStorage(STORAGE_DEALS, dealStates);
+  }, [dealStates, loaded]);
+
+  // Persist applications to localStorage on change
+  useEffect(() => {
+    if (!loaded) return;
+    saveToStorage(STORAGE_APPLICATIONS, applications);
+    broadcastSync();
+  }, [applications, loaded]);
+
+  // Persist campaigns to localStorage on change
+  useEffect(() => {
+    if (!loaded) return;
+    saveToStorage(STORAGE_CAMPAIGNS, campaigns);
+    broadcastSync();
+  }, [campaigns, loaded]);
+
+  // Listen for cross-tab sync
+  useEffect(() => {
+    let bc: BroadcastChannel | null = null;
+    try {
+      bc = new BroadcastChannel(BC_NAME);
+      bc.onmessage = () => {
+        setApplications(loadFromStorage(STORAGE_APPLICATIONS, []));
+        setCampaigns(loadFromStorage(STORAGE_CAMPAIGNS, []));
+      };
+    } catch { /* unsupported */ }
+
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === STORAGE_APPLICATIONS) setApplications(loadFromStorage(STORAGE_APPLICATIONS, []));
+      if (e.key === STORAGE_CAMPAIGNS) setCampaigns(loadFromStorage(STORAGE_CAMPAIGNS, []));
+    };
+    window.addEventListener('storage', onStorage);
+    return () => {
+      bc?.close();
+      window.removeEventListener('storage', onStorage);
+    };
+  }, []);
+
+  // ---- Deal state helpers ----
+
+  const getOrCreateDeal = useCallback((key: string): DealState => {
+    return dealStates[key] ?? {
+      phase: 'brief' as const,
+      intent: 'campaign' as const,
+      briefFilled: false,
+      briefTitle: '',
+      offerAmount: '',
+      counterAmount: '',
+      chatMessages: [
+        { id: 1, sender: 'brand' as const, text: 'Hey! Excited to work together on this campaign.', time: 'just now', seen: false },
+      ],
+      chatInput: '',
+      performanceClause: false,
+      advancePercent: 70,
+    };
+  }, [dealStates]);
+
+  const updateDeal = useCallback((key: string, patch: Partial<DealState>) => {
+    setDealStates(prev => {
+      const existing = prev[key] ?? {
+        phase: 'brief' as const,
+        intent: 'campaign' as const,
+        briefFilled: false,
+        briefTitle: '',
+        offerAmount: '',
+        counterAmount: '',
+        chatMessages: [
+          { id: 1, sender: 'brand' as const, text: 'Hey! Excited to work together on this campaign.', time: 'just now', seen: false },
+        ],
+        chatInput: '',
+        performanceClause: false,
+        advancePercent: 70,
+      };
+      return { ...prev, [key]: { ...existing, ...prev[key], ...patch } };
+    });
+  }, []);
+
+  // ---- API-backed mutations ----
+
+  /** Open a deal room — tries backend first, falls back to localStorage-only */
+  const openDealRoom = useCallback(async (
+    key: string,
+    creatorPersonaId: number,
+    briefData: {
+      intent: string;
+      title: string;
+      description: string;
+      deliverables: string;
+      campaignType: string;
+      compensationType?: string;
+    }
+  ) => {
+    const backendUp = await isBackendOnline();
+
+    if (backendUp) {
+      try {
+        const res = await api.dealRooms.openDealRoom({
+          creator_persona_id: creatorPersonaId,
+          intent: briefData.intent,
+          brief_title: briefData.title,
+          brief_description: briefData.description,
+          brief_deliverables: briefData.deliverables,
+          brief_campaign_type: briefData.campaignType,
+          compensation_type: briefData.compensationType,
+        });
+        if (res.data?.deal_room_id) {
+          updateDeal(key, {
+            phase: 'offer',
+            intent: briefData.intent as DealState['intent'],
+            briefFilled: true,
+            briefTitle: briefData.title,
+            backendDealRoomId: res.data.deal_room_id,
+          });
+          return res.data.deal_room_id;
+        }
+      } catch { /* fall through to localStorage */ }
+    }
+
+    // Offline fallback
+    updateDeal(key, {
+      phase: 'offer',
+      intent: briefData.intent as DealState['intent'],
+      briefFilled: true,
+      briefTitle: briefData.title,
+    });
+    return null;
+  }, [updateDeal]);
+
+  /** Send a chat message — tries backend first, always updates localStorage */
+  const sendMessage = useCallback(async (
+    key: string,
+    text: string,
+    sender: 'me' | 'brand' = 'me'
+  ) => {
+    const deal = dealStates[key];
+    const backendRoomId = deal?.backendDealRoomId;
+    const newMsg: ChatMessage = {
+      id: Date.now(),
+      sender,
+      text,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      seen: false,
+    };
+
+    // Update locally immediately (optimistic)
+    setDealStates(prev => {
+      const existing = prev[key];
+      if (!existing) return prev;
+      return {
+        ...prev,
+        [key]: {
+          ...existing,
+          chatMessages: [...existing.chatMessages, newMsg],
+          chatInput: '',
+        },
+      };
+    });
+
+    // Try backend
+    if (backendRoomId) {
+      try {
+        await api.dealRooms.sendMessage(backendRoomId, text, 'text');
+      } catch { /* message saved locally, will sync later */ }
+    }
+  }, [dealStates]);
+
+  /** Make an offer — tries backend, falls back to local */
+  const makeOffer = useCallback(async (
+    key: string,
+    amountCents: number,
+    note?: string
+  ) => {
+    const deal = dealStates[key];
+    const backendRoomId = deal?.backendDealRoomId;
+
+    if (backendRoomId) {
+      try {
+        const res = await api.marketplace.postMessage(backendRoomId, {
+          content: `Offer: $${(amountCents / 100).toFixed(0)}${note ? ` - ${note}` : ''}`,
+          message_type: 'offer_made',
+        });
+        if (res.data) {
+          updateDeal(key, { phase: 'counter', offerAmount: String(amountCents / 100) });
+          return;
+        }
+      } catch { /* fall through */ }
+    }
+
+    // Offline fallback
+    updateDeal(key, { phase: 'counter', offerAmount: String(amountCents / 100) });
+  }, [dealStates, updateDeal]);
+
+  /** Submit application — tries backend first */
+  const submitApplication = useCallback(async (
+    opportunityId: number,
+    personaId: number,
+    pitch: string,
+    appData: Omit<SharedApplication, 'id'>
+  ) => {
+    const backendUp = await isBackendOnline();
+    let appId = Date.now();
+
+    if (backendUp) {
+      try {
+        const res = await api.marketplace.applyToOpportunity(opportunityId, personaId, pitch);
+        if (res.data?.application_id) {
+          appId = res.data.application_id;
+        }
+      } catch { /* fall through to localStorage */ }
+    }
+
+    const newApp: SharedApplication = { ...appData, id: appId };
+    setApplications(prev => [...prev, newApp]);
+  }, []);
+
+  /** Accept application (brand side) — tries backend first */
+  const acceptApplication = useCallback(async (
+    applicationId: number,
+    opportunityId: number,
+    personaId: number
+  ) => {
+    const backendUp = await isBackendOnline();
+
+    if (backendUp) {
+      try {
+        await api.brand.acceptApplication(opportunityId, personaId);
+      } catch { /* fall through */ }
+    }
+
+    setApplications(prev =>
+      prev.map(a => a.id === applicationId ? { ...a, status: 'accepted' as const } : a)
+    );
+  }, []);
+
+  /** Create campaign (brand side) — tries backend first */
+  const createCampaign = useCallback(async (campaign: Omit<Campaign, 'id'>) => {
+    const backendUp = await isBackendOnline();
+    let campId = Date.now();
+
+    if (backendUp) {
+      try {
+        const res = await api.brand.createOpportunity({
+          title: campaign.title,
+          description: campaign.description,
+          category: campaign.brandProfession,
+          required_profession_id: 0,
+          required_level: campaign.minLevel,
+          reward_amount: campaign.budget,
+          duration_days: 30,
+        });
+        if (res.data?.opportunity_id) {
+          campId = res.data.opportunity_id;
+        }
+      } catch { /* fall through */ }
+    }
+
+    const newCampaign: Campaign = { ...campaign, id: campId };
+    setCampaigns(prev => [...prev, newCampaign]);
+  }, []);
+
+  /** Finalize deal — tries backend first */
+  const finalizeDeal = useCallback(async (key: string) => {
+    const deal = dealStates[key];
+    const backendRoomId = deal?.backendDealRoomId;
+
+    if (backendRoomId) {
+      try {
+        await api.dealRooms.finalizeDeal(backendRoomId, 'Deal completed');
+      } catch { /* fall through */ }
+    }
+
+    updateDeal(key, { phase: 'accepted' });
+  }, [dealStates, updateDeal]);
+
+  /** Background sync — periodically pushes local state to backend */
+  const syncToBackend = useCallback(async () => {
+    if (syncInProgress.current) return;
+    syncInProgress.current = true;
+
+    try {
+      const backendUp = await isBackendOnline();
+      if (!backendUp) return;
+      setOnline(true);
+
+      // Sync deals that have local state but no backend ID
+      for (const [key, deal] of Object.entries(dealStates)) {
+        if (deal.backendDealRoomId || deal.phase === 'brief') continue;
+
+        // This deal exists locally but not on backend — create it
+        try {
+          const res = await api.dealRooms.openDealRoom({
+            creator_persona_id: 1, // placeholder — real ID needed
+            intent: deal.intent,
+            brief_title: deal.briefTitle || key.split(':')[0],
+            brief_description: 'Synced from local state',
+            brief_deliverables: '',
+            brief_campaign_type: 'Product Review',
+          });
+          if (res.data?.deal_room_id) {
+            updateDeal(key, { backendDealRoomId: res.data.deal_room_id });
+          }
+        } catch { /* skip this deal */ }
+      }
+    } finally {
+      syncInProgress.current = false;
+    }
+  }, [dealStates, updateDeal]);
+
+  // Run background sync every 60 seconds
+  useEffect(() => {
+    if (!loaded) return;
+    const interval = setInterval(syncToBackend, 60_000);
+    return () => clearInterval(interval);
+  }, [loaded, syncToBackend]);
+
+  return {
+    // State
+    dealStates,
+    setDealStates,
+    applications,
+    setApplications,
+    campaigns,
+    setCampaigns,
+    loaded,
+    online,
+
+    // Deal helpers
+    getOrCreateDeal,
+    updateDeal,
+
+    // API-backed mutations
+    openDealRoom,
+    sendMessage,
+    makeOffer,
+    submitApplication,
+    acceptApplication,
+    createCampaign,
+    finalizeDeal,
+    syncToBackend,
+  };
+}
+
+// ---- Helpers ----
+
+function mapStatusToPhase(status: string): DealRoomPhase {
+  switch (status) {
+    case 'active': return 'chatroom';
+    case 'accepted': return 'accepted';
+    case 'completed': return 'accepted';
+    case 'cancelled':
+    case 'expired':
+    case 'rejected': return 'brief';
+    default: return 'brief';
+  }
+}
