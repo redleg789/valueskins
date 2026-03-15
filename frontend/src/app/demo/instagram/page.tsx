@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useLevelConfig, useReputationConfig } from '@/lib/useConfigStorage';
+import { useDealSync, type DealState, type DealRoomPhase, type SharedApplication, type Campaign, type ChatMessage } from '@/lib/useDealSync';
 import {
   type ValueSkinMap,
   type ValueSkinSlot,
@@ -97,40 +98,133 @@ const BRAND_CATEGORIES: Record<string, { name: string; subCategories: string[] }
 
 const CAMPAIGN_TYPES = ['Product Review', 'Brand Ambassador', 'Sponsored Content', 'Event Coverage', 'Affiliate', 'Whitelabel', 'UGC', 'Podcast'];
 
+// Opportunity type with full brand brief
+type Opportunity = {
+  brand: string;
+  type: string;
+  match: string;
+  featured: boolean;
+  willingToBarter: boolean;
+  // Brand brief — what the "Ask" button reveals
+  about: string;
+  budget: string;
+  deadline: string;
+  deliverables: { format: string; count: number }[];
+  requirements: string[];
+  exclusivity: string;
+  usageRights: string;
+  revisionLimit: number;
+  compensationType: string;
+  location: string;
+  audienceTarget: string;
+};
+
 // Opportunities vary by profession — different brands want different skills
-const OPPORTUNITIES_BY_PROFESSION: Record<string, { brand: string; type: string; match: string; featured: boolean; willingToBarter: boolean }[]> = {
+const OPPORTUNITIES_BY_PROFESSION: Record<string, Opportunity[]> = {
   'Software Engineer': [
-    { brand: 'TechFlow Labs', type: 'Tech review video', match: '94%', featured: true, willingToBarter: false },
-    { brand: 'CloudBase', type: 'Product integration', match: '89%', featured: false, willingToBarter: true },
-    { brand: 'DevTools Pro', type: 'Developer tool demo', match: '78%', featured: false, willingToBarter: false },
+    { brand: 'TechFlow Labs', type: 'Tech review video', match: '94%', featured: true, willingToBarter: false,
+      about: 'TechFlow Labs builds CI/CD tooling for startups. 50K+ teams use their pipeline automation. Looking for authentic dev voices to demo v3 launch features.',
+      budget: '$4,500 - $6,000', deadline: '2026-04-15', deliverables: [{ format: 'Reel', count: 2 }, { format: 'Story', count: 3 }],
+      requirements: ['Must have active GitHub profile', 'Minimum 10K tech-focused followers', 'Prior dev tool content preferred'],
+      exclusivity: '30 days', usageRights: '90 days, social only', revisionLimit: 2, compensationType: 'Paid', location: 'Remote', audienceTarget: 'Software developers, 25-40' },
+    { brand: 'CloudBase', type: 'Product integration', match: '89%', featured: false, willingToBarter: true,
+      about: 'CloudBase is a serverless database platform competing with Supabase. Series A funded, 12K developers on waitlist. Want real integration content, not ads.',
+      budget: '$3,000 - $4,500', deadline: '2026-04-01', deliverables: [{ format: 'Reel', count: 1 }, { format: 'Story', count: 2 }, { format: 'Post', count: 1 }],
+      requirements: ['Build a real mini-project using CloudBase', 'Show actual code, not slides', 'Mention 1 honest con alongside pros'],
+      exclusivity: 'None', usageRights: '60 days, all platforms', revisionLimit: 1, compensationType: 'Paid + Barter (free Pro tier for 1 year)', location: 'Remote', audienceTarget: 'Full-stack developers, indie hackers' },
+    { brand: 'DevTools Pro', type: 'Developer tool demo', match: '78%', featured: false, willingToBarter: false,
+      about: 'DevTools Pro makes browser debugging extensions used by 200K+ devs. Launching a React-specific profiler and need content showing real performance wins.',
+      budget: '$2,500 - $3,500', deadline: '2026-05-01', deliverables: [{ format: 'Reel', count: 1 }, { format: 'Story', count: 4 }],
+      requirements: ['React experience required', 'Show before/after performance comparison', 'Authentic tone, no scripted reads'],
+      exclusivity: '14 days', usageRights: '30 days, Instagram only', revisionLimit: 2, compensationType: 'Paid', location: 'Remote', audienceTarget: 'Frontend developers, React community' },
   ],
   'Data Scientist': [
-    { brand: 'DataStack AI', type: 'ML tool walkthrough', match: '96%', featured: true, willingToBarter: false },
-    { brand: 'Kaggle Partners', type: 'Competition sponsorship', match: '85%', featured: false, willingToBarter: true },
-    { brand: 'Snowflake', type: 'Data pipeline tutorial', match: '81%', featured: false, willingToBarter: false },
+    { brand: 'DataStack AI', type: 'ML tool walkthrough', match: '96%', featured: true, willingToBarter: false,
+      about: 'DataStack AI provides no-code ML model deployment. Used by 8K data teams. Looking for data scientists to showcase real model deployment workflows.',
+      budget: '$5,000 - $7,000', deadline: '2026-04-20', deliverables: [{ format: 'Reel', count: 2 }, { format: 'Story', count: 3 }],
+      requirements: ['Active ML/data science audience', 'Deploy a real model on the platform during content', 'Mention pricing transparency'],
+      exclusivity: '45 days', usageRights: '90 days, all platforms', revisionLimit: 2, compensationType: 'Paid', location: 'Remote', audienceTarget: 'Data scientists, ML engineers, 28-45' },
+    { brand: 'Kaggle Partners', type: 'Competition sponsorship', match: '85%', featured: false, willingToBarter: true,
+      about: 'Kaggle Partners sponsors competition prizes and wants content creators to document their competition journey — strategy, code, learnings.',
+      budget: '$2,000 - $3,500', deadline: '2026-05-15', deliverables: [{ format: 'Reel', count: 3 }],
+      requirements: ['Active Kaggle profile with at least 1 medal', 'Document a full competition run', 'Educational tone'],
+      exclusivity: 'None', usageRights: '60 days, social only', revisionLimit: 1, compensationType: 'Paid + Barter (competition credits)', location: 'Remote', audienceTarget: 'Data science students, Kaggle community' },
+    { brand: 'Snowflake', type: 'Data pipeline tutorial', match: '81%', featured: false, willingToBarter: false,
+      about: 'Snowflake is expanding creator marketing to reach mid-market data teams. Want tutorials showing real data pipeline setups, not just product overviews.',
+      budget: '$6,000 - $8,000', deadline: '2026-04-30', deliverables: [{ format: 'Reel', count: 1 }, { format: 'Post', count: 2 }],
+      requirements: ['Prior experience with Snowflake or similar (BigQuery, Redshift)', 'Tutorial must be reproducible', 'Include cost comparison if possible'],
+      exclusivity: '60 days', usageRights: '180 days, all platforms', revisionLimit: 3, compensationType: 'Paid', location: 'Remote', audienceTarget: 'Data engineers, analytics managers' },
   ],
   'UX/UI Designer': [
-    { brand: 'Figma', type: 'Design system showcase', match: '97%', featured: true, willingToBarter: false },
-    { brand: 'Framer', type: 'Landing page build', match: '91%', featured: false, willingToBarter: true },
-    { brand: 'Webflow', type: 'No-code design review', match: '84%', featured: false, willingToBarter: false },
+    { brand: 'Figma', type: 'Design system showcase', match: '97%', featured: true, willingToBarter: false,
+      about: 'Figma wants designers to showcase real design systems built with their new variable modes. Targeting the design systems community specifically.',
+      budget: '$5,500 - $7,500', deadline: '2026-04-10', deliverables: [{ format: 'Reel', count: 2 }, { format: 'Story', count: 5 }],
+      requirements: ['Active design portfolio', 'Must use Figma variable modes (not legacy styles)', 'Show a real client or personal project'],
+      exclusivity: '30 days', usageRights: '120 days, all platforms', revisionLimit: 2, compensationType: 'Paid', location: 'Remote', audienceTarget: 'Product designers, design system leads, 24-38' },
+    { brand: 'Framer', type: 'Landing page build', match: '91%', featured: false, willingToBarter: true,
+      about: 'Framer is pushing their new CMS features. Want designers to build a real landing page live on camera — design to deploy in one Reel.',
+      budget: '$3,500 - $5,000', deadline: '2026-04-25', deliverables: [{ format: 'Reel', count: 1 }, { format: 'Story', count: 3 }],
+      requirements: ['Framer experience preferred', 'Must deploy live during content', 'Show responsive design on mobile'],
+      exclusivity: 'None', usageRights: '60 days, social only', revisionLimit: 1, compensationType: 'Paid + Barter (Framer Pro for 2 years)', location: 'Remote', audienceTarget: 'Web designers, freelancers, indie builders' },
+    { brand: 'Webflow', type: 'No-code design review', match: '84%', featured: false, willingToBarter: false,
+      about: 'Webflow wants honest reviews of their new AI-assisted design features from experienced designers who can compare it to hand-coded approaches.',
+      budget: '$3,000 - $4,000', deadline: '2026-05-10', deliverables: [{ format: 'Reel', count: 1 }, { format: 'Story', count: 2 }],
+      requirements: ['Must compare Webflow AI vs manual approach', 'Honest pros and cons', 'Not a Webflow employee or affiliate'],
+      exclusivity: '14 days', usageRights: '30 days, Instagram only', revisionLimit: 2, compensationType: 'Paid', location: 'Remote', audienceTarget: 'Designers considering no-code tools' },
   ],
   'Fitness Coach': [
-    { brand: 'Nike Training', type: 'Workout series', match: '93%', featured: true, willingToBarter: false },
-    { brand: 'MyProtein', type: 'Supplement review', match: '87%', featured: false, willingToBarter: true },
-    { brand: 'Peloton', type: 'At-home fitness collab', match: '79%', featured: false, willingToBarter: false },
+    { brand: 'Nike Training', type: 'Workout series', match: '93%', featured: true, willingToBarter: false,
+      about: 'Nike Training Club is launching a new home workout series and wants fitness creators to produce branded workout content using Nike gear.',
+      budget: '$6,000 - $10,000', deadline: '2026-04-05', deliverables: [{ format: 'Reel', count: 3 }, { format: 'Story', count: 5 }],
+      requirements: ['Certified fitness professional', 'Must wear Nike gear during content', 'Include warm-up and cool-down in each workout'],
+      exclusivity: '60 days (no competing sportswear brands)', usageRights: '180 days, all platforms + Nike app', revisionLimit: 3, compensationType: 'Paid', location: 'Remote (ship Nike gear to you)', audienceTarget: 'Fitness enthusiasts, 18-35, global' },
+    { brand: 'MyProtein', type: 'Supplement review', match: '87%', featured: false, willingToBarter: true,
+      about: 'MyProtein wants authentic reviews of their new plant-based protein line from fitness professionals who can speak to macros and taste honestly.',
+      budget: '$2,000 - $3,500', deadline: '2026-04-20', deliverables: [{ format: 'Reel', count: 1 }, { format: 'Story', count: 3 }],
+      requirements: ['Must try the product for at least 2 weeks before content', 'Show nutritional breakdown', 'Honest review including taste'],
+      exclusivity: '14 days', usageRights: '60 days, social only', revisionLimit: 1, compensationType: 'Paid + Barter (6 months product supply)', location: 'Remote', audienceTarget: 'Gym-goers, nutrition-focused audience' },
+    { brand: 'Peloton', type: 'At-home fitness collab', match: '79%', featured: false, willingToBarter: false,
+      about: 'Peloton is targeting creators who can show how their platform integrates with existing fitness routines. Not an ad — a genuine "day in my life" approach.',
+      budget: '$4,000 - $5,500', deadline: '2026-05-01', deliverables: [{ format: 'Reel', count: 2 }, { format: 'Story', count: 4 }],
+      requirements: ['Own or be willing to use a Peloton bike/tread', 'Show real workout data and metrics', 'Day-in-the-life format preferred'],
+      exclusivity: '30 days', usageRights: '90 days, all platforms', revisionLimit: 2, compensationType: 'Paid', location: 'Remote (equipment provided if needed)', audienceTarget: 'Home fitness, busy professionals, 25-45' },
   ],
   'Chef': [
-    { brand: 'HelloFresh', type: 'Recipe creation', match: '95%', featured: true, willingToBarter: false },
-    { brand: 'KitchenAid', type: 'Appliance showcase', match: '88%', featured: false, willingToBarter: true },
-    { brand: 'MasterClass', type: 'Cooking class promo', match: '82%', featured: false, willingToBarter: false },
+    { brand: 'HelloFresh', type: 'Recipe creation', match: '95%', featured: true, willingToBarter: false,
+      about: 'HelloFresh wants chefs to create original recipes using their meal kit ingredients, showing the upgrade from standard kit to chef-level dish.',
+      budget: '$4,000 - $6,500', deadline: '2026-04-12', deliverables: [{ format: 'Reel', count: 2 }, { format: 'Story', count: 4 }],
+      requirements: ['Professional culinary background', 'Use only HelloFresh kit ingredients', 'Show the basic version vs your elevated version'],
+      exclusivity: '30 days (no competing meal kits)', usageRights: '90 days, all platforms', revisionLimit: 2, compensationType: 'Paid', location: 'Remote', audienceTarget: 'Home cooks, foodies, 25-45' },
+    { brand: 'KitchenAid', type: 'Appliance showcase', match: '88%', featured: false, willingToBarter: true,
+      about: 'KitchenAid launching a new stand mixer color line. Want chefs to showcase the mixer in action with a signature recipe.',
+      budget: '$3,000 - $4,500', deadline: '2026-04-30', deliverables: [{ format: 'Reel', count: 1 }, { format: 'Story', count: 3 }],
+      requirements: ['Must feature the KitchenAid mixer prominently', 'Recipe must use at least 2 mixer attachments', 'Show the mixer in your kitchen setup'],
+      exclusivity: '14 days', usageRights: '60 days, social only', revisionLimit: 1, compensationType: 'Paid + Barter (keep the mixer, retail $450)', location: 'Remote (mixer shipped)', audienceTarget: 'Home bakers, kitchen enthusiasts' },
+    { brand: 'MasterClass', type: 'Cooking class promo', match: '82%', featured: false, willingToBarter: false,
+      about: 'MasterClass wants food creators to promote their cooking curriculum by recreating a technique from the platform and sharing their honest learning experience.',
+      budget: '$3,500 - $5,000', deadline: '2026-05-15', deliverables: [{ format: 'Reel', count: 1 }, { format: 'Post', count: 1 }],
+      requirements: ['Watch at least 2 MasterClass cooking lessons before creating content', 'Show the technique you learned', 'Honest review of the teaching quality'],
+      exclusivity: 'None', usageRights: '30 days, Instagram only', revisionLimit: 2, compensationType: 'Paid', location: 'Remote', audienceTarget: 'Aspiring home cooks, culinary students' },
   ],
 };
 
 // Fallback opportunities for professions not explicitly listed
-const DEFAULT_OPPORTUNITIES = [
-  { brand: 'BrandConnect', type: 'Sponsored content', match: '85%', featured: true, willingToBarter: false },
-  { brand: 'CreatorFund', type: 'Brand partnership', match: '79%', featured: false, willingToBarter: true },
-  { brand: 'InfluencerHub', type: 'Campaign collaboration', match: '72%', featured: false, willingToBarter: false },
+const DEFAULT_OPPORTUNITIES: Opportunity[] = [
+  { brand: 'BrandConnect', type: 'Sponsored content', match: '85%', featured: true, willingToBarter: false,
+    about: 'BrandConnect is a platform connecting brands with niche creators. Looking for authentic sponsored content that matches your expertise.',
+    budget: '$2,500 - $4,000', deadline: '2026-04-30', deliverables: [{ format: 'Reel', count: 1 }, { format: 'Story', count: 2 }],
+    requirements: ['Minimum 5K followers', 'Content must align with your ValueSkin profession', 'Authentic voice required'],
+    exclusivity: 'None', usageRights: '30 days, Instagram only', revisionLimit: 2, compensationType: 'Paid', location: 'Remote', audienceTarget: 'Niche professionals' },
+  { brand: 'CreatorFund', type: 'Brand partnership', match: '79%', featured: false, willingToBarter: true,
+    about: 'CreatorFund is a VC-backed initiative sponsoring early-stage creators in exchange for long-term partnership potential. Great for emerging voices.',
+    budget: '$1,500 - $3,000', deadline: '2026-05-15', deliverables: [{ format: 'Reel', count: 2 }],
+    requirements: ['Growing audience in your niche', 'Willing to track campaign performance metrics', 'Open to feedback on content'],
+    exclusivity: 'None', usageRights: '60 days, all platforms', revisionLimit: 1, compensationType: 'Paid + Barter (mentorship access)', location: 'Remote', audienceTarget: 'Niche audiences' },
+  { brand: 'InfluencerHub', type: 'Campaign collaboration', match: '72%', featured: false, willingToBarter: false,
+    about: 'InfluencerHub runs multi-creator campaigns. They bundle 5-10 creators per campaign to amplify reach. Looking for reliable collaborators.',
+    budget: '$2,000 - $3,500', deadline: '2026-05-01', deliverables: [{ format: 'Reel', count: 1 }, { format: 'Story', count: 3 }],
+    requirements: ['Must meet deadline strictly (multi-creator coordination)', 'Follow brand guidelines provided', 'Prior brand deal experience preferred'],
+    exclusivity: '7 days', usageRights: '30 days, social only', revisionLimit: 2, compensationType: 'Paid', location: 'Remote', audienceTarget: 'General professional audience' },
 ];
 
 const SLOTS: ValueSkinSlot[] = ['profession', 'passion', 'hobby'];
@@ -288,6 +382,9 @@ export default function InstagramDemoPage() {
   const [creatorPitchVideoName, setCreatorPitchVideoName] = useState('');
   const [showSkinShowcaseModal, setShowSkinShowcaseModal] = useState<string | null>(null); // skin name when open
 
+  // Ask modal — shows full brand brief for an opportunity
+  const [askModalOpp, setAskModalOpp] = useState<Opportunity | null>(null);
+
   // Which ValueSkin the creator is viewing the marketplace for
   const [selectedMarketplaceSkin, setSelectedMarketplaceSkin] = useState<string | null>(null);
 
@@ -306,54 +403,14 @@ export default function InstagramDemoPage() {
   const [negotiatingOpp, setNegotiatingOpp] = useState<number | null>(null);
   const [negotiatingCreator, setNegotiatingCreator] = useState<number | null>(null);
 
-  // Per-deal state map: key = `${skin}:${oppIndex}`, preserves progress when switching skins
-  type DealRoomPhase = 'brief' | 'offer' | 'counter' | 'chatroom' | 'checklist' | 'accepted' | 'softhold';
-  type DealState = {
-    phase: DealRoomPhase;
-    intent: 'explore' | 'campaign' | 'long-term';
-    briefFilled: boolean;
-    briefTitle: string;
-    offerAmount: string;
-    counterAmount: string;
-    chatMessages: { id: number; sender: 'me' | 'brand'; text: string; time: string; seen?: boolean }[];
-    chatInput: string;
-    performanceClause: boolean;
-    advancePercent: number;
-  };
-  const [dealStates, setDealStates] = useState<Record<string, DealState>>({});
-  const [dealsLoaded, setDealsLoaded] = useState(false);
-
-  // Restore dealStates from localStorage on mount
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem('vs_demo_deal_states');
-      if (stored) {
-        const parsed = JSON.parse(stored) as Record<string, DealState>;
-        setDealStates(parsed);
-      }
-    } catch (e) { /* ignore corrupted data */ }
-    setDealsLoaded(true);
-  }, []);
-
-  // Persist dealStates to localStorage — only after initial load
-  useEffect(() => {
-    if (!dealsLoaded) return;
-    try {
-      localStorage.setItem('vs_demo_deal_states', JSON.stringify(dealStates));
-    } catch (e) { /* ignore */ }
-  }, [dealStates, dealsLoaded]);
+  // Deal sync hook — bridges localStorage with backend API
+  const dealSync = useDealSync();
+  const { dealStates, setDealStates, getOrCreateDeal, updateDeal } = dealSync;
+  const dealsLoaded = dealSync.loaded;
 
   // Active deal key derived from current skin + opp
   const activeDealKey = selectedMarketplaceSkin && negotiatingOpp !== null ? `${selectedMarketplaceSkin}:${negotiatingOpp}` : null;
-  const getOrCreateDeal = (key: string): DealState => dealStates[key] ?? {
-    phase: 'brief', intent: 'campaign', briefFilled: false, briefTitle: '', offerAmount: '', counterAmount: '',
-    chatMessages: [{ id: 1, sender: 'brand' as const, text: 'Hey! Excited to work together on this campaign.', time: 'just now', seen: false }],
-    chatInput: '', performanceClause: false, advancePercent: 70,
-  };
   const activeDeal = activeDealKey ? getOrCreateDeal(activeDealKey) : null;
-  const updateDeal = (key: string, patch: Partial<DealState>) => {
-    setDealStates(prev => ({ ...prev, [key]: { ...getOrCreateDeal(key), ...prev[key], ...patch } }));
-  };
 
   // Convenience accessors for the active deal (backward compat with existing render code)
   const dealRoomPhase = activeDeal?.phase ?? 'brief';
@@ -534,38 +591,8 @@ export default function InstagramDemoPage() {
   const [adminAllowLongTermContracts, setAdminAllowLongTermContracts] = useState(true);
   const [adminSavedFeaturesTab, setAdminSavedFeaturesTab] = useState(false);
 
-  // Campaign type — shared across tabs via localStorage
-  type Campaign = {
-    id: number;
-    brandProfession: string;
-    title: string;
-    description: string;
-    requiredProfessions: string[];
-    minLevel: number;
-    maxLevel: number;
-    budget: string;
-    deadline: string;
-    location: string;
-    nonNegotiables: string[];
-    deliverables: string;
-    status: 'open' | 'closed' | 'expired';
-    applicants: number;
-  };
-
-  // Application type — shared across tabs via localStorage
-  type SharedApplication = {
-    id: number;
-    campaignId: number;
-    campaignTitle: string;
-    creatorProfession: string;
-    creatorHandle: string;
-    status: 'pending' | 'accepted' | 'rejected';
-    appliedAt: string;
-  };
-
-  const STORAGE_KEY_CAMPAIGNS = 'vs_demo_campaigns';
-  const STORAGE_KEY_APPLICATIONS = 'vs_demo_applications';
-  const BC_NAME = 'vs_demo_sync';
+  // Campaigns + applications — from deal sync hook (API-backed with localStorage fallback)
+  const { applications: sharedApplications, setApplications: setSharedApplications, campaigns, setCampaigns } = dealSync;
 
   const defaultCampaigns: Campaign[] = [
     { id:1, brandProfession:'Software Engineer', title:'React Expert for SaaS Launch', description:'We need an authentic Software Engineer to demo our dev tool to a tech audience. 2x Reels.', requiredProfessions:['Software Engineer','Data Scientist'], minLevel:2, maxLevel:5, budget:'5000', deadline:'2026-03-15', location:'USA', nonNegotiables:['NDA required','Usage rights: 90 days'], deliverables:'2x Instagram Reels', status:'expired', applicants:3 },
@@ -573,18 +600,15 @@ export default function InstagramDemoPage() {
     { id:3, brandProfession:'Fitness Coach', title:'Spring Fitness Challenge', description:'Fitness coach to lead a 7-day challenge campaign. 3x Reels.', requiredProfessions:['Fitness Coach','Nutritionist'], minLevel:1, maxLevel:3, budget:'3800', deadline:'2026-04-01', location:'Remote', nonNegotiables:[], deliverables:'3x Instagram Reels', status:'open', applicants:2 },
   ];
 
-  const loadCampaigns = (): Campaign[] => {
-    if (typeof window === 'undefined') return defaultCampaigns;
-    try { const s = localStorage.getItem(STORAGE_KEY_CAMPAIGNS); return s ? JSON.parse(s) : defaultCampaigns; } catch { return defaultCampaigns; }
-  };
-  const loadApplications = (): SharedApplication[] => {
-    if (typeof window === 'undefined') return [];
-    try { const s = localStorage.getItem(STORAGE_KEY_APPLICATIONS); return s ? JSON.parse(s) : []; } catch { return []; }
-  };
+  // Seed default campaigns on first load
+  useEffect(() => {
+    if (dealSync.loaded && campaigns.length === 0) {
+      setCampaigns(defaultCampaigns);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dealSync.loaded]);
 
   const [marketplaceTab, setMarketplaceTab] = useState<'creators' | 'campaigns' | 'applications'>('creators');
-  const [campaigns, setCampaigns] = useState<Campaign[]>(defaultCampaigns);
-  const [sharedApplications, setSharedApplications] = useState<SharedApplication[]>([]);
   const [showCampaignCreator, setShowCampaignCreator] = useState(false);
   const [newCampaignTitle, setNewCampaignTitle] = useState('');
   const [newCampaignDesc, setNewCampaignDesc] = useState('');
@@ -597,37 +621,9 @@ export default function InstagramDemoPage() {
   const [newCampaignDeliverables, setNewCampaignDeliverables] = useState('');
   const [newCampaignNonNeg, setNewCampaignNonNeg] = useState<string[]>([]);
 
-  // Sync campaigns + applications across tabs via localStorage + BroadcastChannel
-  useEffect(() => {
-    setCampaigns(loadCampaigns());
-    setSharedApplications(loadApplications());
-    let bc: BroadcastChannel | null = null;
-    try {
-      bc = new BroadcastChannel(BC_NAME);
-      bc.onmessage = () => {
-        setCampaigns(loadCampaigns());
-        setSharedApplications(loadApplications());
-      };
-    } catch {}
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEY_CAMPAIGNS) setCampaigns(loadCampaigns());
-      if (e.key === STORAGE_KEY_APPLICATIONS) setSharedApplications(loadApplications());
-    };
-    window.addEventListener('storage', onStorage);
-    return () => { bc?.close(); window.removeEventListener('storage', onStorage); };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const persistCampaigns = (updated: Campaign[]) => {
-    localStorage.setItem(STORAGE_KEY_CAMPAIGNS, JSON.stringify(updated));
-    setCampaigns(updated);
-    try { new BroadcastChannel(BC_NAME).postMessage('sync'); } catch {}
-  };
-  const persistApplications = (updated: SharedApplication[]) => {
-    localStorage.setItem(STORAGE_KEY_APPLICATIONS, JSON.stringify(updated));
-    setSharedApplications(updated);
-    try { new BroadcastChannel(BC_NAME).postMessage('sync'); } catch {}
-  };
+  // Convenience aliases for backward compatibility
+  const persistCampaigns = (updated: Campaign[]) => { setCampaigns(updated); };
+  const persistApplications = (updated: SharedApplication[]) => { setSharedApplications(updated); };
 
   // Keep legacy myApplications wired to sharedApplications for creator view
   const myApplications = sharedApplications;
@@ -842,6 +838,113 @@ export default function InstagramDemoPage() {
 
             <button onClick={() => { setShowSkinShowcaseModal(null); setPurchaseToast(creatorSkinMode === 'showcase' ? 'Showcase saved — brands will see your pitch' : 'Skin set to static'); setTimeout(()=>setPurchaseToast(null),3000); }} style={{ width:'100%', background:creatorSkinMode==='showcase'?'#8b5cf6':C.primary, border:'none', borderRadius:8, padding:'12px', color:'#fff', fontWeight:700, fontSize:14, cursor:'pointer', marginTop:8 }}>
               {creatorSkinMode === 'showcase' ? 'Save Showcase' : 'Done'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Ask Modal — full brand brief */}
+      {askModalOpp && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999 }} onClick={() => setAskModalOpp(null)}>
+          <div style={{ background: C.surface, borderRadius: '16px', padding: '24px', maxWidth: '480px', width: '95vw', maxHeight: '90vh', overflowY: 'auto', border: `1px solid ${C.border}`, position: 'relative' }} onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setAskModalOpp(null)} style={{ position: 'absolute', top: '14px', right: '16px', background: 'none', border: 'none', color: C.textMuted, fontSize: '22px', cursor: 'pointer', lineHeight: 1 }}>x</button>
+
+            {/* Brand header */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+              <div style={{ width: 44, height: 44, borderRadius: '10px', background: `linear-gradient(135deg, ${C.primary}, #8b5cf6)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700, color: '#fff' }}>
+                {askModalOpp.brand.charAt(0)}
+              </div>
+              <div>
+                <div style={{ fontSize: '16px', fontWeight: 700, color: C.text }}>{askModalOpp.brand}</div>
+                <div style={{ fontSize: '12px', color: C.textSecondary }}>{askModalOpp.type}</div>
+              </div>
+            </div>
+
+            {/* About */}
+            <div style={{ marginBottom: '18px' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>About this campaign</div>
+              <div style={{ fontSize: '13px', color: C.text, lineHeight: 1.6 }}>{askModalOpp.about}</div>
+            </div>
+
+            {/* Deliverables */}
+            <div style={{ marginBottom: '18px' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>Deliverables</div>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {askModalOpp.deliverables.map((d, idx) => (
+                  <div key={idx} style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: '8px', padding: '8px 14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ fontSize: '18px', fontWeight: 700, color: C.primary }}>{d.count}</span>
+                    <span style={{ fontSize: '12px', color: C.text, fontWeight: 500 }}>{d.format}{d.count > 1 ? 's' : ''}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Key details grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '18px' }}>
+              <div style={{ background: C.bg, borderRadius: '10px', padding: '12px', border: `1px solid ${C.border}` }}>
+                <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Budget</div>
+                <div style={{ fontSize: '14px', fontWeight: 700, color: '#10b981' }}>{askModalOpp.budget}</div>
+              </div>
+              <div style={{ background: C.bg, borderRadius: '10px', padding: '12px', border: `1px solid ${C.border}` }}>
+                <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Deadline</div>
+                <div style={{ fontSize: '14px', fontWeight: 600, color: C.text }}>{new Date(askModalOpp.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
+              </div>
+              <div style={{ background: C.bg, borderRadius: '10px', padding: '12px', border: `1px solid ${C.border}` }}>
+                <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Compensation</div>
+                <div style={{ fontSize: '13px', fontWeight: 600, color: C.text }}>{askModalOpp.compensationType}</div>
+              </div>
+              <div style={{ background: C.bg, borderRadius: '10px', padding: '12px', border: `1px solid ${C.border}` }}>
+                <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Location</div>
+                <div style={{ fontSize: '13px', fontWeight: 600, color: C.text }}>{askModalOpp.location}</div>
+              </div>
+            </div>
+
+            {/* Terms */}
+            <div style={{ marginBottom: '18px' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>Terms</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', padding: '6px 0', borderBottom: `1px solid ${C.border}` }}>
+                  <span style={{ color: C.textSecondary }}>Exclusivity</span>
+                  <span style={{ color: C.text, fontWeight: 500 }}>{askModalOpp.exclusivity}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', padding: '6px 0', borderBottom: `1px solid ${C.border}` }}>
+                  <span style={{ color: C.textSecondary }}>Usage rights</span>
+                  <span style={{ color: C.text, fontWeight: 500 }}>{askModalOpp.usageRights}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', padding: '6px 0', borderBottom: `1px solid ${C.border}` }}>
+                  <span style={{ color: C.textSecondary }}>Revision limit</span>
+                  <span style={{ color: C.text, fontWeight: 500 }}>{askModalOpp.revisionLimit} revision{askModalOpp.revisionLimit !== 1 ? 's' : ''}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', padding: '6px 0', borderBottom: `1px solid ${C.border}` }}>
+                  <span style={{ color: C.textSecondary }}>Target audience</span>
+                  <span style={{ color: C.text, fontWeight: 500 }}>{askModalOpp.audienceTarget}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', padding: '6px 0' }}>
+                  <span style={{ color: C.textSecondary }}>Match</span>
+                  <span style={{ color: C.primary, fontWeight: 700 }}>{askModalOpp.match}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Requirements */}
+            <div style={{ marginBottom: '20px' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>Requirements</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {askModalOpp.requirements.map((req, idx) => (
+                  <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '12px', color: C.text, lineHeight: 1.5 }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginTop: 2, flexShrink: 0 }}><polyline points="20 6 9 17 4 12"/></svg>
+                    {req}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* CTA */}
+            <button
+              onClick={() => setAskModalOpp(null)}
+              style={{ width: '100%', background: C.primary, border: 'none', borderRadius: '8px', padding: '12px', color: '#fff', fontWeight: 700, fontSize: '14px', cursor: 'pointer' }}
+            >
+              Close
             </button>
           </div>
         </div>
@@ -1528,7 +1631,15 @@ export default function InstagramDemoPage() {
                           return (
                             <div key={i} style={{ background: C.card, borderRadius: '12px', padding: '16px', marginBottom: '12px', border: `1px solid ${opp.featured ? 'rgba(0,102,204,0.3)' : C.border}` }}>
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                                <div style={{ fontWeight: 'bold' }}>{opp.brand}</div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <div style={{ fontWeight: 'bold' }}>{opp.brand}</div>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); setAskModalOpp(opp); }}
+                                    style={{ fontSize: '11px', fontWeight: 600, color: C.primary, background: `${C.primary}12`, border: `1px solid ${C.primary}30`, padding: '3px 10px', borderRadius: '6px', cursor: 'pointer', transition: 'background 0.15s' }}
+                                    onMouseEnter={(e) => { (e.target as HTMLButtonElement).style.background = `${C.primary}25`; }}
+                                    onMouseLeave={(e) => { (e.target as HTMLButtonElement).style.background = `${C.primary}12`; }}
+                                  >Ask</button>
+                                </div>
                                 <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
                                   {opp.willingToBarter && <span style={{ fontSize: '10px', fontWeight: 700, color: '#10b981', background: 'rgba(16,185,129,0.1)', padding: '2px 6px', borderRadius: '4px' }}>OPEN TO BARTER</span>}
                                   {opp.featured && <span style={{ fontSize: '10px', fontWeight: 700, color: C.primary, background: `${C.primary}15`, padding: '2px 6px', borderRadius: '4px' }}>TOP MATCH</span>}

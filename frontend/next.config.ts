@@ -6,7 +6,7 @@ const cspHeader = [
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com",
   "img-src 'self' data: blob: https:",
-  "connect-src 'self' https://api.valueskins.io wss:",
+  "connect-src 'self' https://api.valueskins.io http://localhost:8080 wss:",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
