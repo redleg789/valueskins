@@ -653,7 +653,6 @@ export default function InstagramDemoPage() {
   const [filterBarterOnly, setFilterBarterOnly] = useState(false);
 
   // Brand field filter — which ValueSkin profession the brand wants to target
-  const [brandFieldFilter, setBrandFieldFilter] = useState<string | null>(null);
   const [brandSearchQuery, setBrandSearchQuery] = useState('');
   const [brandSearchMode, setBrandSearchMode] = useState<'profession' | 'name' | 'general'>('profession');
   const [filterAudienceAge, setFilterAudienceAge] = useState<string | null>(null);
@@ -2383,44 +2382,6 @@ export default function InstagramDemoPage() {
                       )}
                     </div>
 
-                    {/* Which Field — profession filter */}
-                    <div style={{ marginBottom: '16px' }}>
-                      <div style={{ fontSize: '12px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '8px' }}>Which Field (Required ValueSkin)</div>
-                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                        <button
-                          onClick={() => setBrandFieldFilter(null)}
-                          style={{
-                            fontSize: '11px', fontWeight: 600, padding: '6px 12px', borderRadius: '8px', cursor: 'pointer',
-                            background: brandFieldFilter === null ? C.primary : C.card,
-                            color: brandFieldFilter === null ? '#fff' : C.textSecondary,
-                            border: `1px solid ${brandFieldFilter === null ? C.primary : C.border}`,
-                          }}
-                        >All Fields</button>
-                        {Array.from(new Set(BRAND_MARKETPLACE_CREATORS.map(c => c.valueSkin))).map(vs => {
-                          const badge = PROFESSION_BADGES[vs];
-                          const isActive = brandFieldFilter === vs;
-                          return (
-                            <button
-                              key={vs}
-                              onClick={() => setBrandFieldFilter(vs)}
-                              style={{
-                                display: 'flex', alignItems: 'center', gap: '5px',
-                                fontSize: '11px', fontWeight: 600, padding: '6px 12px', borderRadius: '8px', cursor: 'pointer',
-                                background: isActive ? `${badge?.color ?? C.primary}20` : C.card,
-                                color: isActive ? (badge?.color ?? C.primary) : C.textSecondary,
-                                border: `1px solid ${isActive ? (badge?.color ?? C.primary) : C.border}`,
-                              }}
-                            >
-                              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '16px', height: '16px', borderRadius: '3px', background: badge?.color ?? C.primary, color: '#fff', fontSize: '6px', fontWeight: 700 }}>
-                                {badge?.abbreviation ?? vs.split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0, 3)}
-                              </span>
-                              {vs}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
                     {/* Advanced Audience & Deal Filters */}
                     <div style={{ marginBottom: '14px' }}>
                       <button onClick={() => setShowAudienceFilters(p => !p)} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: C.card, border: `1px solid ${C.border}`, borderRadius: showAudienceFilters ? '10px 10px 0 0' : '10px', padding: '9px 14px', cursor: 'pointer', color: C.textSecondary, fontSize: '11px', fontWeight: 700 }}>
@@ -2502,7 +2463,7 @@ export default function InstagramDemoPage() {
 
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                       <div style={{ fontSize: '12px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.6px' }}>
-                        {brandFieldFilter ? `Creators with ${brandFieldFilter} ValueSkin` : 'All Creators'}
+                        All Creators
                       </div>
                       <button
                         onClick={() => setFilterBarterOnly(prev => !prev)}
@@ -2521,7 +2482,6 @@ export default function InstagramDemoPage() {
                       const q = brandSearchQuery.trim().toLowerCase();
                       let results = BRAND_MARKETPLACE_CREATORS.filter(c =>
                         (!filterBarterOnly || c.willingToBarter) &&
-                        (!brandFieldFilter || c.valueSkin === brandFieldFilter) &&
                         (!filterAudienceAge || c.audienceAgeRange === filterAudienceAge) &&
                         (!filterAudienceLang || c.audienceLang === filterAudienceLang) &&
                         (!filterAudienceLoc.trim() || c.audienceLocation.toLowerCase().includes(filterAudienceLoc.trim().toLowerCase())) &&
