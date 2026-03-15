@@ -476,11 +476,11 @@ export default function InstagramDemoPage() {
 
   // Marketplace role & gate
   const [marketplaceRole, setMarketplaceRole] = useState<'none' | 'creator' | 'brand'>('none');
-  const [brandValueSkin, setBrandValueSkin] = useState<string | null>(null);
-  const [showBrandStoreModal, setShowBrandStoreModal] = useState(false);
-  const [brandStoreCategory, setBrandStoreCategory] = useState<string | null>(null);
+  const [brandValueSkins, setBrandValueSkins] = useState<string[]>([]);
+  const [activeBrandSkin, setActiveBrandSkin] = useState<string | null>(null);
 
   // Brand ValueSkin as marketing — brands can promote products/campaigns via their skin
+  const [brandProfileSelections, setBrandProfileSelections] = useState<Record<string, string>>({});
   const [brandSkinMode, setBrandSkinMode] = useState<'static' | 'promo'>('static');
   const [brandPromoText, setBrandPromoText] = useState('');
   const [brandPromoUrl, setBrandPromoUrl] = useState('');
@@ -776,6 +776,27 @@ export default function InstagramDemoPage() {
 
   // Simulate purchase: assign profession to the chosen slot, show toast
   const purchaseProfession = (profession: string) => {
+    if (marketplaceRole === 'brand') {
+      // Brand purchase — add to array (max 3)
+      if (brandValueSkins.includes(profession)) {
+        setPurchaseToast(`You already own ${profession}`);
+        setTimeout(() => setPurchaseToast(null), 3000);
+        return;
+      }
+      if (brandValueSkins.length >= 3) {
+        setPurchaseToast('Maximum 3 ValueSkins. Remove one first.');
+        setTimeout(() => setPurchaseToast(null), 3000);
+        return;
+      }
+      setBrandValueSkins(prev => [...prev, profession]);
+      if (!activeBrandSkin) setActiveBrandSkin(profession);
+      setShowStoreModal(false);
+      setActiveView('mim');
+      setPurchaseToast(`${profession} added to your brand ValueSkins`);
+      setTimeout(() => setPurchaseToast(null), 3000);
+      return;
+    }
+    // Creator purchase — assign to slot
     if (!assigningSlot) return;
     const badge = PROFESSION_BADGES[profession];
     const label = badge?.abbreviation ?? profession.split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0, 3);
@@ -1813,10 +1834,10 @@ export default function InstagramDemoPage() {
                                   </div>
 
                                   {/* Brand identity + intent */}
-                                  {brandValueSkin && (
+                                  {activeBrandSkin && (
                                     <div style={{ background:'rgba(230,81,0,0.06)', border:'1px solid rgba(230,81,0,0.15)', borderRadius:'8px', padding:'8px 12px', marginBottom:'10px', fontSize:'11px', color:C.textSecondary }}>
-                                      Brand identity: <strong style={{ color:C.text }}>{brandValueSkin}</strong>
-                                      {opp && (() => { const myProfs = Object.values(valueSkins).map(v=>v?.profession).filter(Boolean) as string[]; return myProfs.includes(brandValueSkin) ? <span style={{ marginLeft:'8px', color:C.success, fontWeight:700 }}>Matched</span> : <span style={{ marginLeft:'8px', color:C.textSecondary, fontWeight:700 }}>No shared ValueSkin</span>; })()}
+                                      Brand identity: <strong style={{ color:C.text }}>{activeBrandSkin}</strong>
+                                      {opp && (() => { const myProfs = Object.values(valueSkins).map(v=>v?.profession).filter(Boolean) as string[]; return myProfs.includes(activeBrandSkin) ? <span style={{ marginLeft:'8px', color:C.success, fontWeight:700 }}>Matched</span> : <span style={{ marginLeft:'8px', color:C.textSecondary, fontWeight:700 }}>No shared ValueSkin</span>; })()}
                                     </div>
                                   )}
                                   <div style={{ fontSize: '11px', color: C.textMuted, marginBottom: '10px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -2247,7 +2268,7 @@ export default function InstagramDemoPage() {
                               if (!newCampaignBudget) missing.push('Budget');
                               if (newCampaignProfessions.length===0) missing.push('Required ValueSkin');
                               if (missing.length > 0) { setPurchaseToast(`Missing: ${missing.join(', ')}`); setTimeout(()=>setPurchaseToast(null),4000); return; }
-                              const newC: Campaign = { id:Date.now(), brandProfession:brandValueSkin??'', title:newCampaignTitle, description:newCampaignDesc, requiredProfessions:newCampaignProfessions, minLevel:newCampaignMinLevel, maxLevel:newCampaignMaxLevel, budget:newCampaignBudget, deadline:newCampaignDeadline, location:newCampaignLocation, nonNegotiables:newCampaignNonNeg, deliverables:newCampaignDeliverables, status:'open', applicants:0 };
+                              const newC: Campaign = { id:Date.now(), brandProfession:activeBrandSkin??'', title:newCampaignTitle, description:newCampaignDesc, requiredProfessions:newCampaignProfessions, minLevel:newCampaignMinLevel, maxLevel:newCampaignMaxLevel, budget:newCampaignBudget, deadline:newCampaignDeadline, location:newCampaignLocation, nonNegotiables:newCampaignNonNeg, deliverables:newCampaignDeliverables, status:'open', applicants:0 };
                               persistCampaigns([...campaigns, newC]);
                               setShowCampaignCreator(false); setNewCampaignTitle(''); setNewCampaignDesc(''); setNewCampaignBudget(''); setNewCampaignDeadline(''); setNewCampaignProfessions([]); setNewCampaignMinLevel(1); setNewCampaignMaxLevel(5); setNewCampaignLocation(''); setNewCampaignDeliverables(''); setNewCampaignNonNeg([]);
                               setPurchaseToast('Campaign published — visible to matching creators now'); setTimeout(()=>setPurchaseToast(null),3000);
@@ -2259,48 +2280,54 @@ export default function InstagramDemoPage() {
                         </div>
                       </div>
                     )}
-                    {/* Brand Identity Card */}
-                    <div style={{ background:C.card, border:`1px solid ${brandValueSkin ? 'rgba(230,81,0,0.3)' : C.border}`, borderRadius:'12px', padding:'14px 16px', marginBottom:'14px' }}>
-                      <div style={{ fontSize:'10px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.6px', marginBottom:'8px' }}>Your Brand Identity</div>
-                      {brandValueSkin ? (
-                        <>
-                          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: 10 }}>
-                            <div>
-                              <div style={{ fontSize:'14px', fontWeight:700, color:C.text }}>{brandValueSkin}</div>
-                              <div style={{ fontSize:'11px', color:C.textSecondary, marginTop:'2px' }}>You match with creators in this profession</div>
-                            </div>
-                            <button onClick={() => setShowBrandStoreModal(true)} style={{ background:'none', border:`1px solid ${C.border}`, borderRadius:'6px', padding:'5px 10px', fontSize:'11px', color:C.textSecondary, cursor:'pointer' }}>Change</button>
+                    {/* Brand Identity — skin selector or redirect to store */}
+                    {brandValueSkins.length > 0 ? (
+                      <div style={{ background:C.card, border:`1px solid rgba(230,81,0,0.3)`, borderRadius:'12px', padding:'14px 16px', marginBottom:'14px' }}>
+                        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'10px' }}>
+                          <div style={{ fontSize:'10px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.6px' }}>Active ValueSkin</div>
+                          {brandValueSkins.length < 3 && (
+                            <button onClick={() => setActiveView('store')} style={{ background:'none', border:`1px solid ${C.border}`, borderRadius:'6px', padding:'4px 10px', fontSize:'10px', color:C.textSecondary, cursor:'pointer', fontWeight:600 }}>+ Add Skin</button>
+                          )}
+                        </div>
+                        <div style={{ display:'flex', gap:'8px', marginBottom:'10px' }}>
+                          {brandValueSkins.map(skin => {
+                            const isActive = activeBrandSkin === skin;
+                            const badge = PROFESSION_BADGES[skin];
+                            return (
+                              <button
+                                key={skin}
+                                onClick={() => setActiveBrandSkin(skin)}
+                                style={{
+                                  flex: 1, padding:'10px 8px', borderRadius:'10px', cursor:'pointer', transition:'all 0.15s',
+                                  background: isActive ? `${badge?.color ?? C.primary}15` : C.bg,
+                                  border: `2px solid ${isActive ? (badge?.color ?? C.primary) : C.border}`,
+                                }}
+                              >
+                                <div style={{ fontSize:'10px', fontWeight:700, letterSpacing:'0.5px', textTransform:'uppercase', color: badge?.color ?? C.primary, marginBottom:'3px' }}>
+                                  {badge?.abbreviation ?? skin.slice(0,3).toUpperCase()}
+                                </div>
+                                <div style={{ fontSize:'11px', color: isActive ? C.text : C.textSecondary, fontWeight: isActive ? 600 : 400, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                                  {skin}
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                        {activeBrandSkin && (
+                          <div style={{ fontSize:'11px', color:C.textSecondary, lineHeight:1.4 }}>
+                            Campaigns and proposals you create will be under <strong style={{ color:C.text }}>{activeBrandSkin}</strong>. Creators with this ValueSkin will see you as a match.
                           </div>
-                          {/* Brand Skin Mode — static or promo (like Google Doodles) */}
-                          <div style={{ borderTop:`1px solid ${C.border}`, paddingTop:10 }}>
-                            <div style={{ fontSize:'10px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:6 }}>Skin Mode</div>
-                            <div style={{ display:'flex', gap:6, marginBottom:8 }}>
-                              <button onClick={()=>setBrandSkinMode('static')} style={{ flex:1, padding:'6px', borderRadius:6, fontSize:11, fontWeight:600, cursor:'pointer', background:brandSkinMode==='static'?C.primary:C.bg, color:brandSkinMode==='static'?'#fff':C.textSecondary, border:`1px solid ${brandSkinMode==='static'?C.primary:C.border}` }}>Static</button>
-                              <button onClick={()=>setBrandSkinMode('promo')} style={{ flex:1, padding:'6px', borderRadius:6, fontSize:11, fontWeight:600, cursor:'pointer', background:brandSkinMode==='promo'?'#f59e0b':C.bg, color:brandSkinMode==='promo'?'#000':C.textSecondary, border:`1px solid ${brandSkinMode==='promo'?'#f59e0b':C.border}` }}>Promotional</button>
-                            </div>
-                            {brandSkinMode === 'promo' && (
-                              <div style={{ background:C.bg, borderRadius:8, padding:8, border:`1px solid ${C.border}` }}>
-                                <div style={{ fontSize:10, color:C.textMuted, marginBottom:4 }}>Promote a product or campaign — creators see this when they click your ValueSkin</div>
-                                <input type="text" value={brandPromoText} onChange={e=>setBrandPromoText(e.target.value)} placeholder="e.g. Try our new McPlant burger!" style={{ width:'100%', background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:6, color:C.text, padding:'6px 8px', fontSize:12, fontFamily:'inherit', outline:'none', marginBottom:6, boxSizing:'border-box' as const }} />
-                                <input type="text" value={brandPromoUrl} onChange={e=>setBrandPromoUrl(e.target.value)} placeholder="Link (optional)" style={{ width:'100%', background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:6, color:C.text, padding:'6px 8px', fontSize:12, fontFamily:'inherit', outline:'none', boxSizing:'border-box' as const }} />
-                                {brandPromoText && (
-                                  <div style={{ marginTop:8, padding:8, background:'rgba(245,158,11,0.08)', border:'1px solid rgba(245,158,11,0.2)', borderRadius:6, fontSize:11, color:C.text }}>
-                                    <div style={{ fontWeight:700, marginBottom:2, color:'#f59e0b' }}>Live Preview</div>
-                                    {brandPromoText}
-                                    {brandPromoUrl && <div style={{ fontSize:10, color:C.primary, marginTop:4, textDecoration:'underline' }}>{brandPromoUrl}</div>}
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </>
-                      ) : (
+                        )}
+                      </div>
+                    ) : (
+                      <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:'12px', padding:'14px 16px', marginBottom:'14px' }}>
+                        <div style={{ fontSize:'10px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.6px', marginBottom:'8px' }}>Your Brand Identity</div>
                         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                          <div style={{ fontSize:'12px', color:C.textMuted }}>No profession set — brands need a ValueSkin to contact creators</div>
+                          <div style={{ fontSize:'12px', color:C.textMuted }}>Purchase a ValueSkin to start contacting creators</div>
                           <button onClick={() => setActiveView('store')} style={{ background:C.primary, border:'none', borderRadius:'6px', padding:'6px 12px', fontSize:'11px', fontWeight:700, color:'#fff', cursor:'pointer' }}>Get ValueSkin</button>
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
 
                     {marketplaceTab === 'creators' && (<>
                     {/* Matching Rule Banner */}
@@ -2463,7 +2490,7 @@ export default function InstagramDemoPage() {
 
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                       <div style={{ fontSize: '12px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.6px' }}>
-                        All Creators
+                        {activeBrandSkin ? `${activeBrandSkin} Creators` : 'Select a ValueSkin above'}
                       </div>
                       <button
                         onClick={() => setFilterBarterOnly(prev => !prev)}
@@ -2480,7 +2507,11 @@ export default function InstagramDemoPage() {
                     </div>
                     {(() => {
                       const q = brandSearchQuery.trim().toLowerCase();
-                      let results = BRAND_MARKETPLACE_CREATORS.filter(c =>
+                      // Show creators with valueSkin matching the active brand skin
+                      const creatorsForSkin = activeBrandSkin
+                        ? BRAND_MARKETPLACE_CREATORS.map(c => ({ ...c, valueSkin: activeBrandSkin }))
+                        : [];
+                      let results = creatorsForSkin.filter(c =>
                         (!filterBarterOnly || c.willingToBarter) &&
                         (!filterAudienceAge || c.audienceAgeRange === filterAudienceAge) &&
                         (!filterAudienceLang || c.audienceLang === filterAudienceLang) &&
@@ -2652,13 +2683,13 @@ export default function InstagramDemoPage() {
 
                           {!isNegotiating ? (
                             (() => {
-                              const hasMatch = brandValueSkin === creator.valueSkin;
-                              const noBrandSkin = !brandValueSkin;
+                              const hasMatch = activeBrandSkin === creator.valueSkin;
+                              const noBrandSkin = brandValueSkins.length === 0;
                               return (
                                 <div>
                                   {!hasMatch && !noBrandSkin && (
                                     <div style={{ background:'rgba(230,81,0,0.06)', border:'1px solid rgba(230,81,0,0.2)', borderRadius:'8px', padding:'8px 10px', marginBottom:'8px', fontSize:'11px', color:C.textSecondary }}>
-                                      No shared ValueSkin — you are {brandValueSkin}, this creator is {creator.valueSkin}
+                                      No shared ValueSkin — you are {activeBrandSkin}, this creator is {creator.valueSkin}
                                     </div>
                                   )}
                                   {noBrandSkin && (
@@ -2690,7 +2721,7 @@ export default function InstagramDemoPage() {
                                     </svg>
                                     Deal Room
                                   </div>
-                                  {brandValueSkin && <div style={{ fontSize:'10px', color:C.textMuted, marginTop:'2px' }}>Your identity: {brandValueSkin}</div>}
+                                  {activeBrandSkin && <div style={{ fontSize:'10px', color:C.textMuted, marginTop:'2px' }}>Your identity: {activeBrandSkin}</div>}
                                 </div>
                                 {brandDealPhase === 'pending' && (
                                   <div style={{ fontSize: '10px', color: C.textSecondary, background: C.surfaceAlt, padding: '2px 8px', borderRadius: '10px', fontWeight: 600 }}>
@@ -4077,67 +4108,101 @@ export default function InstagramDemoPage() {
               {/* Profession grid — same for creators and brands */}
               {(
                 <div style={{ padding: '20px' }}>
-                  <div style={{ marginBottom: '20px' }}>
-                    <div style={{ fontSize: '12px', fontWeight: 700, color: C.textMuted, letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: '10px' }}>
-                      Assign to slot
-                    </div>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      {SLOTS.map((slot) => {
-                        const current = valueSkins[slot];
-                        const active = assigningSlot === slot;
-                        return (
-                          <button
-                            key={slot}
-                            onClick={() => setAssigningSlot(active ? null : slot)}
-                            style={{
-                              flex: 1, padding: '10px 8px',
-                              background: active ? `${SLOT_COLORS[slot]}20` : C.card,
-                              border: `2px solid ${active ? SLOT_COLORS[slot] : C.border}`,
-                              borderRadius: '10px', cursor: 'pointer', transition: 'all 0.15s',
-                            }}
-                          >
-                            <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.6px', textTransform: 'uppercase', color: SLOT_COLORS[slot], marginBottom: '4px' }}>
-                              {SLOT_LABELS[slot]}
-                            </div>
-                            <div style={{ fontSize: '12px', color: current ? C.text : C.textMuted, fontWeight: current ? 600 : 400 }}>
-                              {current ? (PROFESSION_BADGES[current.profession]?.abbreviation ?? current.profession) : 'Empty'}
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                    {assigningSlot && (
-                      <div style={{ fontSize: '12px', color: SLOT_COLORS[assigningSlot], marginTop: '8px', fontWeight: 600 }}>
-                        Selecting for {SLOT_LABELS[assigningSlot]} slot — tap any badge below to apply ($10)
+                  {/* Creator: slot assignment / Brand: owned skins summary */}
+                  {marketplaceRole === 'brand' ? (
+                    <div style={{ marginBottom: '20px' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 700, color: C.textMuted, letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: '10px' }}>
+                        Your ValueSkins ({brandValueSkins.length}/3)
                       </div>
-                    )}
-                    {!assigningSlot && (
-                      <div style={{ fontSize: '12px', color: C.textMuted, marginTop: '8px' }}>
-                        Select a slot above, then choose a profession badge.
+                      {brandValueSkins.length > 0 ? (
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                          {brandValueSkins.map(skin => (
+                            <div key={skin} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: `${C.primary}10`, border: `1px solid ${C.primary}`, borderRadius: '8px', padding: '6px 10px' }}>
+                              <span style={{ fontSize: '12px', fontWeight: 600, color: C.text }}>{skin}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div style={{ fontSize: '12px', color: C.textMuted, marginBottom: '8px' }}>
+                          No ValueSkins yet. Tap a category below to purchase.
+                        </div>
+                      )}
+                      {brandValueSkins.length < 3 ? (
+                        <div style={{ fontSize: '12px', color: C.textSecondary }}>
+                          Tap any profession below to add it. Creators with that ValueSkin will see you as a match.
+                        </div>
+                      ) : (
+                        <div style={{ fontSize: '12px', color: C.warning }}>
+                          All 3 slots filled. Remove a skin in Settings to add a new one.
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div style={{ marginBottom: '20px' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 700, color: C.textMuted, letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: '10px' }}>
+                        Assign to slot
                       </div>
-                    )}
-                  </div>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        {SLOTS.map((slot) => {
+                          const current = valueSkins[slot];
+                          const active = assigningSlot === slot;
+                          return (
+                            <button
+                              key={slot}
+                              onClick={() => setAssigningSlot(active ? null : slot)}
+                              style={{
+                                flex: 1, padding: '10px 8px',
+                                background: active ? `${SLOT_COLORS[slot]}20` : C.card,
+                                border: `2px solid ${active ? SLOT_COLORS[slot] : C.border}`,
+                                borderRadius: '10px', cursor: 'pointer', transition: 'all 0.15s',
+                              }}
+                            >
+                              <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.6px', textTransform: 'uppercase', color: SLOT_COLORS[slot], marginBottom: '4px' }}>
+                                {SLOT_LABELS[slot]}
+                              </div>
+                              <div style={{ fontSize: '12px', color: current ? C.text : C.textMuted, fontWeight: current ? 600 : 400 }}>
+                                {current ? (PROFESSION_BADGES[current.profession]?.abbreviation ?? current.profession) : 'Empty'}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {assigningSlot && (
+                        <div style={{ fontSize: '12px', color: SLOT_COLORS[assigningSlot], marginTop: '8px', fontWeight: 600 }}>
+                          Selecting for {SLOT_LABELS[assigningSlot]} slot — tap any badge below to apply ($10)
+                        </div>
+                      )}
+                      {!assigningSlot && (
+                        <div style={{ fontSize: '12px', color: C.textMuted, marginTop: '8px' }}>
+                          Select a slot above, then choose a profession badge.
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                     {Object.values(PROFESSIONS).map((prof) => {
-                      const isCurrentSlotActive = assigningSlot && prof.subProfessions.includes(valueSkins[assigningSlot]?.profession ?? '');
+                      const isBrand = marketplaceRole === 'brand';
+                      const brandOwns = isBrand && prof.subProfessions.some(sp => brandValueSkins.includes(sp));
+                      const isCurrentSlotActive = !isBrand && assigningSlot && prof.subProfessions.includes(valueSkins[assigningSlot]?.profession ?? '');
+                      const canClick = isBrand ? brandValueSkins.length < 3 : !!assigningSlot;
                       return (
                         <button
                           key={prof.name}
-                          onClick={() => { if (assigningSlot) { setStoreCategory(prof.name); setShowStoreModal(true); } }}
+                          onClick={() => { if (canClick) { setStoreCategory(prof.name); setShowStoreModal(true); } }}
                           style={{
-                            padding: '14px', background: isCurrentSlotActive ? `rgba(0,102,204,0.1)` : C.card,
-                            border: `1px solid ${isCurrentSlotActive ? C.primary : C.border}`,
-                            borderRadius: '10px', color: C.text, cursor: assigningSlot ? 'pointer' : 'default',
+                            padding: '14px', background: (isCurrentSlotActive || brandOwns) ? `rgba(0,102,204,0.1)` : C.card,
+                            border: `1px solid ${(isCurrentSlotActive || brandOwns) ? C.primary : C.border}`,
+                            borderRadius: '10px', color: C.text, cursor: canClick ? 'pointer' : 'default',
                             fontWeight: '600', fontSize: '14px', textAlign: 'left', transition: 'all 0.15s',
-                            opacity: assigningSlot ? 1 : 0.6,
+                            opacity: canClick ? 1 : 0.6,
                           }}
-                          onMouseEnter={(e) => { if (assigningSlot) e.currentTarget.style.borderColor = C.primary; }}
-                          onMouseLeave={(e) => { if (!isCurrentSlotActive) e.currentTarget.style.borderColor = C.border; }}
+                          onMouseEnter={(e) => { if (canClick) e.currentTarget.style.borderColor = C.primary; }}
+                          onMouseLeave={(e) => { if (!isCurrentSlotActive && !brandOwns) e.currentTarget.style.borderColor = C.border; }}
                         >
                           <div style={{ marginBottom: '4px' }}>{prof.name}</div>
-                          <div style={{ fontSize: '12px', color: isCurrentSlotActive ? C.primary : C.textSecondary, fontWeight: 700 }}>
-                            {isCurrentSlotActive ? 'Active' : assigningSlot ? '$10' : '—'}
+                          <div style={{ fontSize: '12px', color: (isCurrentSlotActive || brandOwns) ? C.primary : C.textSecondary, fontWeight: 700 }}>
+                            {brandOwns ? 'Owned' : isCurrentSlotActive ? 'Active' : canClick ? '$10' : '\u2014'}
                           </div>
                         </button>
                       );
@@ -4165,16 +4230,20 @@ export default function InstagramDemoPage() {
                     <div style={{ background: C.card, border: `1px solid rgba(230,81,0,0.25)`, borderRadius: '12px', padding: '14px 16px', marginBottom: '10px' }}>
                       <div style={{ fontSize: '13px', fontWeight: 700, color: C.text, marginBottom: '2px' }}>Brand Identity</div>
                       <div style={{ fontSize: '12px', color: C.textSecondary, marginBottom: '12px' }}>Your ValueSkin determines which creators you can contact. Only creators with the same profession will see your proposals.</div>
-                      {brandValueSkin ? (
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(230,81,0,0.06)', borderRadius: '8px', padding: '10px 12px' }}>
-                          <div>
-                            <div style={{ fontSize: '13px', fontWeight: 700, color: C.text }}>{brandValueSkin}</div>
-                            <div style={{ fontSize: '11px', color: C.textSecondary }}>Active brand ValueSkin</div>
+                      {brandValueSkins.length > 0 ? (
+                        <div>
+                          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                            {brandValueSkins.map(skin => (
+                              <div key={skin} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(230,81,0,0.06)', borderRadius: '8px', padding: '6px 10px' }}>
+                                <span style={{ fontSize: '12px', fontWeight: 600, color: C.text }}>{skin}</span>
+                                <button onClick={() => { setBrandValueSkins(prev => prev.filter(s => s !== skin)); if (activeBrandSkin === skin) setActiveBrandSkin(brandValueSkins.find(s => s !== skin) ?? null); }} style={{ background: 'none', border: 'none', color: C.textMuted, cursor: 'pointer', fontSize: '14px', padding: '0 2px', lineHeight: 1 }}>x</button>
+                              </div>
+                            ))}
                           </div>
-                          <button onClick={() => setShowBrandStoreModal(true)} style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: '6px', padding: '5px 10px', fontSize: '11px', color: C.textSecondary, cursor: 'pointer' }}>Change</button>
+                          <div style={{ fontSize: '11px', color: C.textSecondary }}>{brandValueSkins.length}/3 slots used</div>
                         </div>
                       ) : (
-                        <button onClick={() => setShowBrandStoreModal(true)} style={{ width: '100%', background: C.warning, border: 'none', borderRadius: '8px', padding: '10px', fontSize: '13px', fontWeight: 700, color: '#fff', cursor: 'pointer' }}>
+                        <button onClick={() => setActiveView('store')} style={{ width: '100%', background: C.warning, border: 'none', borderRadius: '8px', padding: '10px', fontSize: '13px', fontWeight: 700, color: '#fff', cursor: 'pointer' }}>
                           Get Brand ValueSkin
                         </button>
                       )}
@@ -4211,20 +4280,19 @@ export default function InstagramDemoPage() {
                                 Define your brand profile so creators understand who you are. Select one option from each category.
                               </div>
                               {Object.values(BRAND_CATEGORIES).map((cat) => {
-                                const isActive = brandValueSkin && cat.subCategories.includes(brandValueSkin);
+                                const currentSelection = brandProfileSelections[cat.name];
                                 return (
                                   <div key={cat.name} style={{ marginBottom: '14px' }}>
                                     <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, letterSpacing: '0.6px', textTransform: 'uppercase', marginBottom: '8px' }}>{cat.name}</div>
                                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                                       {cat.subCategories.map((sub) => {
-                                        const selected = brandValueSkin === sub;
+                                        const selected = currentSelection === sub;
                                         return (
                                           <button
                                             key={sub}
                                             onClick={() => {
-                                              setBrandValueSkin(sub);
-                                              setPurchaseToast(`${sub} set as your brand identity`);
-                                              setTimeout(() => setPurchaseToast(null), 3000);
+                                              setBrandProfileSelections(prev => ({ ...prev, [cat.name]: selected ? '' : sub }));
+                                              if (!selected) { setPurchaseToast(`${cat.name}: ${sub}`); setTimeout(() => setPurchaseToast(null), 2000); }
                                             }}
                                             style={{
                                               padding: '5px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: selected ? 600 : 400,
@@ -5008,52 +5076,7 @@ export default function InstagramDemoPage() {
       )}
 
       {/* Brand Store Modal */}
-      {showBrandStoreModal && brandStoreCategory && BRAND_CATEGORIES[brandStoreCategory] && (
-        <Modal onClose={() => { setShowBrandStoreModal(false); setBrandStoreCategory(null); }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
-            <h2 style={{ fontSize: '22px', fontWeight: 'bold', color: C.text, margin: 0 }}>{brandStoreCategory}</h2>
-            <span style={{ fontSize: '11px', fontWeight: 600, color: C.textSecondary, background: C.surfaceAlt, padding: '3px 8px', borderRadius: '6px' }}>Brand</span>
-          </div>
-          <p style={{ fontSize: '13px', color: C.textSecondary, marginBottom: '16px' }}>
-            Tap to purchase ($10) and set as your brand identity.
-          </p>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-            {BRAND_CATEGORIES[brandStoreCategory].subCategories.map((sub) => {
-              const isActive = brandValueSkin === sub;
-              return (
-                <button
-                  key={sub}
-                  onClick={() => {
-                    setBrandValueSkin(sub);
-                    setShowBrandStoreModal(false);
-                    setBrandStoreCategory(null);
-                    setPurchaseToast(`${sub} set as your brand identity`);
-                    setTimeout(() => setPurchaseToast(null), 3000);
-                  }}
-                  style={{
-                    background: isActive ? 'rgba(230,81,0,0.12)' : C.card,
-                    border: `1px solid ${isActive ? C.warning : C.border}`,
-                    borderRadius: '8px', color: C.text, padding: '10px 12px', fontSize: '13px',
-                    cursor: 'pointer', transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: '8px',
-                  }}
-                  onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.borderColor = C.warning; }}
-                  onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.borderColor = C.border; }}
-                >
-                  <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '22px', height: '22px', borderRadius: '5px', background: C.warning, color: '#fff', fontSize: '8px', fontWeight: 700, flexShrink: 0 }}>
-                    {sub.slice(0, 3).toUpperCase()}
-                  </span>
-                  <span style={{ flex: 1, textAlign: 'left' }}>{sub}</span>
-                  {isActive && (
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.textSecondary} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </Modal>
-      )}
+      {/* Brand Store Modal — this is now unused since brands buy skins from the main store like creators */}
 
       {/* ValueSkin Management Modal */}
       {showSkinManageModal && (
