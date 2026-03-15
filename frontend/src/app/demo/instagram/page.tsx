@@ -640,7 +640,6 @@ export default function InstagramDemoPage() {
   const [safetyNewBrandDealCount, setSafetyNewBrandDealCount] = useState(0);
   const [savedSafetyToast, setSavedSafetyToast] = useState(false);
   // Creator-side safety controls
-  const [creatorDealOnlyMode, setCreatorDealOnlyMode] = useState(true);
   const [creatorAllowedNiches, setCreatorAllowedNiches] = useState<string[]>([]);
   const [creatorBlockedBrands, setCreatorBlockedBrands] = useState<string[]>([]);
   const [creatorShowSafetySettings, setCreatorShowSafetySettings] = useState(false);
@@ -4356,6 +4355,9 @@ export default function InstagramDemoPage() {
                   </div>
                 </div>
 
+                {/* ── CREATOR-ONLY SETTINGS ────────────────────── */}
+                {marketplaceRole !== 'brand' && (<>
+
                 {/* Availability */}
                 <div style={{ marginBottom: '24px' }}>
                   <div style={{ fontSize: '12px', fontWeight: 700, color: C.textMuted, letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: '12px' }}>
@@ -4603,30 +4605,15 @@ export default function InstagramDemoPage() {
 
                 {/* ── INBOX & SAFETY ─────────────────────────── */}
                 <div style={{ marginBottom: '16px' }}>
-                  <button onClick={() => setCreatorShowSafetySettings(p => !p)} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: C.card, border: `1px solid ${creatorDealOnlyMode ? C.primary : C.border}`, borderRadius: creatorShowSafetySettings ? '10px 10px 0 0' : '10px', padding: '12px 14px', cursor: 'pointer', color: C.text }}>
+                  <button onClick={() => setCreatorShowSafetySettings(p => !p)} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: C.card, border: `1px solid ${C.border}`, borderRadius: creatorShowSafetySettings ? '10px 10px 0 0' : '10px', padding: '12px 14px', cursor: 'pointer', color: C.text }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={creatorDealOnlyMode ? C.primary : C.textMuted} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                      <span style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: creatorDealOnlyMode ? C.primary : C.textMuted }}>Inbox & Safety</span>
-                      {creatorDealOnlyMode && <span style={{ fontSize: '9px', fontWeight: 700, color: '#fff', background: C.primary, padding: '1px 6px', borderRadius: '8px' }}>DEAL-ONLY ON</span>}
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={C.textMuted} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                      <span style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.textMuted }}>Inbox & Safety</span>
                     </div>
                     <span style={{ fontSize: '14px', color: C.textMuted }}>{creatorShowSafetySettings ? '▲' : '▼'}</span>
                   </button>
                   {creatorShowSafetySettings && (
                     <div style={{ background: C.card, border: `1px solid ${C.border}`, borderTop: 'none', borderRadius: '0 0 10px 10px', padding: '14px' }}>
-
-                      {/* Deal-Only Mode — primary toggle */}
-                      <div style={{ padding: '12px', background: creatorDealOnlyMode ? 'rgba(0,102,204,0.07)' : C.bg, border: `1px solid ${creatorDealOnlyMode ? C.primary : C.border}`, borderRadius: '8px', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
-                        <div>
-                          <div style={{ fontSize: '13px', fontWeight: 700, color: C.text }}>Deal-Only Mode</div>
-                          <div style={{ fontSize: '11px', color: C.textSecondary, marginTop: '2px', lineHeight: 1.4 }}>
-                            Only structured brand proposals reach you. Free-text messages are blocked entirely. Brands must fill a campaign brief to contact you.
-                          </div>
-                        </div>
-                        <button onClick={() => setCreatorDealOnlyMode(p => !p)}
-                          style={{ width: '44px', height: '24px', borderRadius: '12px', border: 'none', backgroundColor: creatorDealOnlyMode ? C.primary : 'rgba(255,255,255,0.15)', cursor: 'pointer', position: 'relative', flexShrink: 0, transition: 'background-color 0.2s' }}>
-                          <div style={{ width: '20px', height: '20px', borderRadius: '50%', backgroundColor: '#fff', position: 'absolute', top: '2px', left: creatorDealOnlyMode ? '22px' : '2px', transition: 'left 0.2s' }} />
-                        </button>
-                      </div>
 
                       {/* Filter by brand niche */}
                       <div style={{ marginBottom: '12px' }}>
@@ -4868,6 +4855,9 @@ export default function InstagramDemoPage() {
                     );
                   })()}
                 </div>
+
+                </>)}
+                {/* ── END CREATOR-ONLY SETTINGS ──────────────────── */}
 
                 {/* GDPR Data Controls */}
                 <div style={{ marginBottom: '12px' }}>
