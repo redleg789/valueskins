@@ -577,21 +577,6 @@ export default function InstagramDemoPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    if (!skinsLoaded) return;
-    try {
-      localStorage.setItem('vs_demo_persist', JSON.stringify({
-        marketplaceRole, brandValueSkins, activeBrandSkin, profileName, profileBio, profileAvatar,
-        selectedCountry, selectedLanguages, rateCard, profileDealTypes, willingToBarter,
-        notifications, onboardingDone, joinedCommunities, dmMessages, communityMessages,
-        skinXP, brandProfileSelections, creatorEnergy, metrics,
-      }));
-    } catch (e) { /* ignore */ }
-  }, [marketplaceRole, brandValueSkins, activeBrandSkin, profileName, profileBio, profileAvatar,
-      selectedCountry, selectedLanguages, rateCard, profileDealTypes, willingToBarter,
-      notifications, onboardingDone, joinedCommunities, dmMessages, communityMessages,
-      skinXP, brandProfileSelections, creatorEnergy, metrics, skinsLoaded]);
-
   const [showSkinManageModal, setShowSkinManageModal] = useState<ValueSkinSlot | null>(null);
 
   const { levels, isLoaded: levelsLoaded } = useLevelConfig();
@@ -881,6 +866,22 @@ export default function InstagramDemoPage() {
     followers: 1243000, engagement: 6.8, dealsCompleted: 47,
     avgDealValue: 85000, onTimeRate: 99, brandRating: 4.87,
   });
+
+  // Persist state to localStorage — must be declared after ALL state variables it references
+  useEffect(() => {
+    if (!skinsLoaded) return;
+    try {
+      localStorage.setItem('vs_demo_persist', JSON.stringify({
+        marketplaceRole, brandValueSkins, activeBrandSkin, profileName, profileBio, profileAvatar,
+        selectedCountry, selectedLanguages, rateCard, profileDealTypes, willingToBarter,
+        notifications, onboardingDone, joinedCommunities, dmMessages, communityMessages,
+        skinXP, brandProfileSelections, creatorEnergy, metrics,
+      }));
+    } catch (e) { /* ignore */ }
+  }, [marketplaceRole, brandValueSkins, activeBrandSkin, profileName, profileBio, profileAvatar,
+      selectedCountry, selectedLanguages, rateCard, profileDealTypes, willingToBarter,
+      notifications, onboardingDone, joinedCommunities, dmMessages, communityMessages,
+      skinXP, brandProfileSelections, creatorEnergy, metrics, skinsLoaded]);
 
   const currentLevel = levelsLoaded ? calculateLevel(metrics, levels) : 1;
 
