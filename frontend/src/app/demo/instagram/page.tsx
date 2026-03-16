@@ -392,7 +392,7 @@ const MOCK_REPUTATION = {
 };
 
 export default function InstagramDemoPage() {
-  const [activeView, setActiveView] = useState<'profile' | 'mim' | 'store' | 'admin' | 'messages' | 'settings'>('profile');
+  const [activeView, setActiveView] = useState<'profile' | 'mim' | 'store' | 'admin' | 'messages' | 'settings' | 'explore' | 'notifications'>('profile');
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -403,6 +403,101 @@ export default function InstagramDemoPage() {
   const [activeTab, setActiveTab] = useState('posts');
   const [isFollowing, setIsFollowing] = useState(false);
   const [likedPosts, setLikedPosts] = useState<number[]>([]);
+
+  // Editable profile
+  const [profileName, setProfileName] = useState('Your Name');
+  const [profileBio, setProfileBio] = useState('Creator, builder, thinker. Tap Edit to make this yours.');
+  const [profileAvatar, setProfileAvatar] = useState<string | null>(null);
+  const [editingProfile, setEditingProfile] = useState(false);
+
+  // Notifications
+  const [notifications, setNotifications] = useState<Array<{ id: number; type: string; text: string; time: string; read: boolean }>>([
+    { id: 1, type: 'deal', text: 'Stripe wants to collaborate on a Product Review campaign', time: '2h ago', read: false },
+    { id: 2, type: 'community', text: 'You were accepted into SWE Underground', time: '5h ago', read: false },
+    { id: 3, type: 'skin', text: 'Your Software Engineer skin reached Level 2', time: '1d ago', read: true },
+    { id: 4, type: 'deal', text: 'Figma approved your deliverables', time: '2d ago', read: true },
+  ]);
+
+  // Onboarding
+  const [onboardingDone, setOnboardingDone] = useState(false);
+  const [onboardingStep, setOnboardingStep] = useState(0);
+
+  // Creator profile preview (from brand marketplace)
+  const [previewCreator, setPreviewCreator] = useState<typeof BRAND_MARKETPLACE_CREATORS[0] | null>(null);
+
+  // Explore
+  const [exploreTab, setExploreTab] = useState<'trending' | 'skins' | 'creators'>('trending');
+
+  // DM messages state — mutable copy so sending works
+  const [dmMessages, setDmMessages] = useState<Record<number, Array<{ id: number; sender: 'me' | 'them'; text: string; time: string }>>>({
+    1: [
+      { id: 1, sender: 'them', text: 'Hey, saw your latest post. Really cool work on the API design!', time: '10:23 AM' },
+      { id: 2, sender: 'me', text: 'Thanks! Spent a while getting the pagination right', time: '10:25 AM' },
+      { id: 3, sender: 'them', text: 'The cursor-based approach is solid. We switched to that too last quarter', time: '10:26 AM' },
+      { id: 4, sender: 'me', text: 'Yeah offset pagination just falls apart at scale', time: '10:28 AM' },
+    ],
+    2: [
+      { id: 1, sender: 'me', text: 'Hey Priya! How did the interview go?', time: '9:15 AM' },
+      { id: 2, sender: 'them', text: 'Thanks for the referral! Got the interview.', time: '9:45 AM' },
+      { id: 3, sender: 'them', text: 'System design round went really well. They liked my approach to the notification service', time: '9:46 AM' },
+    ],
+    3: [
+      { id: 1, sender: 'them', text: 'Working on a new RAG pipeline. Want to see the architecture?', time: 'Yesterday' },
+      { id: 2, sender: 'me', text: 'Definitely, send it over', time: 'Yesterday' },
+      { id: 3, sender: 'them', text: 'Sent you the architecture diagram', time: '11:30 AM' },
+    ],
+    4: [{ id: 1, sender: 'them', text: 'Can we sync on the dataset tomorrow?', time: '2:00 PM' }],
+    5: [
+      { id: 1, sender: 'them', text: 'Found the issue — misconfigured env var in staging', time: '8:30 AM' },
+      { id: 2, sender: 'me', text: 'Nice catch. Push when ready', time: '8:45 AM' },
+      { id: 3, sender: 'them', text: 'Pipeline is green now. Pushed the fix.', time: '9:00 AM' },
+    ],
+    6: [{ id: 1, sender: 'them', text: 'Recipe collab sounds great, let me know the details', time: 'Yesterday' }],
+    7: [
+      { id: 1, sender: 'them', text: 'Check out this paper on multimodal embeddings', time: '2 days ago' },
+      { id: 2, sender: 'me', text: 'Looks interesting, will read tonight', time: '2 days ago' },
+    ],
+  });
+
+  // Community messages — mutable copy
+  const [communityMessages, setCommunityMessages] = useState<Record<number, Array<{ id: number; author: string; handle: string; text: string; time: string }>>>({
+    0: [
+      { id: 0, author: 'Marcus T.', handle: '@ml_marcus', text: 'Just shipped a RAG pipeline that cut hallucination rate by 60%. Happy to share the architecture.', time: '4h ago' },
+      { id: 1, author: 'Priya S.', handle: '@priya_builds', text: 'Monthly hiring board is live — drop your referral links below.', time: '3h ago' },
+      { id: 2, author: 'Alex R.', handle: '@alex_codes', text: 'Rust > Go for anything that matters. Fight me.', time: '2h ago' },
+    ],
+    1: [
+      { id: 3, author: 'Dr. Chen', handle: '@drchen', text: 'Interesting presentation today — 34F with atypical chest pain. What would your differential be?', time: '3h ago' },
+      { id: 4, author: 'Dr. Williams', handle: '@drwilliams', text: 'CME webinar this Friday at 6PM EST. See you there.', time: '2d ago' },
+    ],
+    2: [
+      { id: 5, author: 'Sam K.', handle: '@samk_ceo', text: 'Lesson from year 3: hire for mindset, train for skill. Churn dropped 40%.', time: '5h ago' },
+      { id: 6, author: 'Lin M.', handle: '@lin_builds', text: 'We just crossed $1M ARR. Sharing the full breakdown next week. AMA.', time: '1h ago' },
+    ],
+  });
+
+  // Skin XP for leveling
+  const [skinXP, setSkinXP] = useState<Record<string, number>>({});
+  const getSkinLevel = (profession: string) => {
+    const xp = skinXP[profession] || 0;
+    if (xp >= 1000) return 5;
+    if (xp >= 500) return 4;
+    if (xp >= 200) return 3;
+    if (xp >= 50) return 2;
+    return 1;
+  };
+  const getSkinXPProgress = (profession: string) => {
+    const xp = skinXP[profession] || 0;
+    const thresholds = [0, 50, 200, 500, 1000];
+    const level = getSkinLevel(profession);
+    if (level >= 5) return 100;
+    const current = xp - thresholds[level - 1];
+    const needed = thresholds[level] - thresholds[level - 1];
+    return Math.round((current / needed) * 100);
+  };
+  const addSkinXP = useCallback((profession: string, amount: number) => {
+    setSkinXP(prev => ({ ...prev, [profession]: (prev[profession] || 0) + amount }));
+  }, []);
 
   // 3-slot ValueSkin state — persisted to localStorage
   const [valueSkins, setValueSkins] = useState<ValueSkinMap>({});
@@ -450,6 +545,53 @@ export default function InstagramDemoPage() {
       localStorage.setItem('vs_demo_hidden_skins', JSON.stringify([...hiddenSkins]));
     } catch (e) { /* ignore */ }
   }, [hiddenSkins, hiddenLoaded]);
+
+  // ── Persist key states to localStorage ───────────────────────
+  useEffect(() => {
+    try {
+      const s = localStorage.getItem('vs_demo_persist');
+      if (s) {
+        const d = JSON.parse(s);
+        if (d.marketplaceRole) setMarketplaceRole(d.marketplaceRole);
+        if (d.brandValueSkins) setBrandValueSkins(d.brandValueSkins);
+        if (d.activeBrandSkin) setActiveBrandSkin(d.activeBrandSkin);
+        if (d.profileName) setProfileName(d.profileName);
+        if (d.profileBio) setProfileBio(d.profileBio);
+        if (d.profileAvatar) setProfileAvatar(d.profileAvatar);
+        if (d.selectedCountry) setSelectedCountry(d.selectedCountry);
+        if (d.selectedLanguages) setSelectedLanguages(d.selectedLanguages);
+        if (d.rateCard) setRateCard(d.rateCard);
+        if (d.profileDealTypes) setProfileDealTypes(d.profileDealTypes);
+        if (d.willingToBarter !== undefined) setWillingToBarter(d.willingToBarter);
+        if (d.notifications) setNotifications(d.notifications);
+        if (d.onboardingDone !== undefined) setOnboardingDone(d.onboardingDone);
+        if (d.joinedCommunities) setJoinedCommunities(d.joinedCommunities);
+        if (d.dmMessages) setDmMessages(d.dmMessages);
+        if (d.communityMessages) setCommunityMessages(d.communityMessages);
+        if (d.skinXP) setSkinXP(d.skinXP);
+        if (d.brandProfileSelections) setBrandProfileSelections(d.brandProfileSelections);
+        if (d.creatorEnergy) setCreatorEnergy(d.creatorEnergy);
+        if (d.metrics) setMetrics(d.metrics);
+      }
+    } catch (e) { /* ignore */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!skinsLoaded) return;
+    try {
+      localStorage.setItem('vs_demo_persist', JSON.stringify({
+        marketplaceRole, brandValueSkins, activeBrandSkin, profileName, profileBio, profileAvatar,
+        selectedCountry, selectedLanguages, rateCard, profileDealTypes, willingToBarter,
+        notifications, onboardingDone, joinedCommunities, dmMessages, communityMessages,
+        skinXP, brandProfileSelections, creatorEnergy, metrics,
+      }));
+    } catch (e) { /* ignore */ }
+  }, [marketplaceRole, brandValueSkins, activeBrandSkin, profileName, profileBio, profileAvatar,
+      selectedCountry, selectedLanguages, rateCard, profileDealTypes, willingToBarter,
+      notifications, onboardingDone, joinedCommunities, dmMessages, communityMessages,
+      skinXP, brandProfileSelections, creatorEnergy, metrics, skinsLoaded]);
+
   const [showSkinManageModal, setShowSkinManageModal] = useState<ValueSkinSlot | null>(null);
 
   const { levels, isLoaded: levelsLoaded } = useLevelConfig();
@@ -852,6 +994,71 @@ export default function InstagramDemoPage() {
   return (
     <div style={{ background: C.bg, minHeight: '100vh', display: 'flex', color: C.text, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif', overflowX: 'hidden' }}>
 
+      {/* ── ONBOARDING OVERLAY ──────────────────────────── */}
+      {!onboardingDone && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100000 }}>
+          <div style={{ background: C.surface, borderRadius: '16px', padding: '32px', maxWidth: '420px', width: '90vw', border: `1px solid ${C.border}`, textAlign: 'center' }}>
+            {onboardingStep === 0 && (
+              <>
+                <div style={{ fontSize: '22px', fontWeight: 700, color: C.text, marginBottom: '8px' }}>Welcome to ValueSkins</div>
+                <div style={{ fontSize: '14px', color: C.textSecondary, lineHeight: 1.5, marginBottom: '24px' }}>
+                  ValueSkins are verified professional identities that unlock communities, marketplace access, and brand deals.
+                </div>
+                <button onClick={() => setOnboardingStep(1)} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: 'none', background: C.primary, color: '#fff', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>
+                  Get Started
+                </button>
+              </>
+            )}
+            {onboardingStep === 1 && (
+              <>
+                <div style={{ fontSize: '18px', fontWeight: 700, color: C.text, marginBottom: '8px' }}>Choose Your Role</div>
+                <div style={{ fontSize: '13px', color: C.textSecondary, marginBottom: '20px' }}>Are you a creator looking for deals, or a brand looking for creators?</div>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <button onClick={() => { setMarketplaceRole('creator'); setOnboardingStep(2); }}
+                    style={{ flex: 1, padding: '16px 12px', borderRadius: '10px', border: `1px solid ${C.border}`, background: C.card, color: C.text, cursor: 'pointer', transition: 'border-color 0.15s' }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = C.primary; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; }}>
+                    <div style={{ fontSize: '24px', marginBottom: '8px' }}>Creator</div>
+                    <div style={{ fontSize: '11px', color: C.textMuted }}>Get discovered by brands through your ValueSkin</div>
+                  </button>
+                  <button onClick={() => { setMarketplaceRole('brand'); setOnboardingStep(2); }}
+                    style={{ flex: 1, padding: '16px 12px', borderRadius: '10px', border: `1px solid ${C.border}`, background: C.card, color: C.text, cursor: 'pointer', transition: 'border-color 0.15s' }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = C.primary; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; }}>
+                    <div style={{ fontSize: '24px', marginBottom: '8px' }}>Brand</div>
+                    <div style={{ fontSize: '11px', color: C.textMuted }}>Find and negotiate with verified creators</div>
+                  </button>
+                </div>
+              </>
+            )}
+            {onboardingStep === 2 && (
+              <>
+                <div style={{ fontSize: '18px', fontWeight: 700, color: C.text, marginBottom: '8px' }}>Get Your First ValueSkin</div>
+                <div style={{ fontSize: '13px', color: C.textSecondary, lineHeight: 1.5, marginBottom: '20px' }}>
+                  Visit the Store to pick a ValueSkin that matches your profession. Your skin unlocks matching creators, communities, and deals.
+                </div>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button onClick={() => { setOnboardingDone(true); setActiveView('store'); }}
+                    style={{ flex: 1, padding: '12px', borderRadius: '8px', border: 'none', background: C.primary, color: '#fff', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>
+                    Go to Store
+                  </button>
+                  <button onClick={() => { setOnboardingDone(true); }}
+                    style={{ flex: 1, padding: '12px', borderRadius: '8px', border: `1px solid ${C.border}`, background: 'transparent', color: C.textSecondary, fontSize: '14px', fontWeight: 500, cursor: 'pointer' }}>
+                    Skip for now
+                  </button>
+                </div>
+              </>
+            )}
+            {/* Step indicators */}
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', marginTop: '20px' }}>
+              {[0, 1, 2].map(s => (
+                <div key={s} style={{ width: s === onboardingStep ? '20px' : '6px', height: '6px', borderRadius: '3px', background: s === onboardingStep ? C.primary : C.border, transition: 'all 0.2s' }} />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ValueSkin Showcase Modal — add video + pitch when clicking your skin */}
       {showSkinShowcaseModal && (
         <div style={{ position:'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.8)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:99999 }}>
@@ -1126,10 +1333,10 @@ export default function InstagramDemoPage() {
           </Link>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             <NavItem label="Home" active={false} onClick={() => {}} />
-            <NavItem label="Explore" active={false} onClick={() => {}} />
+            <NavItem label="Explore" active={activeView === 'explore'} onClick={() => setActiveView('explore')} />
             <NavItem label="Messages" active={activeView === 'messages'} onClick={() => { setActiveCommunity(null); setActiveDmId(null); setActiveView('messages'); }} />
-            <NavItem label="Notifications" active={false} onClick={() => {}} />
-            <NavItem label="Create" active={false} onClick={() => {}} />
+            <NavItem label="Notifications" active={activeView === 'notifications'} badgeCount={notifications.filter(n => !n.read).length} onClick={() => { setNotifications(prev => prev.map(n => ({ ...n, read: true }))); setActiveView('notifications'); }} />
+            <NavItem label="Create" active={false} onClick={() => { setActiveView('profile'); }} />
             <NavItem label="Profile" active={activeView === 'profile'} onClick={() => setActiveView('profile')} />
             <div style={{ height: '1px', background: C.border, margin: '12px 0' }} />
             <NavItem label="Marketplace" active={activeView === 'mim'} onClick={() => { setMarketplaceRole('none'); setActiveView('mim'); }} />
@@ -1228,6 +1435,26 @@ export default function InstagramDemoPage() {
                           </span>
                         )}
                       </div>
+                      {/* Skin XP levels */}
+                      {ownedSkins.length > 0 && (
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '6px' }}>
+                          {ownedSkins.map(({ profession }) => {
+                            const level = getSkinLevel(profession);
+                            const progress = getSkinXPProgress(profession);
+                            const badge = PROFESSION_BADGES[profession];
+                            const color = badge?.color ?? C.primary;
+                            return (
+                              <div key={profession} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '3px 8px', background: C.surfaceAlt, borderRadius: '6px', border: `1px solid ${C.border}` }}>
+                                <span style={{ fontSize: '10px', fontWeight: 700, color }}>{profession.split(' ')[0]}</span>
+                                <span style={{ fontSize: '9px', fontWeight: 700, color: C.textMuted }}>Lv.{level}</span>
+                                <div style={{ width: '30px', height: '3px', borderRadius: '2px', background: C.border, overflow: 'hidden' }}>
+                                  <div style={{ width: `${progress}%`, height: '100%', background: color, borderRadius: '2px', transition: 'width 0.3s' }} />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
 
                     <div style={{ display: 'flex', gap: isMobile ? '16px' : '20px', marginBottom: '20px', fontSize: isMobile ? '13px' : '14px', justifyContent: isMobile ? 'center' : 'flex-start' }}>
@@ -1250,12 +1477,33 @@ export default function InstagramDemoPage() {
                   </div>
                 </div>
 
-                {/* Bio */}
+                {/* Bio — editable */}
                 <div style={{ marginBottom: '16px', textAlign: isMobile ? 'center' : 'left' }}>
-                  <div style={{ fontWeight: '600', marginBottom: '4px', color: C.text }}>Saketh Velamuri</div>
-                  <div style={{ color: C.textSecondary, fontSize: isMobile ? '12px' : '14px', lineHeight: '1.5' }}>
-                    Building the decentralized reputation layer{'\n'}Full Stack Engineer @ Valueskins{'\n'}Minting my career on-chain
-                  </div>
+                  {editingProfile ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <input type="text" value={profileName} onChange={e => setProfileName(e.target.value)}
+                        style={{ padding: '8px 10px', borderRadius: '8px', border: `1px solid ${C.border}`, background: C.surface, color: C.text, fontSize: '14px', fontWeight: 600 }} />
+                      <textarea value={profileBio} onChange={e => setProfileBio(e.target.value)} rows={3}
+                        style={{ padding: '8px 10px', borderRadius: '8px', border: `1px solid ${C.border}`, background: C.surface, color: C.text, fontSize: '13px', fontFamily: 'inherit', resize: 'none', lineHeight: 1.5 }} />
+                      <button onClick={() => setEditingProfile(false)}
+                        style={{ alignSelf: 'flex-start', padding: '6px 16px', borderRadius: '6px', border: 'none', background: C.primary, color: '#fff', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                        Save
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '600', marginBottom: '4px', color: C.text }}>
+                        {profileName}
+                        <button onClick={() => setEditingProfile(true)}
+                          style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: '6px', padding: '3px 10px', fontSize: '11px', fontWeight: 600, color: C.textMuted, cursor: 'pointer' }}>
+                          Edit
+                        </button>
+                      </div>
+                      <div style={{ color: C.textSecondary, fontSize: isMobile ? '12px' : '14px', lineHeight: '1.5', whiteSpace: 'pre-line' }}>
+                        {profileBio}
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 {/* Barter signal badge — read-only on profile, editable in Settings */}
@@ -1682,7 +1930,10 @@ export default function InstagramDemoPage() {
                               <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '22px', height: '22px', borderRadius: '5px', background: badgeColor, color: '#fff', fontSize: '8px', fontWeight: 700, flexShrink: 0 }}>{abbr}</span>
                               <div style={{ textAlign: 'left' }}>
                                 <div style={{ fontSize: '13px', fontWeight: 600, color: isActive ? C.text : C.textSecondary }}>{profession}</div>
-                                <div style={{ fontSize: '10px', color: C.textMuted, textTransform: 'uppercase' }}>{SLOT_LABELS[slot]}</div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <span style={{ fontSize: '10px', color: C.textMuted, textTransform: 'uppercase' }}>{SLOT_LABELS[slot]}</span>
+                                  <span style={{ fontSize: '9px', fontWeight: 700, color: badgeColor, background: `${badgeColor}15`, padding: '1px 5px', borderRadius: '3px' }}>Lv.{getSkinLevel(profession)}</span>
+                                </div>
                               </div>
                             </button>
                           );
@@ -2543,7 +2794,9 @@ export default function InstagramDemoPage() {
                             />
                             <div style={{ flex: 1 }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <span style={{ fontWeight: 700, fontSize: '14px' }}>{creator.name}</span>
+                                <span onClick={e => { e.stopPropagation(); setPreviewCreator(creator); }} style={{ fontWeight: 700, fontSize: '14px', cursor: 'pointer' }}
+                                  onMouseEnter={e => { e.currentTarget.style.textDecoration = 'underline'; }}
+                                  onMouseLeave={e => { e.currentTarget.style.textDecoration = 'none'; }}>{creator.name}</span>
                                 <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '20px', height: '20px', borderRadius: '4px', background: badgeColor, color: '#fff', fontSize: '7px', fontWeight: 700 }}>{abbr}</span>
                                 {creator.featured && <span style={{ fontSize: '10px', fontWeight: 700, color: C.primary, background: `${C.primary}15`, padding: '2px 6px', borderRadius: '4px' }}>TOP MATCH</span>}
                                 {creator.willingToBarter && <span style={{ fontSize: '10px', fontWeight: 700, color: C.textSecondary, background: C.surfaceAlt, padding: '2px 6px', borderRadius: '4px' }}>OPEN TO BARTER</span>}
@@ -3278,7 +3531,7 @@ export default function InstagramDemoPage() {
                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px', flexShrink: 0 }}>
                                   <span style={{ fontSize: '11px', color: C.textMuted }}>{ch.lastMessage.time}</span>
                                   {!joined && (
-                                    <button onClick={e => { e.stopPropagation(); setJoinedCommunities([...joinedCommunities, ch.id]); }}
+                                    <button onClick={e => { e.stopPropagation(); setJoinedCommunities([...joinedCommunities, ch.id]); if (ch.requiredSkin) addSkinXP(ch.requiredSkin, 25); }}
                                       style={{ padding: '4px 12px', borderRadius: '6px', border: 'none', background: C.primary, color: '#fff', fontSize: '11px', fontWeight: 600, cursor: 'pointer' }}>
                                       Join
                                     </button>
@@ -3364,41 +3617,29 @@ export default function InstagramDemoPage() {
                 <>
                   {/* DM Chat View — exact Instagram DM UI */}
                   {(() => {
-                    const dms: Record<number, { name: string; handle: string; avatar: string; online: boolean; messages: { id: number; sender: 'me' | 'them'; text: string; time: string }[] }> = {
-                      1: { name: 'Alex Rivera', handle: '@alex_codes', avatar: 'AR', online: true, messages: [
-                        { id: 1, sender: 'them', text: 'Hey, saw your latest post. Really cool work on the API design!', time: '10:23 AM' },
-                        { id: 2, sender: 'me', text: 'Thanks! Spent a while getting the pagination right', time: '10:25 AM' },
-                        { id: 3, sender: 'them', text: 'The cursor-based approach is solid. We switched to that too last quarter', time: '10:26 AM' },
-                        { id: 4, sender: 'me', text: 'Yeah offset pagination just falls apart at scale', time: '10:28 AM' },
-                      ]},
-                      2: { name: 'Priya Singh', handle: '@priya_builds', avatar: 'PS', online: false, messages: [
-                        { id: 1, sender: 'me', text: 'Hey Priya! How did the interview go?', time: '9:15 AM' },
-                        { id: 2, sender: 'them', text: 'Thanks for the referral! Got the interview.', time: '9:45 AM' },
-                        { id: 3, sender: 'them', text: 'System design round went really well. They liked my approach to the notification service', time: '9:46 AM' },
-                      ]},
-                      3: { name: 'Marcus Tran', handle: '@ml_marcus', avatar: 'MT', online: true, messages: [
-                        { id: 1, sender: 'them', text: 'Working on a new RAG pipeline. Want to see the architecture?', time: 'Yesterday' },
-                        { id: 2, sender: 'me', text: 'Definitely, send it over', time: 'Yesterday' },
-                        { id: 3, sender: 'them', text: 'Sent you the architecture diagram', time: '11:30 AM' },
-                      ]},
-                      4: { name: 'Sarah Kim', handle: '@sarahk_data', avatar: 'SK', online: false, messages: [
-                        { id: 1, sender: 'them', text: 'Can we sync on the dataset tomorrow?', time: '2:00 PM' },
-                      ]},
-                      5: { name: 'Jordan Blake', handle: '@jblake_ops', avatar: 'JB', online: false, messages: [
-                        { id: 1, sender: 'them', text: 'Found the issue — misconfigured env var in staging', time: '8:30 AM' },
-                        { id: 2, sender: 'me', text: 'Nice catch. Push when ready', time: '8:45 AM' },
-                        { id: 3, sender: 'them', text: 'Pipeline is green now. Pushed the fix.', time: '9:00 AM' },
-                      ]},
-                      6: { name: 'Elena Rodriguez', handle: '@elena_cooks', avatar: 'ER', online: false, messages: [
-                        { id: 1, sender: 'them', text: 'Recipe collab sounds great, let me know the details', time: 'Yesterday' },
-                      ]},
-                      7: { name: 'Tommy Nguyen', handle: '@tommy_ai', avatar: 'TN', online: true, messages: [
-                        { id: 1, sender: 'them', text: 'Check out this paper on multimodal embeddings', time: '2 days ago' },
-                        { id: 2, sender: 'me', text: 'Looks interesting, will read tonight', time: '2 days ago' },
-                      ]},
+                    const dmMeta: Record<number, { name: string; handle: string; avatar: string; online: boolean }> = {
+                      1: { name: 'Alex Rivera', handle: '@alex_codes', avatar: 'AR', online: true },
+                      2: { name: 'Priya Singh', handle: '@priya_builds', avatar: 'PS', online: false },
+                      3: { name: 'Marcus Tran', handle: '@ml_marcus', avatar: 'MT', online: true },
+                      4: { name: 'Sarah Kim', handle: '@sarahk_data', avatar: 'SK', online: false },
+                      5: { name: 'Jordan Blake', handle: '@jblake_ops', avatar: 'JB', online: false },
+                      6: { name: 'Elena Rodriguez', handle: '@elena_cooks', avatar: 'ER', online: false },
+                      7: { name: 'Tommy Nguyen', handle: '@tommy_ai', avatar: 'TN', online: true },
                     };
-                    const dm = dms[activeDmId];
-                    if (!dm) return null;
+                    const meta = dmMeta[activeDmId];
+                    const msgs = dmMessages[activeDmId] || [];
+                    if (!meta) return null;
+                    const sendDm = () => {
+                      if (!dmInput.trim()) return;
+                      const now = new Date();
+                      const timeStr = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+                      const newMsg = { id: Date.now(), sender: 'me' as const, text: dmInput, time: timeStr };
+                      setDmMessages(prev => ({ ...prev, [activeDmId!]: [...(prev[activeDmId!] || []), newMsg] }));
+                      setDmInput('');
+                      // Small XP for engagement — first owned skin gets credit
+                      const firstSkin = ownedSkins[0];
+                      if (firstSkin) addSkinXP(firstSkin.profession, 2);
+                    };
                     return (
                       <>
                         {/* DM header */}
@@ -3408,19 +3649,19 @@ export default function InstagramDemoPage() {
                           </button>
                           <div style={{ position: 'relative' }}>
                             <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: C.surfaceAlt, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700, color: C.textMuted, border: `1px solid ${C.border}` }}>
-                              {dm.avatar}
+                              {meta.avatar}
                             </div>
-                            {dm.online && <div style={{ position: 'absolute', bottom: 0, right: 0, width: '10px', height: '10px', borderRadius: '50%', background: C.success, border: `2px solid ${C.surface}` }} />}
+                            {meta.online && <div style={{ position: 'absolute', bottom: 0, right: 0, width: '10px', height: '10px', borderRadius: '50%', background: C.success, border: `2px solid ${C.surface}` }} />}
                           </div>
                           <div>
-                            <div style={{ fontSize: '14px', fontWeight: 600, color: C.text }}>{dm.name}</div>
-                            <div style={{ fontSize: '11px', color: dm.online ? C.success : C.textMuted }}>{dm.online ? 'Active now' : dm.handle}</div>
+                            <div style={{ fontSize: '14px', fontWeight: 600, color: C.text }}>{meta.name}</div>
+                            <div style={{ fontSize: '11px', color: meta.online ? C.success : C.textMuted }}>{meta.online ? 'Active now' : meta.handle}</div>
                           </div>
                         </div>
 
                         {/* Messages */}
                         <div style={{ flex: 1, padding: '16px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                          {dm.messages.map(msg => (
+                          {msgs.map(msg => (
                             <div key={msg.id} style={{ display: 'flex', justifyContent: msg.sender === 'me' ? 'flex-end' : 'flex-start' }}>
                               <div style={{
                                 maxWidth: '75%', padding: '10px 14px', borderRadius: msg.sender === 'me' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
@@ -3439,8 +3680,9 @@ export default function InstagramDemoPage() {
                         {/* Input */}
                         <div style={{ padding: '10px 16px', borderTop: `1px solid ${C.border}`, display: 'flex', gap: '8px', alignItems: 'center' }}>
                           <input type="text" value={dmInput} onChange={e => setDmInput(e.target.value)} placeholder="Message..."
+                            onKeyDown={e => { if (e.key === 'Enter') sendDm(); }}
                             style={{ flex: 1, padding: '10px 14px', borderRadius: '22px', border: `1px solid ${C.border}`, background: C.surface, color: C.text, fontSize: '14px', outline: 'none' }} />
-                          <button style={{ width: '36px', height: '36px', borderRadius: '50%', border: 'none', background: dmInput.trim() ? C.primary : C.surfaceAlt, color: dmInput.trim() ? '#fff' : C.textMuted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}>
+                          <button onClick={sendDm} style={{ width: '36px', height: '36px', borderRadius: '50%', border: 'none', background: dmInput.trim() ? C.primary : C.surfaceAlt, color: dmInput.trim() ? '#fff' : C.textMuted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}>
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                           </button>
                         </div>
@@ -3479,7 +3721,7 @@ export default function InstagramDemoPage() {
 
                         {/* Messages */}
                         <div style={{ flex: 1, padding: '12px 16px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                          {channel.messages.map(msg => (
+                          {(communityMessages[channel.id] || channel.messages).map(msg => (
                             <div key={msg.id} style={{ display: 'flex', gap: '10px' }}>
                               <div style={{ width: '32px', height: '32px', minWidth: '32px', borderRadius: '50%', background: C.surfaceAlt, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 700, color: C.textMuted, border: `1px solid ${C.border}` }}>
                                 {msg.author.slice(0, 2).toUpperCase()}
@@ -3496,13 +3738,30 @@ export default function InstagramDemoPage() {
                         </div>
 
                         {/* Input */}
-                        <div style={{ padding: '10px 16px', borderTop: `1px solid ${C.border}`, display: 'flex', gap: '8px', alignItems: 'center' }}>
-                          <input type="text" value={dmInput} onChange={e => setDmInput(e.target.value)} placeholder="Message..."
-                            style={{ flex: 1, padding: '10px 14px', borderRadius: '22px', border: `1px solid ${C.border}`, background: C.surface, color: C.text, fontSize: '14px', outline: 'none' }} />
-                          <button style={{ width: '36px', height: '36px', borderRadius: '50%', border: 'none', background: dmInput.trim() ? C.primary : C.surfaceAlt, color: dmInput.trim() ? '#fff' : C.textMuted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}>
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                          </button>
-                        </div>
+                        {(() => {
+                          const sendCommunityMsg = () => {
+                            if (!dmInput.trim()) return;
+                            const now = new Date();
+                            const timeStr = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+                            const newMsg = { id: Date.now(), author: profileName, handle: '@you', text: dmInput, time: timeStr };
+                            setCommunityMessages(prev => ({
+                              ...prev,
+                              [channel.id]: [...(prev[channel.id] || channel.messages), newMsg],
+                            }));
+                            setDmInput('');
+                            if (channel.requiredSkin) addSkinXP(channel.requiredSkin, 5);
+                          };
+                          return (
+                            <div style={{ padding: '10px 16px', borderTop: `1px solid ${C.border}`, display: 'flex', gap: '8px', alignItems: 'center' }}>
+                              <input type="text" value={dmInput} onChange={e => setDmInput(e.target.value)} placeholder="Message..."
+                                onKeyDown={e => { if (e.key === 'Enter') sendCommunityMsg(); }}
+                                style={{ flex: 1, padding: '10px 14px', borderRadius: '22px', border: `1px solid ${C.border}`, background: C.surface, color: C.text, fontSize: '14px', outline: 'none' }} />
+                              <button onClick={sendCommunityMsg} style={{ width: '36px', height: '36px', borderRadius: '50%', border: 'none', background: dmInput.trim() ? C.primary : C.surfaceAlt, color: dmInput.trim() ? '#fff' : C.textMuted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                              </button>
+                            </div>
+                          );
+                        })()}
                       </>
                     );
                   })()}
@@ -4041,6 +4300,228 @@ export default function InstagramDemoPage() {
               )}
 
             </>
+          )}
+
+          {/* ── NOTIFICATIONS VIEW ────────────────────────────── */}
+          {activeView === 'notifications' && (
+            <>
+              <div style={{ height: '60px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', paddingLeft: '20px', fontWeight: 'bold', fontSize: '16px', background: C.surface }}>
+                Notifications
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                {notifications.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '60px 20px', color: C.textMuted }}>
+                    <div style={{ fontSize: '14px', marginBottom: '4px' }}>No notifications yet</div>
+                    <div style={{ fontSize: '12px' }}>Activity from deals, communities, and skins will appear here</div>
+                  </div>
+                ) : (
+                  notifications.map(n => {
+                    const iconMap: Record<string, { bg: string; color: string; label: string }> = {
+                      deal: { bg: 'rgba(0,102,204,0.08)', color: C.primary, label: 'DEAL' },
+                      community: { bg: 'rgba(139,92,246,0.08)', color: '#8B5CF6', label: 'COMMUNITY' },
+                      skin: { bg: 'rgba(16,185,129,0.08)', color: '#10B981', label: 'SKIN' },
+                      system: { bg: 'rgba(100,100,100,0.08)', color: C.textSecondary, label: 'SYSTEM' },
+                    };
+                    const icon = iconMap[n.type] || iconMap.system;
+                    return (
+                      <div key={n.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '14px 16px', borderBottom: `1px solid ${C.border}`, background: n.read ? 'transparent' : 'rgba(0,102,204,0.03)' }}>
+                        <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: icon.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <span style={{ fontSize: '9px', fontWeight: 700, color: icon.color }}>{icon.label.slice(0, 2)}</span>
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: '13px', color: C.text, lineHeight: 1.45, fontWeight: n.read ? 400 : 500 }}>{n.text}</div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                            <span style={{ fontSize: '11px', color: C.textMuted }}>{n.time}</span>
+                            <span style={{ fontSize: '9px', fontWeight: 700, color: icon.color, background: icon.bg, padding: '1px 6px', borderRadius: '4px' }}>{icon.label}</span>
+                          </div>
+                        </div>
+                        {!n.read && <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: C.primary, flexShrink: 0, marginTop: '6px' }} />}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </>
+          )}
+
+          {/* ── EXPLORE VIEW ──────────────────────────────────── */}
+          {activeView === 'explore' && (
+            <>
+              <div style={{ height: '60px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', paddingLeft: '20px', fontWeight: 'bold', fontSize: '16px', background: C.surface }}>
+                Explore
+              </div>
+              {/* Tabs */}
+              <div style={{ display: 'flex', borderBottom: `1px solid ${C.border}` }}>
+                {(['trending', 'skins', 'creators'] as const).map(tab => (
+                  <button key={tab} onClick={() => setExploreTab(tab)}
+                    style={{ flex: 1, padding: '12px 0', fontSize: '13px', fontWeight: exploreTab === tab ? 700 : 500,
+                      color: exploreTab === tab ? C.text : C.textMuted, background: 'none', border: 'none',
+                      borderBottom: exploreTab === tab ? `2px solid ${C.primary}` : '2px solid transparent',
+                      cursor: 'pointer', transition: 'all 0.15s', textTransform: 'capitalize' }}>
+                    {tab}
+                  </button>
+                ))}
+              </div>
+              <div style={{ padding: '16px' }}>
+                {exploreTab === 'trending' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {[
+                      { title: 'AI-Powered Content Creation', desc: 'Creators using AI tools are seeing 3x engagement growth', tag: 'Technology', views: '24K' },
+                      { title: 'Fitness Creators Dominating Reels', desc: 'Short-form workout content up 180% this quarter', tag: 'Sports', views: '18K' },
+                      { title: 'Brand Deals Going Long-Term', desc: 'Ambassador programs replace one-off sponsorships', tag: 'Business', views: '12K' },
+                      { title: 'Design Portfolios on Instagram', desc: 'UX designers showcase work through carousel posts', tag: 'Art & Design', views: '9K' },
+                      { title: 'Finance Creators Hit Mainstream', desc: 'Budgeting and investing content reaches Gen Z', tag: 'Finance', views: '15K' },
+                    ].map((item, i) => (
+                      <div key={i} style={{ background: C.card, borderRadius: '10px', padding: '14px', border: `1px solid ${C.border}` }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
+                          <span style={{ fontSize: '14px', fontWeight: 600, color: C.text }}>{item.title}</span>
+                          <span style={{ fontSize: '10px', color: C.textMuted, flexShrink: 0 }}>{item.views} views</span>
+                        </div>
+                        <div style={{ fontSize: '12px', color: C.textSecondary, lineHeight: 1.4, marginBottom: '8px' }}>{item.desc}</div>
+                        <span style={{ fontSize: '10px', fontWeight: 700, color: C.primary, background: `${C.primary}10`, padding: '2px 8px', borderRadius: '4px' }}>{item.tag}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {exploreTab === 'skins' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ fontSize: '12px', color: C.textMuted, marginBottom: '4px' }}>Popular ValueSkins this week</div>
+                    {Object.entries(PROFESSION_BADGES).slice(0, 12).map(([name, badge]) => (
+                      <div key={name} onClick={() => setActiveView('store')}
+                        style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px', background: C.card, borderRadius: '8px', border: `1px solid ${C.border}`, cursor: 'pointer', transition: 'border-color 0.15s' }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = badge.color; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; }}>
+                        {badge.stickerImage ? (
+                          <img src={badge.stickerImage} alt={name} style={{ width: '36px', height: '36px', objectFit: 'contain' }} />
+                        ) : (
+                          <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: `${badge.color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 700, color: badge.color }}>{badge.abbreviation}</div>
+                        )}
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: '13px', fontWeight: 600, color: C.text }}>{name}</div>
+                          <div style={{ fontSize: '11px', color: C.textMuted }}>Level 1-5 available</div>
+                        </div>
+                        <div style={{ fontSize: '11px', color: C.primary, fontWeight: 600 }}>View</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {exploreTab === 'creators' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div style={{ fontSize: '12px', color: C.textMuted, marginBottom: '4px' }}>Top creators by engagement</div>
+                    {BRAND_MARKETPLACE_CREATORS.map((c, i) => {
+                      return (
+                        <div key={i} onClick={() => setPreviewCreator(c)}
+                          style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: C.card, borderRadius: '10px', border: `1px solid ${C.border}`, cursor: 'pointer', transition: 'border-color 0.15s' }}
+                          onMouseEnter={e => { e.currentTarget.style.borderColor = C.primary; }}
+                          onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; }}>
+                          <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${c.name.replace(/\s/g, '')}`} alt={c.name} style={{ width: '44px', height: '44px', borderRadius: '50%', background: C.surfaceAlt }} />
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: '14px', fontWeight: 600, color: C.text }}>{c.name}</div>
+                            <div style={{ fontSize: '11px', color: C.textSecondary }}>{c.handle} · {c.valueSkin}</div>
+                          </div>
+                          <div style={{ textAlign: 'right' }}>
+                            <div style={{ fontSize: '13px', fontWeight: 700, color: C.text }}>{c.followers}</div>
+                            <div style={{ fontSize: '10px', color: C.success }}>{c.engagement} eng</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* ── CREATOR PREVIEW MODAL ──────────────────────────── */}
+          {previewCreator && (
+            <Modal onClose={() => setPreviewCreator(null)}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {/* Header */}
+                <div style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
+                  <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${previewCreator.name.replace(/\s/g, '')}`} alt={previewCreator.name}
+                    style={{ width: '56px', height: '56px', borderRadius: '50%', background: C.surfaceAlt }} />
+                  <div>
+                    <div style={{ fontSize: '16px', fontWeight: 700, color: C.text }}>{previewCreator.name}</div>
+                    <div style={{ fontSize: '13px', color: C.textSecondary }}>{previewCreator.handle}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
+                      {(() => {
+                        const badge = PROFESSION_BADGES[previewCreator.valueSkin];
+                        return badge?.stickerImage ? (
+                          <img src={badge.stickerImage} alt={previewCreator.valueSkin} style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
+                        ) : (
+                          <div style={{ width: '20px', height: '20px', borderRadius: '4px', background: (badge?.color ?? C.primary), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '7px', fontWeight: 700, color: '#fff' }}>{badge?.abbreviation ?? '?'}</div>
+                        );
+                      })()}
+                      <span style={{ fontSize: '12px', fontWeight: 600, color: C.primary }}>{previewCreator.valueSkin}</span>
+                    </div>
+                  </div>
+                </div>
+                {/* Stats */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
+                  {[
+                    { label: 'Followers', value: previewCreator.followers },
+                    { label: 'Engagement', value: previewCreator.engagement },
+                    { label: 'Match', value: previewCreator.matchScore },
+                  ].map(s => (
+                    <div key={s.label} style={{ textAlign: 'center', padding: '10px', background: C.surfaceAlt, borderRadius: '8px' }}>
+                      <div style={{ fontSize: '16px', fontWeight: 700, color: C.text }}>{s.value}</div>
+                      <div style={{ fontSize: '10px', color: C.textMuted, textTransform: 'uppercase', fontWeight: 600 }}>{s.label}</div>
+                    </div>
+                  ))}
+                </div>
+                {/* Details */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Details</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', fontSize: '12px' }}>
+                    <div style={{ color: C.textMuted }}>Rate</div><div style={{ color: C.text, fontWeight: 600 }}>{previewCreator.rate}</div>
+                    <div style={{ color: C.textMuted }}>Timezone</div><div style={{ color: C.text }}>{previewCreator.timezone}</div>
+                    <div style={{ color: C.textMuted }}>Response</div><div style={{ color: C.text }}>Within {previewCreator.responseTimeHrs}h</div>
+                    <div style={{ color: C.textMuted }}>Min Deal</div><div style={{ color: C.text }}>${previewCreator.minDealUsd.toLocaleString()}</div>
+                    <div style={{ color: C.textMuted }}>Audience</div><div style={{ color: C.text }}>{previewCreator.audienceAgeRange}, {previewCreator.audienceLocation}</div>
+                    <div style={{ color: C.textMuted }}>Language</div><div style={{ color: C.text }}>{previewCreator.audienceLang}</div>
+                    <div style={{ color: C.textMuted }}>Available</div><div style={{ color: previewCreator.availableFrom === 'Now' ? C.success : C.text, fontWeight: 600 }}>{previewCreator.availableFrom}</div>
+                    <div style={{ color: C.textMuted }}>Completion</div><div style={{ color: C.text }}>{previewCreator.dealCompletionRate}%</div>
+                  </div>
+                </div>
+                {/* Deal types */}
+                <div>
+                  <div style={{ fontSize: '12px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Accepts</div>
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    {previewCreator.dealTypes.map(dt => (
+                      <span key={dt} style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '6px', background: C.surfaceAlt, color: C.textSecondary, border: `1px solid ${C.border}` }}>{dt}</span>
+                    ))}
+                    {previewCreator.ndaOk && <span style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '6px', background: 'rgba(139,92,246,0.08)', color: '#8B5CF6', border: '1px solid rgba(139,92,246,0.2)' }}>NDA</span>}
+                    {previewCreator.usageRightsOk && <span style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '6px', background: 'rgba(139,92,246,0.08)', color: '#8B5CF6', border: '1px solid rgba(139,92,246,0.2)' }}>Usage Rights ({previewCreator.usageRightsDays}d)</span>}
+                  </div>
+                </div>
+                {/* Rate card */}
+                <div>
+                  <div style={{ fontSize: '12px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Rate Card</div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    {Object.entries(previewCreator.rateCard).map(([fmt, price]) => (
+                      <div key={fmt} style={{ flex: 1, textAlign: 'center', padding: '8px', background: C.surfaceAlt, borderRadius: '8px' }}>
+                        <div style={{ fontSize: '14px', fontWeight: 700, color: C.text }}>{price}</div>
+                        <div style={{ fontSize: '10px', color: C.textMuted, textTransform: 'capitalize' }}>{fmt}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {/* Portfolio */}
+                {previewCreator.portfolio.length > 0 && (
+                  <div>
+                    <div style={{ fontSize: '12px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Portfolio</div>
+                    {previewCreator.portfolio.map((p, i) => (
+                      <div key={i} style={{ fontSize: '12px', color: C.textSecondary, padding: '6px 0', borderTop: i > 0 ? `1px solid ${C.border}` : 'none' }}>{p}</div>
+                    ))}
+                  </div>
+                )}
+                {/* Action */}
+                <button onClick={() => { setPreviewCreator(null); setActiveView('mim'); }}
+                  style={{ width: '100%', padding: '12px', borderRadius: '8px', border: 'none', background: C.primary, color: '#fff', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>
+                  Go to Marketplace
+                </button>
+              </div>
+            </Modal>
           )}
 
           {/* ── SETTINGS VIEW ────────────────────────────────── */}
@@ -5018,15 +5499,18 @@ export default function InstagramDemoPage() {
   );
 }
 
-function NavItem({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+function NavItem({ label, active, onClick, badgeCount }: { label: string; active: boolean; onClick: () => void; badgeCount?: number }) {
   return (
     <button
       onClick={onClick}
-      style={{ background: active ? 'rgba(0,102,204,0.1)' : 'transparent', border: 'none', borderRadius: '8px', padding: '10px 16px', color: active ? C.primary : C.textSecondary, fontWeight: active ? '600' : '500', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px', transition: 'all 0.15s', width: '100%', justifyContent: 'flex-start' }}
+      style={{ background: active ? 'rgba(0,102,204,0.1)' : 'transparent', border: 'none', borderRadius: '8px', padding: '10px 16px', color: active ? C.primary : C.textSecondary, fontWeight: active ? '600' : '500', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px', transition: 'all 0.15s', width: '100%', justifyContent: 'flex-start', position: 'relative' }}
       onMouseEnter={(e) => { if (!active) { e.currentTarget.style.color = C.text; e.currentTarget.style.background = C.surfaceAlt; } }}
       onMouseLeave={(e) => { if (!active) { e.currentTarget.style.color = C.textSecondary; e.currentTarget.style.background = 'transparent'; } }}
     >
       <span>{label}</span>
+      {badgeCount !== undefined && badgeCount > 0 && (
+        <span style={{ minWidth: '18px', height: '18px', borderRadius: '9px', background: C.danger, color: '#fff', fontSize: '10px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px' }}>{badgeCount}</span>
+      )}
     </button>
   );
 }
