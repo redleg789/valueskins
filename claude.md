@@ -19,7 +19,8 @@ Check which branch Vercel/CI deploys from (usually `main`). Push to BOTH `master
 - Dynamic route folders must use `[param]` not `\[param\]` (escaped brackets create broken paths)
 - Static page generation can fail even when types pass
 - API response types must match component state (`ApiResponse<T>` vs `T | null`)
-**Before every push:** run `npx tsc --noEmit` first, then if possible `cd frontend && npm run build`. If build can't run locally, at minimum grep for: `useSearchParams` without Suspense, `useRouter` in server components, missing `'use client'` directives. Never push and hope — verify locally first.
+- `useEffect` referencing state variables declared LATER in the component — `tsc --noEmit` allows this (hoisting) but `next build` enforces strict block-scoped ordering and fails with "used before its declaration". Always declare `useEffect` hooks AFTER all state variables they reference.
+**Before every push:** run `npx tsc --noEmit` first, then if possible `cd frontend && npm run build`. If build can't run locally, at minimum grep for: `useSearchParams` without Suspense, `useRouter` in server components, missing `'use client'` directives, and `useEffect` deps referencing later-declared state. Never push and hope — verify locally first.
 
 ### 5. Check for duplicate/escaped files after git operations
 After creating files with brackets (Next.js dynamic routes like `[id]`), verify no escaped duplicates exist (`\[id\]`). Run `ls` on the directory before committing.
@@ -947,3 +948,106 @@ Every deliverable must be **complete on first pass**. If you find 16 edge cases,
 
 ### 4. Hard rule: demo = production
 - User does NOT distinguish between demo and prod pages. Any UI fix must be applied uniformly across ALL pages containing the same pattern. Search the entire codebase before declaring done.
+
+### 5. Backend integration plumbing done — auth blocks everything
+- API proxy route added: `frontend/src/app/api/backend/[...path]/route.ts` — forwards all `/api/backend/*` requests to Rust backend (localhost:8080 or `BACKEND_URL` env var)
+- API client updated: browser requests route through proxy, SSR requests hit backend directly
+- Deal sync hook added: `frontend/src/lib/useDealSync.ts` — tries backend API first, falls back to localStorage. Handles deal rooms, messages, applications, campaigns.
+- Demo page wired to sync hook instead of raw localStorage
+- CSP updated to allow `http://localhost:8080` for dev
+- **Status**: Plumbing works but every API call returns 401 because there's no real auth. The sync hook silently falls back to localStorage every time.
+
+### 6. Gaps blocking end-to-end flow (prod readiness)
+- **Auth**: No real Instagram OAuth producing a JWT. Demo page uses fake login. Backend rejects all API calls without valid JWT. This is THE blocker — nothing else works until this does.
+- **Personas**: Backend needs real `persona_id` to open deal rooms. Demo page uses hardcoded creator profiles, not DB rows. Need: on first login, create persona + assign profession.
+- **Opportunities**: Marketplace shows hardcoded arrays per profession. Backend has `opportunities` table but nothing populates it. Need: seed data or brand campaign creation that writes to DB.
+- **Real-time messaging**: Chat uses localStorage. Backend has cursor-paginated messages endpoint (`GET /deal-rooms/{id}/messages?after_id=N`) but no polling or WebSocket to fetch new messages from the other party. Need: 3-5 second polling loop or WebSocket upgrade.
+- **Campaign creation on backend**: Brand creates campaigns in localStorage only. The `createOpportunity` API call fails without auth. Need: auth + real brand user in DB.
+- **Deal room lifecycle**: Backend supports full lifecycle (open -> offer -> counter -> accept -> escrow -> finalize) but demo page only simulates this client-side. Once auth works, wire each phase transition to the corresponding API call.
+- **Deployment**: Backend runs on localhost only. No public URL. Frontend on Vercel can't reach it. Need: deploy backend to Railway/Fly.io/EC2 and set `BACKEND_URL` env var.
+
+### 7. Backend services needed for platform adoption (prod readiness, later)
+When a platform like Meta adopts ValueSkins, the following backend services must exist and be production-grade:
+- **Creator discovery API**: `GET /creators?skin=X&level=Y&page=N` — returns paginated creators matching a ValueSkin, filtered by level, location, audience, rate. Currently hardcoded in frontend.
+- **Brand identity storage**: Backend table for brand ValuSkins (up to 3 per brand), with slot types (profession/passion/hobby) mirroring creator slots. Currently client-side state only.
+- **Brand profile metadata**: Industry, company size, campaign type, budget tier — stored per brand. Currently `brandProfileSelections` lives in React state.
+- **Campaign-to-skin linking**: Each campaign must be tied to a specific brand ValuSkin so creators see which skin the campaign was created under. Currently `brandProfession` field is set client-side.
+- **Match enforcement**: Server must enforce that a brand can only contact a creator if they share at least one ValuSkin. Currently UI-only gate.
+- **Skin purchase + inventory**: Backend must track which skins each user (creator or brand) owns, enforce max 3, handle purchases. Currently localStorage/state only.
+- **Settings persistence**: All settings (barter toggle, availability dates, deal preferences, rate card, etc.) must persist to backend. Currently UI-only.
+- **Notification service**: When a brand creates a campaign or sends a proposal, matching creators should be notified. No notification system exists.
+- **Analytics service**: Campaign performance (views, applications, deal completion rate) — no tracking exists.
+- **Search indexing**: Full-text search across creators by name, handle, bio, skills. Currently client-side string matching on hardcoded array.
+
+---
+
+## Zero Vibe-Code Fingerprints — Mandatory
+
+The product must look, feel, and read like it was built by a senior engineering team at a real company. No one should ever suspect AI involvement. Every rule below is non-negotiable.
+
+### 1. No emojis anywhere in the product UI
+- No emojis in buttons, labels, badges, toasts, modals, tooltips, error messages, placeholder text, or any user-facing string
+- Use SVG icons or plain text instead. "Locked" not "🔒 Locked". "Delete" not "🗑️ Delete". "Verified" not "✓ VERIFIED"
+- Checkmarks use SVG or CSS, not Unicode characters like ✓ ✓✓ ★ ○
+- The ONLY exception: user-generated content (chat messages typed by users). The app itself never uses emojis.
+
+### 2. No generic placeholder copy
+- Never use filler text like "Check back soon", "Coming soon", "Stay tuned", "More features on the way"
+- Never use exclamation marks in system text. "Settings saved" not "Settings saved!"
+- Never use casual phrasing like "Hey!", "Awesome!", "Looks good!", "Oops!", "Uh oh"
+- Error messages must be specific and actionable: "Upload failed: file exceeds 50MB limit" not "Something went wrong"
+- Empty states describe what the user can do, not that something is missing
+
+### 3. No AI-signature patterns in code
+- No `Co-Authored-By` lines in commits (remove from commit templates)
+- No comments like `// AI-generated`, `// Claude`, `// GPT`
+- No overly verbose JSDoc on obvious functions. Don't document `getName()` with "Gets the name"
+- No comments that narrate what the next line does: `// Set the state to true` before `setState(true)`
+- Comments explain WHY, never WHAT
+
+### 4. No demo-quality naming
+- No variables named `mock`, `fake`, `dummy`, `test`, `sample`, `example`, `placeholder`, `temp`, `todo` in production code
+- No component names with `Demo` prefix in production paths
+- No `MOCK_DATA`, `SAMPLE_USERS`, `FAKE_REVIEWS` constants that render in the UI
+- Constants for seed/demo data must be named as what they represent: `DEFAULT_COMMUNITIES`, `INITIAL_REPUTATION`
+
+### 5. No template/boilerplate tells
+- No "Lorem ipsum" or "Acme Corp" or "John Doe" in any rendered content
+- No `TODO`, `FIXME`, `HACK`, `XXX` comments in shipped code
+- No commented-out code blocks (delete dead code, don't comment it)
+- No unused imports left behind
+- No `console.log` statements in production (use structured logging)
+
+### 6. No over-engineered naming that screams generated code
+- Don't prefix everything with the product name: `ValueSkinsUserProfileSettingsContainer` — just `ProfileSettings`
+- Don't create abstractions for one-time use: no `GenericModalWrapper` used once
+- Function names match what humans would write: `saveSettings` not `handleSettingsPersistenceOperationAsync`
+- File names are short: `api.ts` not `apiClientServiceLayerModule.ts`
+
+### 7. UI must look intentional, not generated
+- No perfectly symmetrical layouts with identical spacing everywhere — real designers use visual hierarchy
+- No walls of identical-looking cards with no visual differentiation
+- Interactive elements must have hover states, active states, and focus states
+- Disabled elements must look disabled (opacity, cursor change, muted colors)
+- No raw hex colors scattered everywhere — use the color constants (C.primary, C.text, etc.)
+- Loading states must exist for every async operation — no content popping in
+- Transitions and animations must be subtle (0.15-0.2s), not flashy
+
+### 8. No structural tells
+- Inline styles are acceptable for this codebase but must look considered, not generated
+- No 200+ character single-line style objects — break them up if they get long
+- No identical error handling copy-pasted across 10 components
+- No God components over 500 lines — split into logical sub-components when it makes sense
+- No prop drilling through 5+ levels — use context or composition
+
+### 9. Copy and microcopy must sound human
+- Button labels: "Save" not "Submit Form Data". "Cancel" not "Dismiss Dialog"
+- Toasts: "Settings updated" not "Your settings have been successfully saved to the database"
+- Labels: "Email" not "Email Address Input Field"
+- Keep all user-facing text concise. If it can be said in 3 words, don't use 12.
+
+### 10. Git history must look human
+- Commit messages: lowercase, imperative mood, short: "fix counter-offer lock in deal room"
+- No commits that touch 40 files with message "update code"
+- No rapid-fire commits within 30 seconds of each other
+- Branch names: `fix/deal-room-lock`, `feat/skin-showcase` — not `update-1`, `changes-2`
