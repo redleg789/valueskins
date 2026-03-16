@@ -340,55 +340,43 @@ const DEFAULT_OPPORTUNITIES: Opportunity[] = [
 
 const SLOTS: ValueSkinSlot[] = ['profession', 'passion', 'hobby'];
 
-const MOCK_COMMUNITIES = [
+// Channels — skin-gated group DMs. These appear alongside regular DMs with a ValueSkin badge.
+const CHANNELS: { id: number; name: string; avatarColor: string; avatarAbbr: string; description: string; visibility: 'public' | 'private'; gateType: 'any_valueskin' | 'specific'; requiredSkin: string | null; allowedProfessions: string[]; memberCount: number; lastMessage: { author: string; text: string; time: string }; messages: { id: number; author: string; handle: string; text: string; time: string }[] }[] = [
   {
     id: 0, name: 'SWE Underground', avatarColor: '#0066CC', avatarAbbr: 'SWE',
-    description: 'A private space for software engineers to share side projects, job referrals, and raw opinions without the LinkedIn polish.',
-    visibility: 'public' as const, gateType: 'specific' as const, requiredTier: 'community' as const,
+    description: 'Side projects, job referrals, and raw opinions without the LinkedIn polish.',
+    visibility: 'public', gateType: 'specific', requiredSkin: 'Software Engineer',
     allowedProfessions: ['Software Engineer', 'DevOps Engineer', 'AI/ML Specialist'],
-    acceptedLevels: [1, 2, 3, 4, 5] as number[],
-    memberCount: 2847, postCount: 1203,
-    posts: [
-      { id: 0, author: 'Alex R.', handle: '@alex_codes', profession: 'Software Engineer', content: 'Hot take: Rust > Go for anything that matters. Fight me.', likes: 312, pinned: false, announcement: false, time: '2h' },
-      { id: 1, author: 'Priya S.', handle: '@priya_builds', profession: 'DevOps Engineer', content: '[Pinned] Monthly hiring board is live — drop your referral links below.', likes: 89, pinned: true, announcement: true, time: '1d' },
-      { id: 2, author: 'Marcus T.', handle: '@ml_marcus', profession: 'AI/ML Specialist', content: 'Just shipped a RAG pipeline that cut hallucination rate by 60%. Happy to share the architecture.', likes: 441, pinned: false, announcement: false, time: '4h' },
-    ],
-    members: [
-      { name: 'Alex Rivera', handle: '@alex_codes', profession: 'Software Engineer', role: 'admin', reputationTier: 'senior' },
-      { name: 'Priya Singh', handle: '@priya_builds', profession: 'DevOps Engineer', role: 'member', reputationTier: 'member' },
-      { name: 'Marcus Tran', handle: '@ml_marcus', profession: 'AI/ML Specialist', role: 'member', reputationTier: 'member' },
+    memberCount: 2847,
+    lastMessage: { author: 'Alex R.', text: 'Rust > Go for anything that matters. Fight me.', time: '2h' },
+    messages: [
+      { id: 0, author: 'Marcus T.', handle: '@ml_marcus', text: 'Just shipped a RAG pipeline that cut hallucination rate by 60%. Happy to share the architecture.', time: '4h ago' },
+      { id: 1, author: 'Priya S.', handle: '@priya_builds', text: 'Monthly hiring board is live — drop your referral links below.', time: '3h ago' },
+      { id: 2, author: 'Alex R.', handle: '@alex_codes', text: 'Rust > Go for anything that matters. Fight me.', time: '2h ago' },
     ],
   },
   {
     id: 1, name: 'MD Lounge', avatarColor: '#00897B', avatarAbbr: 'MD',
-    description: 'Verified doctors and surgeons only. Clinical discussions, career advice, and the cases that keep you up at night.',
-    visibility: 'private' as const, gateType: 'specific' as const, requiredTier: 'marketplace' as const,
+    description: 'Verified doctors and surgeons only. Clinical discussions and career advice.',
+    visibility: 'private', gateType: 'specific', requiredSkin: 'Doctor',
     allowedProfessions: ['Doctor', 'Surgeon', 'Nurse'],
-    acceptedLevels: [3, 4, 5] as number[],
-    memberCount: 612, postCount: 389,
-    posts: [
-      { id: 3, author: 'Dr. Chen', handle: '@drchen', profession: 'Surgeon', content: 'Interesting presentation today — 34F with atypical chest pain. What would your differential be?', likes: 56, pinned: false, announcement: false, time: '3h' },
-      { id: 4, author: 'Admin', handle: '@md_lounge', profession: 'Doctor', content: '[Pinned] CME webinar this Friday at 6PM EST. Register in the link below.', likes: 128, pinned: true, announcement: true, time: '2d' },
-    ],
-    members: [
-      { name: 'Dr. Chen', handle: '@drchen', profession: 'Surgeon', role: 'admin', reputationTier: 'senior' },
-      { name: 'Dr. Williams', handle: '@drwilliams', profession: 'Doctor', role: 'member', reputationTier: 'member' },
+    memberCount: 612,
+    lastMessage: { author: 'Dr. Chen', text: '34F with atypical chest pain. What would your differential be?', time: '3h' },
+    messages: [
+      { id: 3, author: 'Dr. Chen', handle: '@drchen', text: 'Interesting presentation today — 34F with atypical chest pain. What would your differential be?', time: '3h ago' },
+      { id: 4, author: 'Dr. Williams', handle: '@drwilliams', text: 'CME webinar this Friday at 6PM EST. See you there.', time: '2d ago' },
     ],
   },
   {
     id: 2, name: 'Founders Corner', avatarColor: '#37474F', avatarAbbr: 'FC',
-    description: 'Any ValueSkin gets you in. This one is about grit, not credentials.',
-    visibility: 'public' as const, gateType: 'any_valueskin' as const, requiredTier: 'community' as const,
+    description: 'Any ValueSkin gets you in. About grit, not credentials.',
+    visibility: 'public', gateType: 'any_valueskin', requiredSkin: null,
     allowedProfessions: [],
-    acceptedLevels: [1, 2, 3, 4, 5] as number[],
-    memberCount: 5241, postCount: 4102,
-    posts: [
-      { id: 5, author: 'Sam K.', handle: '@samk_ceo', profession: 'CEO', content: 'Lesson from year 3: hire for mindset, train for skill. Churn dropped 40%.', likes: 901, pinned: false, announcement: false, time: '5h' },
-      { id: 6, author: 'Lin M.', handle: '@lin_builds', profession: 'Entrepreneur', content: 'We just crossed $1M ARR. Sharing the full breakdown next week. AMA.', likes: 2304, pinned: false, announcement: false, time: '1h' },
-    ],
-    members: [
-      { name: 'Sam K.', handle: '@samk_ceo', profession: 'CEO', role: 'owner', reputationTier: 'senior' },
-      { name: 'Lin M.', handle: '@lin_builds', profession: 'Entrepreneur', role: 'member', reputationTier: 'member' },
+    memberCount: 5241,
+    lastMessage: { author: 'Lin M.', text: 'We just crossed $1M ARR. Sharing the full breakdown next week.', time: '1h' },
+    messages: [
+      { id: 5, author: 'Sam K.', handle: '@samk_ceo', text: 'Lesson from year 3: hire for mindset, train for skill. Churn dropped 40%.', time: '5h ago' },
+      { id: 6, author: 'Lin M.', handle: '@lin_builds', text: 'We just crossed $1M ARR. Sharing the full breakdown next week. AMA.', time: '1h ago' },
     ],
   },
 ];
@@ -405,7 +393,7 @@ const MOCK_REPUTATION = {
 };
 
 export default function InstagramDemoPage() {
-  const [activeView, setActiveView] = useState<'profile' | 'mim' | 'store' | 'admin' | 'communities' | 'settings'>('profile');
+  const [activeView, setActiveView] = useState<'profile' | 'mim' | 'store' | 'admin' | 'channels' | 'settings'>('profile');
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -595,18 +583,14 @@ export default function InstagramDemoPage() {
   const [simulatedCounterAmount] = useState('4800');
 
   // Communities state
-  const [communitiesTab, setCommunitiesTab] = useState<'discover' | 'mine' | 'create'>('discover');
+  const [communitiesTab, setCommunitiesTab] = useState<'all' | 'channels' | 'deals' | 'create'>('all');
   const [activeCommunity, setActiveCommunity] = useState<number | null>(null);
-  const [communityInnerTab, setCommunityInnerTab] = useState<'feed' | 'members' | 'announcements'>('feed');
   const [joinedCommunities, setJoinedCommunities] = useState<number[]>([]);
   const [newCommName, setNewCommName] = useState('');
   const [newCommDesc, setNewCommDesc] = useState('');
   const [newCommVisibility, setNewCommVisibility] = useState<'public' | 'private'>('public');
   const [newCommGateType, setNewCommGateType] = useState<'any_valueskin' | 'specific'>('any_valueskin');
   const [newCommProfessions, setNewCommProfessions] = useState<string[]>([]);
-  const [newCommTier, setNewCommTier] = useState<'community' | 'marketplace'>('community');
-  const [newCommAcceptedLevels, setNewCommAcceptedLevels] = useState<number[]>([1, 2, 3, 4, 5]);
-  const [likedCommunityPosts, setLikedCommunityPosts] = useState<number[]>([]);
   // Admin pricing
   const [communityTierCredits, setCommunityTierCredits] = useState(0);
   const [marketplaceTierCredits, setMarketplaceTierCredits] = useState(100);
@@ -1145,7 +1129,7 @@ export default function InstagramDemoPage() {
             <NavItem label="Profile" active={activeView === 'profile'} onClick={() => setActiveView('profile')} />
             <div style={{ height: '1px', background: C.border, margin: '12px 0' }} />
             <NavItem label="Marketplace" active={activeView === 'mim'} onClick={() => { setMarketplaceRole('none'); setActiveView('mim'); }} />
-            <NavItem label="Communities" active={activeView === 'communities'} onClick={() => { setActiveCommunity(null); setActiveView('communities'); }} />
+            <NavItem label="Channels" active={activeView === 'channels'} onClick={() => { setActiveCommunity(null); setActiveView('channels'); }} />
             <NavItem label="Store" active={activeView === 'store'} onClick={() => setActiveView('store')} />
             <NavItem label="Settings" active={activeView === 'settings'} onClick={() => setActiveView('settings')} />
             <div style={{ height: '1px', background: C.border, margin: '12px 0' }} />
@@ -3174,504 +3158,278 @@ export default function InstagramDemoPage() {
           )}
 
           {/* ── ADMIN PANEL VIEW ────────────────────────────── */}
-          {/* ── COMMUNITIES VIEW ──────────────────────────────────── */}
-          {activeView === 'communities' && (
+          {/* ── CHANNELS VIEW — integrated DMs with ValueSkin-gated groups ── */}
+          {activeView === 'channels' && (
             <>
               {activeCommunity === null ? (
                 <>
-                  {/* Communities List View */}
-                  <div style={{ height: '60px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', paddingLeft: '20px', fontWeight: 'bold', fontSize: '16px', background: C.surface }}>
-                    Communities
+                  {/* Header */}
+                  <div style={{ height: '60px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: '20px', paddingRight: '16px', fontWeight: 'bold', fontSize: '16px', background: C.surface }}>
+                    Messages
+                    {hasValueSkin && (
+                      <button onClick={() => setCommunitiesTab('create')} style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: '6px', padding: '5px 10px', fontSize: '11px', color: C.textSecondary, cursor: 'pointer', fontWeight: 600 }}>
+                        New Channel
+                      </button>
+                    )}
                   </div>
 
-                  {/* Tabs: Discover | My Communities | Create */}
-                  <div style={{ display: 'flex', borderBottom: `1px solid ${C.border}` }}>
-                    {(['discover', 'mine', 'create'] as const).map(tab => (
-                      <div
+                  {/* Filter tabs — WhatsApp style */}
+                  <div style={{ display: 'flex', gap: '8px', padding: '12px 16px', borderBottom: `1px solid ${C.border}` }}>
+                    {(['all', 'channels', 'deals'] as const).map(tab => (
+                      <button
                         key={tab}
-                        onClick={() => setCommunitiesTab(tab)}
+                        onClick={() => setCommunitiesTab(tab as typeof communitiesTab)}
                         style={{
-                          flex: 1, textAlign: 'center', padding: '14px 0', fontSize: '14px',
-                          fontWeight: communitiesTab === tab ? '700' : '500',
+                          padding: '6px 14px', borderRadius: '16px', fontSize: '12px', fontWeight: 600,
+                          border: `1px solid ${communitiesTab === tab ? C.primary : C.border}`,
+                          background: communitiesTab === tab ? `${C.primary}15` : 'transparent',
                           color: communitiesTab === tab ? C.primary : C.textMuted,
-                          borderBottom: communitiesTab === tab ? `2px solid ${C.primary}` : '2px solid transparent',
                           cursor: 'pointer', transition: 'all 0.15s',
                         }}
                       >
-                        {tab === 'discover' ? 'Discover' : tab === 'mine' ? 'My Communities' : 'Create'}
-                      </div>
+                        {tab === 'all' ? 'All' : tab === 'channels' ? 'Channels' : 'Deals'}
+                      </button>
                     ))}
                   </div>
 
-                  <div style={{ padding: '16px' }}>
-                    {/* DISCOVER TAB — only show communities matching user's ValueSkins */}
-                    {communitiesTab === 'discover' && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        {(() => {
-                          const userProfessions = Object.values(valueSkins).filter(Boolean).map(s => s!.profession);
-                          const filtered = MOCK_COMMUNITIES.filter(comm =>
-                            comm.gateType === 'any_valueskin' ||
-                            comm.allowedProfessions.some(p => userProfessions.includes(p))
-                          );
-                          if (!hasValueSkin) return (
-                            <div style={{ textAlign: 'center', padding: '40px 20px', color: C.textMuted }}>
-                              <div style={{ fontSize: '14px', marginBottom: '8px' }}>Get a ValueSkin to discover communities</div>
-                              <div style={{ fontSize: '12px' }}>Communities are matched to your profession</div>
+                  <div style={{ padding: '8px 16px' }}>
+                    {/* Create channel form */}
+                    {communitiesTab === 'create' && (
+                      <div style={{ marginBottom: '16px' }}>
+                        {!hasValueSkin ? (
+                          <div style={{ textAlign: 'center', padding: '30px 20px', color: C.textMuted }}>
+                            <div style={{ fontSize: '13px', marginBottom: '12px' }}>You need a ValueSkin to create a channel</div>
+                            <button onClick={() => setActiveView('store')} style={{ padding: '8px 16px', borderRadius: '6px', border: 'none', background: C.primary, color: '#fff', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                              Go to Store
+                            </button>
+                          </div>
+                        ) : (
+                          <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: '10px', padding: '16px' }}>
+                            <div style={{ fontSize: '13px', fontWeight: 700, color: C.text, marginBottom: '14px' }}>Create Channel</div>
+                            <div style={{ marginBottom: '12px' }}>
+                              <input type="text" value={newCommName} onChange={e => setNewCommName(e.target.value)} placeholder="Channel name"
+                                style={{ width: '100%', padding: '9px 11px', borderRadius: '6px', border: `1px solid ${C.border}`, background: C.surface, color: C.text, fontSize: '12px', boxSizing: 'border-box' as const }} />
                             </div>
-                          );
-                          if (filtered.length === 0) return (
-                            <div style={{ textAlign: 'center', padding: '40px 20px', color: C.textMuted }}>
-                              <div style={{ fontSize: '14px', marginBottom: '8px' }}>No communities match your ValueSkins yet</div>
-                              <div style={{ fontSize: '12px' }}>Communities for {userProfessions.join(', ')} will appear here</div>
+                            <div style={{ marginBottom: '12px' }}>
+                              <textarea value={newCommDesc} onChange={e => setNewCommDesc(e.target.value)} placeholder="What is this channel about?" rows={2}
+                                style={{ width: '100%', padding: '9px 11px', borderRadius: '6px', border: `1px solid ${C.border}`, background: C.surface, color: C.text, fontSize: '12px', boxSizing: 'border-box' as const, fontFamily: 'inherit', resize: 'none' }} />
                             </div>
-                          );
-                          return filtered.map((comm) => {
-                          const canJoin = true;
-                          const alreadyJoined = joinedCommunities.includes(comm.id);
-
-                          return (
-                            <div
-                              key={comm.id}
-                              style={{
-                                padding: '14px', background: C.card, borderRadius: '10px',
-                                border: `1px solid ${C.border}`, display: 'flex', gap: '12px',
-                                cursor: 'pointer', transition: 'all 0.15s',
-                              }}
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.background = C.surfaceAlt;
-                                e.currentTarget.style.borderColor = C.borderLight;
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.background = C.card;
-                                e.currentTarget.style.borderColor = C.border;
-                              }}
-                            >
-                              {/* Avatar */}
-                              <div
-                                style={{
-                                  width: '44px', height: '44px', minWidth: '44px',
-                                  borderRadius: '8px', background: comm.avatarColor,
-                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                  color: '#fff', fontWeight: 700, fontSize: '12px',
-                                }}
-                              >
-                                {comm.avatarAbbr}
+                            {/* ValueSkin entry barrier */}
+                            <div style={{ marginBottom: '14px' }}>
+                              <div style={{ fontSize: '11px', fontWeight: 700, color: C.textMuted, marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Entry Barrier (ValueSkin required to join)</div>
+                              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                <button onClick={() => setNewCommGateType('any_valueskin')}
+                                  style={{ padding: '6px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, cursor: 'pointer',
+                                    border: `1px solid ${newCommGateType === 'any_valueskin' ? C.primary : C.border}`,
+                                    background: newCommGateType === 'any_valueskin' ? `${C.primary}15` : C.surface,
+                                    color: newCommGateType === 'any_valueskin' ? C.primary : C.textMuted }}>
+                                  Any ValueSkin
+                                </button>
+                                {ownedSkins.map(({ profession }) => (
+                                  <button key={profession} onClick={() => { setNewCommGateType('specific'); setNewCommProfessions([profession]); }}
+                                    style={{ padding: '6px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, cursor: 'pointer',
+                                      border: `1px solid ${newCommGateType === 'specific' && newCommProfessions.includes(profession) ? C.primary : C.border}`,
+                                      background: newCommGateType === 'specific' && newCommProfessions.includes(profession) ? `${C.primary}15` : C.surface,
+                                      color: newCommGateType === 'specific' && newCommProfessions.includes(profession) ? C.primary : C.textMuted }}>
+                                    {profession}
+                                  </button>
+                                ))}
                               </div>
+                              <div style={{ fontSize: '10px', color: C.textSecondary, marginTop: '6px' }}>Only people with matching ValueSkins can join this channel</div>
+                            </div>
+                            {/* Visibility */}
+                            <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
+                              {(['public', 'private'] as const).map(v => (
+                                <button key={v} onClick={() => setNewCommVisibility(v)}
+                                  style={{ flex: 1, padding: '7px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, cursor: 'pointer',
+                                    border: `1px solid ${newCommVisibility === v ? C.primary : C.border}`,
+                                    background: newCommVisibility === v ? `${C.primary}10` : C.surface,
+                                    color: newCommVisibility === v ? C.primary : C.text }}>
+                                  {v === 'public' ? 'Public' : 'Private'}
+                                </button>
+                              ))}
+                            </div>
+                            <button onClick={() => {
+                              if (newCommName.trim()) {
+                                setJoinedCommunities([...joinedCommunities, CHANNELS.length + joinedCommunities.length]);
+                                setNewCommName(''); setNewCommDesc('');
+                                setCommunitiesTab('channels' as typeof communitiesTab);
+                                setPurchaseToast('Channel created');
+                                setTimeout(() => setPurchaseToast(null), 3000);
+                              }
+                            }} style={{ width: '100%', padding: '9px', borderRadius: '6px', border: 'none', background: C.primary, color: '#fff', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                              Create
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
-                              {/* Info */}
+                    {/* Conversation list */}
+                    {communitiesTab !== 'create' && (() => {
+                      const userProfessions = Object.values(valueSkins).filter(Boolean).map(s => s!.profession);
+                      // Deal room DMs from active deals
+                      const dealDMs = Object.entries(dealStates).filter(([, d]) => d.phase !== 'brief').map(([key, deal]) => ({
+                        type: 'deal' as const,
+                        id: key,
+                        name: key.split(':')[1] || key,
+                        lastMsg: deal.chatMessages.length > 0 ? deal.chatMessages[deal.chatMessages.length - 1].text : 'Deal started',
+                        lastTime: deal.chatMessages.length > 0 ? deal.chatMessages[deal.chatMessages.length - 1].time : '',
+                        skin: key.split(':')[0],
+                        phase: deal.phase,
+                      }));
+                      // Channels matched to user's skins
+                      const matchedChannels = CHANNELS.filter(ch =>
+                        ch.gateType === 'any_valueskin' ? hasValueSkin :
+                        ch.allowedProfessions.some(p => userProfessions.includes(p))
+                      );
+                      const showChannels = communitiesTab === 'all' || communitiesTab === 'channels';
+                      const showDeals = communitiesTab === 'all' || communitiesTab === ('deals' as string);
+
+                      if (!hasValueSkin) return (
+                        <div style={{ textAlign: 'center', padding: '40px 20px', color: C.textMuted }}>
+                          <div style={{ fontSize: '13px', marginBottom: '6px' }}>Get a ValueSkin to see messages</div>
+                          <button onClick={() => setActiveView('store')} style={{ background: C.primary, border: 'none', borderRadius: '8px', color: '#fff', padding: '8px 20px', fontWeight: 600, fontSize: '12px', cursor: 'pointer', marginTop: '8px' }}>Go to Store</button>
+                        </div>
+                      );
+
+                      const items: React.ReactElement[] = [];
+
+                      // Channels section
+                      if (showChannels && matchedChannels.length > 0) {
+                        items.push(
+                          <div key="ch-label" style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.6px', padding: '8px 0 4px', marginTop: items.length > 0 ? '8px' : '0' }}>Channels</div>
+                        );
+                        matchedChannels.forEach(ch => {
+                          const joined = joinedCommunities.includes(ch.id);
+                          items.push(
+                            <div key={`ch-${ch.id}`}
+                              onClick={() => { if (joined) setActiveCommunity(ch.id); }}
+                              style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px', borderRadius: '8px', cursor: joined ? 'pointer' : 'default', transition: 'background 0.15s' }}
+                              onMouseEnter={e => { if (joined) e.currentTarget.style.background = C.surfaceAlt; }}
+                              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                            >
+                              <div style={{ width: '44px', height: '44px', minWidth: '44px', borderRadius: '10px', background: ch.avatarColor, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: '11px' }}>
+                                {ch.avatarAbbr}
+                              </div>
                               <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                                  <div style={{ fontSize: '14px', fontWeight: 600, color: C.text }}>{comm.name}</div>
-                                  <span style={{
-                                    fontSize: '9px', fontWeight: 600, color: C.textMuted,
-                                    background: C.surface, padding: '2px 6px', borderRadius: '4px',
-                                  }}>
-                                    {comm.visibility === 'public' ? 'Public' : 'Private'}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
+                                  <span style={{ fontSize: '13px', fontWeight: 600, color: C.text }}>{ch.name}</span>
+                                  <span style={{ fontSize: '9px', fontWeight: 600, color: C.primary, background: `${C.primary}15`, padding: '1px 5px', borderRadius: '4px' }}>
+                                    {ch.requiredSkin || 'Any Skin'}
                                   </span>
                                 </div>
-                                <div style={{ fontSize: '11px', color: C.textSecondary, marginBottom: '6px', lineHeight: 1.3 }}>
-                                  {comm.description.substring(0, 80)}...
-                                </div>
-                                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '6px' }}>
-                                  {comm.gateType === 'any_valueskin' ? (
-                                    <span style={{ fontSize: '10px', background: 'rgba(128,128,128,0.1)', color: C.textSecondary, padding: '2px 6px', borderRadius: '4px' }}>
-                                      Any ValueSkin
-                                    </span>
-                                  ) : (
-                                    comm.allowedProfessions.slice(0, 2).map((p, i) => (
-                                      <span key={i} style={{ fontSize: '10px', background: `${comm.avatarColor}20`, color: C.primary, padding: '2px 6px', borderRadius: '4px' }}>
-                                        {p.substring(0, 12)}
-                                      </span>
-                                    ))
-                                  )}
-                                  {comm.acceptedLevels && !(comm.acceptedLevels.length === 5 && comm.acceptedLevels.includes(1)) && (
-                                    <span style={{ fontSize: '10px', background: 'rgba(139,92,246,0.1)', color: C.textSecondary, padding: '2px 6px', borderRadius: '4px' }}>
-                                      L{Math.min(...comm.acceptedLevels)}{comm.acceptedLevels.length > 1 ? `–L${Math.max(...comm.acceptedLevels)}` : ''} required
-                                    </span>
-                                  )}
-                                </div>
-                                <div style={{ fontSize: '11px', color: C.textMuted }}>
-                                  {comm.memberCount.toLocaleString()} members · {comm.postCount.toLocaleString()} posts
+                                <div style={{ fontSize: '11px', color: C.textMuted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  {ch.lastMessage.author}: {ch.lastMessage.text}
                                 </div>
                               </div>
-
-                              {/* Action button */}
-                              <div style={{ flexShrink: 0 }}>
-                                {alreadyJoined ? (
-                                  <button
-                                    onClick={() => setActiveCommunity(comm.id)}
-                                    style={{
-                                      padding: '8px 14px', borderRadius: '6px', border: 'none',
-                                      background: C.primary, color: '#fff', fontSize: '12px', fontWeight: 600,
-                                      cursor: 'pointer', whiteSpace: 'nowrap',
-                                    }}
-                                  >
-                                    Open →
-                                  </button>
-                                ) : canJoin ? (
-                                  <button
-                                    onClick={() => { setJoinedCommunities([...joinedCommunities, comm.id]); }}
-                                    style={{
-                                      padding: '8px 14px', borderRadius: '6px', border: 'none',
-                                      background: '#2ecc71', color: '#fff', fontSize: '12px', fontWeight: 600,
-                                      cursor: 'pointer', whiteSpace: 'nowrap',
-                                    }}
-                                  >
+                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px', flexShrink: 0 }}>
+                                <span style={{ fontSize: '10px', color: C.textMuted }}>{ch.lastMessage.time}</span>
+                                {!joined && (
+                                  <button onClick={e => { e.stopPropagation(); setJoinedCommunities([...joinedCommunities, ch.id]); }}
+                                    style={{ padding: '3px 10px', borderRadius: '4px', border: 'none', background: C.primary, color: '#fff', fontSize: '10px', fontWeight: 600, cursor: 'pointer' }}>
                                     Join
                                   </button>
-                                ) : null}
+                                )}
+                                {joined && <span style={{ fontSize: '10px', color: C.textSecondary }}>{ch.memberCount.toLocaleString()} members</span>}
                               </div>
                             </div>
                           );
                         });
-                        })()}
-                      </div>
-                    )}
+                      }
 
-                    {/* MY COMMUNITIES TAB */}
-                    {communitiesTab === 'mine' && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        {joinedCommunities.length === 0 ? (
-                          <div style={{ textAlign: 'center', padding: '40px 20px', color: C.textMuted }}>
-                            <div style={{ fontSize: '14px', marginBottom: '8px' }}>No communities yet</div>
-                            <div style={{ fontSize: '12px' }}>Join one from Discover to get started</div>
-                          </div>
-                        ) : (
-                          MOCK_COMMUNITIES.filter(c => joinedCommunities.includes(c.id)).map((comm) => (
-                            <div
-                              key={comm.id}
-                              onClick={() => setActiveCommunity(comm.id)}
-                              style={{
-                                padding: '14px', background: C.card, borderRadius: '10px',
-                                border: `1px solid ${C.border}`, cursor: 'pointer', transition: 'all 0.15s',
-                              }}
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.background = C.surfaceAlt;
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.background = C.card;
-                              }}
+                      // Deal DMs section
+                      if (showDeals && dealDMs.length > 0) {
+                        items.push(
+                          <div key="dm-label" style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.6px', padding: '8px 0 4px', marginTop: items.length > 0 ? '8px' : '0' }}>Deal Rooms</div>
+                        );
+                        dealDMs.forEach(dm => {
+                          items.push(
+                            <div key={`dm-${dm.id}`}
+                              onClick={() => { setActiveView('mim'); setMarketplaceRole('creator'); setSelectedMarketplaceSkin(dm.skin); }}
+                              style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px', borderRadius: '8px', cursor: 'pointer', transition: 'background 0.15s' }}
+                              onMouseEnter={e => { e.currentTarget.style.background = C.surfaceAlt; }}
+                              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
                             >
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                <div
-                                  style={{
-                                    width: '44px', height: '44px', minWidth: '44px',
-                                    borderRadius: '8px', background: comm.avatarColor,
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    color: '#fff', fontWeight: 700, fontSize: '12px',
-                                  }}
-                                >
-                                  {comm.avatarAbbr}
+                              <div style={{ width: '44px', height: '44px', minWidth: '44px', borderRadius: '50%', background: C.surfaceAlt, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.textMuted, fontWeight: 700, fontSize: '13px', border: `1px solid ${C.border}` }}>
+                                {dm.name.slice(0, 2).toUpperCase()}
+                              </div>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
+                                  <span style={{ fontSize: '13px', fontWeight: 600, color: C.text }}>{dm.name}</span>
+                                  <span style={{ fontSize: '9px', fontWeight: 600, color: C.textSecondary, background: C.surfaceAlt, padding: '1px 5px', borderRadius: '4px' }}>{dm.phase}</span>
                                 </div>
-                                <div style={{ flex: 1 }}>
-                                  <div style={{ fontSize: '14px', fontWeight: 600, color: C.text, marginBottom: '4px' }}>{comm.name}</div>
-                                  <div style={{ fontSize: '11px', color: C.textMuted }}>
-                                    {comm.memberCount.toLocaleString()} members
-                                  </div>
-                                </div>
+                                <div style={{ fontSize: '11px', color: C.textMuted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{dm.lastMsg}</div>
                               </div>
+                              <span style={{ fontSize: '10px', color: C.textMuted, flexShrink: 0 }}>{dm.lastTime}</span>
                             </div>
-                          ))
-                        )}
-                      </div>
-                    )}
+                          );
+                        });
+                      }
 
-                    {/* CREATE TAB */}
-                    {communitiesTab === 'create' && (
-                      <div style={{ maxWidth: '500px', margin: '0 auto' }}>
-                        {!hasValueSkin ? (
+                      if (items.length === 0) {
+                        return (
                           <div style={{ textAlign: 'center', padding: '40px 20px', color: C.textMuted }}>
-                            <div style={{ fontSize: '14px', marginBottom: '16px' }}>You need a ValueSkin to create a community</div>
-                            <button
-                              onClick={() => setActiveView('store')}
-                              style={{
-                                padding: '10px 20px', borderRadius: '6px', border: 'none',
-                                background: C.primary, color: '#fff', fontSize: '13px', fontWeight: 600,
-                                cursor: 'pointer',
-                              }}
-                            >
-                              → Get a ValueSkin
-                            </button>
+                            <div style={{ fontSize: '13px', marginBottom: '6px' }}>No messages yet</div>
+                            <div style={{ fontSize: '11px' }}>Join a channel or start a deal to see conversations here</div>
                           </div>
-                        ) : (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                            <div>
-                              <div style={{ fontSize: '12px', fontWeight: 700, color: C.textMuted, marginBottom: '8px' }}>Community Name</div>
-                              <input
-                                type="text"
-                                value={newCommName}
-                                onChange={(e) => setNewCommName(e.target.value)}
-                                placeholder="e.g. SWE Underground"
-                                style={{
-                                  width: '100%', padding: '10px 12px', borderRadius: '6px',
-                                  border: `1px solid ${C.border}`, background: C.surface, color: C.text,
-                                  fontSize: '13px', boxSizing: 'border-box',
-                                }}
-                              />
-                            </div>
+                        );
+                      }
 
-                            <div>
-                              <div style={{ fontSize: '12px', fontWeight: 700, color: C.textMuted, marginBottom: '8px' }}>Description</div>
-                              <textarea
-                                value={newCommDesc}
-                                onChange={(e) => setNewCommDesc(e.target.value)}
-                                placeholder="What's this community about?"
-                                rows={3}
-                                style={{
-                                  width: '100%', padding: '10px 12px', borderRadius: '6px',
-                                  border: `1px solid ${C.border}`, background: C.surface, color: C.text,
-                                  fontSize: '13px', boxSizing: 'border-box', fontFamily: 'inherit',
-                                  resize: 'none',
-                                }}
-                              />
-                            </div>
-
-                            <div>
-                              <div style={{ fontSize: '12px', fontWeight: 700, color: C.textMuted, marginBottom: '8px' }}>Visibility</div>
-                              <div style={{ display: 'flex', gap: '8px' }}>
-                                {(['public', 'private'] as const).map(v => (
-                                  <button
-                                    key={v}
-                                    onClick={() => setNewCommVisibility(v)}
-                                    style={{
-                                      flex: 1, padding: '10px 14px', borderRadius: '6px',
-                                      border: `1px solid ${newCommVisibility === v ? C.primary : C.border}`,
-                                      background: newCommVisibility === v ? `${C.primary}10` : C.surface,
-                                      color: newCommVisibility === v ? C.primary : C.text,
-                                      fontSize: '13px', fontWeight: 600, cursor: 'pointer',
-                                    }}
-                                  >
-                                    {v === 'public' ? 'Public' : 'Private'}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-
-                            <div>
-                              <div style={{ fontSize: '12px', fontWeight: 700, color: C.textMuted, marginBottom: '8px' }}>Gate Type</div>
-                              <div style={{ display: 'flex', gap: '8px' }}>
-                                {(['any_valueskin', 'specific'] as const).map(gt => (
-                                  <button
-                                    key={gt}
-                                    onClick={() => setNewCommGateType(gt)}
-                                    style={{
-                                      flex: 1, padding: '10px 14px', borderRadius: '6px',
-                                      border: `1px solid ${newCommGateType === gt ? C.primary : C.border}`,
-                                      background: newCommGateType === gt ? `${C.primary}10` : C.surface,
-                                      color: newCommGateType === gt ? C.primary : C.text,
-                                      fontSize: '12px', fontWeight: 600, cursor: 'pointer',
-                                    }}
-                                  >
-                                    {gt === 'any_valueskin' ? 'Any' : 'Specific'}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-
-                            <div>
-                              <div style={{ fontSize: '12px', fontWeight: 700, color: C.textMuted, marginBottom: '8px' }}>Accepted ValueSkin Levels</div>
-                              <div style={{ fontSize: '10px', color: C.textSecondary, marginBottom: '8px' }}>Choose which levels can join. Select one or many.</div>
-                              <div style={{ display: 'flex', gap: '6px' }}>
-                                {[1, 2, 3, 4, 5].map(lvl => {
-                                  const active = newCommAcceptedLevels.includes(lvl);
-                                  return (
-                                    <button key={lvl}
-                                      onClick={() => setNewCommAcceptedLevels(prev => active ? prev.filter(l => l !== lvl) : [...prev, lvl].sort())}
-                                      style={{
-                                        flex: 1, padding: '8px 4px', borderRadius: '6px',
-                                        border: `1px solid ${active ? C.primary : C.border}`,
-                                        background: active ? 'rgba(139,92,246,0.15)' : C.surface,
-                                        color: active ? C.primary : C.textSecondary,
-                                        fontSize: '12px', fontWeight: 600, cursor: 'pointer',
-                                      }}
-                                    >L{lvl}</button>
-                                  );
-                                })}
-                              </div>
-                            </div>
-
-                            <div>
-                              <div style={{ fontSize: '12px', fontWeight: 700, color: C.textMuted, marginBottom: '8px' }}>Required Tier</div>
-                              <div style={{ display: 'flex', gap: '8px' }}>
-                                {(['community', 'marketplace'] as const).map(tier => (
-                                  <button
-                                    key={tier}
-                                    onClick={() => setNewCommTier(tier)}
-                                    style={{
-                                      flex: 1, padding: '10px 14px', borderRadius: '6px',
-                                      border: `1px solid ${newCommTier === tier ? C.primary : C.border}`,
-                                      background: newCommTier === tier ? `${C.primary}10` : C.surface,
-                                      color: newCommTier === tier ? C.primary : C.text,
-                                      fontSize: '12px', fontWeight: 600, cursor: 'pointer',
-                                    }}
-                                  >
-                                    {tier === 'community' ? 'Free' : 'Premium'}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-
-                            <button
-                              onClick={() => {
-                                if (newCommName.trim()) {
-                                  const newCommunity = MOCK_COMMUNITIES.length;
-                                  setJoinedCommunities([...joinedCommunities, newCommunity]);
-                                  setNewCommName('');
-                                  setNewCommDesc('');
-                                  setCommunitiesTab('mine');
-                                  setPurchaseToast('Community created');
-                                  setTimeout(() => setPurchaseToast(null), 3000);
-                                }
-                              }}
-                              style={{
-                                padding: '12px 16px', borderRadius: '6px', border: 'none',
-                                background: C.primary, color: '#fff', fontSize: '14px', fontWeight: 600,
-                                cursor: 'pointer', width: '100%', marginTop: '8px',
-                              }}
-                            >
-                              Create Community
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    )}
+                      return <div style={{ display: 'flex', flexDirection: 'column' }}>{items}</div>;
+                    })()}
                   </div>
                 </>
               ) : (
                 <>
-                  {/* Community Detail View */}
+                  {/* Channel Chat View — looks like a DM thread */}
                   {(() => {
-                    const community = MOCK_COMMUNITIES.find(c => c.id === activeCommunity);
-                    if (!community) return null;
-
+                    const channel = CHANNELS.find(c => c.id === activeCommunity);
+                    if (!channel) return null;
                     return (
                       <>
-                        <div style={{ height: '60px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', padding: '0 20px', justifyContent: 'space-between', background: C.surface }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <button
-                              onClick={() => setActiveCommunity(null)}
-                              style={{ background: 'none', border: 'none', color: C.primary, fontSize: '16px', cursor: 'pointer' }}
-                            >
-                              ← Back
-                            </button>
-                            <div
-                              style={{
-                                width: '36px', height: '36px', minWidth: '36px',
-                                borderRadius: '6px', background: community.avatarColor,
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                color: '#fff', fontWeight: 700, fontSize: '11px',
-                              }}
-                            >
-                              {community.avatarAbbr}
-                            </div>
-                            <div>
-                              <div style={{ fontSize: '14px', fontWeight: 600 }}>{community.name}</div>
-                              <div style={{ fontSize: '11px', color: C.textSecondary }}>{community.memberCount.toLocaleString()} members</div>
-                            </div>
+                        <div style={{ height: '60px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', padding: '0 16px', gap: '12px', background: C.surface }}>
+                          <button onClick={() => setActiveCommunity(null)} style={{ background: 'none', border: 'none', color: C.primary, fontSize: '14px', cursor: 'pointer', padding: 0 }}>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                          </button>
+                          <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: channel.avatarColor, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: '11px' }}>
+                            {channel.avatarAbbr}
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: '14px', fontWeight: 600, color: C.text }}>{channel.name}</div>
+                            <div style={{ fontSize: '11px', color: C.textSecondary }}>{channel.memberCount.toLocaleString()} members · {channel.requiredSkin || 'Any ValueSkin'}</div>
                           </div>
                         </div>
 
-                        {/* Inner tabs */}
-                        <div style={{ display: 'flex', borderBottom: `1px solid ${C.border}` }}>
-                          {(['feed', 'members', 'announcements'] as const).map(tab => (
-                            <div
-                              key={tab}
-                              onClick={() => setCommunityInnerTab(tab)}
-                              style={{
-                                flex: 1, textAlign: 'center', padding: '12px 0', fontSize: '13px',
-                                fontWeight: communityInnerTab === tab ? '700' : '500',
-                                color: communityInnerTab === tab ? C.primary : C.textMuted,
-                                borderBottom: communityInnerTab === tab ? `2px solid ${C.primary}` : '2px solid transparent',
-                                cursor: 'pointer', transition: 'all 0.15s',
-                              }}
-                            >
-                              {tab === 'feed' ? 'Feed' : tab === 'members' ? 'Members' : 'Announcements'}
+                        {/* Channel description */}
+                        <div style={{ padding: '10px 16px', background: `${C.primary}08`, borderBottom: `1px solid ${C.border}`, fontSize: '11px', color: C.textSecondary }}>
+                          {channel.description}
+                        </div>
+
+                        {/* Messages — DM-style thread */}
+                        <div style={{ flex: 1, padding: '12px 16px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                          {channel.messages.map(msg => (
+                            <div key={msg.id} style={{ display: 'flex', gap: '10px' }}>
+                              <div style={{ width: '32px', height: '32px', minWidth: '32px', borderRadius: '50%', background: C.surfaceAlt, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 700, color: C.textMuted, border: `1px solid ${C.border}` }}>
+                                {msg.author.slice(0, 2).toUpperCase()}
+                              </div>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginBottom: '2px' }}>
+                                  <span style={{ fontSize: '12px', fontWeight: 600, color: C.text }}>{msg.author}</span>
+                                  <span style={{ fontSize: '10px', color: C.textMuted }}>{msg.handle} · {msg.time}</span>
+                                </div>
+                                <div style={{ fontSize: '13px', color: C.text, lineHeight: 1.45 }}>{msg.text}</div>
+                              </div>
                             </div>
                           ))}
                         </div>
 
-                        <div style={{ padding: '16px' }}>
-                          {communityInnerTab === 'feed' && (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                              {community.posts.filter(p => !p.announcement).map(post => (
-                                <div key={post.id} style={{ padding: '12px', background: C.card, borderRadius: '8px', border: `1px solid ${C.border}` }}>
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                    <div>
-                                      <div style={{ fontSize: '13px', fontWeight: 600, color: C.text }}>{post.author}</div>
-                                      <div style={{ fontSize: '11px', color: C.textMuted }}>{post.handle} · {post.time}</div>
-                                    </div>
-                                    <div style={{ fontSize: '10px', background: C.primary + '20', color: C.primary, padding: '2px 6px', borderRadius: '4px', height: 'fit-content' }}>
-                                      {post.profession}
-                                    </div>
-                                  </div>
-                                  <div style={{ fontSize: '13px', color: C.text, marginBottom: '8px', lineHeight: 1.4 }}>{post.content}</div>
-                                  <div style={{ display: 'flex', gap: '16px', fontSize: '12px', color: C.textSecondary }}>
-                                    <button
-                                      onClick={() => {
-                                        if (likedCommunityPosts.includes(post.id)) {
-                                          setLikedCommunityPosts(likedCommunityPosts.filter(p => p !== post.id));
-                                        } else {
-                                          setLikedCommunityPosts([...likedCommunityPosts, post.id]);
-                                        }
-                                      }}
-                                      style={{
-                                        background: 'none', border: 'none', color: likedCommunityPosts.includes(post.id) ? '#e74c3c' : C.textSecondary,
-                                        cursor: 'pointer', fontSize: '12px', padding: 0,
-                                      }}
-                                    >
-                                      <svg width="12" height="12" viewBox="0 0 24 24" fill={likedCommunityPosts.includes(post.id) ? '#e74c3c' : 'none'} stroke={likedCommunityPosts.includes(post.id) ? '#e74c3c' : 'currentColor'} strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> {post.likes + (likedCommunityPosts.includes(post.id) ? 1 : 0)}
-                                    </button>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-
-                          {communityInnerTab === 'members' && (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                              {community.members.map((member, i) => (
-                                <div key={i} style={{ padding: '12px', background: C.card, borderRadius: '8px', border: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                  <div>
-                                    <div style={{ fontSize: '13px', fontWeight: 600, color: C.text }}>{member.name}</div>
-                                    <div style={{ fontSize: '11px', color: C.textMuted }}>{member.handle} · {member.profession}</div>
-                                  </div>
-                                  {/* Reputation Tier Badge */}
-                                  <div style={{
-                                    marginLeft: 'auto',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '8px',
-                                  }}>
-                                    <div style={{
-                                      padding: '6px 10px',
-                                      borderRadius: '20px',
-                                      fontSize: '12px',
-                                      fontWeight: 500,
-                                      backgroundColor: member.reputationTier === 'senior' ? '#fbbf24' : member.reputationTier === 'member' ? '#3b82f6' : '#9ca3af',
-                                      color: 'white',
-                                    }}>
-                                      {member.reputationTier === 'senior' ? '⭐ Senior' : member.reputationTier === 'member' ? 'Member' : 'Apprentice'}
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-
-                          {communityInnerTab === 'announcements' && (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                              {community.posts.filter(p => p.announcement).map(post => (
-                                <div key={post.id} style={{ padding: '12px', background: 'rgba(0,102,204,0.06)', borderRadius: '8px', border: `1px solid ${C.primary}30` }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-                                    <div style={{ fontSize: '13px', fontWeight: 600, color: C.text }}>{post.author}</div>
-                                    <div style={{ fontSize: '11px', color: C.textMuted, marginLeft: 'auto' }}>{post.time}</div>
-                                  </div>
-                                  <div style={{ fontSize: '13px', color: C.text, lineHeight: 1.4 }}>{post.content}</div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
+                        {/* Message input */}
+                        <div style={{ padding: '10px 16px', borderTop: `1px solid ${C.border}`, display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <input type="text" placeholder="Message..." style={{ flex: 1, padding: '9px 12px', borderRadius: '20px', border: `1px solid ${C.border}`, background: C.surface, color: C.text, fontSize: '13px', outline: 'none' }} />
+                          <button style={{ width: '34px', height: '34px', borderRadius: '50%', border: 'none', background: C.primary, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                          </button>
                         </div>
                       </>
                     );
@@ -5133,14 +4891,14 @@ export default function InstagramDemoPage() {
             { label: 'Profile', view: 'profile' as const },
             { label: 'Market', view: 'mim' as const },
             { label: 'Store', view: 'store' as const },
-            { label: 'Community', view: 'communities' as const },
+            { label: 'Channels', view: 'channels' as const },
             { label: 'Settings', view: 'settings' as const },
           ]).map(({ label, view }) => (
             <button
               key={view}
               onClick={() => {
                 if (view === 'mim') { setMarketplaceRole('none'); }
-                if (view === 'communities') { setActiveCommunity(null); }
+                if (view === 'channels') { setActiveCommunity(null); }
                 setActiveView(view);
               }}
               style={{
