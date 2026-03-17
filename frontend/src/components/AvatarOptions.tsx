@@ -493,6 +493,7 @@ export function ValueSkinStickers({
             valueSkins={valueSkins}
             onValueSkinsChange={onValueSkinsChange}
             level={level}
+            clickable={!onSkinClick}
           />
         </div>
       ))}
