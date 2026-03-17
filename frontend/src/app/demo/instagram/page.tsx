@@ -804,7 +804,8 @@ export default function InstagramDemoPage() {
   const [collabFormat, setCollabFormat] = useState('');
   const [collabPaid, setCollabPaid] = useState(false);
   const [collabNegotiable, setCollabNegotiable] = useState(true);
-  const [collabSentIdx, setCollabSentIdx] = useState<number[]>([]);
+  const [collabSentNames, setCollabSentNames] = useState<string[]>([]);
+  const [collabTargetSkin, setCollabTargetSkin] = useState<string | null>(null);
 
   // Brand field filter — which ValueSkin profession the brand wants to target
   const [brandSearchQuery, setBrandSearchQuery] = useState('');
@@ -2501,10 +2502,40 @@ export default function InstagramDemoPage() {
                       <>
                         <div style={{ background: 'rgba(94,106,210,0.06)', border: '1px solid rgba(94,106,210,0.2)', borderRadius: '10px', padding: '12px 14px', marginBottom: '16px' }}>
                           <div style={{ fontSize: '12px', fontWeight: 700, color: C.text, marginBottom: '4px' }}>Creator Collabs</div>
-                          <div style={{ fontSize: '11px', color: C.textSecondary, lineHeight: 1.5 }}>Reach out to other creators for joint content, co-promotions, or shared projects. No ValuSkin match required — you can approach any creator.</div>
+                          <div style={{ fontSize: '11px', color: C.textSecondary, lineHeight: 1.5 }}>Choose a ValuSkin to find creators with that skin. No match required — you can approach any creator.</div>
                         </div>
-                        {BRAND_MARKETPLACE_CREATORS.map((creator, i) => {
-                          const sent = collabSentIdx.includes(i);
+
+                        {/* ValuSkin picker — all unique skins in the creator pool */}
+                        <div style={{ marginBottom: '16px' }}>
+                          <div style={{ fontSize: '11px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '8px' }}>Browse by ValuSkin</div>
+                          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                            {Array.from(new Set(BRAND_MARKETPLACE_CREATORS.map(c => c.valueSkin))).map(skin => {
+                              const b = PROFESSION_BADGES[skin];
+                              const abbr = b?.abbreviation ?? skin.split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0, 3);
+                              const color = b?.color ?? C.primary;
+                              const active = collabTargetSkin === skin;
+                              return (
+                                <button
+                                  key={skin}
+                                  onClick={() => { setCollabTargetSkin(active ? null : skin); setCollabRequestOpen(null); }}
+                                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '8px', border: `2px solid ${active ? color : C.border}`, background: active ? `${color}15` : C.card, cursor: 'pointer', transition: 'all 0.15s' }}
+                                >
+                                  <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '16px', height: '16px', borderRadius: '3px', background: color, color: '#fff', fontSize: '7px', fontWeight: 700 }}>{abbr}</span>
+                                  <span style={{ fontSize: '11px', fontWeight: 600, color: active ? C.text : C.textSecondary }}>{skin}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {!collabTargetSkin && (
+                          <div style={{ textAlign: 'center', padding: '30px 20px', color: C.textMuted, fontSize: '13px' }}>
+                            Select a ValuSkin above to see creators.
+                          </div>
+                        )}
+
+                        {collabTargetSkin && BRAND_MARKETPLACE_CREATORS.filter(c => c.valueSkin === collabTargetSkin).map((creator, i) => {
+                          const sent = collabSentNames.includes(creator.name);
                           const open = collabRequestOpen === i;
                           const badge = PROFESSION_BADGES[creator.valueSkin];
                           const abbr = badge?.abbreviation ?? creator.valueSkin.split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0, 3);
@@ -2559,7 +2590,7 @@ export default function InstagramDemoPage() {
                                     <button onClick={() => setCollabNegotiable(p => !p)} style={{ flex: 1, padding: '7px', borderRadius: '8px', border: `1px solid ${collabNegotiable ? C.accent : C.border}`, background: collabNegotiable ? 'rgba(94,106,210,0.1)' : C.bg, color: collabNegotiable ? C.accent : C.textSecondary, fontWeight: 600, fontSize: '11px', cursor: 'pointer' }}>Negotiable</button>
                                   </div>
                                   <button
-                                    onClick={() => { if (collabIdea.trim()) { setCollabSentIdx(p => [...p, i]); setCollabRequestOpen(null); setCollabIdea(''); setCollabFormat(''); setPurchaseToast('Collab request sent'); setTimeout(() => setPurchaseToast(null), 3000); } }}
+                                    onClick={() => { if (collabIdea.trim()) { setCollabSentNames(p => [...p, creator.name]); setCollabRequestOpen(null); setCollabIdea(''); setCollabFormat(''); setPurchaseToast('Collab request sent'); setTimeout(() => setPurchaseToast(null), 3000); } }}
                                     style={{ width: '100%', background: collabIdea.trim() ? C.accent : C.border, border: 'none', padding: '9px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: collabIdea.trim() ? 'pointer' : 'not-allowed', fontSize: '13px' }}
                                   >
                                     Send Collab Request
