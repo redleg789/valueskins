@@ -197,3 +197,39 @@ Platform is user-selectable in Settings > Creator Platform.
 ### Opportunity Instancing
 - Opportunities now include optional `instagramUrl` field for brand social profiles
 - Sample opportunities populated with TechFlow Labs, CloudBase, DevTools Pro URLs
+
+---
+
+## Workflow Smoothness Improvements
+
+### Clickable Handles & Names Everywhere
+- Creator handle (@handle) in marketplace cards is clickable → opens their Instagram
+- Creator name in "Applications Received" is clickable → opens Instagram
+- Creator handle in applications is clickable → opens Instagram
+- Brand name in opportunity cards is clickable → opens their Instagram
+- Brand name in deal room headers (both collapsed and expanded) is clickable → opens Instagram
+- All profile links open in new tab (target="_blank")
+
+### Creator Preview Modal Enhancements
+- "Visit Instagram" button to view creator's full profile
+- "Back to Marketplace" button for clear navigation
+- Both buttons available in the modal footer
+
+### Notifications Profile Links
+- Deal and Community notifications include "View Profile →" link
+- Quick shortcut to view the relevant creator/brand profile
+
+### Visual Link Indicators
+- All clickable names/handles styled in primary color (#0066CC)
+- Underline on hover shows the element is interactive
+- Consistent across marketplace, deal rooms, and applications
+
+### Separate Brand Profile Access
+- Brand name in opportunity cards is independently clickable (separate from "Ask" button)
+- Clicking the card still opens brand Instagram, clicking "Ask" opens deal brief modal
+- No ambiguity between viewing profile and reviewing the deal
+
+### Deal Room Brand Links
+- Both collapsed and expanded deal room state headers have clickable brand names
+- Quick access to brand profile without leaving the negotiation
+- Maintains deal room context while allowing profile exploration
