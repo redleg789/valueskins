@@ -1969,7 +1969,11 @@ export default function InstagramDemoPage() {
                               {skinDeals.length > 0 && (
                                 <span style={{ position: 'absolute', top: -4, right: -4, width: 16, height: 16, borderRadius: '50%', background: C.textMuted, color: '#fff', fontSize: 9, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{skinDeals.length}</span>
                               )}
-                              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '22px', height: '22px', borderRadius: '5px', background: badgeColor, color: '#fff', fontSize: '8px', fontWeight: 700, flexShrink: 0 }}>{abbr}</span>
+                              {badge?.stickerImage ? (
+                                <img src={badge.stickerImage} alt={profession} style={{ width: '32px', height: '32px', objectFit: 'contain', flexShrink: 0 }} />
+                              ) : (
+                                <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '6px', background: badgeColor, color: '#fff', fontSize: '10px', fontWeight: 700, flexShrink: 0 }}>{abbr}</span>
+                              )}
                               <div style={{ textAlign: 'left' }}>
                                 <div style={{ fontSize: '13px', fontWeight: 600, color: isActive ? C.text : C.textSecondary }}>{profession}</div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -2594,9 +2598,13 @@ export default function InstagramDemoPage() {
                                   border: `2px solid ${isActive ? (badge?.color ?? C.primary) : C.border}`,
                                 }}
                               >
-                                <div style={{ fontSize:'10px', fontWeight:700, letterSpacing:'0.5px', textTransform:'uppercase', color: badge?.color ?? C.primary, marginBottom:'3px' }}>
-                                  {badge?.abbreviation ?? skin.slice(0,3).toUpperCase()}
-                                </div>
+                                {badge?.stickerImage ? (
+                                  <img src={badge.stickerImage} alt={skin} style={{ width:'32px', height:'32px', objectFit:'contain', margin:'0 auto 4px' }} />
+                                ) : (
+                                  <div style={{ fontSize:'10px', fontWeight:700, letterSpacing:'0.5px', textTransform:'uppercase', color: badge?.color ?? C.primary, marginBottom:'3px' }}>
+                                    {badge?.abbreviation ?? skin.slice(0,3).toUpperCase()}
+                                  </div>
+                                )}
                                 <div style={{ fontSize:'11px', color: isActive ? C.text : C.textSecondary, fontWeight: isActive ? 600 : 400, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
                                   {skin}
                                 </div>
