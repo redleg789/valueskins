@@ -2035,10 +2035,7 @@ export default function InstagramDemoPage() {
                           return (
                             <div
                               key={i}
-                              onClick={() => { if (opp.instagramUrl) window.open(opp.instagramUrl, '_blank'); }}
-                              style={{ background: C.card, borderRadius: '12px', padding: '16px', marginBottom: '12px', border: `1px solid ${opp.featured ? 'rgba(0,102,204,0.3)' : C.border}`, cursor: opp.instagramUrl ? 'pointer' : 'default', transition: 'all 0.15s' }}
-                              onMouseEnter={(e) => { if (opp.instagramUrl) (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(0,102,204,0.6)'; }}
-                              onMouseLeave={(e) => { if (opp.instagramUrl) (e.currentTarget as HTMLDivElement).style.borderColor = `1px solid ${opp.featured ? 'rgba(0,102,204,0.3)' : C.border}`; }}
+                              style={{ background: C.card, borderRadius: '12px', padding: '16px', marginBottom: '12px', border: `1px solid ${opp.featured ? 'rgba(0,102,204,0.3)' : C.border}` }}
                             >
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', gap: '8px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -4437,6 +4434,12 @@ export default function InstagramDemoPage() {
               <div style={{ height: '60px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', paddingLeft: '20px', fontWeight: 'bold', fontSize: '16px', background: C.surface }}>
                 Notifications
               </div>
+              {!hasValueSkin ? (
+                <div style={{ textAlign: 'center', padding: '60px 20px', color: C.textMuted }}>
+                  <div style={{ fontSize: '14px', marginBottom: '4px' }}>No notifications yet</div>
+                  <div style={{ fontSize: '12px' }}>Select or purchase a ValueSkin to start receiving activity notifications.</div>
+                </div>
+              ) : (
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 {notifications.length === 0 ? (
                   <div style={{ textAlign: 'center', padding: '60px 20px', color: C.textMuted }}>
@@ -4473,6 +4476,7 @@ export default function InstagramDemoPage() {
                   })
                 )}
               </div>
+              )}
             </>
           )}
 

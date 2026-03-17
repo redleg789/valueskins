@@ -233,3 +233,14 @@ Platform is user-selectable in Settings > Creator Platform.
 - Both collapsed and expanded deal room state headers have clickable brand names
 - Quick access to brand profile without leaving the negotiation
 - Maintains deal room context while allowing profile exploration
+
+### Notifications Gated by ValueSkin Selection
+- Notifications are only shown after creator selects or purchases a ValueSkin
+- Empty state message directs user to select a ValueSkin first
+- Prevents showing mock notifications to new users (production seriousness)
+
+### Fixed: Opportunity Card Button Conflicts
+- Removed parent card onClick that was intercepting button clicks
+- Only brand name is now clickable (opens Instagram in new tab)
+- All buttons (Enter Deal Room, Enable Barter, Ask) are now fully functional
+- Counter-offer buttons work as expected without navigation override

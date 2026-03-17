@@ -2,6 +2,18 @@ Use approaches that use the least amount of tokens without compromising the qual
 
 ---
 
+## Feature Addition Safety Rule
+
+**CRITICAL**: When adding a new feature or interaction (clickable links, buttons, etc.), always verify it does NOT override or break existing button functionality.
+
+- Before adding a feature that affects a container (card, div, parent element), check what child elements (buttons, inputs, clickable text) exist inside it
+- If child elements exist, do NOT add onClick/navigation to the parent — only to specific elements that need it
+- Example: Adding Instagram links to opportunity cards broke the "Enter Deal Room" button because the entire card was clickable. Fix: Remove parent onClick, only make the brand name link clickable
+- Test all existing buttons and interactions after adding new features
+- Rule of thumb: Clickable parents must use `stopPropagation()` for all child interactive elements, or better yet, avoid parent-level click handlers entirely
+
+---
+
 ## Hard Lessons — Never Repeat These Mistakes
 
 ### 1. Self-audit BEFORE declaring done
@@ -989,6 +1001,14 @@ When a platform like Meta adopts ValueSkins, the following backend services must
 - **Creator discovery**: `GET /creators?skin=X&level=Y&page=N` must return real DB rows with actual follower counts, trust scores, and ValuSkin assignments. The frontend filter-by-skin logic must query the backend, not filter a local array.
 - **Campaign/opportunity listing**: `GET /opportunities?skin=X&page=N` must return real brand-created campaigns from the DB, not hardcoded objects.
 - Both endpoints need pagination, caching, and index-backed queries to handle scale.
+
+### 10. Non-monetary deal term negotiation (prod readiness, later)
+- Counter-offers currently only support price negotiation. But deals contain multiple negotiable terms: deliverable count (e.g., 3 reels vs 2 reels), content format preferences (reels only, no stories), appearance requirements (on-camera vs voiceover only), exclusivity window, revision limits, usage rights scope, deadline adjustments.
+- When creator enables "Open to negotiation" in settings per ValueSkin, they unlock the ability to counter-offer on all negotiable terms, not just price.
+- If creator has "Open to negotiation" disabled, counter-offer button only allows price negotiation (existing behavior).
+- Counter-offer UI must show checklist of negotiable items: which ones creator wants to change, which stay as-is.
+- Brand sees both price counters and term counters in deal room chat as separate message types (documented for auditability).
+- Deals should have a negotiable_terms JSONB field specifying which deal properties are up for negotiation vs locked-in by brand.
 
 ---
 
