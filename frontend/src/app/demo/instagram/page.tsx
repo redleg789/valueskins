@@ -1,4 +1,5 @@
 'use client';
+// per-skin levels, individual skin click, onboarding gate
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
