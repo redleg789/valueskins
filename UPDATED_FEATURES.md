@@ -123,3 +123,77 @@ All `(app)` pages use `PlatformLayout`, which automatically switches visual iden
 - **YouTube**: Dark mode with red accents
 
 Platform is user-selectable in Settings > Creator Platform.
+
+---
+
+## Creator ValueSkin Leveling System
+
+### Per-Skin Independent Levels
+- Each ValueSkin (profession/passion/hobby) levels independently from 1-5
+- XP thresholds: Lv.1 (0 XP), Lv.2 (50 XP), Lv.3 (200 XP), Lv.4 (500 XP), Lv.5 (1000 XP)
+- Base XP is manually seeded per skin on purchase (profession: 350, passion: 120, hobby: 30)
+- Follower count only counts as bonus XP when user owns exactly 1 skin (avoids attribution ambiguity)
+- Bonus XP formula: `log10(followers) * 40` (e.g., 1M followers ≈ +240 XP)
+- Levels are displayed only when clicking individual skin in profile, not on the profile itself
+
+### Per-Skin Pitch & Showcase
+- Each ValueSkin has its own pitch text and video/media (replaces shared "Your Story" section)
+- "Why should brands hire you as a [Profession]?" section is unique per skin
+- Creators can upload different demo videos for different skins
+- Pitch data persists to localStorage (survives page reloads)
+- Settings shows per-skin pitch status: ✓ (completed) or ✗ (needs setup) for each skin
+
+### Onboarding Flow — Once Per Session
+- 3-step tutorial: Welcome → Select Role → Store Redirect
+- Displayed only on first visit; persisted in localStorage
+- Does not repeat on subsequent page reloads in the same session
+
+---
+
+## Marketplace Improvements
+
+### Actual ValueSkin Stickers in Selectors
+- "Browse as" (creator) and "Active ValueSkin" (brand) selectors now display the actual sticker image instead of abbreviation squares
+- Images pulled from `PROFESSION_BADGES[profession].stickerImage`
+- Automatically updates when badge images change in AvatarOptions.tsx
+- Falls back to colored abbreviation if no stickerImage exists
+
+### Creator Profile Links in Marketplace
+- Creator avatars in brand marketplace discovery are clickable — opens creator's Instagram profile in new tab
+- Brand opportunity cards are fully clickable — opens brand's Instagram profile (except Ask button which opens deal modal)
+- Hover effects show when card is interactive
+
+### Rich Creator Insights in Brand Application Review
+- "Applications Received" cards now display full creator profile:
+  - Avatar with Instagram link
+  - Name, handle, profession, ValuSkin level (color-coded)
+  - Match score percentage
+  - Stats grid: followers, engagement rate, rate card, deal completion rate
+  - Audience tags: location, age range, response time
+  - Portfolio highlights (past work)
+- Demo seeded with 3 sample applications (Priya Sharma, Jordan Blake, Elena Rodriguez) showing rich cards immediately
+- Created `SharedApplication` type with optional insight fields that auto-populate from creator data
+
+---
+
+## Application Type Extensions
+
+### SharedApplication Type
+- Extended with optional creator insight fields: name, followers, engagement, level, match score, rate, completion rate, portfolio, audience location/age, response time, Instagram URL
+- Applications created when deal is accepted automatically include creator's current metrics
+- Type supports both deal-based and campaign-based applications
+
+---
+
+## Demo Data & Seeding
+
+### Pre-Seeded Applications
+- Brand marketplace seeded with 3 demo applications on first load
+- Priya Sharma (UX/UI Designer) — pending application to Mobile App Design Review
+- Jordan Blake (Fitness Coach) — pending application to Spring Fitness Challenge
+- Elena Rodriguez (Nutritionist) — pending application to Spring Fitness Challenge
+- Each includes full creator insights and active deal room lifecycle
+
+### Opportunity Instancing
+- Opportunities now include optional `instagramUrl` field for brand social profiles
+- Sample opportunities populated with TechFlow Labs, CloudBase, DevTools Pro URLs
