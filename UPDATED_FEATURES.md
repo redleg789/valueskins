@@ -1,5 +1,52 @@
 # Updated Features
 
+---
+
+## Marketplace & Deal Room — Session (2026-03-17)
+
+### Brand Brief — Campaign Description Fields
+- **About your brand**: New required field in brand brief form — brands must describe what their brand does and who their audience is before contacting a creator
+- **Campaign / product details**: New required field — brands describe the specific product or campaign being promoted, what the creator needs to know
+- Both fields appear in the brief summary shown on the offer screen
+
+### Non-Negotiable Offer Flag
+- Brands can now mark their offer as **first, final, and non-negotiable** from the brief stage
+- Creators who reject a non-negotiable offer are automatically disqualified from the campaign
+- Flag shown in the brief summary and on the offer view
+
+### Counter-Offer Flow — Full Brand Review States
+- Counter received screen now shows the counter before any action is taken (no instant auto-accept)
+- **Accept** — accepts the counter amount, moves to deal accepted
+- **Counter Again** — opens input for brand's counter amount, sends back to pending
+- **This is our last offer** — sends creator a final-offer notice with a 24h deadline; if they reject they're disqualified
+- **Reject creator** — brand rejects the creator entirely and closes the deal room
+
+### Creator-to-Creator Collab Mode
+- New toggle in creator marketplace between **Brand Deals** and **Creator Collabs**
+- In collab mode, all creators are visible regardless of ValuSkin match (no skin match required)
+- Each creator card shows a **Collab** button that expands a request form:
+  - Collab idea (required)
+  - Content format
+  - Paid / Unpaid / Negotiable toggles
+- Sent requests show a "Sent" badge
+
+### Barter Filter — Creator Marketplace
+- Added **Show All / Barter Only** toggle button to the creator-side marketplace header (was previously only on brand side)
+- Filters opportunities by `willingToBarter` flag in real time
+
+### UI Cleanups
+- Removed "Matched via [X] ValueSkin" line from creator opportunity cards (redundant)
+- Removed "Matched by ValueSkin: [X]" line from brand-side creator cards (redundant)
+- Removed "Brand identity: Data Scientist — No shared ValueSkin" line from the Ask modal (incorrect context)
+
+### Expanded Professions
+- **Technology**: Added Full Stack Developer, Mobile Developer, Blockchain Developer, QA Engineer
+- **Entertainment**: Added Podcast Host, DJ, Streamer, Stunt Performer
+- **Sports**: Added Sports Coach, Football Player, Cricket Player, Hockey Player, Basketball Player, Tennis Player, Swimmer, Cyclist, Boxer, Martial Artist, Golfer, Gymnast, Track & Field Athlete
+- Brand campaign creation form updated with new professions (Full Stack Developer, Sports Coach, Football Player, Cricket Player, Hockey Player)
+
+---
+
 ## Settings Page
 
 ### UI Overhaul

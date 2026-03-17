@@ -44,9 +44,9 @@ const C = {
 };
 
 const PROFESSIONS = {
-  'Technology':     { name: 'Technology',     subProfessions: ['Software Engineer','Data Scientist','Product Manager','DevOps Engineer','UX/UI Designer','Tech Entrepreneur','Security Researcher','AI/ML Specialist'] },
-  'Entertainment':  { name: 'Entertainment',  subProfessions: ['Actor','Comedian','Musician','Producer','Director','Screenwriter','Animator','Voice Actor'] },
-  'Sports':         { name: 'Sports',         subProfessions: ['Professional Athlete','Fitness Coach','Yoga Instructor','Nutritionist','Sports Analyst','Personal Trainer','Physical Therapist','Sports Manager'] },
+  'Technology':     { name: 'Technology',     subProfessions: ['Software Engineer','Full Stack Developer','Data Scientist','Product Manager','DevOps Engineer','UX/UI Designer','Tech Entrepreneur','Security Researcher','AI/ML Specialist','Mobile Developer','Blockchain Developer','QA Engineer'] },
+  'Entertainment':  { name: 'Entertainment',  subProfessions: ['Actor','Comedian','Musician','Producer','Director','Screenwriter','Animator','Voice Actor','Podcast Host','DJ','Streamer','Stunt Performer'] },
+  'Sports':         { name: 'Sports',         subProfessions: ['Professional Athlete','Fitness Coach','Sports Coach','Yoga Instructor','Nutritionist','Sports Analyst','Personal Trainer','Physical Therapist','Sports Manager','Football Player','Cricket Player','Hockey Player','Basketball Player','Tennis Player','Swimmer','Cyclist','Boxer','Martial Artist','Golfer','Gymnast','Track & Field Athlete'] },
   'Aviation':       { name: 'Aviation',       subProfessions: ['Commercial Pilot','Flight Attendant','Aviation Student','Ground Staff','Air Traffic Controller','Aircraft Engineer','Aviation Safety Officer','Cabin Crew Manager'] },
   'Healthcare':     { name: 'Healthcare',     subProfessions: ['Doctor','Nurse','Surgeon','Dentist','Therapist','Pharmacist','Medical Student','Health Coach'] },
   'Finance':        { name: 'Finance',        subProfessions: ['Investment Banker','Financial Advisor','Accountant','Trader','Crypto Analyst','Tax Specialist','Portfolio Manager','Finance Student'] },
@@ -727,11 +727,14 @@ export default function InstagramDemoPage() {
   const [brandCampaignType, setBrandCampaignType] = useState('Product Review');
 
   // Brand-side deal room state
-  type BrandDealPhase = 'brief' | 'offer' | 'pending' | 'counter' | 'accepted' | 'softhold';
+  type BrandDealPhase = 'brief' | 'offer' | 'pending' | 'counter' | 'brand_reviewing' | 'last_offer' | 'rejected' | 'accepted' | 'softhold';
   const [brandDealPhase, setBrandDealPhase] = useState<BrandDealPhase>('brief');
   const [brandDealIntent, setBrandDealIntent] = useState<'explore' | 'campaign' | 'long-term'>('campaign');
   const [brandBriefTitle, setBrandBriefTitle] = useState('');
   const [brandBriefDeliverables, setBrandBriefDeliverables] = useState('');
+  const [brandBriefAbout, setBrandBriefAbout] = useState('');
+  const [brandBriefCampaignDesc, setBrandBriefCampaignDesc] = useState('');
+  const [brandOfferNonNegotiable, setBrandOfferNonNegotiable] = useState(false);
   const [brandCounterAmount, setBrandCounterAmount] = useState('');
   const [brandSoftHoldHours, setBrandSoftHoldHours] = useState<24 | 48 | 72>(48);
   // Simulated: creator countered at this amount after brand sent offer
@@ -794,6 +797,14 @@ export default function InstagramDemoPage() {
   // Barter/exposure toggle — managed in Settings, stored server-side
   const [willingToBarter, setWillingToBarter] = useState(false);
   const [filterBarterOnly, setFilterBarterOnly] = useState(false);
+  const [filterOppsBarterOnly, setFilterOppsBarterOnly] = useState(false);
+  const [creatorMarketplaceMode, setCreatorMarketplaceMode] = useState<'brand' | 'collab'>('brand');
+  const [collabRequestOpen, setCollabRequestOpen] = useState<number | null>(null);
+  const [collabIdea, setCollabIdea] = useState('');
+  const [collabFormat, setCollabFormat] = useState('');
+  const [collabPaid, setCollabPaid] = useState(false);
+  const [collabNegotiable, setCollabNegotiable] = useState(true);
+  const [collabSentIdx, setCollabSentIdx] = useState<number[]>([]);
 
   // Brand field filter — which ValueSkin profession the brand wants to target
   const [brandSearchQuery, setBrandSearchQuery] = useState('');
@@ -2021,13 +2032,34 @@ export default function InstagramDemoPage() {
                       </div>
                     )}
 
+                    {/* Mode toggle: Brand Deals vs Creator Collab */}
+                    <div style={{ display: 'flex', gap: '6px', marginBottom: '16px' }}>
+                      {(['brand', 'collab'] as const).map(mode => (
+                        <button
+                          key={mode}
+                          onClick={() => setCreatorMarketplaceMode(mode)}
+                          style={{ flex: 1, padding: '8px', borderRadius: '8px', border: `1px solid ${creatorMarketplaceMode === mode ? C.primary : C.border}`, background: creatorMarketplaceMode === mode ? `${C.primary}12` : C.bg, color: creatorMarketplaceMode === mode ? C.primary : C.textSecondary, fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}
+                        >
+                          {mode === 'brand' ? 'Brand Deals' : 'Creator Collabs'}
+                        </button>
+                      ))}
+                    </div>
+
                     {/* Opportunities for selected skin */}
-                    {selectedMarketplaceSkin && (
+                    {creatorMarketplaceMode === 'brand' && selectedMarketplaceSkin && (
                       <>
-                        <div style={{ fontSize: '12px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '12px' }}>
-                          Opportunities for {selectedMarketplaceSkin}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                          <div style={{ fontSize: '12px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+                            Opportunities for {selectedMarketplaceSkin}
+                          </div>
+                          <button
+                            onClick={() => setFilterOppsBarterOnly(p => !p)}
+                            style={{ fontSize: '11px', fontWeight: 600, color: filterOppsBarterOnly ? C.textSecondary : C.textSecondary, background: filterOppsBarterOnly ? 'rgba(16,185,129,0.1)' : 'transparent', border: `1px solid ${filterOppsBarterOnly ? 'rgba(16,185,129,0.5)' : C.border}`, padding: '4px 10px', borderRadius: '6px', cursor: 'pointer' }}
+                          >
+                            {filterOppsBarterOnly ? 'Barter Only' : 'Show All'}
+                          </button>
                         </div>
-                        {activeOpportunities.map((opp, i) => {
+                        {activeOpportunities.filter(opp => !filterOppsBarterOnly || opp.willingToBarter).map((opp, i) => {
                           const dealKey = `${selectedMarketplaceSkin}:${i}`;
                           const existingDeal = dealStates[dealKey];
                           const hasActiveDeal = existingDeal && existingDeal.phase !== 'brief';
@@ -2053,10 +2085,7 @@ export default function InstagramDemoPage() {
                                 </div>
                               </div>
                               <div style={{ fontSize: '13px', color: C.textSecondary, marginBottom: '6px' }}>{opp.type} | Match: {opp.match}</div>
-                              <div style={{ fontSize: '10px', color: C.textSecondary, display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '12px' }}>
-                                <svg width="10" height="10" viewBox="0 0 24 24" fill={C.textSecondary} stroke="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                                Matched via {selectedMarketplaceSkin} ValueSkin
-                              </div>
+                              <div style={{ marginBottom: '12px' }} />
 
                               {/* Deal Room — hidden until opened */}
                               {!isNegotiating ? (
@@ -2121,12 +2150,6 @@ export default function InstagramDemoPage() {
                                   </div>
 
                                   {/* Brand identity + intent */}
-                                  {activeBrandSkin && (
-                                    <div style={{ background:'rgba(230,81,0,0.06)', border:'1px solid rgba(230,81,0,0.15)', borderRadius:'8px', padding:'8px 12px', marginBottom:'10px', fontSize:'11px', color:C.textSecondary }}>
-                                      Brand identity: <strong style={{ color:C.text }}>{activeBrandSkin}</strong>
-                                      {opp && (() => { const myProfs = Object.values(valueSkins).map(v=>v?.profession).filter(Boolean) as string[]; return myProfs.includes(activeBrandSkin) ? <span style={{ marginLeft:'8px', color:C.success, fontWeight:700 }}>Matched</span> : <span style={{ marginLeft:'8px', color:C.textSecondary, fontWeight:700 }}>No shared ValueSkin</span>; })()}
-                                    </div>
-                                  )}
                                   <div style={{ fontSize: '11px', color: C.textMuted, marginBottom: '10px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                                     <span
                                       onMouseEnter={() => setHoveredTooltip('intent')}
@@ -2473,6 +2496,81 @@ export default function InstagramDemoPage() {
                     )}
                     </>)}
 
+                    {/* Creator Collab Mode */}
+                    {creatorMarketplaceMode === 'collab' && (
+                      <>
+                        <div style={{ background: 'rgba(94,106,210,0.06)', border: '1px solid rgba(94,106,210,0.2)', borderRadius: '10px', padding: '12px 14px', marginBottom: '16px' }}>
+                          <div style={{ fontSize: '12px', fontWeight: 700, color: C.text, marginBottom: '4px' }}>Creator Collabs</div>
+                          <div style={{ fontSize: '11px', color: C.textSecondary, lineHeight: 1.5 }}>Reach out to other creators for joint content, co-promotions, or shared projects. No ValuSkin match required — you can approach any creator.</div>
+                        </div>
+                        {BRAND_MARKETPLACE_CREATORS.map((creator, i) => {
+                          const sent = collabSentIdx.includes(i);
+                          const open = collabRequestOpen === i;
+                          const badge = PROFESSION_BADGES[creator.valueSkin];
+                          const abbr = badge?.abbreviation ?? creator.valueSkin.split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0, 3);
+                          const badgeColor = badge?.color ?? C.primary;
+                          return (
+                            <div key={i} style={{ background: C.card, borderRadius: '12px', padding: '14px', marginBottom: '10px', border: `1px solid ${open ? 'rgba(94,106,210,0.4)' : C.border}` }}>
+                              <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '10px' }}>
+                                <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${creator.name.replace(/\s/g,'')}`} alt={creator.name} style={{ width: '40px', height: '40px', borderRadius: '50%', background: C.surfaceAlt, border: `2px solid ${badgeColor}` }} />
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <span style={{ fontWeight: 700, fontSize: '14px' }}>{creator.name}</span>
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '18px', height: '18px', borderRadius: '4px', background: badgeColor, color: '#fff', fontSize: '7px', fontWeight: 700 }}>{abbr}</span>
+                                  </div>
+                                  <div style={{ fontSize: '11px', color: C.textSecondary }}>{creator.handle} · {creator.followers} followers</div>
+                                </div>
+                                {sent ? (
+                                  <span style={{ fontSize: '11px', fontWeight: 600, color: C.textSecondary, background: C.surfaceAlt, padding: '4px 10px', borderRadius: '6px' }}>Sent</span>
+                                ) : (
+                                  <button
+                                    onClick={() => setCollabRequestOpen(open ? null : i)}
+                                    style={{ fontSize: '12px', fontWeight: 600, color: '#fff', background: C.accent, border: 'none', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer' }}
+                                  >
+                                    {open ? 'Cancel' : 'Collab'}
+                                  </button>
+                                )}
+                              </div>
+                              {open && (
+                                <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: '12px' }}>
+                                  <div style={{ marginBottom: '8px' }}>
+                                    <div style={{ fontSize: '11px', color: C.textMuted, fontWeight: 600, marginBottom: '4px' }}>Collab idea *</div>
+                                    <textarea
+                                      placeholder="What do you want to create together?"
+                                      value={collabIdea}
+                                      onChange={e => setCollabIdea(e.target.value)}
+                                      rows={2}
+                                      style={{ width: '100%', background: C.bg, border: `1px solid ${C.border}`, borderRadius: '8px', color: C.text, padding: '7px 10px', fontSize: '12px', fontFamily: 'inherit', outline: 'none', resize: 'none', boxSizing: 'border-box' }}
+                                    />
+                                  </div>
+                                  <div style={{ marginBottom: '10px' }}>
+                                    <div style={{ fontSize: '11px', color: C.textMuted, fontWeight: 600, marginBottom: '4px' }}>Content format</div>
+                                    <input
+                                      type="text"
+                                      placeholder="e.g. Co-hosted Reel, Joint Story series"
+                                      value={collabFormat}
+                                      onChange={e => setCollabFormat(e.target.value)}
+                                      style={{ width: '100%', background: C.bg, border: `1px solid ${C.border}`, borderRadius: '8px', color: C.text, padding: '7px 10px', fontSize: '12px', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+                                    />
+                                  </div>
+                                  <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                                    <button onClick={() => setCollabPaid(false)} style={{ flex: 1, padding: '7px', borderRadius: '8px', border: `1px solid ${!collabPaid ? C.primary : C.border}`, background: !collabPaid ? `${C.primary}12` : C.bg, color: !collabPaid ? C.primary : C.textSecondary, fontWeight: 600, fontSize: '11px', cursor: 'pointer' }}>Unpaid / Organic</button>
+                                    <button onClick={() => setCollabPaid(true)} style={{ flex: 1, padding: '7px', borderRadius: '8px', border: `1px solid ${collabPaid ? C.primary : C.border}`, background: collabPaid ? `${C.primary}12` : C.bg, color: collabPaid ? C.primary : C.textSecondary, fontWeight: 600, fontSize: '11px', cursor: 'pointer' }}>Paid</button>
+                                    <button onClick={() => setCollabNegotiable(p => !p)} style={{ flex: 1, padding: '7px', borderRadius: '8px', border: `1px solid ${collabNegotiable ? C.accent : C.border}`, background: collabNegotiable ? 'rgba(94,106,210,0.1)' : C.bg, color: collabNegotiable ? C.accent : C.textSecondary, fontWeight: 600, fontSize: '11px', cursor: 'pointer' }}>Negotiable</button>
+                                  </div>
+                                  <button
+                                    onClick={() => { if (collabIdea.trim()) { setCollabSentIdx(p => [...p, i]); setCollabRequestOpen(null); setCollabIdea(''); setCollabFormat(''); setPurchaseToast('Collab request sent'); setTimeout(() => setPurchaseToast(null), 3000); } }}
+                                    style={{ width: '100%', background: collabIdea.trim() ? C.accent : C.border, border: 'none', padding: '9px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: collabIdea.trim() ? 'pointer' : 'not-allowed', fontSize: '13px' }}
+                                  >
+                                    Send Collab Request
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </>
+                    )}
 
                   </div>
                 </>
@@ -2510,7 +2608,7 @@ export default function InstagramDemoPage() {
                           <div style={{ marginBottom:'12px' }}>
                             <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'6px' }}>Required ValueSkin (profession) *</div>
                             <div style={{ display:'flex', flexWrap:'wrap', gap:'6px' }}>
-                              {['Software Engineer','Data Scientist','UX/UI Designer','Fitness Coach','Nutritionist','Product Manager','Graphic Designer','Chef','Actor','Fitness Coach','Doctor','Financial Advisor'].map(p => (
+                              {['Software Engineer','Full Stack Developer','Data Scientist','UX/UI Designer','Fitness Coach','Sports Coach','Nutritionist','Product Manager','Graphic Designer','Chef','Actor','Doctor','Financial Advisor','Football Player','Cricket Player','Hockey Player'].map(p => (
                                 <button key={p} onClick={() => setNewCampaignProfessions(prev => prev.includes(p) ? prev.filter(x=>x!==p) : [...prev,p])} style={{ padding:'5px 10px', borderRadius:'6px', fontSize:'11px', fontWeight:600, cursor:'pointer', background:newCampaignProfessions.includes(p)?`${C.primary}15`:C.bg, color:newCampaignProfessions.includes(p)?C.primary:C.textSecondary, border:`1px solid ${newCampaignProfessions.includes(p)?C.primary:C.border}` }}>{p}</button>
                               ))}
                             </div>
@@ -2870,10 +2968,6 @@ export default function InstagramDemoPage() {
                                 {creator.willingToBarter && <span style={{ fontSize: '10px', fontWeight: 700, color: C.textSecondary, background: C.surfaceAlt, padding: '2px 6px', borderRadius: '4px' }}>OPEN TO BARTER</span>}
                               </div>
                               <a href={`https://instagram.com/${creator.handle.replace('@', '')}`} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontSize: '12px', color: C.primary, textDecoration: 'none', cursor: 'pointer' }} onMouseEnter={e => { e.currentTarget.style.textDecoration = 'underline'; }} onMouseLeave={e => { e.currentTarget.style.textDecoration = 'none'; }}>{creator.handle}</a>
-                              <div style={{ fontSize: '10px', color: C.primary, display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
-                                <svg width="10" height="10" viewBox="0 0 24 24" fill={C.primary} stroke="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                                Matched by ValueSkin: {creator.valueSkin}
-                              </div>
                             </div>
                             <div style={{ textAlign: 'right' }}>
                               <div style={{ fontSize: '16px', fontWeight: 800, color: C.primary }}>{creator.matchScore}</div>
@@ -3049,6 +3143,30 @@ export default function InstagramDemoPage() {
                                     Fill in your campaign brief before contacting {creator.name}. Brands without briefs cannot initiate contact.
                                   </div>
 
+                                  {/* About brand */}
+                                  <div style={{ marginBottom: '10px' }}>
+                                    <div style={{ fontSize: '11px', color: C.textMuted, marginBottom: '4px', fontWeight: 600 }}>About your brand <span style={{ color: C.textSecondary }}>*</span></div>
+                                    <textarea
+                                      placeholder="What does your brand do? Who is your audience?"
+                                      value={brandBriefAbout}
+                                      onChange={(e) => setBrandBriefAbout(e.target.value)}
+                                      rows={2}
+                                      style={{ width: '100%', background: C.bg, border: `1px solid ${C.border}`, borderRadius: '8px', color: C.text, padding: '7px 10px', fontSize: '12px', fontFamily: 'inherit', outline: 'none', resize: 'none', boxSizing: 'border-box' }}
+                                    />
+                                  </div>
+
+                                  {/* Campaign description */}
+                                  <div style={{ marginBottom: '10px' }}>
+                                    <div style={{ fontSize: '11px', color: C.textMuted, marginBottom: '4px', fontWeight: 600 }}>Campaign / product details <span style={{ color: C.textSecondary }}>*</span></div>
+                                    <textarea
+                                      placeholder="Describe the specific product or campaign you're promoting. What should the creator know?"
+                                      value={brandBriefCampaignDesc}
+                                      onChange={(e) => setBrandBriefCampaignDesc(e.target.value)}
+                                      rows={3}
+                                      style={{ width: '100%', background: C.bg, border: `1px solid ${C.border}`, borderRadius: '8px', color: C.text, padding: '7px 10px', fontSize: '12px', fontFamily: 'inherit', outline: 'none', resize: 'none', boxSizing: 'border-box' }}
+                                    />
+                                  </div>
+
                                   {/* Intent selector */}
                                   <div style={{ marginBottom: '10px' }}>
                                     <div style={{ fontSize: '11px', color: C.textMuted, marginBottom: '6px', fontWeight: 600 }}>Intent</div>
@@ -3088,7 +3206,7 @@ export default function InstagramDemoPage() {
                                   </div>
 
                                   {/* Deliverables */}
-                                  <div style={{ marginBottom: '14px' }}>
+                                  <div style={{ marginBottom: '10px' }}>
                                     <div style={{ fontSize: '11px', color: C.textMuted, marginBottom: '4px', fontWeight: 600 }}>Deliverables <span style={{ color: C.textSecondary }}>*</span></div>
                                     <textarea
                                       placeholder="e.g. 2 × Instagram Reels, 3 × Stories, 1 × static post"
@@ -3099,10 +3217,24 @@ export default function InstagramDemoPage() {
                                     />
                                   </div>
 
+                                  {/* Non-negotiable toggle */}
+                                  <div style={{ marginBottom: '14px', display: 'flex', alignItems: 'flex-start', gap: '10px', background: brandOfferNonNegotiable ? 'rgba(239,68,68,0.06)' : C.bg, border: `1px solid ${brandOfferNonNegotiable ? 'rgba(239,68,68,0.3)' : C.border}`, borderRadius: '8px', padding: '10px 12px' }}>
+                                    <button
+                                      onClick={() => setBrandOfferNonNegotiable(p => !p)}
+                                      style={{ width: '18px', height: '18px', borderRadius: '4px', border: `2px solid ${brandOfferNonNegotiable ? 'rgba(239,68,68,0.8)' : C.border}`, background: brandOfferNonNegotiable ? 'rgba(239,68,68,0.8)' : 'transparent', cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '1px' }}
+                                    >
+                                      {brandOfferNonNegotiable && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                                    </button>
+                                    <div>
+                                      <div style={{ fontSize: '12px', fontWeight: 700, color: brandOfferNonNegotiable ? 'rgba(239,68,68,0.9)' : C.text }}>This is our first, final, and non-negotiable offer</div>
+                                      <div style={{ fontSize: '10px', color: C.textMuted, marginTop: '2px', lineHeight: 1.4 }}>If the creator rejects this offer, they are automatically disqualified from this campaign.</div>
+                                    </div>
+                                  </div>
+
                                   <div style={{ display: 'flex', gap: '8px' }}>
                                     <button
-                                      onClick={() => { if (brandBriefTitle.trim() && brandBriefDeliverables.trim()) setBrandDealPhase('offer'); }}
-                                      style={{ flex: 1, background: brandBriefTitle.trim() && brandBriefDeliverables.trim() ? C.warning : C.border, border: 'none', padding: '9px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: brandBriefTitle.trim() && brandBriefDeliverables.trim() ? 'pointer' : 'not-allowed', fontSize: '13px' }}
+                                      onClick={() => { if (brandBriefTitle.trim() && brandBriefDeliverables.trim() && brandBriefAbout.trim() && brandBriefCampaignDesc.trim()) setBrandDealPhase('offer'); }}
+                                      style={{ flex: 1, background: brandBriefTitle.trim() && brandBriefDeliverables.trim() && brandBriefAbout.trim() && brandBriefCampaignDesc.trim() ? C.warning : C.border, border: 'none', padding: '9px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: brandBriefTitle.trim() && brandBriefDeliverables.trim() && brandBriefAbout.trim() && brandBriefCampaignDesc.trim() ? 'pointer' : 'not-allowed', fontSize: '13px' }}
                                     >
                                       Continue to Offer
                                     </button>
@@ -3119,7 +3251,10 @@ export default function InstagramDemoPage() {
                                     <div style={{ fontSize: '10px', color: C.textMuted, fontWeight: 700, textTransform: 'uppercase', marginBottom: '4px' }}>Brief</div>
                                     <div style={{ fontSize: '12px', fontWeight: 600, color: C.text }}>{brandBriefTitle}</div>
                                     <div style={{ fontSize: '11px', color: C.textSecondary, marginTop: '2px' }}>{brandCampaignType} · {brandDealIntent}</div>
+                                    {brandBriefAbout && <div style={{ fontSize: '11px', color: C.textMuted, marginTop: '4px', lineHeight: 1.4 }}><span style={{ fontWeight: 600, color: C.textSecondary }}>Brand: </span>{brandBriefAbout}</div>}
+                                    {brandBriefCampaignDesc && <div style={{ fontSize: '11px', color: C.textMuted, marginTop: '3px', lineHeight: 1.4 }}><span style={{ fontWeight: 600, color: C.textSecondary }}>Campaign: </span>{brandBriefCampaignDesc}</div>}
                                     <div style={{ fontSize: '11px', color: C.textMuted, marginTop: '4px', lineHeight: 1.4 }}>{brandBriefDeliverables}</div>
+                                    {brandOfferNonNegotiable && <div style={{ fontSize: '10px', fontWeight: 700, color: 'rgba(239,68,68,0.85)', marginTop: '6px', padding: '3px 6px', background: 'rgba(239,68,68,0.07)', borderRadius: '4px', display: 'inline-block' }}>Non-negotiable offer</div>}
                                   </div>
 
 <div style={{ marginBottom: '12px' }}>
@@ -3233,7 +3368,7 @@ export default function InstagramDemoPage() {
                                 </>
                               )}
 
-                              {/* Phase 4: Creator counter-offer received */}
+                              {/* Phase 4: Counter received — brand reviewing */}
                               {brandDealPhase === 'counter' && (
                                 <>
                                   <div style={{ background: 'rgba(230,81,0,0.06)', borderRadius: '8px', padding: '10px 12px', marginBottom: '12px', border: `1px solid rgba(230,81,0,0.2)` }}>
@@ -3243,53 +3378,84 @@ export default function InstagramDemoPage() {
                                       <span style={{ fontSize: '12px', color: C.textMuted }}>/post</span>
                                     </div>
                                     <div style={{ fontSize: '11px', color: C.textSecondary }}>
-                                      Your offer was ${brandBudget} · difference: ${(parseInt(simulatedCounterAmount) - parseInt(brandBudget)).toLocaleString()}
+                                      Your offer was ${brandBudget} · difference: +${(parseInt(simulatedCounterAmount) - parseInt(brandBudget)).toLocaleString()}
                                     </div>
                                   </div>
-
-                                  <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                                  <div style={{ fontSize: '11px', color: C.textMuted, marginBottom: '10px', lineHeight: 1.4 }}>Review the counter-offer and choose a response. The creator will be notified once you act.</div>
+                                  <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
                                     <button
                                       onClick={() => { setBrandDealPhase('accepted'); setBrandApprovalPhase('accepted'); setPurchaseToast('Deal accepted — review deliverables when creator uploads'); setTimeout(() => setPurchaseToast(null), 3000); }}
-                                      style={{ flex: 1, background: C.success, border: 'none', padding: '9px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}
+                                      style={{ flex: 1, background: C.success, border: 'none', padding: '9px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '12px' }}
                                     >
                                       Accept ${simulatedCounterAmount}
                                     </button>
                                     <button
-                                      onClick={() => setBrandCounterAmount(brandBudget)}
-                                      style={{ flex: 1, background: C.primary, border: 'none', padding: '9px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}
+                                      onClick={() => { setBrandCounterAmount(brandBudget); setBrandDealPhase('brand_reviewing'); }}
+                                      style={{ flex: 1, background: C.primary, border: 'none', padding: '9px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '12px' }}
                                     >
                                       Counter Again
                                     </button>
                                   </div>
+                                  <div style={{ display: 'flex', gap: '8px' }}>
+                                    <button
+                                      onClick={() => setBrandDealPhase('last_offer')}
+                                      style={{ flex: 1, background: 'none', border: `1px solid ${C.warning}`, padding: '8px', borderRadius: '8px', color: C.warning, fontWeight: 600, cursor: 'pointer', fontSize: '11px' }}
+                                    >
+                                      This is our last offer
+                                    </button>
+                                    <button
+                                      onClick={() => { setNegotiatingCreator(null); setBrandDealPhase('brief'); setBrandBriefTitle(''); setBrandBriefDeliverables(''); setBrandBriefAbout(''); setBrandBriefCampaignDesc(''); }}
+                                      style={{ flex: 1, background: 'none', border: `1px solid rgba(239,68,68,0.4)`, padding: '8px', borderRadius: '8px', color: 'rgba(239,68,68,0.85)', fontWeight: 600, cursor: 'pointer', fontSize: '11px' }}
+                                    >
+                                      Reject creator
+                                    </button>
+                                  </div>
+                                </>
+                              )}
 
-                                  {brandCounterAmount !== '' && (
-                                    <div style={{ marginBottom: '10px' }}>
-                                      <div style={{ fontSize: '11px', color: C.textMuted, marginBottom: '4px', fontWeight: 600 }}>Your counter</div>
-                                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                        <span style={{ fontSize: '16px', fontWeight: 800, color: C.text }}>$</span>
-                                        <input
-                                          type="text"
-                                          value={brandCounterAmount}
-                                          onChange={(e) => setBrandCounterAmount(e.target.value.replace(/[^0-9]/g, ''))}
-                                          style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: '8px', color: C.text, padding: '6px 10px', fontSize: '15px', fontWeight: 700, fontFamily: 'inherit', outline: 'none', width: '100px' }}
-                                          onFocus={(e) => { e.currentTarget.style.borderColor = C.primary; }}
-                                          onBlur={(e) => { e.currentTarget.style.borderColor = C.border; }}
-                                        />
-                                        <button
-                                          onClick={() => { setBrandBudget(brandCounterAmount); setBrandCounterAmount(''); setBrandDealPhase('pending'); }}
-                                          style={{ background: C.primary, border: 'none', padding: '7px 12px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '12px' }}
-                                        >
-                                          Send
-                                        </button>
-                                      </div>
+                              {/* Phase 4a: Brand sends counter */}
+                              {brandDealPhase === 'brand_reviewing' && (
+                                <>
+                                  <div style={{ fontSize: '12px', fontWeight: 700, color: C.text, marginBottom: '10px' }}>Send your counter</div>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                                    <span style={{ fontSize: '16px', fontWeight: 800, color: C.text }}>$</span>
+                                    <input
+                                      type="text"
+                                      value={brandCounterAmount}
+                                      onChange={(e) => setBrandCounterAmount(e.target.value.replace(/[^0-9]/g, ''))}
+                                      style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: '8px', color: C.text, padding: '6px 10px', fontSize: '15px', fontWeight: 700, fontFamily: 'inherit', outline: 'none', width: '110px' }}
+                                      onFocus={(e) => { e.currentTarget.style.borderColor = C.primary; }}
+                                      onBlur={(e) => { e.currentTarget.style.borderColor = C.border; }}
+                                    />
+                                    <span style={{ fontSize: '12px', color: C.textMuted }}>/post</span>
+                                  </div>
+                                  <div style={{ display: 'flex', gap: '8px' }}>
+                                    <button
+                                      onClick={() => { if (brandCounterAmount) { setBrandBudget(brandCounterAmount); setBrandCounterAmount(''); setBrandDealPhase('pending'); } }}
+                                      style={{ flex: 1, background: brandCounterAmount ? C.primary : C.border, border: 'none', padding: '9px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: brandCounterAmount ? 'pointer' : 'not-allowed', fontSize: '13px' }}
+                                    >
+                                      Send Counter
+                                    </button>
+                                    <button onClick={() => setBrandDealPhase('counter')} style={{ background: 'none', border: `1px solid ${C.border}`, padding: '9px 12px', borderRadius: '8px', color: C.textSecondary, cursor: 'pointer', fontSize: '12px' }}>Back</button>
+                                  </div>
+                                </>
+                              )}
+
+                              {/* Phase 4b: Last offer — creator has time to accept or lose deal */}
+                              {brandDealPhase === 'last_offer' && (
+                                <>
+                                  <div style={{ background: 'rgba(230,81,0,0.06)', borderRadius: '8px', padding: '10px 12px', marginBottom: '12px', border: `1px solid rgba(230,81,0,0.3)` }}>
+                                    <div style={{ fontSize: '11px', fontWeight: 700, color: C.warning, marginBottom: '4px' }}>Last offer sent</div>
+                                    <div style={{ fontSize: '22px', fontWeight: 800, color: C.text, marginBottom: '2px' }}>${brandBudget}<span style={{ fontSize: '12px', color: C.textMuted, fontWeight: 400 }}>/post</span></div>
+                                    <div style={{ fontSize: '11px', color: C.textMuted, lineHeight: 1.4 }}>
+                                      {creator.name} has been notified this is your final offer. If they reject, they are disqualified from this campaign. They have 24h to respond.
                                     </div>
-                                  )}
-
+                                  </div>
                                   <button
-                                    onClick={() => { setNegotiatingCreator(null); setBrandDealPhase('brief'); }}
-                                    style={{ width: '100%', background: 'none', border: `1px solid ${C.border}`, padding: '7px', borderRadius: '8px', color: C.textSecondary, cursor: 'pointer', fontSize: '12px' }}
+                                    onClick={() => { setNegotiatingCreator(null); setBrandDealPhase('brief'); setBrandBriefTitle(''); setBrandBriefDeliverables(''); setBrandBriefAbout(''); setBrandBriefCampaignDesc(''); }}
+                                    style={{ width: '100%', background: 'none', border: `1px solid ${C.border}`, padding: '8px', borderRadius: '8px', color: C.textSecondary, cursor: 'pointer', fontSize: '12px' }}
                                   >
-                                    Decline & Close
+                                    Withdraw & close
                                   </button>
                                 </>
                               )}
