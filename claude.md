@@ -979,6 +979,17 @@ When a platform like Meta adopts ValueSkins, the following backend services must
 - **Analytics service**: Campaign performance (views, applications, deal completion rate) — no tracking exists.
 - **Search indexing**: Full-text search across creators by name, handle, bio, skills. Currently client-side string matching on hardcoded array.
 
+### 8. Role switching enforcement (prod readiness, later)
+- Currently the demo allows free switching between brand and creator roles. In production, a user is either a creator or a brand — not both. Switching to brand requires a separate brand account or purchasing a brand ValuSkin.
+- **Hard walls needed**: Creators must be blocked server-side from creating campaigns, accessing brand dashboard, or sending brand proposals. Brands must be blocked from applying to opportunities or appearing in creator discovery. Role enforcement must be JWT-claim-level (not UI-only), with backend middleware rejecting requests that don't match the user's role.
+- Currently all role gating is client-side (`marketplaceRole` state toggle). No server enforcement exists.
+
+### 9. Real creator/brand data in marketplace (prod readiness, later)
+- Marketplace currently renders from hardcoded `MOCK_CREATORS` arrays and `SAMPLE_OPPORTUNITIES`. In production, the marketplace must fetch real creators and campaigns from the backend.
+- **Creator discovery**: `GET /creators?skin=X&level=Y&page=N` must return real DB rows with actual follower counts, trust scores, and ValuSkin assignments. The frontend filter-by-skin logic must query the backend, not filter a local array.
+- **Campaign/opportunity listing**: `GET /opportunities?skin=X&page=N` must return real brand-created campaigns from the DB, not hardcoded objects.
+- Both endpoints need pagination, caching, and index-backed queries to handle scale.
+
 ---
 
 ## Zero Vibe-Code Fingerprints — Mandatory

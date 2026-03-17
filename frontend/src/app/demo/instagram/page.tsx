@@ -851,10 +851,28 @@ export default function InstagramDemoPage() {
     { id:3, brandProfession:'Fitness Coach', title:'Spring Fitness Challenge', description:'Fitness coach to lead a 7-day challenge campaign. 3x Reels.', requiredProfessions:['Fitness Coach','Nutritionist'], minLevel:1, maxLevel:3, budget:'3800', deadline:'2026-04-01', location:'Remote', nonNegotiables:[], deliverables:'3x Instagram Reels', status:'open', applicants:2 },
   ];
 
-  // Seed default campaigns on first load
+  const defaultApplications: SharedApplication[] = [
+    { id:9001, campaignId:2, campaignTitle:'Mobile App Design Review', creatorProfession:'UX/UI Designer', creatorHandle:'@priya_designs', status:'pending', appliedAt:'2026-03-16',
+      creatorName:'Priya Sharma', creatorFollowers:'1.2M', creatorEngagement:'5.8%', creatorLevel:3, creatorMatchScore:'91%', creatorRate:'$6,000', creatorDealCompletionRate:91,
+      creatorPortfolio:['Figma design showcase — 3.4M views','Framer landing page — 1.2M views'], creatorAudienceLocation:'India', creatorAudienceAge:'18-24', creatorResponseTimeHrs:12,
+      creatorInstagramUrl:'https://instagram.com/priya_designs' },
+    { id:9002, campaignId:3, campaignTitle:'Spring Fitness Challenge', creatorProfession:'Fitness Coach', creatorHandle:'@fitjordan', status:'pending', appliedAt:'2026-03-15',
+      creatorName:'Jordan Blake', creatorFollowers:'670K', creatorEngagement:'8.1%', creatorLevel:2, creatorMatchScore:'88%', creatorRate:'$3,500', creatorDealCompletionRate:96,
+      creatorPortfolio:['30-day transform challenge — 1.8M views'], creatorAudienceLocation:'USA', creatorAudienceAge:'25-34', creatorResponseTimeHrs:4,
+      creatorInstagramUrl:'https://instagram.com/fitjordan' },
+    { id:9003, campaignId:3, campaignTitle:'Spring Fitness Challenge', creatorProfession:'Nutritionist', creatorHandle:'@elena_nutrition', status:'pending', appliedAt:'2026-03-14',
+      creatorName:'Elena Rodriguez', creatorFollowers:'420K', creatorEngagement:'6.4%', creatorLevel:1, creatorMatchScore:'82%', creatorRate:'$2,800', creatorDealCompletionRate:89,
+      creatorPortfolio:[], creatorAudienceLocation:'Spain', creatorAudienceAge:'25-34', creatorResponseTimeHrs:8,
+      creatorInstagramUrl:'https://instagram.com/elena_nutrition' },
+  ];
+
+  // Seed default campaigns + applications on first load
   useEffect(() => {
     if (dealSync.loaded && campaigns.length === 0) {
       setCampaigns(defaultCampaigns);
+    }
+    if (dealSync.loaded && sharedApplications.length === 0) {
+      setSharedApplications(defaultApplications);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dealSync.loaded]);
@@ -2169,6 +2187,18 @@ export default function InstagramDemoPage() {
                                             creatorHandle: '@creator_demo',
                                             status: 'accepted',
                                             appliedAt: new Date().toLocaleDateString(),
+                                            creatorName: profileName || 'Demo Creator',
+                                            creatorFollowers: `${(metrics.followers / 1000).toFixed(metrics.followers >= 1000000 ? 1 : 0)}${metrics.followers >= 1000000 ? 'M' : 'K'}`,
+                                            creatorEngagement: `${metrics.engagement.toFixed(1)}%`,
+                                            creatorLevel: ownedSkins.length > 0 ? getSkinLevel(selectedMarketplaceSkin || ownedSkins[0].profession, metrics.followers, ownedSkins.length) : 1,
+                                            creatorMatchScore: '94%',
+                                            creatorRate: rateCard.reel ? `$${rateCard.reel}` : '$3,000',
+                                            creatorDealCompletionRate: 95,
+                                            creatorPortfolio: [],
+                                            creatorAudienceLocation: selectedCountry || 'USA',
+                                            creatorAudienceAge: '25-34',
+                                            creatorResponseTimeHrs: 6,
+                                            creatorInstagramUrl: `https://instagram.com/${('@creator_demo').replace('@', '')}`,
                                           };
                                           persistApplications([...sharedApplications, newApp]);
                                         }} style={{ flex: 1, background: C.success, border: 'none', padding: '8px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '12px' }}>Accept</button>
@@ -2811,11 +2841,13 @@ export default function InstagramDemoPage() {
                       return (
                         <div key={i} style={{ background: C.card, borderRadius: '12px', padding: '16px', marginBottom: '12px', border: `1px solid ${isNegotiating ? 'rgba(230,81,0,0.4)' : creator.featured ? 'rgba(0,102,204,0.3)' : C.border}` }}>
                           <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
-                            <img
-                              src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${creator.name.replace(/\s/g, '')}`}
-                              alt={creator.name}
-                              style={{ width: '44px', height: '44px', borderRadius: '50%', background: C.surfaceAlt }}
-                            />
+                            <a href={`https://instagram.com/${creator.handle.replace('@', '')}`} target="_blank" rel="noopener noreferrer" title="View Instagram profile" style={{ flexShrink:0 }}>
+                              <img
+                                src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${creator.name.replace(/\s/g, '')}`}
+                                alt={creator.name}
+                                style={{ width: '44px', height: '44px', borderRadius: '50%', background: C.surfaceAlt, cursor:'pointer', border:`2px solid ${C.primary}` }}
+                              />
+                            </a>
                             <div style={{ flex: 1 }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                 <span onClick={e => { e.stopPropagation(); setPreviewCreator(creator); }} style={{ fontWeight: 700, fontSize: '14px', cursor: 'pointer' }}
@@ -3413,13 +3445,71 @@ export default function InstagramDemoPage() {
                         </div>
                       ) : sharedApplications.map((app,i) => {
                         const camp = campaigns.find(c=>c.id===app.campaignId);
+                        const displayName = app.creatorName || app.creatorHandle;
+                        const igUrl = app.creatorInstagramUrl || `https://instagram.com/${app.creatorHandle.replace('@', '')}`;
                         return (
-                          <div key={i} style={{ background:C.card, borderRadius:'12px', padding:'14px', marginBottom:'10px', border:`1px solid ${app.status==='accepted'?'rgba(46,125,50,0.3)':C.border}` }}>
-                            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'6px' }}>
-                              <span style={{ fontSize:'13px', fontWeight:700, color:C.text }}>{app.creatorHandle} ({app.creatorProfession})</span>
-                              <span style={{ fontSize:'10px', fontWeight:700, color:app.status==='pending'?'#f59e0b':app.status==='accepted'?C.success:C.textMuted, background:app.status==='pending'?'rgba(245,158,11,0.1)':app.status==='accepted'?C.surfaceAlt:'rgba(239,68,68,0.1)', padding:'2px 8px', borderRadius:'6px', textTransform:'uppercase' }}>{app.status}</span>
+                          <div key={i} style={{ background:C.card, borderRadius:'12px', padding:'16px', marginBottom:'12px', border:`1px solid ${app.status==='accepted'?'rgba(46,125,50,0.3)':C.border}` }}>
+                            {/* Header — avatar + name + status */}
+                            <div style={{ display:'flex', gap:'12px', marginBottom:'12px' }}>
+                              <a href={igUrl} target="_blank" rel="noopener noreferrer" title="View Instagram profile" style={{ flexShrink:0 }}>
+                                <img
+                                  src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${displayName.replace(/[\s@]/g, '')}`}
+                                  alt={displayName}
+                                  style={{ width:'44px', height:'44px', borderRadius:'50%', background:C.surfaceAlt, cursor:'pointer', border:`2px solid ${C.primary}` }}
+                                />
+                              </a>
+                              <div style={{ flex:1, minWidth:0 }}>
+                                <div style={{ display:'flex', alignItems:'center', gap:'6px', flexWrap:'wrap' }}>
+                                  <span style={{ fontSize:'14px', fontWeight:700, color:C.text }}>{displayName}</span>
+                                  {app.creatorLevel && (
+                                    <span style={{ fontSize:'10px', fontWeight:700, color:'#fff', background:app.creatorLevel>=4?C.primary:app.creatorLevel>=3?'#e65100':app.creatorLevel>=2?'#f59e0b':'#888', padding:'1px 6px', borderRadius:'4px' }}>Lv.{app.creatorLevel}</span>
+                                  )}
+                                  <span style={{ fontSize:'10px', fontWeight:700, color:app.status==='pending'?'#f59e0b':app.status==='accepted'?C.success:C.textMuted, background:app.status==='pending'?'rgba(245,158,11,0.1)':app.status==='accepted'?C.surfaceAlt:'rgba(239,68,68,0.1)', padding:'2px 8px', borderRadius:'6px', textTransform:'uppercase' }}>{app.status}</span>
+                                </div>
+                                <div style={{ fontSize:'12px', color:C.textSecondary }}>{app.creatorHandle} · {app.creatorProfession}</div>
+                              </div>
+                              {app.creatorMatchScore && (
+                                <div style={{ textAlign:'right', flexShrink:0 }}>
+                                  <div style={{ fontSize:'16px', fontWeight:800, color:C.primary }}>{app.creatorMatchScore}</div>
+                                  <div style={{ fontSize:'10px', color:C.textMuted }}>match</div>
+                                </div>
+                              )}
                             </div>
-                            <div style={{ fontSize:'11px', color:C.textSecondary, marginBottom:'8px' }}>{camp ? `Campaign: ${camp.title}` : app.campaignTitle} · {app.appliedAt}</div>
+                            {/* Insights grid */}
+                            {(app.creatorFollowers || app.creatorEngagement || app.creatorRate || app.creatorDealCompletionRate) && (
+                              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr 1fr', gap:'5px', marginBottom:'10px' }}>
+                                {[
+                                  { label:'Followers', value:app.creatorFollowers },
+                                  { label:'Engagement', value:app.creatorEngagement },
+                                  { label:'Rate', value:app.creatorRate },
+                                  { label:'Completion', value:app.creatorDealCompletionRate ? `${app.creatorDealCompletionRate}%` : undefined },
+                                ].filter(s => s.value).map(stat => (
+                                  <div key={stat.label} style={{ textAlign:'center', padding:'5px 3px', background:C.surfaceAlt, borderRadius:'6px' }}>
+                                    <div style={{ fontSize:'12px', fontWeight:700, color:C.text }}>{stat.value}</div>
+                                    <div style={{ fontSize:'8px', color:C.textMuted, textTransform:'uppercase', fontWeight:600 }}>{stat.label}</div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            {/* Audience + response meta */}
+                            {(app.creatorAudienceLocation || app.creatorAudienceAge || app.creatorResponseTimeHrs) && (
+                              <div style={{ display:'flex', gap:'5px', flexWrap:'wrap', marginBottom:'10px' }}>
+                                {app.creatorAudienceLocation && <span style={{ fontSize:'10px', padding:'2px 7px', borderRadius:'10px', background:'rgba(0,102,204,0.08)', color:C.primary, border:'1px solid rgba(0,102,204,0.2)' }}>{app.creatorAudienceLocation}</span>}
+                                {app.creatorAudienceAge && <span style={{ fontSize:'10px', padding:'2px 7px', borderRadius:'10px', background:'rgba(0,102,204,0.08)', color:C.primary, border:'1px solid rgba(0,102,204,0.2)' }}>{app.creatorAudienceAge}</span>}
+                                {app.creatorResponseTimeHrs && <span style={{ fontSize:'10px', padding:'2px 7px', borderRadius:'10px', background:'rgba(100,100,100,0.1)', color:C.textSecondary, border:`1px solid ${C.border}` }}>Responds in ≤{app.creatorResponseTimeHrs}h</span>}
+                              </div>
+                            )}
+                            {/* Portfolio highlights */}
+                            {app.creatorPortfolio && app.creatorPortfolio.length > 0 && (
+                              <div style={{ marginBottom:'10px' }}>
+                                <div style={{ fontSize:'10px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', marginBottom:'4px' }}>Past Work</div>
+                                {app.creatorPortfolio.map((p,pi) => (
+                                  <div key={pi} style={{ fontSize:'11px', color:C.textSecondary, paddingLeft:'8px', borderLeft:`2px solid ${C.border}`, marginBottom:'3px' }}>{p}</div>
+                                ))}
+                              </div>
+                            )}
+                            {/* Campaign context */}
+                            <div style={{ fontSize:'11px', color:C.textSecondary, marginBottom:'10px' }}>{camp ? `Campaign: ${camp.title}` : app.campaignTitle} · Applied {app.appliedAt}</div>
                             {app.status === 'accepted' && <div style={{ fontSize:'11px', color:C.success, marginBottom:'8px' }}>Creator has been notified and can now enter negotiation.</div>}
                             {app.status === 'pending' && (
                               <div style={{ display:'flex', gap:'6px' }}>
