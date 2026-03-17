@@ -2040,9 +2040,9 @@ export default function InstagramDemoPage() {
                               onMouseEnter={(e) => { if (opp.instagramUrl) (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(0,102,204,0.6)'; }}
                               onMouseLeave={(e) => { if (opp.instagramUrl) (e.currentTarget as HTMLDivElement).style.borderColor = `1px solid ${opp.featured ? 'rgba(0,102,204,0.3)' : C.border}`; }}
                             >
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', gap: '8px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                  <div style={{ fontWeight: 'bold' }}>{opp.brand}</div>
+                                  <a href={opp.instagramUrl || `https://instagram.com/${opp.brand.replace(/\s+/g, '')}`} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontWeight: 'bold', color: C.primary, textDecoration: 'none', cursor: 'pointer' }} onMouseEnter={e => { e.currentTarget.style.textDecoration = 'underline'; }} onMouseLeave={e => { e.currentTarget.style.textDecoration = 'none'; }}>{opp.brand}</a>
                                   <button
                                     onClick={(e) => { e.stopPropagation(); setAskModalOpp(opp); }}
                                     style={{ fontSize: '11px', fontWeight: 600, color: C.primary, background: `${C.primary}12`, border: `1px solid ${C.primary}30`, padding: '3px 10px', borderRadius: '6px', cursor: 'pointer', transition: 'background 0.15s' }}
@@ -2095,7 +2095,7 @@ export default function InstagramDemoPage() {
                                 <div onClick={() => setNegotiatingOpp(i)} style={{ background: C.surfaceAlt, borderRadius: '10px', padding: '12px 14px', border: `1px solid rgba(0,102,204,0.3)`, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
-                                    <span style={{ fontSize: '11px', fontWeight: 700, color: C.primary, textTransform: 'uppercase', letterSpacing: '0.6px' }}>Deal Room · {opp.brand}</span>
+                                    <span style={{ fontSize: '11px', fontWeight: 700, color: C.primary, textTransform: 'uppercase', letterSpacing: '0.6px' }}>Deal Room · <a href={opp.instagramUrl || `https://instagram.com/${opp.brand.replace(/\s+/g, '')}`} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ color: C.primary, textDecoration: 'none', cursor: 'pointer' }} onMouseEnter={e => { e.currentTarget.style.textDecoration = 'underline'; }} onMouseLeave={e => { e.currentTarget.style.textDecoration = 'none'; }}>{opp.brand}</a></span>
                                   </div>
                                   <span style={{ fontSize: '10px', fontWeight: 600, color: C.textSecondary, background: C.bg, padding: '2px 8px', borderRadius: '4px', border: `1px solid ${C.border}` }}>
                                     {existingDeal.phase === 'chatroom' ? 'In Chat' : existingDeal.phase === 'offer' ? 'Offer Pending' : existingDeal.phase === 'counter' ? 'Counter Offer' : existingDeal.phase === 'accepted' ? 'Accepted' : existingDeal.phase === 'checklist' ? 'Checklist' : existingDeal.phase === 'softhold' ? 'Soft Hold' : 'Active'}
@@ -2109,7 +2109,7 @@ export default function InstagramDemoPage() {
                                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                                       </svg>
-                                      Deal Room · {opp.brand}
+                                      Deal Room · <a href={opp.instagramUrl || `https://instagram.com/${opp.brand.replace(/\s+/g, '')}`} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ color: C.primary, textDecoration: 'none', cursor: 'pointer' }} onMouseEnter={e => { e.currentTarget.style.textDecoration = 'underline'; }} onMouseLeave={e => { e.currentTarget.style.textDecoration = 'none'; }}>{opp.brand}</a>
                                     </div>
                                     {/* Offer expiry countdown — both sides see this */}
                                     {dealRoomPhase === 'offer' && (
@@ -2872,7 +2872,7 @@ export default function InstagramDemoPage() {
                                 {creator.featured && <span style={{ fontSize: '10px', fontWeight: 700, color: C.primary, background: `${C.primary}15`, padding: '2px 6px', borderRadius: '4px' }}>TOP MATCH</span>}
                                 {creator.willingToBarter && <span style={{ fontSize: '10px', fontWeight: 700, color: C.textSecondary, background: C.surfaceAlt, padding: '2px 6px', borderRadius: '4px' }}>OPEN TO BARTER</span>}
                               </div>
-                              <div style={{ fontSize: '12px', color: C.textSecondary }}>{creator.handle}</div>
+                              <a href={`https://instagram.com/${creator.handle.replace('@', '')}`} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontSize: '12px', color: C.primary, textDecoration: 'none', cursor: 'pointer' }} onMouseEnter={e => { e.currentTarget.style.textDecoration = 'underline'; }} onMouseLeave={e => { e.currentTarget.style.textDecoration = 'none'; }}>{creator.handle}</a>
                               <div style={{ fontSize: '10px', color: C.primary, display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
                                 <svg width="10" height="10" viewBox="0 0 24 24" fill={C.primary} stroke="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                                 Matched by ValueSkin: {creator.valueSkin}
@@ -3475,13 +3475,13 @@ export default function InstagramDemoPage() {
                               </a>
                               <div style={{ flex:1, minWidth:0 }}>
                                 <div style={{ display:'flex', alignItems:'center', gap:'6px', flexWrap:'wrap' }}>
-                                  <span style={{ fontSize:'14px', fontWeight:700, color:C.text }}>{displayName}</span>
+                                  <a href={igUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontSize:'14px', fontWeight:700, color:C.primary, textDecoration:'none', cursor:'pointer' }} onMouseEnter={e => { e.currentTarget.style.textDecoration = 'underline'; }} onMouseLeave={e => { e.currentTarget.style.textDecoration = 'none'; }}>{displayName}</a>
                                   {app.creatorLevel && (
                                     <span style={{ fontSize:'10px', fontWeight:700, color:'#fff', background:app.creatorLevel>=4?C.primary:app.creatorLevel>=3?'#e65100':app.creatorLevel>=2?'#f59e0b':'#888', padding:'1px 6px', borderRadius:'4px' }}>Lv.{app.creatorLevel}</span>
                                   )}
                                   <span style={{ fontSize:'10px', fontWeight:700, color:app.status==='pending'?'#f59e0b':app.status==='accepted'?C.success:C.textMuted, background:app.status==='pending'?'rgba(245,158,11,0.1)':app.status==='accepted'?C.surfaceAlt:'rgba(239,68,68,0.1)', padding:'2px 8px', borderRadius:'6px', textTransform:'uppercase' }}>{app.status}</span>
                                 </div>
-                                <div style={{ fontSize:'12px', color:C.textSecondary }}>{app.creatorHandle} · {app.creatorProfession}</div>
+                                <div style={{ fontSize:'12px' }}><a href={igUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ color:C.primary, textDecoration:'none', cursor:'pointer' }} onMouseEnter={e => { e.currentTarget.style.textDecoration = 'underline'; }} onMouseLeave={e => { e.currentTarget.style.textDecoration = 'none'; }}>{app.creatorHandle}</a> · {app.creatorProfession}</div>
                               </div>
                               {app.creatorMatchScore && (
                                 <div style={{ textAlign:'right', flexShrink:0 }}>
@@ -4462,6 +4462,9 @@ export default function InstagramDemoPage() {
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
                             <span style={{ fontSize: '11px', color: C.textMuted }}>{n.time}</span>
                             <span style={{ fontSize: '9px', fontWeight: 700, color: icon.color, background: icon.bg, padding: '1px 6px', borderRadius: '4px' }}>{icon.label}</span>
+                            {(n.type === 'deal' || n.type === 'community') && (
+                              <a href="#" onClick={(e) => { e.preventDefault(); window.open('https://instagram.com', '_blank'); }} style={{ fontSize: '10px', fontWeight: 600, color: C.primary, textDecoration: 'none', cursor: 'pointer' }} onMouseEnter={e => { e.currentTarget.style.textDecoration = 'underline'; }} onMouseLeave={e => { e.currentTarget.style.textDecoration = 'none'; }}>View Profile →</a>
+                            )}
                           </div>
                         </div>
                         {!n.read && <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: C.primary, flexShrink: 0, marginTop: '6px' }} />}
@@ -4644,11 +4647,14 @@ export default function InstagramDemoPage() {
                     ))}
                   </div>
                 )}
-                {/* Action */}
-                <button onClick={() => { setPreviewCreator(null); setActiveView('mim'); }}
-                  style={{ width: '100%', padding: '12px', borderRadius: '8px', border: 'none', background: C.primary, color: '#fff', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>
-                  Go to Marketplace
-                </button>
+                {/* Actions */}
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <a href={`https://instagram.com/${previewCreator.handle.replace('@', '')}`} target="_blank" rel="noopener noreferrer" style={{ flex: 1, padding: '12px', borderRadius: '8px', border: `1px solid ${C.border}`, background: C.surfaceAlt, color: C.primary, fontSize: '14px', fontWeight: 600, cursor: 'pointer', textAlign: 'center', textDecoration: 'none' }}>Visit Instagram</a>
+                  <button onClick={() => { setPreviewCreator(null); setActiveView('mim'); }}
+                    style={{ flex: 1, padding: '12px', borderRadius: '8px', border: 'none', background: C.primary, color: '#fff', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>
+                    Back to Marketplace
+                  </button>
+                </div>
               </div>
             </Modal>
           )}
