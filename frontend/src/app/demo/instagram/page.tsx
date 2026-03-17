@@ -476,20 +476,31 @@ export default function InstagramDemoPage() {
     ],
   });
 
-  // Skin XP for leveling
+  // Skin XP for leveling — each skin levels independently
+  // When user has exactly 1 skin, followers contribute bonus XP (audience is clearly about that skin)
+  // When user has 2-3 skins, followers are stripped — can't attribute them to any specific skin
   const [skinXP, setSkinXP] = useState<Record<string, number>>({});
-  const getSkinLevel = (profession: string) => {
-    const xp = skinXP[profession] || 0;
+  const getSkinLevel = (profession: string, followerCount?: number, totalSkins?: number) => {
+    let xp = skinXP[profession] || 0;
+    // Single-skin bonus: followers count as XP when you only have one skin
+    if (totalSkins === 1 && followerCount) {
+      // 1M followers = ~200 bonus XP, 500K = ~150, 100K = ~80, 10K = ~30
+      const followerBonus = Math.round(Math.log10(Math.max(followerCount, 1)) * 40);
+      xp += followerBonus;
+    }
     if (xp >= 1000) return 5;
     if (xp >= 500) return 4;
     if (xp >= 200) return 3;
     if (xp >= 50) return 2;
     return 1;
   };
-  const getSkinXPProgress = (profession: string) => {
-    const xp = skinXP[profession] || 0;
+  const getSkinXPProgress = (profession: string, followerCount?: number, totalSkins?: number) => {
+    let xp = skinXP[profession] || 0;
+    if (totalSkins === 1 && followerCount) {
+      xp += Math.round(Math.log10(Math.max(followerCount, 1)) * 40);
+    }
     const thresholds = [0, 50, 200, 500, 1000];
-    const level = getSkinLevel(profession);
+    const level = getSkinLevel(profession, followerCount, totalSkins);
     if (level >= 5) return 100;
     const current = xp - thresholds[level - 1];
     const needed = thresholds[level] - thresholds[level - 1];
@@ -579,7 +590,7 @@ export default function InstagramDemoPage() {
 
   const [showSkinManageModal, setShowSkinManageModal] = useState<ValueSkinSlot | null>(null);
 
-  const { levels, isLoaded: levelsLoaded } = useLevelConfig();
+  useLevelConfig();
   const { factors } = useReputationConfig();
 
   const [showLevelModal, setShowLevelModal] = useState(false);
@@ -883,8 +894,6 @@ export default function InstagramDemoPage() {
       notifications, onboardingDone, joinedCommunities, dmMessages, communityMessages,
       skinXP, brandProfileSelections, creatorEnergy, metrics, skinsLoaded]);
 
-  const currentLevel = levelsLoaded ? calculateLevel(metrics, levels) : 1;
-
   const handleFollow = () => {
     setIsFollowing(!isFollowing);
     setMetrics(prev => ({ ...prev, followers: prev.followers + (isFollowing ? -1 : 1) }));
@@ -943,19 +952,39 @@ export default function InstagramDemoPage() {
     setTimeout(() => setPurchaseToast(null), 3000);
   };
 
-  const handleDealComplete = (earnedAmount: number, brandName: string, deliverable: string) => {
+  const handleDealComplete = (earnedAmount: number, brandName: string, deliverable: string, skinProfession?: string) => {
     const updatedMetrics = {
       ...metrics,
       dealsCompleted: metrics.dealsCompleted + 1,
       avgDealValue: Math.round((metrics.avgDealValue * metrics.dealsCompleted + earnedAmount * 100) / (metrics.dealsCompleted + 1)),
     };
     setMetrics(updatedMetrics);
-    const newLevel = levelsLoaded ? calculateLevel(updatedMetrics, levels) : currentLevel;
     setCompletedDeals(prev => [...prev, { id: Date.now(), brand: brandName, amount: earnedAmount, completedAt: new Date().toLocaleDateString(), deliverable }]);
-    if (newLevel > currentLevel) {
-      setLevelUpFrom(currentLevel);
-      setLevelUpTo(newLevel);
-      setShowLevelUpModal(true);
+
+    // Add XP to the skin this deal was completed under
+    const targetSkin = skinProfession || selectedMarketplaceSkin || ownedSkins[0]?.profession;
+    if (targetSkin) {
+      const prevLevel = getSkinLevel(targetSkin, metrics.followers, ownedSkins.length);
+      // Deal completion = major XP: base 100 + bonus scaled by deal value
+      const xpGain = 100 + Math.round(earnedAmount / 100);
+      addSkinXP(targetSkin, xpGain);
+      // Check if this triggered a level-up
+      const newXP = (skinXP[targetSkin] || 0) + xpGain;
+      const newLevel = (() => {
+        if (ownedSkins.length === 1 && metrics.followers) {
+          const total = newXP + Math.round(Math.log10(Math.max(metrics.followers, 1)) * 40);
+          if (total >= 1000) return 5; if (total >= 500) return 4; if (total >= 200) return 3; if (total >= 50) return 2; return 1;
+        }
+        if (newXP >= 1000) return 5; if (newXP >= 500) return 4; if (newXP >= 200) return 3; if (newXP >= 50) return 2; return 1;
+      })();
+      if (newLevel > prevLevel) {
+        setLevelUpFrom(prevLevel);
+        setLevelUpTo(newLevel);
+        setShowLevelUpModal(true);
+      } else {
+        setPurchaseToast('Deal complete — earnings added to your balance');
+        setTimeout(() => setPurchaseToast(null), 3000);
+      }
     } else {
       setPurchaseToast('Deal complete — earnings added to your balance');
       setTimeout(() => setPurchaseToast(null), 3000);
@@ -973,6 +1002,11 @@ export default function InstagramDemoPage() {
   const ownedSkins = Object.entries(valueSkins)
     .filter(([, entry]) => entry?.profession)
     .map(([slot, entry]) => ({ slot: slot as ValueSkinSlot, profession: entry!.profession }));
+
+  // Per-skin level: highest owned skin level used as the "profile level"
+  const currentLevel = ownedSkins.length > 0
+    ? Math.max(...ownedSkins.map(s => getSkinLevel(s.profession, metrics.followers, ownedSkins.length)))
+    : 1;
 
   // Opportunities for the currently selected skin — sorted by match % descending
   const activeOpportunities = selectedMarketplaceSkin
@@ -1440,8 +1474,8 @@ export default function InstagramDemoPage() {
                       {ownedSkins.length > 0 && (
                         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '6px' }}>
                           {ownedSkins.map(({ profession }) => {
-                            const level = getSkinLevel(profession);
-                            const progress = getSkinXPProgress(profession);
+                            const level = getSkinLevel(profession, metrics.followers, ownedSkins.length);
+                            const progress = getSkinXPProgress(profession, metrics.followers, ownedSkins.length);
                             const badge = PROFESSION_BADGES[profession];
                             const color = badge?.color ?? C.primary;
                             return (
@@ -1933,7 +1967,7 @@ export default function InstagramDemoPage() {
                                 <div style={{ fontSize: '13px', fontWeight: 600, color: isActive ? C.text : C.textSecondary }}>{profession}</div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                   <span style={{ fontSize: '10px', color: C.textMuted, textTransform: 'uppercase' }}>{SLOT_LABELS[slot]}</span>
-                                  <span style={{ fontSize: '9px', fontWeight: 700, color: badgeColor, background: `${badgeColor}15`, padding: '1px 5px', borderRadius: '3px' }}>Lv.{getSkinLevel(profession)}</span>
+                                  <span style={{ fontSize: '9px', fontWeight: 700, color: badgeColor, background: `${badgeColor}15`, padding: '1px 5px', borderRadius: '3px' }}>Lv.{getSkinLevel(profession, metrics.followers, ownedSkins.length)}</span>
                                 </div>
                               </div>
                             </button>
@@ -5231,14 +5265,85 @@ export default function InstagramDemoPage() {
 
       {showLevelModal && (
         <Modal onClose={() => setShowLevelModal(false)}>
-          <h2 style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '20px', color: C.text }}>What Determines Your Level?</h2>
-          <p style={{ color: C.textSecondary, marginBottom: '20px', fontSize: '14px' }}>Your Valueskins Level is based on multiple factors:</p>
-          {Object.entries(levels).map(([level, data]) => (
-            <div key={level} style={{ background: C.surfaceAlt, padding: '16px', borderRadius: '12px', marginBottom: '12px', borderLeft: parseInt(level) === currentLevel ? `4px solid ${C.primary}` : '4px solid transparent' }}>
-              <div style={{ fontWeight: 'bold', marginBottom: '8px', fontSize: '15px', color: C.text }}>Level {level}: {data.name}</div>
-              <div style={{ fontSize: '13px', color: C.textSecondary, lineHeight: '1.6' }}>Followers: {data.followers.toLocaleString()} | Engagement: {data.engagement}% | Deal Value: ${data.dealValue.toLocaleString()}</div>
+          <h2 style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '20px', color: C.text }}>How Skin Levels Work</h2>
+          <p style={{ color: C.textSecondary, marginBottom: '12px', fontSize: '14px', lineHeight: 1.5 }}>
+            Each ValueSkin levels up independently based on your activity within that skin. Followers do not determine skill.
+          </p>
+          {ownedSkins.length === 1 && (
+            <div style={{ background: 'rgba(0,102,204,0.06)', border: `1px solid rgba(0,102,204,0.2)`, borderRadius: '8px', padding: '10px 12px', marginBottom: '14px', fontSize: '12px', color: C.textSecondary, lineHeight: 1.5 }}>
+              Since you have a single ValueSkin, your follower count contributes bonus XP — your audience is clearly about this one skin.
+            </div>
+          )}
+          {ownedSkins.length > 1 && (
+            <div style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: '8px', padding: '10px 12px', marginBottom: '14px', fontSize: '12px', color: C.textSecondary, lineHeight: 1.5 }}>
+              With multiple ValueSkins, followers are not factored — they cannot be attributed to a specific skin.
+            </div>
+          )}
+          <div style={{ fontSize: '12px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>XP Sources</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '16px' }}>
+            {[
+              { action: 'Deal completed', xp: '100+ XP', desc: 'Scales with deal value' },
+              { action: 'Community joined', xp: '25 XP', desc: 'Skin-gated communities' },
+              { action: 'Community message', xp: '5 XP', desc: 'Active participation' },
+              { action: 'DM sent', xp: '2 XP', desc: 'Networking engagement' },
+              ...(ownedSkins.length === 1 ? [{ action: 'Follower bonus', xp: 'Variable', desc: 'Only with 1 skin equipped' }] : []),
+            ].map(s => (
+              <div key={s.action} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', background: C.surfaceAlt, borderRadius: '6px' }}>
+                <div>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: C.text }}>{s.action}</div>
+                  <div style={{ fontSize: '10px', color: C.textMuted }}>{s.desc}</div>
+                </div>
+                <span style={{ fontSize: '12px', fontWeight: 700, color: C.primary }}>{s.xp}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{ fontSize: '12px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>Level Thresholds</div>
+          {[
+            { level: 1, name: 'Newcomer', xp: '0 XP' },
+            { level: 2, name: 'Active', xp: '50 XP' },
+            { level: 3, name: 'Established', xp: '200 XP' },
+            { level: 4, name: 'Expert', xp: '500 XP' },
+            { level: 5, name: 'Authority', xp: '1,000 XP' },
+          ].map(t => (
+            <div key={t.level} style={{ background: C.surfaceAlt, padding: '12px 14px', borderRadius: '10px', marginBottom: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              borderLeft: ownedSkins.some(s => getSkinLevel(s.profession, metrics.followers, ownedSkins.length) === t.level) ? `4px solid ${C.primary}` : '4px solid transparent' }}>
+              <div>
+                <div style={{ fontWeight: 600, fontSize: '14px', color: C.text }}>Level {t.level}: {t.name}</div>
+              </div>
+              <span style={{ fontSize: '12px', fontWeight: 700, color: C.textMuted }}>{t.xp}</span>
             </div>
           ))}
+          {/* Per-skin status */}
+          {ownedSkins.length > 0 && (
+            <>
+              <div style={{ fontSize: '12px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px', marginTop: '8px' }}>Your Skins</div>
+              {ownedSkins.map(({ profession }) => {
+                const level = getSkinLevel(profession, metrics.followers, ownedSkins.length);
+                const progress = getSkinXPProgress(profession, metrics.followers, ownedSkins.length);
+                const badge = PROFESSION_BADGES[profession];
+                const color = badge?.color ?? C.primary;
+                return (
+                  <div key={profession} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', background: C.card, borderRadius: '8px', marginBottom: '6px', border: `1px solid ${C.border}` }}>
+                    {badge?.stickerImage ? (
+                      <img src={badge.stickerImage} alt={profession} style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
+                    ) : (
+                      <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: `${color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', fontWeight: 700, color }}>{badge?.abbreviation ?? '?'}</div>
+                    )}
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '13px', fontWeight: 600, color: C.text }}>{profession}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '3px' }}>
+                        <span style={{ fontSize: '10px', fontWeight: 700, color }}>Lv.{level}</span>
+                        <div style={{ flex: 1, height: '4px', borderRadius: '2px', background: C.border, overflow: 'hidden' }}>
+                          <div style={{ width: `${progress}%`, height: '100%', background: color, borderRadius: '2px' }} />
+                        </div>
+                        <span style={{ fontSize: '9px', color: C.textMuted }}>{progress}%</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </>
+          )}
         </Modal>
       )}
 
@@ -5254,8 +5359,10 @@ export default function InstagramDemoPage() {
             <MetricInput label="Brand Rating" value={metrics.brandRating} onChange={(v) => updateMetric('brandRating', v)} />
           </div>
           <div style={{ background: C.primary, borderRadius: '12px', padding: '16px', marginTop: '20px', textAlign: 'center', color: '#fff' }}>
-            <div style={{ fontSize: '14px', opacity: 0.9, marginBottom: '4px' }}>Current Level</div>
+            <div style={{ fontSize: '14px', opacity: 0.9, marginBottom: '4px' }}>Highest Skin Level</div>
             <div style={{ fontSize: '32px', fontWeight: 'bold' }}>LEVEL {currentLevel}</div>
+            {ownedSkins.length === 1 && <div style={{ fontSize: '11px', opacity: 0.7, marginTop: '4px' }}>Followers contribute to XP with 1 skin</div>}
+            {ownedSkins.length > 1 && <div style={{ fontSize: '11px', opacity: 0.7, marginTop: '4px' }}>Followers excluded — multiple skins equipped</div>}
           </div>
         </Modal>
       )}
@@ -5636,6 +5743,7 @@ function MetricInput({ label, value, onChange }: { label: string; value: number;
   );
 }
 
+// Legacy calculateLevel kept for config compatibility — no longer drives skin levels
 function calculateLevel(metrics: any, levels: any): number {
   for (let level = 5; level >= 1; level--) {
     const t = levels[level];
