@@ -588,6 +588,8 @@ export default function InstagramDemoPage() {
         if (d.dmMessages) setDmMessages(d.dmMessages);
         if (d.communityMessages) setCommunityMessages(d.communityMessages);
         if (d.skinXP) setSkinXP(d.skinXP);
+        if (d.skinPitchTexts) setSkinPitchTexts(d.skinPitchTexts);
+        if (d.skinPitchVideos) setSkinPitchVideos(d.skinPitchVideos);
         if (d.brandProfileSelections) setBrandProfileSelections(d.brandProfileSelections);
         if (d.creatorEnergy) setCreatorEnergy(d.creatorEnergy);
         if (d.metrics) setMetrics(d.metrics);
@@ -619,11 +621,18 @@ export default function InstagramDemoPage() {
   const [brandPromoUrl, setBrandPromoUrl] = useState('');
 
   // Creator ValueSkin showcase — creators can add a pitch video + text to their skin
-  const [creatorSkinMode, setCreatorSkinMode] = useState<'static' | 'showcase'>('static');
-  const [creatorPitchText, setCreatorPitchText] = useState('');
-  const [creatorPitchVideoUrl, setCreatorPitchVideoUrl] = useState('');
-  const [creatorPitchVideoName, setCreatorPitchVideoName] = useState('');
+  const [creatorSkinMode, setCreatorSkinMode] = useState<'static' | 'showcase'>('showcase');
+  // Per-skin pitch text and video — keyed by profession name
+  const [skinPitchTexts, setSkinPitchTexts] = useState<Record<string, string>>({});
+  const [skinPitchVideos, setSkinPitchVideos] = useState<Record<string, { url: string; name: string }>>({});
   const [showSkinShowcaseModal, setShowSkinShowcaseModal] = useState<string | null>(null); // skin name when open
+  // Accessors for the currently open skin showcase
+  const creatorPitchText = showSkinShowcaseModal ? (skinPitchTexts[showSkinShowcaseModal] ?? '') : '';
+  const setCreatorPitchText = (text: string) => { if (showSkinShowcaseModal) setSkinPitchTexts(prev => ({ ...prev, [showSkinShowcaseModal]: text })); };
+  const creatorPitchVideoUrl = showSkinShowcaseModal ? (skinPitchVideos[showSkinShowcaseModal]?.url ?? '') : '';
+  const creatorPitchVideoName = showSkinShowcaseModal ? (skinPitchVideos[showSkinShowcaseModal]?.name ?? '') : '';
+  const setCreatorPitchVideoUrl = (url: string) => { if (showSkinShowcaseModal) setSkinPitchVideos(prev => ({ ...prev, [showSkinShowcaseModal]: { url, name: prev[showSkinShowcaseModal]?.name ?? '' } })); };
+  const setCreatorPitchVideoName = (name: string) => { if (showSkinShowcaseModal) setSkinPitchVideos(prev => ({ ...prev, [showSkinShowcaseModal]: { url: prev[showSkinShowcaseModal]?.url ?? '', name } })); };
 
   // Ask modal — shows full brand brief for an opportunity
   const [askModalOpp, setAskModalOpp] = useState<Opportunity | null>(null);
@@ -894,13 +903,13 @@ export default function InstagramDemoPage() {
         marketplaceRole, brandValueSkins, activeBrandSkin, profileName, profileBio, profileAvatar,
         selectedCountry, selectedLanguages, rateCard, profileDealTypes, willingToBarter,
         notifications, onboardingDone, joinedCommunities, dmMessages, communityMessages,
-        skinXP, brandProfileSelections, creatorEnergy, metrics,
+        skinXP, brandProfileSelections, creatorEnergy, metrics, skinPitchTexts, skinPitchVideos,
       }));
     } catch (e) { /* ignore */ }
   }, [marketplaceRole, brandValueSkins, activeBrandSkin, profileName, profileBio, profileAvatar,
       selectedCountry, selectedLanguages, rateCard, profileDealTypes, willingToBarter,
       notifications, onboardingDone, joinedCommunities, dmMessages, communityMessages,
-      skinXP, brandProfileSelections, creatorEnergy, metrics, skinsLoaded]);
+      skinXP, brandProfileSelections, creatorEnergy, metrics, skinsLoaded, skinPitchTexts, skinPitchVideos]);
 
   const handleFollow = () => {
     setIsFollowing(!isFollowing);
@@ -1220,7 +1229,7 @@ export default function InstagramDemoPage() {
                   <textarea
                     value={creatorPitchText}
                     onChange={e => setCreatorPitchText(e.target.value)}
-                    placeholder={`e.g. "I've built products used by 50K+ devs. Let me authentically showcase yours to my audience."`}
+                    placeholder={`Why should brands hire you as a ${showSkinShowcaseModal}? e.g. "I've built products used by 50K+ devs..."`}
                     rows={3}
                     style={{ width:'100%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, color:C.text, padding:'10px', fontSize:13, fontFamily:'inherit', outline:'none', resize:'none', boxSizing:'border-box' as const }}
                   />
@@ -4916,29 +4925,31 @@ export default function InstagramDemoPage() {
                           </div>
 
                           {creatorSkinMode === 'showcase' && (
-                            <>
-                              {/* Current showcase preview */}
-                              {creatorPitchVideoUrl && (
-                                <div style={{ marginBottom: '10px' }}>
-                                  <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, marginBottom: '4px', textTransform: 'uppercase' }}>Video Pitch</div>
-                                  <video src={creatorPitchVideoUrl} controls style={{ width: '100%', borderRadius: '8px', maxHeight: '160px', background: '#000' }} />
-                                  <div style={{ fontSize: '10px', color: C.textMuted, marginTop: '4px' }}>{creatorPitchVideoName}</div>
-                                </div>
-                              )}
-                              {creatorPitchText && (
-                                <div style={{ marginBottom: '10px' }}>
-                                  <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, marginBottom: '4px', textTransform: 'uppercase' }}>Written Pitch</div>
-                                  <div style={{ padding: '8px', background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)', borderRadius: '8px', fontSize: '12px', color: C.text, lineHeight: 1.5 }}>
-                                    {creatorPitchText}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                              {ownedSkinsList.length === 0 ? (
+                                <div style={{ fontSize: '12px', color: C.textMuted, textAlign: 'center', padding: '16px' }}>Get a ValueSkin to add your pitch</div>
+                              ) : ownedSkinsList.map(skinName => {
+                                const hasPitch = skinPitchTexts[skinName] || skinPitchVideos[skinName]?.url;
+                                const badge = PROFESSION_BADGES[skinName];
+                                return (
+                                  <div key={skinName} onClick={() => setShowSkinShowcaseModal(skinName)}
+                                    style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', background: C.bg, borderRadius: '8px', border: `1px solid ${C.border}`, cursor: 'pointer', transition: 'border-color 0.15s' }}
+                                    onMouseEnter={e => { e.currentTarget.style.borderColor = C.primary; }}
+                                    onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; }}>
+                                    {badge?.stickerImage ? (
+                                      <img src={badge.stickerImage} alt={skinName} style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
+                                    ) : (
+                                      <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: `${badge?.color ?? C.primary}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', fontWeight: 700, color: badge?.color ?? C.primary }}>{badge?.abbreviation ?? '?'}</div>
+                                    )}
+                                    <div style={{ flex: 1 }}>
+                                      <div style={{ fontSize: '12px', fontWeight: 600, color: C.text }}>{skinName}</div>
+                                      <div style={{ fontSize: '10px', color: hasPitch ? C.success : C.textMuted }}>{hasPitch ? 'Pitch added' : 'No pitch yet'}</div>
+                                    </div>
+                                    <span style={{ fontSize: '11px', color: C.primary, fontWeight: 600 }}>{hasPitch ? 'Edit' : 'Add'}</span>
                                   </div>
-                                </div>
-                              )}
-
-                              {/* Add/edit button */}
-                              <button onClick={() => setShowSkinShowcaseModal(ownedSkinsList[0] ?? 'showcase')} style={{ width: '100%', padding: '10px', background: C.bg, border: `1px dashed ${C.border}`, borderRadius: '8px', color: C.textSecondary, fontSize: '12px', cursor: 'pointer', fontWeight: 600 }}>
-                                {creatorPitchVideoUrl || creatorPitchText ? 'Edit video pitch & bio' : '+ Add video pitch & bio'}
-                              </button>
-                            </>
+                                );
+                              })}
+                            </div>
                           )}
                         </div>
                       )}
