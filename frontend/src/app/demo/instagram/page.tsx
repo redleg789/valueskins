@@ -212,6 +212,7 @@ const CAMPAIGN_TYPES = ['Product Review', 'Brand Ambassador', 'Sponsored Content
 // Opportunity type with full brand brief
 type Opportunity = {
   brand: string;
+  instagramUrl?: string;
   type: string;
   match: string;
   featured: boolean;
@@ -233,17 +234,17 @@ type Opportunity = {
 // Opportunities vary by profession — different brands want different skills
 const OPPORTUNITIES_BY_PROFESSION: Record<string, Opportunity[]> = {
   'Software Engineer': [
-    { brand: 'TechFlow Labs', type: 'Tech review video', match: '94%', featured: true, willingToBarter: false,
+    { brand: 'TechFlow Labs', instagramUrl: 'https://instagram.com/techflowlabs', type: 'Tech review video', match: '94%', featured: true, willingToBarter: false,
       about: 'TechFlow Labs builds CI/CD tooling for startups. 50K+ teams use their pipeline automation. Looking for authentic dev voices to demo v3 launch features.',
       budget: '$4,500 - $6,000', deadline: '2026-04-15', deliverables: [{ format: 'Reel', count: 2 }, { format: 'Story', count: 3 }],
       requirements: ['Must have active GitHub profile', 'Minimum 10K tech-focused followers', 'Prior dev tool content preferred'],
       exclusivity: '30 days', usageRights: '90 days, social only', revisionLimit: 2, compensationType: 'Paid', location: 'Remote', audienceTarget: 'Software developers, 25-40' },
-    { brand: 'CloudBase', type: 'Product integration', match: '89%', featured: false, willingToBarter: true,
+    { brand: 'CloudBase', instagramUrl: 'https://instagram.com/cloudbasedb', type: 'Product integration', match: '89%', featured: false, willingToBarter: true,
       about: 'CloudBase is a serverless database platform competing with Supabase. Series A funded, 12K developers on waitlist. Want real integration content, not ads.',
       budget: '$3,000 - $4,500', deadline: '2026-04-01', deliverables: [{ format: 'Reel', count: 1 }, { format: 'Story', count: 2 }, { format: 'Post', count: 1 }],
       requirements: ['Build a real mini-project using CloudBase', 'Show actual code, not slides', 'Mention 1 honest con alongside pros'],
       exclusivity: 'None', usageRights: '60 days, all platforms', revisionLimit: 1, compensationType: 'Paid + Barter (free Pro tier for 1 year)', location: 'Remote', audienceTarget: 'Full-stack developers, indie hackers' },
-    { brand: 'DevTools Pro', type: 'Developer tool demo', match: '78%', featured: false, willingToBarter: false,
+    { brand: 'DevTools Pro', instagramUrl: 'https://instagram.com/devtoolspro', type: 'Developer tool demo', match: '78%', featured: false, willingToBarter: false,
       about: 'DevTools Pro makes browser debugging extensions used by 200K+ devs. Launching a React-specific profiler and need content showing real performance wins.',
       budget: '$2,500 - $3,500', deadline: '2026-05-01', deliverables: [{ format: 'Reel', count: 1 }, { format: 'Story', count: 4 }],
       requirements: ['React experience required', 'Show before/after performance comparison', 'Authentic tone, no scripted reads'],
@@ -2032,7 +2033,13 @@ export default function InstagramDemoPage() {
                           const hasActiveDeal = existingDeal && existingDeal.phase !== 'brief';
                           const isNegotiating = negotiatingOpp === i || hasActiveDeal;
                           return (
-                            <div key={i} style={{ background: C.card, borderRadius: '12px', padding: '16px', marginBottom: '12px', border: `1px solid ${opp.featured ? 'rgba(0,102,204,0.3)' : C.border}` }}>
+                            <div
+                              key={i}
+                              onClick={() => { if (opp.instagramUrl) window.open(opp.instagramUrl, '_blank'); }}
+                              style={{ background: C.card, borderRadius: '12px', padding: '16px', marginBottom: '12px', border: `1px solid ${opp.featured ? 'rgba(0,102,204,0.3)' : C.border}`, cursor: opp.instagramUrl ? 'pointer' : 'default', transition: 'all 0.15s' }}
+                              onMouseEnter={(e) => { if (opp.instagramUrl) (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(0,102,204,0.6)'; }}
+                              onMouseLeave={(e) => { if (opp.instagramUrl) (e.currentTarget as HTMLDivElement).style.borderColor = `1px solid ${opp.featured ? 'rgba(0,102,204,0.3)' : C.border}`; }}
+                            >
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                   <div style={{ fontWeight: 'bold' }}>{opp.brand}</div>
