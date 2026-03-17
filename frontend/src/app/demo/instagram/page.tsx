@@ -486,30 +486,21 @@ export default function InstagramDemoPage() {
   });
 
   // Skin XP for leveling — each skin levels independently
-  // When user has exactly 1 skin, followers contribute bonus XP (audience is clearly about that skin)
-  // When user has 2-3 skins, followers are stripped — can't attribute them to any specific skin
+  // Level is driven purely by engagement signals: deal completions, community engagement, link/purchase activity
+  // Followers and views are NOT factors — reach is a vanity metric, not a quality signal
   const [skinXP, setSkinXP] = useState<Record<string, number>>({});
-  const getSkinLevel = (profession: string, followerCount?: number, totalSkins?: number) => {
-    let xp = skinXP[profession] || 0;
-    // Single-skin bonus: followers count as XP when you only have one skin
-    if (totalSkins === 1 && followerCount) {
-      // 1M followers = ~200 bonus XP, 500K = ~150, 100K = ~80, 10K = ~30
-      const followerBonus = Math.round(Math.log10(Math.max(followerCount, 1)) * 40);
-      xp += followerBonus;
-    }
+  const getSkinLevel = (profession: string, _followerCount?: number, _totalSkins?: number) => {
+    const xp = skinXP[profession] || 0;
     if (xp >= 1000) return 5;
     if (xp >= 500) return 4;
     if (xp >= 200) return 3;
     if (xp >= 50) return 2;
     return 1;
   };
-  const getSkinXPProgress = (profession: string, followerCount?: number, totalSkins?: number) => {
-    let xp = skinXP[profession] || 0;
-    if (totalSkins === 1 && followerCount) {
-      xp += Math.round(Math.log10(Math.max(followerCount, 1)) * 40);
-    }
+  const getSkinXPProgress = (profession: string, _followerCount?: number, _totalSkins?: number) => {
+    const xp = skinXP[profession] || 0;
     const thresholds = [0, 50, 200, 500, 1000];
-    const level = getSkinLevel(profession, followerCount, totalSkins);
+    const level = getSkinLevel(profession);
     if (level >= 5) return 100;
     const current = xp - thresholds[level - 1];
     const needed = thresholds[level] - thresholds[level - 1];
@@ -1018,19 +1009,13 @@ export default function InstagramDemoPage() {
     // Add XP to the skin this deal was completed under
     const targetSkin = skinProfession || selectedMarketplaceSkin || ownedSkins[0]?.profession;
     if (targetSkin) {
-      const prevLevel = getSkinLevel(targetSkin, metrics.followers, ownedSkins.length);
+      const prevLevel = getSkinLevel(targetSkin);
       // Deal completion = major XP: base 100 + bonus scaled by deal value
+      // Views are not a factor — XP reflects engagement quality: deal completions, conversions, audience trust
       const xpGain = 100 + Math.round(earnedAmount / 100);
       addSkinXP(targetSkin, xpGain);
-      // Check if this triggered a level-up
       const newXP = (skinXP[targetSkin] || 0) + xpGain;
-      const newLevel = (() => {
-        if (ownedSkins.length === 1 && metrics.followers) {
-          const total = newXP + Math.round(Math.log10(Math.max(metrics.followers, 1)) * 40);
-          if (total >= 1000) return 5; if (total >= 500) return 4; if (total >= 200) return 3; if (total >= 50) return 2; return 1;
-        }
-        if (newXP >= 1000) return 5; if (newXP >= 500) return 4; if (newXP >= 200) return 3; if (newXP >= 50) return 2; return 1;
-      })();
+      const newLevel = newXP >= 1000 ? 5 : newXP >= 500 ? 4 : newXP >= 200 ? 3 : newXP >= 50 ? 2 : 1;
       if (newLevel > prevLevel) {
         setLevelUpFrom(prevLevel);
         setLevelUpTo(newLevel);
@@ -6046,11 +6031,11 @@ function MetricInput({ label, value, onChange }: { label: string; value: number;
   );
 }
 
-// Legacy calculateLevel kept for config compatibility — no longer drives skin levels
+// Legacy calculateLevel — engagement and deal value only, views/followers excluded
 function calculateLevel(metrics: any, levels: any): number {
   for (let level = 5; level >= 1; level--) {
     const t = levels[level];
-    if (metrics.followers >= t.followers && metrics.engagement >= t.engagement && metrics.avgDealValue >= t.dealValue) return level;
+    if (metrics.engagement >= t.engagement && metrics.avgDealValue >= t.dealValue) return level;
   }
   return 1;
 }
