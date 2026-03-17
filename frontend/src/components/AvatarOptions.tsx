@@ -470,11 +470,13 @@ export function ValueSkinStickers({
   onValueSkinsChange,
   size = 'default',
   level,
+  onSkinClick,
 }: {
   valueSkins: ValueSkinMap;
   onValueSkinsChange?: (updated: ValueSkinMap) => void;
   size?: 'small' | 'default' | 'large';
   level?: number;
+  onSkinClick?: (profession: string) => void;
 }) {
   const slots: ValueSkinSlot[] = ['profession', 'passion', 'hobby'];
   const active = slots.filter((s) => valueSkins[s]);
@@ -483,15 +485,16 @@ export function ValueSkinStickers({
   return (
     <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-start', flexShrink: 0 }}>
       {active.map((s) => (
-        <ProfessionSticker
-          key={s}
-          profession={valueSkins[s]!.profession}
-          slot={s}
-          size={size}
-          valueSkins={valueSkins}
-          onValueSkinsChange={onValueSkinsChange}
-          level={level}
-        />
+        <div key={s} onClick={onSkinClick ? (e) => { e.stopPropagation(); onSkinClick(valueSkins[s]!.profession); } : undefined} style={onSkinClick ? { cursor: 'pointer' } : undefined}>
+          <ProfessionSticker
+            profession={valueSkins[s]!.profession}
+            slot={s}
+            size={size}
+            valueSkins={valueSkins}
+            onValueSkinsChange={onValueSkinsChange}
+            level={level}
+          />
+        </div>
       ))}
     </div>
   );

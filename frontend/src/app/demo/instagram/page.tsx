@@ -419,7 +419,14 @@ export default function InstagramDemoPage() {
   ]);
 
   // Onboarding
-  const [onboardingDone, setOnboardingDone] = useState(false);
+  const [onboardingDone, setOnboardingDone] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      const s = localStorage.getItem('vs_demo_persist');
+      if (s) { const d = JSON.parse(s); return d.onboardingDone === true; }
+    } catch (e) { /* ignore */ }
+    return false;
+  });
   const [onboardingStep, setOnboardingStep] = useState(0);
 
   // Creator profile preview (from brand marketplace)
@@ -945,6 +952,12 @@ export default function InstagramDemoPage() {
       ...prev,
       [assigningSlot]: { profession, aboutMe: defaultAboutMe(profession) },
     }));
+    // Seed demo XP — different per slot so levels visibly differ
+    // Profession: 350 XP (Lv.3), Passion: 120 XP (Lv.2), Hobby: 30 XP (Lv.1)
+    if (!skinXP[profession]) {
+      const demoXP: Record<ValueSkinSlot, number> = { profession: 350, passion: 120, hobby: 30 };
+      addSkinXP(profession, demoXP[assigningSlot]);
+    }
     setShowStoreModal(false);
     setAssigningSlot(null);
     setActiveView('profile');
@@ -1100,7 +1113,39 @@ export default function InstagramDemoPage() {
           <div style={{ background:C.surface, borderRadius:'16px', padding:'24px', maxWidth:'440px', width:'95vw', maxHeight:'90vh', overflowY:'auto', border:`1px solid ${C.border}`, position:'relative' }}>
             <button onClick={() => setShowSkinShowcaseModal(null)} style={{ position:'absolute', top:'14px', right:'16px', background:'none', border:'none', color:C.textMuted, fontSize:'22px', cursor:'pointer', lineHeight:1 }}>x</button>
 
-            <div style={{ fontSize:'16px', fontWeight:700, color:C.text, marginBottom:'4px' }}>{showSkinShowcaseModal} Showcase</div>
+            {(() => {
+              const skinBadge = PROFESSION_BADGES[showSkinShowcaseModal];
+              const skinColor = skinBadge?.color ?? C.primary;
+              const skinLevel = getSkinLevel(showSkinShowcaseModal, metrics.followers, ownedSkins.length);
+              const skinProgress = getSkinXPProgress(showSkinShowcaseModal, metrics.followers, ownedSkins.length);
+              const rawXP = skinXP[showSkinShowcaseModal] || 0;
+              return (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                    {skinBadge?.stickerImage ? (
+                      <img src={skinBadge.stickerImage} alt={showSkinShowcaseModal} style={{ width: '40px', height: '40px', objectFit: 'contain' }} />
+                    ) : (
+                      <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: `${skinColor}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700, color: skinColor }}>{skinBadge?.abbreviation ?? '?'}</div>
+                    )}
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '16px', fontWeight: 700, color: C.text }}>{showSkinShowcaseModal}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                        <span style={{ fontSize: '12px', fontWeight: 700, color: skinColor }}>Level {skinLevel}</span>
+                        <div style={{ flex: 1, height: '4px', borderRadius: '2px', background: C.border, overflow: 'hidden', maxWidth: '120px' }}>
+                          <div style={{ width: `${skinProgress}%`, height: '100%', background: skinColor, borderRadius: '2px', transition: 'width 0.3s' }} />
+                        </div>
+                        <span style={{ fontSize: '10px', color: C.textMuted }}>{rawXP} XP</span>
+                      </div>
+                    </div>
+                  </div>
+                  {ownedSkins.length === 1 && (
+                    <div style={{ fontSize: '10px', color: C.textMuted, marginBottom: '12px', padding: '6px 10px', background: C.surfaceAlt, borderRadius: '6px' }}>
+                      Followers contribute to XP with a single skin equipped
+                    </div>
+                  )}
+                </>
+              );
+            })()}
             <div style={{ fontSize:'12px', color:C.textSecondary, marginBottom:'20px' }}>Brands see this when they click your ValueSkin. Tell them why they should collab with you.</div>
 
             {/* Mode toggle */}
@@ -1440,56 +1485,16 @@ export default function InstagramDemoPage() {
                       <h2 style={{ fontSize: isMobile ? '16px' : '20px', fontWeight: 'bold', margin: 0, color: C.text }}>
                         Saketh Velamuri
                       </h2>
-                      {/* ValueSkin stickers — click to open showcase, right-click to manage */}
-                      <div
-                        onClick={() => {
-                          const slots: ValueSkinSlot[] = ['profession', 'passion', 'hobby'];
-                          for (const slot of slots) {
-                            if (valueSkins[slot]) {
-                              setShowSkinShowcaseModal(valueSkins[slot]!.profession);
-                              break;
-                            }
-                          }
-                        }}
-                        onContextMenu={(e) => {
-                          e.preventDefault();
-                          const slots: ValueSkinSlot[] = ['profession', 'passion', 'hobby'];
-                          for (const slot of slots) {
-                            if (valueSkins[slot]) {
-                              setShowSkinManageModal(slot);
-                              break;
-                            }
-                          }
-                        }}
-                        style={{ display: 'flex', gap: '8px', alignItems: 'center', position: 'relative', cursor: 'pointer' }}
-                      >
-                        <ValueSkinStickers valueSkins={valueSkins} onValueSkinsChange={setValueSkins} size="default" level={currentLevel} />
-                        {Object.keys(valueSkins).length > 0 && (
-                          <span style={{ fontSize: '11px', color: C.textMuted, marginLeft: '4px' }} title="Click to add showcase video · Right-click to manage">
-                            ⋮
-                          </span>
-                        )}
+                      {/* ValueSkin stickers — click individual skin to open its showcase */}
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', position: 'relative' }}>
+                        <ValueSkinStickers
+                          valueSkins={valueSkins}
+                          onValueSkinsChange={setValueSkins}
+                          size="default"
+                          level={currentLevel}
+                          onSkinClick={(profession) => setShowSkinShowcaseModal(profession)}
+                        />
                       </div>
-                      {/* Skin XP levels */}
-                      {ownedSkins.length > 0 && (
-                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '6px' }}>
-                          {ownedSkins.map(({ profession }) => {
-                            const level = getSkinLevel(profession, metrics.followers, ownedSkins.length);
-                            const progress = getSkinXPProgress(profession, metrics.followers, ownedSkins.length);
-                            const badge = PROFESSION_BADGES[profession];
-                            const color = badge?.color ?? C.primary;
-                            return (
-                              <div key={profession} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '3px 8px', background: C.surfaceAlt, borderRadius: '6px', border: `1px solid ${C.border}` }}>
-                                <span style={{ fontSize: '10px', fontWeight: 700, color }}>{profession.split(' ')[0]}</span>
-                                <span style={{ fontSize: '9px', fontWeight: 700, color: C.textMuted }}>Lv.{level}</span>
-                                <div style={{ width: '30px', height: '3px', borderRadius: '2px', background: C.border, overflow: 'hidden' }}>
-                                  <div style={{ width: `${progress}%`, height: '100%', background: color, borderRadius: '2px', transition: 'width 0.3s' }} />
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
                     </div>
 
                     <div style={{ display: 'flex', gap: isMobile ? '16px' : '20px', marginBottom: '20px', fontSize: isMobile ? '13px' : '14px', justifyContent: isMobile ? 'center' : 'flex-start' }}>
@@ -1699,33 +1704,7 @@ export default function InstagramDemoPage() {
                       </div>
                     )}
 
-                    {/* Trust level row */}
-                    {visibleInsights.trustLevel && (
-                      <>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '12px', padding: '8px 10px', background: 'rgba(0,102,204,0.06)', borderRadius: '8px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                          </svg>
-                          <span style={{ fontSize: '12px', fontWeight: 600, color: C.text }}>Trust Level</span>
-                        </div>
-                        <div style={{ display: 'flex', gap: '3px' }}>
-                          {[1, 2, 3, 4, 5].map(i => (
-                            <div key={i} style={{
-                              width: '18px', height: '6px', borderRadius: '3px',
-                              background: i <= currentLevel ? C.primary : C.border,
-                            }} />
-                          ))}
-                        </div>
-                        <span style={{ fontSize: '12px', fontWeight: 700, color: C.primary }}>Level {currentLevel}</span>
-                      </div>
-                      {currentLevel < 5 && (
-                        <div style={{ marginTop:'6px', fontSize:'11px', color:C.textMuted, textAlign:'center' }}>
-                          Complete more deals to reach Level {currentLevel + 1}
-                        </div>
-                      )}
-                      </>
-                    )}
+                    {/* Trust level — shown per-skin when clicking individual skin sticker */}
                   </div>
 
                   {/* Factor breakdown — shown below the main card */}
