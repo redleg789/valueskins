@@ -48,6 +48,19 @@ export type SharedApplication = {
   creatorHandle: string;
   status: 'pending' | 'accepted' | 'rejected';
   appliedAt: string;
+  // Creator insights — visible to brand when reviewing application
+  creatorName?: string;
+  creatorFollowers?: string;
+  creatorEngagement?: string;
+  creatorLevel?: number;
+  creatorMatchScore?: string;
+  creatorRate?: string;
+  creatorDealCompletionRate?: number;
+  creatorPortfolio?: string[];
+  creatorAudienceLocation?: string;
+  creatorAudienceAge?: string;
+  creatorResponseTimeHrs?: number;
+  creatorInstagramUrl?: string;
 };
 
 export type Campaign = {
