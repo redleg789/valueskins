@@ -965,7 +965,7 @@ export default function InstagramDemoPage() {
   // Simulate purchase: assign profession to the chosen slot, show toast
   const purchaseProfession = (profession: string) => {
     if (marketplaceRole === 'brand') {
-      // Brand purchase — add to array (max 3)
+      // Brand purchase — add to global pool (max 3 per device)
       if (brandValueSkins.includes(profession)) {
         setPurchaseToast(`You already own ${profession}`);
         setTimeout(() => setPurchaseToast(null), 3000);
@@ -977,10 +977,21 @@ export default function InstagramDemoPage() {
         return;
       }
       setBrandValueSkins(prev => [...prev, profession]);
+      // ALSO add to creator's valueSkins so both roles can see it
+      setValueSkins(prev => {
+        const newSkins = { ...prev };
+        if (!Object.values(newSkins).some(s => s?.profession === profession)) {
+          const emptySlot = (['profession', 'passion', 'hobby'] as const).find(slot => !newSkins[slot]);
+          if (emptySlot) {
+            newSkins[emptySlot] = { profession, aboutMe: defaultAboutMe(profession) };
+          }
+        }
+        return newSkins;
+      });
       if (!activeBrandSkin) setActiveBrandSkin(profession);
       setShowStoreModal(false);
       setActiveView('mim');
-      setPurchaseToast(`${profession} added to your brand ValueSkins`);
+      setPurchaseToast(`${profession} added to your ValueSkins`);
       setTimeout(() => setPurchaseToast(null), 3000);
       return;
     }
@@ -998,6 +1009,11 @@ export default function InstagramDemoPage() {
       ...prev,
       [assigningSlot]: { profession, aboutMe: defaultAboutMe(profession) },
     }));
+    // ALSO add to brand skins so brand can use it
+    if (!brandValueSkins.includes(profession)) {
+      setBrandValueSkins(prev => [...prev, profession]);
+      if (!activeBrandSkin) setActiveBrandSkin(profession);
+    }
     // Seed demo XP — different per slot so levels visibly differ
     // Profession: 350 XP (Lv.3), Passion: 120 XP (Lv.2), Hobby: 30 XP (Lv.1)
     if (!skinXP[profession]) {
