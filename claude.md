@@ -90,12 +90,13 @@ Exporting a module-level SDK instance (even behind a Proxy) causes Vercel preren
 A JS Proxy only intercepts property access on the proxy object itself. It does NOT intercept what happens when you pass that proxy as an argument to an SDK function like `ref(db, path)`. The SDK function receives the proxy, calls internal methods, and crashes before the Proxy trap ever fires.
 - **Pattern**: Proxies are useless for SSR-safety of third-party SDKs. Use conditional initialization (return null during SSR) instead.
 
-### 14. Never declare React hooks inside map/loops
-Declaring `useState` inside `.map()` creates a new hook instance per render, destroying state and breaking React's hook rules.
-- **Bug**: Added `const [hoveringSkin, setHoveringSkin] = useState(...)` inside `ownedSkins.map()` — state was lost between renders
-- **Impact**: Hover effects didn't work, confusing UX
-- **Fix**: Declare state at component level (e.g., `const [hoveringSkin, setHoveringSkin] = useState(null)`) and use closures to track which item is hovered
-- **Pattern**: Hooks are only valid at the top level of a component or custom hook, never inside loops, conditionals, or callbacks
+### 14. Never declare React hooks inside map/loops — CRITICAL BUG
+Declaring `useState` inside `.map()` creates a new hook instance per render, breaking React's Hook Rules and causing "Something went wrong" error boundary crashes.
+- **Bug**: Added `const [hoveringSkin, setHoveringSkin] = useState(...)` inside `ownedSkins.map()` loop
+- **Impact**: "Something went wrong" error on every render of that section. App shows error boundary instead of crashing gracefully
+- **Why it crashes**: React maintains a hook index per component. When hook count changes (loop renders 1 item, then 2 items), the hook indices are wrong, state is corrupted, and React throws
+- **Fix**: Declare state ONLY at component top level. NEVER inside `.map()`, `.filter()`, `if` statements, or `for` loops
+- **Pattern**: Hooks can only be called at the top level of a React component or a custom hook. Move any state that needs to vary per-item into the element's props or data structure instead
 
 ### 15. Show validation errors to users, never silently fail
 When a user action is blocked (e.g., missing required field), always show a toast, modal, or inline error. Silent failures confuse users.
