@@ -18,29 +18,29 @@ import {
 } from '@/components/AvatarOptions';
 
 const C = {
-  primary: '#0066CC',
-  bg: '#0A0A0A',
-  surface: '#141414',
-  surfaceAlt: '#1A1A1A',
-  card: '#1C1C1E',
-  text: '#E0E0E0',
-  textSecondary: '#888',
-  textMuted: '#555',
+  primary: '#0095F6',
+  bg: '#000000',
+  surface: '#000000',
+  surfaceAlt: '#121212',
+  card: '#1A1A1A',
+  text: '#F5F5F5',
+  textSecondary: '#A8A8A8',
+  textMuted: '#666666',
   border: '#262626',
-  borderLight: '#333',
+  borderLight: '#363636',
   // Semantic — use these instead of random hex colors
-  success: '#34A853',
-  successBg: 'rgba(52,168,83,0.08)',
-  successBorder: 'rgba(52,168,83,0.25)',
-  warning: '#B86E00',
-  warningBg: 'rgba(184,110,0,0.08)',
-  warningBorder: 'rgba(184,110,0,0.25)',
-  danger: '#C5221F',
-  dangerBg: 'rgba(197,34,31,0.08)',
-  dangerBorder: 'rgba(197,34,31,0.25)',
-  accent: '#5E6AD2',
-  accentBg: 'rgba(94,106,210,0.08)',
-  accentBorder: 'rgba(94,106,210,0.25)',
+  success: '#00D46A',
+  successBg: 'rgba(0,212,106,0.08)',
+  successBorder: 'rgba(0,212,106,0.25)',
+  warning: '#FFAB00',
+  warningBg: 'rgba(255,171,0,0.08)',
+  warningBorder: 'rgba(255,171,0,0.25)',
+  danger: '#ED4956',
+  dangerBg: 'rgba(237,73,86,0.08)',
+  dangerBorder: 'rgba(237,73,86,0.25)',
+  accent: '#7C3AED',
+  accentBg: 'rgba(124,58,237,0.08)',
+  accentBorder: 'rgba(124,58,237,0.25)',
 };
 
 const PROFESSIONS = {
@@ -1435,34 +1435,31 @@ export default function InstagramDemoPage() {
 
       {/* Level-Up Modal */}
       {showLevelUpModal && (
-        <div style={{ position:'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.8)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:99999 }}>
-          <div style={{ background:C.surface, borderRadius:'16px', padding:'32px 24px', maxWidth:'360px', width:'95vw', maxHeight:'90vh', overflowY:'auto', border:`1px solid ${C.border}`, textAlign:'center' }}>
-            <div style={{ width:'48px', height:'48px', borderRadius:'50%', background:'rgba(0,102,204,0.12)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 16px' }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+        <div style={{ position:'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.6)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:99999 }}>
+          <div style={{ background:'#FFFFFF', borderRadius:'20px', padding:'40px 28px 28px', maxWidth:'340px', width:'90vw', textAlign:'center' }}>
+            {/* Level badge */}
+            <div style={{ width:'72px', height:'72px', borderRadius:'50%', background:`linear-gradient(135deg, ${C.primary}, #7C3AED)`, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 20px' }}>
+              <span style={{ fontSize:'28px', fontWeight:800, color:'#fff' }}>{levelUpTo}</span>
             </div>
-            <div style={{ fontSize:'20px', fontWeight:800, color:C.text, marginBottom:'6px' }}>Level Up</div>
-            <div style={{ fontSize:'13px', color:C.textSecondary, marginBottom:'20px' }}>You completed a deal and levelled up your reputation.</div>
-            <div style={{ display:'flex', justifyContent:'center', gap:'16px', marginBottom:'20px' }}>
+            <div style={{ fontSize:'22px', fontWeight:800, color:'#1A1A1A', marginBottom:'8px' }}>Level Up</div>
+            <div style={{ fontSize:'15px', color:'#666', marginBottom:'8px', lineHeight:1.5 }}>
+              You reached Level {levelUpTo}
+            </div>
+            <div style={{ fontSize:'13px', color:'#999', marginBottom:'28px' }}>
+              Deal completed successfully. Your reputation has been updated.
+            </div>
+            <div style={{ display:'flex', justifyContent:'center', gap:'32px', marginBottom:'28px' }}>
               <div style={{ textAlign:'center' }}>
-                <div style={{ fontSize:'11px', color:C.textMuted, marginBottom:'4px', textTransform:'uppercase', letterSpacing:'0.5px' }}>Previous</div>
-                <div style={{ fontSize:'24px', fontWeight:800, color:C.textSecondary }}>L{levelUpFrom}</div>
+                <div style={{ fontSize:'28px', fontWeight:800, color:'#CCC' }}>{levelUpFrom}</div>
+                <div style={{ fontSize:'11px', color:'#999', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.5px', marginTop:'2px' }}>Before</div>
               </div>
-              <div style={{ display:'flex', alignItems:'center', color:C.primary, fontSize:'20px', fontWeight:700 }}>&rarr;</div>
+              <div style={{ display:'flex', alignItems:'center', color:C.primary, fontSize:'20px' }}>&rarr;</div>
               <div style={{ textAlign:'center' }}>
-                <div style={{ fontSize:'11px', color:C.textMuted, marginBottom:'4px', textTransform:'uppercase', letterSpacing:'0.5px' }}>New</div>
-                <div style={{ fontSize:'24px', fontWeight:800, color:C.primary }}>L{levelUpTo}</div>
+                <div style={{ fontSize:'28px', fontWeight:800, color:C.primary }}>{levelUpTo}</div>
+                <div style={{ fontSize:'11px', color:C.primary, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.5px', marginTop:'2px' }}>After</div>
               </div>
             </div>
-            <div style={{ background:C.surfaceAlt, borderRadius:'10px', padding:'12px 14px', marginBottom:'20px', textAlign:'left' }}>
-              <div style={{ fontSize:'11px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', marginBottom:'8px' }}>Benefits of Level {levelUpTo}</div>
-              {['Access to premium brands', '+15% rate negotiation power', 'Featured in top creators', 'Priority support'].map((b,i) => (
-                <div key={i} style={{ fontSize:'12px', color:C.text, padding:'4px 0', display:'flex', alignItems:'center', gap:'6px' }}>
-                  <div style={{ width:'4px', height:'4px', borderRadius:'50%', background:C.primary, flexShrink:0 }} />
-                  {b}
-                </div>
-              ))}
-            </div>
-            <button onClick={() => { setShowLevelUpModal(false); setPurchaseToast('Deal complete — earnings added to your balance'); setTimeout(() => setPurchaseToast(null), 3000); }} style={{ width:'100%', background:C.primary, border:'none', borderRadius:'8px', padding:'11px', color:'#fff', fontWeight:700, fontSize:'14px', cursor:'pointer' }}>
+            <button onClick={() => { setShowLevelUpModal(false); setPurchaseToast('Deal complete — earnings added to your balance'); setTimeout(() => setPurchaseToast(null), 3000); }} style={{ width:'100%', background:C.primary, border:'none', borderRadius:'12px', padding:'14px', color:'#fff', fontWeight:700, fontSize:'15px', cursor:'pointer' }}>
               Continue
             </button>
           </div>
@@ -1473,11 +1470,12 @@ export default function InstagramDemoPage() {
       {purchaseToast && (
         <div style={{
           position: 'fixed', bottom: '32px', left: '50%', transform: 'translateX(-50%)',
-          background: C.primary, color: '#fff', padding: '12px 20px', borderRadius: '10px',
+          background: C.card, color: C.text, padding: '14px 24px', borderRadius: '14px',
           fontSize: '14px', fontWeight: 600, zIndex: 99999,
-          boxShadow: '0 4px 16px rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', gap: '10px', whiteSpace: 'nowrap',
+          border: `1px solid ${C.border}`,
         }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="20 6 9 17 4 12" />
           </svg>
           {purchaseToast}
@@ -1486,9 +1484,9 @@ export default function InstagramDemoPage() {
 
       {/* Left Sidebar — desktop only */}
       {!isMobile && (
-        <div style={{ width: '280px', borderRight: `1px solid ${C.border}`, padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px', height: '100vh', overflowY: 'auto', position: 'sticky', top: 0, background: C.surface, flexShrink: 0 }}>
+        <div style={{ width: '240px', borderRight: `1px solid ${C.border}`, padding: '20px 16px', display: 'flex', flexDirection: 'column', gap: '16px', height: '100vh', overflowY: 'auto', position: 'sticky', top: 0, background: C.bg, flexShrink: 0 }}>
           <Link href="/" style={{ textDecoration: 'none' }}>
-            <div style={{ fontSize: '24px', fontWeight: 'bold', color: C.text, marginBottom: '20px', cursor: 'pointer' }}>Instagram</div>
+            <div style={{ fontSize: '22px', fontWeight: 700, color: C.text, marginBottom: '16px', cursor: 'pointer', fontStyle: 'italic' }}>Instagram</div>
           </Link>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             <NavItem label="Home" active={false} onClick={() => {}} />
@@ -1516,18 +1514,15 @@ export default function InstagramDemoPage() {
             <>
               {/* Header */}
               <div style={{
-                height: '60px', borderBottom: `1px solid ${C.border}`,
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                fontWeight: 'bold', fontSize: isMobile ? '14px' : '16px', position: 'sticky', top: 0,
-                background: 'rgba(10,10,10,0.92)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
-                zIndex: 10, padding: '0 16px',
+                height: '52px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                position: 'sticky', top: 0, background: C.bg, zIndex: 10, padding: '0 16px',
               }}>
-                <span>saketh_eth</span>
+                <span style={{ fontSize: '22px', fontWeight: 700, color: C.text }}>saketh_eth</span>
                 <button
                   onClick={() => setShowAvatarSettings(!showAvatarSettings)}
-                  style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: '8px', padding: '6px 12px', fontSize: '12px', fontWeight: 600, color: C.primary, cursor: 'pointer' }}
+                  style={{ background: 'none', border: 'none', fontSize: '13px', color: C.textSecondary, cursor: 'pointer' }}
                 >
-                  Avatar Style
+                  Settings
                 </button>
               </div>
 
@@ -1672,27 +1667,60 @@ export default function InstagramDemoPage() {
                   </div>
                 )}
 
-                {/* Barter signal badge — read-only on profile, editable in Settings */}
+                {/* VALUESKINS VERIFIED section — circular badges with level pills */}
+                {hasValueSkin && (
+                  <div style={{ marginTop: '20px', padding: '16px', background: C.card, borderRadius: '16px' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 700, color: C.textMuted, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: '14px', textAlign: 'center' }}>
+                      ValueSkins Verified
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: '24px' }}>
+                      {ownedSkins.map(({ slot, profession }) => {
+                        const badge = PROFESSION_BADGES[profession];
+                        const badgeColor = badge?.color ?? SLOT_COLORS[slot];
+                        const level = getSkinLevel(profession);
+                        return (
+                          <div key={slot} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer' }} onClick={() => setShowSkinShowcaseModal(profession)}>
+                            <div style={{
+                              width: '64px', height: '64px', borderRadius: '50%',
+                              background: `linear-gradient(135deg, ${badgeColor}, ${badgeColor}88)`,
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              border: `2px solid ${badgeColor}`,
+                            }}>
+                              {badge?.stickerImage ? (
+                                <img src={badge.stickerImage} alt={profession} style={{ width: '36px', height: '36px', objectFit: 'contain' }} />
+                              ) : (
+                                <span style={{ fontSize: '14px', fontWeight: 700, color: '#fff' }}>
+                                  {badge?.abbreviation ?? profession.slice(0, 3).toUpperCase()}
+                                </span>
+                              )}
+                            </div>
+                            <span style={{
+                              fontSize: '11px', fontWeight: 700, color: '#fff',
+                              background: badgeColor, padding: '2px 10px', borderRadius: '10px',
+                            }}>
+                              Lv.{level}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Barter signal badge */}
                 {hasValueSkin && willingToBarter && (
                   <div style={{
-                    borderRadius: '8px',
-                    border: `1px solid ${C.border}`,
-                    padding: '8px 12px',
-                    marginTop: '16px',
-                    backgroundColor: 'rgba(16,185,129,0.06)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    fontSize: '12px',
-                    color: C.textSecondary,
-                    fontWeight: 600,
+                    borderRadius: '12px', padding: '10px 14px', marginTop: '12px',
+                    backgroundColor: `${C.success}10`,
+                    display: 'flex', alignItems: 'center', gap: '8px',
+                    fontSize: '13px', color: C.textSecondary, fontWeight: 600,
                   }}>
-                    <span>Open to Free / Exposure / Barter</span>
+                    <span>Open to barter</span>
                     <button
                       onClick={() => setActiveView('settings')}
                       style={{ background: 'none', border: 'none', color: C.textMuted, fontSize: '11px', cursor: 'pointer', marginLeft: 'auto' }}
                     >
-                      Edit in Settings
+                      Edit
                     </button>
                   </div>
                 )}
@@ -1987,11 +2015,13 @@ export default function InstagramDemoPage() {
               {/* Layer 2: Role selection */}
               {hasValueSkin && marketplaceRole === 'none' && (
                 <>
-                  <div style={{ height: '60px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', paddingLeft: '20px', fontWeight: 'bold', fontSize: '16px', background: C.surface }}>Marketplace</div>
-                  <div style={{ padding: '40px 20px' }}>
+                  <div style={{ padding: '12px 16px 0', position: 'sticky', top: 0, background: C.bg, zIndex: 10 }}>
+                    <span style={{ fontSize: '22px', fontWeight: 700, color: C.text }}>Marketplace</span>
+                  </div>
+                  <div style={{ padding: '40px 16px' }}>
                     <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-                      <h2 style={{ fontSize: '20px', fontWeight: 700, color: C.text, marginBottom: '6px' }}>How do you want to enter?</h2>
-                      <p style={{ fontSize: '13px', color: C.textSecondary }}>Choose your role to see relevant opportunities</p>
+                      <h2 style={{ fontSize: '20px', fontWeight: 700, color: C.text, marginBottom: '6px' }}>Choose your role</h2>
+                      <p style={{ fontSize: '14px', color: C.textSecondary }}>Select how you want to use the marketplace</p>
                     </div>
                     <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
                       {([
@@ -2032,178 +2062,157 @@ export default function InstagramDemoPage() {
               {/* Layer 3a: Creator Marketplace */}
               {hasValueSkin && marketplaceRole === 'creator' && (
                 <>
-                  <div style={{ height: '60px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: '20px', paddingRight: '20px', fontWeight: 'bold', fontSize: '16px', background: C.surface }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      Marketplace
-                      <span style={{ fontSize: '11px', fontWeight: 600, color: C.textSecondary, background: C.surfaceAlt, padding: '3px 8px', borderRadius: '6px' }}>Creator</span>
-                    </div>
-                    <button onClick={() => { setMarketplaceRole('none'); setSelectedMarketplaceSkin(null); setNegotiatingOpp(null); }} style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: '6px', padding: '4px 10px', fontSize: '11px', color: C.textSecondary, cursor: 'pointer' }}>Switch Role</button>
-                  </div>
-                  <div style={{ padding: '16px' }}>
-                    {(<>
-                    {/* ValueSkin selector */}
-                    <div style={{ marginBottom: '20px' }}>
-                      <div style={{ fontSize: '12px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '10px' }}>Browse as</div>
-                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                        {ownedSkins.map(({ slot, profession }) => {
-                          const badge = PROFESSION_BADGES[profession];
-                          const abbr = badge?.abbreviation ?? profession.split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0, 3);
-                          const badgeColor = badge?.color ?? SLOT_COLORS[slot];
-                          const isActive = selectedMarketplaceSkin === profession;
-                          const skinDeals = Object.entries(dealStates).filter(([k, d]) => k.startsWith(`${profession}:`) && d.phase !== 'brief');
-                          return (
-                            <button
-                              key={slot}
-                              onClick={() => { setSelectedMarketplaceSkin(profession); setNegotiatingOpp(null); }}
-                              style={{
-                                display: 'flex', alignItems: 'center', gap: '8px',
-                                padding: '8px 14px', borderRadius: '10px', cursor: 'pointer',
-                                background: isActive ? `${badgeColor}20` : C.card,
-                                border: `2px solid ${isActive ? badgeColor : C.border}`,
-                                transition: 'all 0.15s',
-                                position: 'relative',
-                              }}
-                            >
-                              {skinDeals.length > 0 && (
-                                <span style={{ position: 'absolute', top: -4, right: -4, width: 16, height: 16, borderRadius: '50%', background: C.textMuted, color: '#fff', fontSize: 9, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{skinDeals.length}</span>
-                              )}
-                              {badge?.stickerImage ? (
-                                <img src={badge.stickerImage} alt={profession} style={{ width: '32px', height: '32px', objectFit: 'contain', flexShrink: 0 }} />
-                              ) : (
-                                <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '6px', background: badgeColor, color: '#fff', fontSize: '10px', fontWeight: 700, flexShrink: 0 }}>{abbr}</span>
-                              )}
-                              <div style={{ textAlign: 'left' }}>
-                                <div style={{ fontSize: '13px', fontWeight: 600, color: isActive ? C.text : C.textSecondary }}>{profession}</div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                  <span style={{ fontSize: '10px', color: C.textMuted, textTransform: 'uppercase' }}>{SLOT_LABELS[slot]}</span>
-                                  <span style={{ fontSize: '9px', fontWeight: 700, color: badgeColor, background: `${badgeColor}15`, padding: '1px 5px', borderRadius: '3px' }}>Lv.{getSkinLevel(profession, metrics.followers, ownedSkins.length)}</span>
-                                </div>
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
+                  {/* Marketplace header — Instagram style */}
+                  <div style={{ padding: '12px 16px 0', position: 'sticky', top: 0, background: C.bg, zIndex: 10 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                      <span style={{ fontSize: '22px', fontWeight: 700, color: C.text }}>Marketplace</span>
+                      <button onClick={() => { setMarketplaceRole('none'); setSelectedMarketplaceSkin(null); setNegotiatingOpp(null); }} style={{ background: 'none', border: 'none', fontSize: '13px', color: C.textSecondary, cursor: 'pointer', padding: '4px 0' }}>Switch</button>
                     </div>
 
-                    {/* Active Deals Banner */}
-                    {activeDeals.length > 0 && (
-                      <div style={{ background:'rgba(245,158,11,0.06)', border:'1px solid rgba(245,158,11,0.2)', borderRadius:10, padding:'10px 14px', marginBottom:14, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-                        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="#f59e0b" stroke="none"><path d="M12 23c-3.866 0-7-2.686-7-6 0-1.954.951-3.677 2.427-5.173C8.853 10.392 10 8.639 10 6.5c0-.381-.044-.756-.127-1.116A9.86 9.86 0 0 1 12 2a9.86 9.86 0 0 1 2.127 3.384A4.725 4.725 0 0 0 14 6.5c0 2.139 1.147 3.892 2.573 5.327C18.049 13.323 19 15.046 19 17c0 3.314-3.134 6-7 6z"/></svg>
-                          <div>
-                            <div style={{ fontSize:12, fontWeight:700, color:C.text }}>{activeDeals.length} Active Deal{activeDeals.length>1?'s':''}</div>
-                            <div style={{ fontSize:10, color:C.textSecondary }}>
-                              {activeDeals.map(([k]) => { const [skin] = k.split(':'); return skin; }).filter((v,i,a)=>a.indexOf(v)===i).join(', ')}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Matching Rule Banner */}
-                    <div style={{ background: 'rgba(46,125,50,0.06)', border: `1px solid rgba(46,125,50,0.15)`, borderRadius: '10px', padding: '12px 16px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.textSecondary} strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                      <div>
-                        <div style={{ fontSize: '12px', fontWeight: 700, color: C.text }}>ValueSkin Matching Active</div>
-                        <div style={{ fontSize: '11px', color: C.textSecondary }}>You only see opportunities from brands that require your exact ValueSkin. Matching is deterministic and server-enforced.</div>
-                      </div>
-                    </div>
-
-                    {/* No skin selected prompt */}
-                    {!selectedMarketplaceSkin && (
-                      <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-                        <div style={{ fontSize: '14px', color: C.textSecondary, lineHeight: 1.6 }}>
-                          Select one of your ValueSkins above to see opportunities matched to that profession.
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Mode toggle: Brand Deals vs Creator Collab */}
-                    <div style={{ display: 'flex', gap: '6px', marginBottom: '16px' }}>
+                    {/* Brand Deals / Creator Collabs tab toggle */}
+                    <div style={{ display: 'flex', background: C.card, borderRadius: '10px', padding: '3px', marginBottom: '14px' }}>
                       {(['brand', 'collab'] as const).map(mode => (
                         <button
                           key={mode}
                           onClick={() => setCreatorMarketplaceMode(mode)}
-                          style={{ flex: 1, padding: '8px', borderRadius: '8px', border: `1px solid ${creatorMarketplaceMode === mode ? C.primary : C.border}`, background: creatorMarketplaceMode === mode ? `${C.primary}12` : C.bg, color: creatorMarketplaceMode === mode ? C.primary : C.textSecondary, fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}
+                          style={{
+                            flex: 1, padding: '10px 0', borderRadius: '8px', border: 'none',
+                            background: creatorMarketplaceMode === mode ? C.primary : 'transparent',
+                            color: creatorMarketplaceMode === mode ? '#fff' : C.textSecondary,
+                            fontWeight: 600, fontSize: '14px', cursor: 'pointer', transition: 'all 0.15s',
+                          }}
                         >
                           {mode === 'brand' ? 'Brand Deals' : 'Creator Collabs'}
                         </button>
                       ))}
                     </div>
 
+                    {/* Category filter chips — scrollable */}
+                    <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '12px', scrollbarWidth: 'none' }}>
+                      {['All', ...ownedSkins.map(s => s.profession)].map(skin => {
+                        const isAll = skin === 'All';
+                        const isActive = isAll ? !selectedMarketplaceSkin : selectedMarketplaceSkin === skin;
+                        return (
+                          <button
+                            key={skin}
+                            onClick={() => { setSelectedMarketplaceSkin(isAll ? (ownedSkins[0]?.profession || null) : skin); setNegotiatingOpp(null); }}
+                            style={{
+                              padding: '7px 16px', borderRadius: '20px', border: 'none', whiteSpace: 'nowrap',
+                              background: isActive ? C.text : C.card,
+                              color: isActive ? C.bg : C.textSecondary,
+                              fontWeight: 600, fontSize: '13px', cursor: 'pointer', transition: 'all 0.15s', flexShrink: 0,
+                            }}
+                          >
+                            {skin}
+                          </button>
+                        );
+                      })}
+                      <button
+                        onClick={() => setFilterOppsBarterOnly(p => !p)}
+                        style={{
+                          padding: '7px 16px', borderRadius: '20px', border: 'none', whiteSpace: 'nowrap', flexShrink: 0,
+                          background: filterOppsBarterOnly ? C.success : C.card,
+                          color: filterOppsBarterOnly ? '#000' : C.textSecondary,
+                          fontWeight: 600, fontSize: '13px', cursor: 'pointer',
+                        }}
+                      >
+                        Barter
+                      </button>
+                    </div>
+                  </div>
+
+                  <div style={{ padding: '0 16px 16px' }}>
+                    {(<>
+
+                    {/* Active Deals Banner */}
+                    {activeDeals.length > 0 && (
+                      <div style={{ background: C.card, borderRadius: '12px', padding: '12px 16px', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: `${C.warning}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill={C.warning} stroke="none"><path d="M12 23c-3.866 0-7-2.686-7-6 0-1.954.951-3.677 2.427-5.173C8.853 10.392 10 8.639 10 6.5c0-.381-.044-.756-.127-1.116A9.86 9.86 0 0 1 12 2a9.86 9.86 0 0 1 2.127 3.384A4.725 4.725 0 0 0 14 6.5c0 2.139 1.147 3.892 2.573 5.327C18.049 13.323 19 15.046 19 17c0 3.314-3.134 6-7 6z"/></svg>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '14px', fontWeight: 600, color: C.text }}>{activeDeals.length} Active Deal{activeDeals.length>1?'s':''}</div>
+                          <div style={{ fontSize: '12px', color: C.textSecondary }}>
+                            {activeDeals.map(([k]) => { const [skin] = k.split(':'); return skin; }).filter((v,i,a)=>a.indexOf(v)===i).join(', ')}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* No skin selected prompt */}
+                    {!selectedMarketplaceSkin && (
+                      <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+                        <div style={{ fontSize: '14px', color: C.textSecondary, lineHeight: 1.6 }}>
+                          Select a category above to see opportunities matched to your ValueSkins.
+                        </div>
+                      </div>
+                    )}
+
                     {/* Opportunities for selected skin */}
                     {creatorMarketplaceMode === 'brand' && selectedMarketplaceSkin && (
                       <>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                          <div style={{ fontSize: '12px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.6px' }}>
-                            Opportunities for {selectedMarketplaceSkin}
-                          </div>
-                          <button
-                            onClick={() => setFilterOppsBarterOnly(p => !p)}
-                            style={{ fontSize: '11px', fontWeight: 600, color: filterOppsBarterOnly ? C.textSecondary : C.textSecondary, background: filterOppsBarterOnly ? 'rgba(16,185,129,0.1)' : 'transparent', border: `1px solid ${filterOppsBarterOnly ? 'rgba(16,185,129,0.5)' : C.border}`, padding: '4px 10px', borderRadius: '6px', cursor: 'pointer' }}
-                          >
-                            {filterOppsBarterOnly ? 'Barter Only' : 'Show All'}
-                          </button>
-                        </div>
                         {activeOpportunities.filter(opp => !filterOppsBarterOnly || opp.willingToBarter).map((opp, i) => {
                           const dealKey = `${selectedMarketplaceSkin}:${i}`;
                           const existingDeal = dealStates[dealKey];
                           const hasActiveDeal = existingDeal && existingDeal.phase !== 'brief';
                           const isNegotiating = negotiatingOpp === i || hasActiveDeal;
+                          const brandInitial = opp.brand.charAt(0).toUpperCase();
                           return (
                             <div
                               key={i}
-                              style={{ background: C.card, borderRadius: '12px', padding: '16px', marginBottom: '12px', border: `1px solid ${opp.featured ? 'rgba(0,102,204,0.3)' : C.border}` }}
+                              style={{ background: C.card, borderRadius: '16px', padding: '16px', marginBottom: '12px', border: `1px solid ${C.border}` }}
                             >
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', gap: '8px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                  <a href={opp.instagramUrl || `https://instagram.com/${opp.brand.replace(/\s+/g, '')}`} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontWeight: 'bold', color: C.primary, textDecoration: 'none', cursor: 'pointer' }} onMouseEnter={e => { e.currentTarget.style.textDecoration = 'underline'; }} onMouseLeave={e => { e.currentTarget.style.textDecoration = 'none'; }}>{opp.brand}</a>
-                                  <button
-                                    onClick={(e) => { e.stopPropagation(); setAskModalOpp(opp); }}
-                                    style={{ fontSize: '11px', fontWeight: 600, color: C.primary, background: `${C.primary}12`, border: `1px solid ${C.primary}30`, padding: '3px 10px', borderRadius: '6px', cursor: 'pointer', transition: 'background 0.15s' }}
-                                    onMouseEnter={(e) => { (e.target as HTMLButtonElement).style.background = `${C.primary}25`; }}
-                                    onMouseLeave={(e) => { (e.target as HTMLButtonElement).style.background = `${C.primary}12`; }}
-                                  >Ask</button>
+                              {/* Brand header row */}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: `linear-gradient(135deg, ${C.primary}, #7C3AED)`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                  <span style={{ fontSize: '16px', fontWeight: 700, color: '#fff' }}>{brandInitial}</span>
                                 </div>
-                                <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                                  {opp.willingToBarter && <span style={{ fontSize: '10px', fontWeight: 700, color: C.textSecondary, background: C.surfaceAlt, padding: '2px 6px', borderRadius: '4px' }}>OPEN TO BARTER</span>}
-                                  {opp.featured && <span style={{ fontSize: '10px', fontWeight: 700, color: C.primary, background: `${C.primary}15`, padding: '2px 6px', borderRadius: '4px' }}>TOP MATCH</span>}
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <a href={opp.instagramUrl || `https://instagram.com/${opp.brand.replace(/\s+/g, '')}`} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontSize: '15px', fontWeight: 700, color: C.text, textDecoration: 'none', display: 'block' }}>{opp.brand}</a>
+                                  <div style={{ fontSize: '13px', color: C.textSecondary }}>{opp.type}</div>
                                 </div>
+                                <div style={{ fontSize: '14px', fontWeight: 700, color: C.primary }}>{opp.match}</div>
                               </div>
-                              <div style={{ fontSize: '13px', color: C.textSecondary, marginBottom: '6px' }}>{opp.type} | Match: {opp.match}</div>
-                              <div style={{ marginBottom: '12px' }} />
 
-                              {/* Deal Room — hidden until opened */}
-                              {!isNegotiating ? (
-                                <div style={{ display: 'flex', gap: '8px', flexDirection: 'column' }}>
-                                  {opp.willingToBarter && !willingToBarter && (
-                                    <button
-                                      onClick={() => setWillingToBarter(true)}
-                                      style={{ fontSize: '11px', fontWeight: 600, color: C.textSecondary, background: C.surfaceAlt, padding: '8px 10px', borderRadius: '6px', textAlign: 'center', border: `1px solid rgba(16,185,129,0.3)`, cursor: 'pointer', width: '100%' }}>
-                                      This brand requires barter — enable barter for this deal
-                                    </button>
-                                  )}
-                                  <button
-                                    onClick={() => {
-                                      if (opp.willingToBarter && !willingToBarter) return;
-                                      const key = `${selectedMarketplaceSkin}:${i}`;
-                                      setNegotiatingOpp(i);
-                                      updateDeal(key, { phase: 'offer', offerAmount: '', counterAmount: '' });
-                                    }}
-                                    style={{
-                                      flex: 1,
-                                      background: opp.willingToBarter && !willingToBarter ? C.surfaceAlt : (opp.featured ? C.primary : C.surfaceAlt),
-                                      border: opp.featured ? 'none' : `1px solid ${C.border}`,
-                                      padding: '10px 16px', borderRadius: '8px', color: '#fff', fontWeight: '600',
-                                      cursor: opp.willingToBarter && !willingToBarter ? 'not-allowed' : 'pointer',
-                                      fontSize: '14px',
-                                      opacity: opp.willingToBarter && !willingToBarter ? 0.5 : 1,
-                                    }}
-                                  >
-                                    Enter Deal Room
-                                  </button>
-                                </div>
-                              ) : negotiatingOpp !== i && hasActiveDeal ? (
+                              {/* Budget + deliverable pills */}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
+                                <span style={{ fontSize: '14px', fontWeight: 700, color: C.text }}>{opp.budget}</span>
+                                {opp.deliverables.map((d, di) => (
+                                  <span key={di} style={{ fontSize: '12px', fontWeight: 600, color: C.textSecondary, background: C.surfaceAlt, padding: '4px 10px', borderRadius: '20px' }}>
+                                    {d.count} {d.format}{d.count > 1 ? 's' : ''}
+                                  </span>
+                                ))}
+                                {opp.willingToBarter && <span style={{ fontSize: '12px', fontWeight: 600, color: C.success, background: `${C.success}15`, padding: '4px 10px', borderRadius: '20px' }}>Barter</span>}
+                              </div>
+
+                              {/* Action row */}
+                              <div style={{ display: 'flex', gap: '8px' }}>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); setAskModalOpp(opp); }}
+                                  style={{ flex: 1, fontSize: '13px', fontWeight: 600, color: C.textSecondary, background: 'transparent', border: `1px solid ${C.border}`, padding: '10px', borderRadius: '10px', cursor: 'pointer' }}
+                                >
+                                  Details
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    if (opp.willingToBarter && !willingToBarter) { setWillingToBarter(true); return; }
+                                    const key = `${selectedMarketplaceSkin}:${i}`;
+                                    setNegotiatingOpp(i);
+                                    updateDeal(key, { phase: 'offer', offerAmount: '', counterAmount: '' });
+                                  }}
+                                  style={{
+                                    flex: 1, fontSize: '13px', fontWeight: 700, color: '#fff',
+                                    background: C.primary, border: 'none', padding: '10px', borderRadius: '10px',
+                                    cursor: opp.willingToBarter && !willingToBarter ? 'not-allowed' : 'pointer',
+                                    opacity: opp.willingToBarter && !willingToBarter ? 0.5 : 1,
+                                  }}
+                                >
+                                  View Deal
+                                </button>
+                              </div>
+
+                              {/* Deal Room — shown when negotiating */}
+                              {!isNegotiating ? null : negotiatingOpp !== i && hasActiveDeal ? (
                                 <div onClick={() => setNegotiatingOpp(i)} style={{ background: C.surfaceAlt, borderRadius: '10px', padding: '12px 14px', border: `1px solid rgba(0,102,204,0.3)`, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
@@ -2214,31 +2223,28 @@ export default function InstagramDemoPage() {
                                   </span>
                                 </div>
                               ) : (
-                                <div style={{ background: C.surfaceAlt, borderRadius: '10px', padding: '14px', border: `1px solid rgba(0,102,204,0.3)` }}>
-                                  {/* Deal Room header */}
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                                    <div style={{ fontSize: '11px', fontWeight: 700, color: C.primary, textTransform: 'uppercase', letterSpacing: '0.6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <div style={{ background: C.card, borderRadius: '16px', padding: '16px', border: `1px solid ${C.border}` }}>
+                                  {/* Deal Room header — shield + brand */}
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                                    <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: `${C.primary}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                                       </svg>
-                                      Deal Room · <a href={opp.instagramUrl || `https://instagram.com/${opp.brand.replace(/\s+/g, '')}`} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ color: C.primary, textDecoration: 'none', cursor: 'pointer' }} onMouseEnter={e => { e.currentTarget.style.textDecoration = 'underline'; }} onMouseLeave={e => { e.currentTarget.style.textDecoration = 'none'; }}>{opp.brand}</a>
                                     </div>
-                                    {/* Offer expiry countdown — both sides see this */}
-                                    {dealRoomPhase === 'offer' && (
-                                      <div style={{ fontSize: '11px', fontWeight: 700, color: C.textSecondary, background: C.surfaceAlt, padding: '3px 8px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={C.textSecondary} strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                                        Expires in {offerExpiresLabel}
+                                    <div style={{ flex: 1 }}>
+                                      <div style={{ fontSize: '15px', fontWeight: 700, color: C.text }}>
+                                        Deal Room · <a href={opp.instagramUrl || `https://instagram.com/${opp.brand.replace(/\s+/g, '')}`} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ color: C.primary, textDecoration: 'none' }}>{opp.brand}</a>
                                       </div>
-                                    )}
-                                    {dealRoomPhase === 'accepted' && (
-                                      <div style={{ fontSize: '11px', fontWeight: 700, color: C.textSecondary, background: C.surfaceAlt, padding: '3px 8px', borderRadius: '6px' }}>Deal Accepted</div>
-                                    )}
+                                      <div style={{ fontSize: '12px', color: C.textMuted }}>
+                                        {dealRoomPhase === 'offer' ? `Expires in ${offerExpiresLabel}` : dealRoomPhase === 'accepted' ? 'Deal Accepted' : 'Negotiation in progress'}
+                                      </div>
+                                    </div>
                                   </div>
 
-                                  {/* Audit trail notice — always visible */}
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '10px', padding: '5px 8px', background: 'rgba(0,102,204,0.06)', borderRadius: '6px', border: '1px solid rgba(0,102,204,0.15)' }}>
-                                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                                    <span style={{ fontSize: '9px', color: C.primary, fontWeight: 600 }}>All activity in this room is timestamped, hashed, and stored as an immutable record.</span>
+                                  {/* Audit trail notice */}
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', padding: '8px 12px', background: `${C.primary}08`, borderRadius: '10px' }}>
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                    <span style={{ fontSize: '11px', color: C.textSecondary }}>All messages logged with UTC timestamps</span>
                                   </div>
 
                                   {/* Brand identity + intent */}
@@ -2302,10 +2308,9 @@ export default function InstagramDemoPage() {
                                         <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                                         Offer logged · {new Date().toISOString().replace('T', ' ').slice(0, 19)} UTC
                                       </div>
-                                      <div style={{ display: 'flex', gap: '6px' }}>
+                                      <div style={{ display: 'flex', gap: '8px' }}>
                                         <button onClick={() => {
                                           setDealRoomPhase('accepted');
-                                          // Create a shared application so the brand can see this in "Applications Received"
                                           const newApp: SharedApplication = {
                                             id: Date.now(),
                                             campaignId: -1,
@@ -2328,9 +2333,9 @@ export default function InstagramDemoPage() {
                                             creatorInstagramUrl: `https://instagram.com/${('@creator_demo').replace('@', '')}`,
                                           };
                                           persistApplications([...sharedApplications, newApp]);
-                                        }} style={{ flex: 1, background: C.success, border: 'none', padding: '8px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '12px' }}>Accept</button>
-                                        <button onClick={() => setDealRoomPhase('counter')} style={{ flex: 1, background: C.primary, border: 'none', padding: '8px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '12px' }}>Counter Offer</button>
-                                        <button onClick={() => setNegotiatingOpp(null)} style={{ flex: 1, background: 'none', border: `1px solid ${C.border}`, padding: '8px', borderRadius: '8px', color: C.textSecondary, fontWeight: 500, cursor: 'pointer', fontSize: '12px' }}>Decline</button>
+                                        }} style={{ flex: 1, background: C.success, border: 'none', padding: '10px', borderRadius: '10px', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '13px' }}>Accept</button>
+                                        <button onClick={() => setDealRoomPhase('counter')} style={{ flex: 1, background: C.primary, border: 'none', padding: '10px', borderRadius: '10px', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '13px' }}>Counter</button>
+                                        <button onClick={() => setNegotiatingOpp(null)} style={{ flex: 1, background: 'transparent', border: `1px solid ${C.border}`, padding: '10px', borderRadius: '10px', color: C.danger, fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}>Decline</button>
                                       </div>
                                     </>
                                   )}
@@ -2806,14 +2811,20 @@ export default function InstagramDemoPage() {
               {/* Layer 3b: Brand Marketplace */}
               {hasValueSkin && marketplaceRole === 'brand' && (
                 <>
-                  <div style={{ height: '60px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: '20px', paddingRight: '20px', fontWeight: 'bold', fontSize: '16px', background: C.surface }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      Marketplace
-                      <span style={{ fontSize: '11px', fontWeight: 600, color: C.textSecondary, background: C.surfaceAlt, padding: '3px 8px', borderRadius: '6px' }}>Brand</span>
+                  <div style={{ padding: '12px 16px 0', position: 'sticky', top: 0, background: C.bg, zIndex: 10 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                      <span style={{ fontSize: '22px', fontWeight: 700, color: C.text }}>Brand Dashboard</span>
+                      <button onClick={() => { setMarketplaceRole('none'); setNegotiatingCreator(null); }} style={{ background: 'none', border: 'none', fontSize: '13px', color: C.textSecondary, cursor: 'pointer' }}>Switch</button>
                     </div>
-                    <button onClick={() => { setMarketplaceRole('none'); setNegotiatingCreator(null); }} style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: '6px', padding: '4px 10px', fontSize: '11px', color: C.textSecondary, cursor: 'pointer' }}>Switch Role</button>
+                    {/* Search bar */}
+                    <div style={{ position: 'relative', marginBottom: '14px' }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }}>
+                        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                      </svg>
+                      <input type="text" placeholder="Search creators..." style={{ width: '100%', background: C.card, border: 'none', borderRadius: '12px', padding: '12px 12px 12px 40px', color: C.text, fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
+                    </div>
                   </div>
-                  <div style={{ padding: '20px' }}>
+                  <div style={{ padding: '0 16px 16px' }}>
                     {/* Prominent New Campaign CTA */}
                     {!showCampaignCreator && activeBrandSkin && (
                       <button
@@ -3926,9 +3937,9 @@ export default function InstagramDemoPage() {
                       ))}
                     </div>
 
-                    {/* Applications Received — always visible below campaigns */}
-                    <div style={{ marginTop:'20px', paddingTop:'20px', borderTop:`1px solid ${C.border}` }}>
-                      <div style={{ fontSize:'12px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.6px', marginBottom:'14px' }}>Applications Received</div>
+                    {/* Applications Received */}
+                    <div style={{ marginTop:'16px' }}>
+                      <div style={{ fontSize:'15px', fontWeight:700, color:C.text, marginBottom:'14px' }}>Applicants</div>
                       {sharedApplications.length === 0 ? (
                         <div style={{ textAlign:'center', padding:'24px 20px', color:C.textMuted }}>
                           <div style={{ fontSize:'13px', marginBottom:'4px' }}>No applications yet</div>
@@ -3939,74 +3950,39 @@ export default function InstagramDemoPage() {
                         const displayName = app.creatorName || app.creatorHandle;
                         const igUrl = app.creatorInstagramUrl || `https://instagram.com/${app.creatorHandle.replace('@', '')}`;
                         return (
-                          <div key={i} style={{ background:C.card, borderRadius:'12px', padding:'16px', marginBottom:'12px', border:`1px solid ${app.status==='accepted'?'rgba(46,125,50,0.3)':C.border}` }}>
-                            {/* Header — avatar + name + status */}
-                            <div style={{ display:'flex', gap:'12px', marginBottom:'12px' }}>
-                              <a href={igUrl} target="_blank" rel="noopener noreferrer" title="View Instagram profile" style={{ flexShrink:0 }}>
-                                <img
-                                  src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${displayName.replace(/[\s@]/g, '')}`}
-                                  alt={displayName}
-                                  style={{ width:'44px', height:'44px', borderRadius:'50%', background:C.surfaceAlt, cursor:'pointer', border:`2px solid ${C.primary}` }}
-                                />
-                              </a>
-                              <div style={{ flex:1, minWidth:0 }}>
-                                <div style={{ display:'flex', alignItems:'center', gap:'6px', flexWrap:'wrap' }}>
-                                  <a href={igUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontSize:'14px', fontWeight:700, color:C.primary, textDecoration:'none', cursor:'pointer' }} onMouseEnter={e => { e.currentTarget.style.textDecoration = 'underline'; }} onMouseLeave={e => { e.currentTarget.style.textDecoration = 'none'; }}>{displayName}</a>
-                                  {app.creatorLevel && (
-                                    <span style={{ fontSize:'10px', fontWeight:700, color:'#fff', background:app.creatorLevel>=4?C.primary:app.creatorLevel>=3?'#e65100':app.creatorLevel>=2?'#f59e0b':'#888', padding:'1px 6px', borderRadius:'4px' }}>Lv.{app.creatorLevel}</span>
-                                  )}
-                                  <span style={{ fontSize:'10px', fontWeight:700, color:app.status==='pending'?'#f59e0b':app.status==='accepted'?C.success:C.textMuted, background:app.status==='pending'?'rgba(245,158,11,0.1)':app.status==='accepted'?C.surfaceAlt:'rgba(239,68,68,0.1)', padding:'2px 8px', borderRadius:'6px', textTransform:'uppercase' }}>{app.status}</span>
-                                </div>
-                                <div style={{ fontSize:'12px' }}><a href={igUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ color:C.primary, textDecoration:'none', cursor:'pointer' }} onMouseEnter={e => { e.currentTarget.style.textDecoration = 'underline'; }} onMouseLeave={e => { e.currentTarget.style.textDecoration = 'none'; }}>{app.creatorHandle}</a> · {app.creatorProfession}</div>
+                          <div key={i} style={{ display:'flex', alignItems:'center', gap:'12px', padding:'14px 0', borderBottom: i < sharedApplications.length - 1 ? `1px solid ${C.border}` : 'none' }}>
+                            {/* Avatar */}
+                            <a href={igUrl} target="_blank" rel="noopener noreferrer" style={{ flexShrink:0 }}>
+                              <img
+                                src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${displayName.replace(/[\s@]/g, '')}`}
+                                alt={displayName}
+                                style={{ width:'44px', height:'44px', borderRadius:'50%', background:C.card }}
+                              />
+                            </a>
+                            {/* Info */}
+                            <div style={{ flex:1, minWidth:0 }}>
+                              <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
+                                <span style={{ fontSize:'14px', fontWeight:700, color:C.text }}>{displayName}</span>
+                                {app.creatorLevel && (
+                                  <span style={{ fontSize:'10px', fontWeight:700, color:'#fff', background:app.creatorLevel>=4?C.primary:app.creatorLevel>=2?C.warning:C.textMuted, padding:'2px 6px', borderRadius:'4px' }}>Lv.{app.creatorLevel}</span>
+                                )}
                               </div>
-                              {app.creatorMatchScore && (
-                                <div style={{ textAlign:'right', flexShrink:0 }}>
-                                  <div style={{ fontSize:'16px', fontWeight:800, color:C.primary }}>{app.creatorMatchScore}</div>
-                                  <div style={{ fontSize:'10px', color:C.textMuted }}>match</div>
-                                </div>
-                              )}
+                              <div style={{ fontSize:'12px', color:C.textSecondary }}>{app.creatorHandle} · {app.creatorProfession}</div>
+                              {/* Stat row */}
+                              <div style={{ display:'flex', gap:'12px', marginTop:'4px' }}>
+                                {app.creatorEngagement && <span style={{ fontSize:'12px', color:C.textMuted }}>{app.creatorEngagement} eng.</span>}
+                                {app.creatorMatchScore && <span style={{ fontSize:'12px', color:C.primary, fontWeight:600 }}>{app.creatorMatchScore} match</span>}
+                                {app.creatorRate && <span style={{ fontSize:'12px', color:C.textMuted }}>{app.creatorRate}</span>}
+                              </div>
                             </div>
-                            {/* Insights grid */}
-                            {(app.creatorFollowers || app.creatorEngagement || app.creatorRate || app.creatorDealCompletionRate) && (
-                              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr 1fr', gap:'5px', marginBottom:'10px' }}>
-                                {[
-                                  { label:'Followers', value:app.creatorFollowers },
-                                  { label:'Engagement', value:app.creatorEngagement },
-                                  { label:'Rate', value:app.creatorRate },
-                                  { label:'Completion', value:app.creatorDealCompletionRate ? `${app.creatorDealCompletionRate}%` : undefined },
-                                ].filter(s => s.value).map(stat => (
-                                  <div key={stat.label} style={{ textAlign:'center', padding:'5px 3px', background:C.surfaceAlt, borderRadius:'6px' }}>
-                                    <div style={{ fontSize:'12px', fontWeight:700, color:C.text }}>{stat.value}</div>
-                                    <div style={{ fontSize:'8px', color:C.textMuted, textTransform:'uppercase', fontWeight:600 }}>{stat.label}</div>
-                                  </div>
-                                ))}
+                            {/* Action */}
+                            {app.status === 'pending' ? (
+                              <div style={{ display:'flex', gap:'6px', flexShrink:0 }}>
+                                <button onClick={() => { persistApplications(sharedApplications.map(a=>a.id===app.id?{...a,status:'accepted' as const}:a)); setPurchaseToast('Accepted'); setTimeout(()=>setPurchaseToast(null),3000); }} style={{ background:C.primary, border:'none', borderRadius:'8px', padding:'8px 14px', fontSize:'12px', fontWeight:600, color:'#fff', cursor:'pointer' }}>Accept</button>
+                                <button onClick={() => { persistApplications(sharedApplications.map(a=>a.id===app.id?{...a,status:'rejected' as const}:a)); setPurchaseToast('Declined'); setTimeout(()=>setPurchaseToast(null),3000); }} style={{ background:'transparent', border:`1px solid ${C.border}`, borderRadius:'8px', padding:'8px 14px', fontSize:'12px', fontWeight:600, color:C.textSecondary, cursor:'pointer' }}>Decline</button>
                               </div>
-                            )}
-                            {/* Audience + response meta */}
-                            {(app.creatorAudienceLocation || app.creatorAudienceAge || app.creatorResponseTimeHrs) && (
-                              <div style={{ display:'flex', gap:'5px', flexWrap:'wrap', marginBottom:'10px' }}>
-                                {app.creatorAudienceLocation && <span style={{ fontSize:'10px', padding:'2px 7px', borderRadius:'10px', background:'rgba(0,102,204,0.08)', color:C.primary, border:'1px solid rgba(0,102,204,0.2)' }}>{app.creatorAudienceLocation}</span>}
-                                {app.creatorAudienceAge && <span style={{ fontSize:'10px', padding:'2px 7px', borderRadius:'10px', background:'rgba(0,102,204,0.08)', color:C.primary, border:'1px solid rgba(0,102,204,0.2)' }}>{app.creatorAudienceAge}</span>}
-                                {app.creatorResponseTimeHrs && <span style={{ fontSize:'10px', padding:'2px 7px', borderRadius:'10px', background:'rgba(100,100,100,0.1)', color:C.textSecondary, border:`1px solid ${C.border}` }}>Responds in ≤{app.creatorResponseTimeHrs}h</span>}
-                              </div>
-                            )}
-                            {/* Portfolio highlights */}
-                            {app.creatorPortfolio && app.creatorPortfolio.length > 0 && (
-                              <div style={{ marginBottom:'10px' }}>
-                                <div style={{ fontSize:'10px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', marginBottom:'4px' }}>Past Work</div>
-                                {app.creatorPortfolio.map((p,pi) => (
-                                  <div key={pi} style={{ fontSize:'11px', color:C.textSecondary, paddingLeft:'8px', borderLeft:`2px solid ${C.border}`, marginBottom:'3px' }}>{p}</div>
-                                ))}
-                              </div>
-                            )}
-                            {/* Campaign context */}
-                            <div style={{ fontSize:'11px', color:C.textSecondary, marginBottom:'10px' }}>{camp ? `Campaign: ${camp.title}` : app.campaignTitle} · Applied {app.appliedAt}</div>
-                            {app.status === 'accepted' && <div style={{ fontSize:'11px', color:C.success, marginBottom:'8px' }}>Creator has been notified and can now enter negotiation.</div>}
-                            {app.status === 'pending' && (
-                              <div style={{ display:'flex', gap:'6px' }}>
-                                <button onClick={() => { persistApplications(sharedApplications.map(a=>a.id===app.id?{...a,status:'accepted' as const}:a)); setPurchaseToast('Accepted — creator can now enter negotiation'); setTimeout(()=>setPurchaseToast(null),3000); }} style={{ flex:1, background:C.success, border:'none', borderRadius:'6px', padding:'7px', fontSize:'12px', fontWeight:600, color:'#fff', cursor:'pointer' }}>Accept</button>
-                                <button onClick={() => { persistApplications(sharedApplications.map(a=>a.id===app.id?{...a,status:'rejected' as const}:a)); setPurchaseToast('Application declined'); setTimeout(()=>setPurchaseToast(null),3000); }} style={{ flex:1, background:'none', border:`1px solid ${C.border}`, borderRadius:'6px', padding:'7px', fontSize:'12px', fontWeight:600, color:C.textSecondary, cursor:'pointer' }}>Decline</button>
-                              </div>
+                            ) : (
+                              <span style={{ fontSize:'11px', fontWeight:600, color:app.status==='accepted'?C.success:C.textMuted, textTransform:'uppercase', flexShrink:0 }}>{app.status}</span>
                             )}
                           </div>
                         );
@@ -4024,8 +4000,8 @@ export default function InstagramDemoPage() {
               {activeCommunity === null && activeDmId === null ? (
                 <>
                   {/* Header */}
-                  <div style={{ height: '60px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: '20px', paddingRight: '16px', fontWeight: 'bold', fontSize: '16px', background: C.surface }}>
-                    Messages
+                  <div style={{ height: '52px', display: 'flex', alignItems: 'center', paddingLeft: '16px', paddingRight: '16px', position: 'sticky', top: 0, background: C.bg, zIndex: 10 }}>
+                    <span style={{ fontSize: '22px', fontWeight: 700, color: C.text }}>Messages</span>
                   </div>
 
                   {/* Filter tabs — DMs | Communities */}
@@ -4917,122 +4893,108 @@ export default function InstagramDemoPage() {
           {/* ── STORE VIEW ────────────────────────────────────── */}
           {activeView === 'store' && (
             <>
-              <div style={{ height: '60px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', paddingLeft: '20px', fontWeight: 'bold', fontSize: '16px', background: C.surface }}>Valueskins Store</div>
+              {/* Store header */}
+              <div style={{ padding: '12px 16px 0', position: 'sticky', top: 0, background: C.bg, zIndex: 10 }}>
+                <span style={{ fontSize: '22px', fontWeight: 700, color: C.text, display: 'block', marginBottom: '14px' }}>ValueSkins Store</span>
+                {/* Search bar */}
+                <div style={{ position: 'relative', marginBottom: '14px' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }}>
+                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                  </svg>
+                  <input
+                    type="text"
+                    placeholder="Search professions..."
+                    style={{ width: '100%', background: C.card, border: 'none', borderRadius: '12px', padding: '12px 12px 12px 40px', color: C.text, fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
+                  />
+                </div>
+              </div>
 
-              {/* Profession grid — same for creators and brands */}
-              {(
-                <div style={{ padding: '20px' }}>
-                  {/* Creator: slot assignment / Brand: owned skins summary */}
-                  {marketplaceRole === 'brand' ? (
-                    <div style={{ marginBottom: '20px' }}>
-                      <div style={{ fontSize: '12px', fontWeight: 700, color: C.textMuted, letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: '10px' }}>
-                        Your ValueSkins ({brandValueSkins.length}/3)
-                      </div>
-                      {brandValueSkins.length > 0 ? (
-                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' }}>
-                          {brandValueSkins.map(skin => (
-                            <div key={skin} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: `${C.primary}10`, border: `1px solid ${C.primary}`, borderRadius: '8px', padding: '6px 10px' }}>
-                              <span style={{ fontSize: '12px', fontWeight: 600, color: C.text }}>{skin}</span>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div style={{ fontSize: '12px', color: C.textMuted, marginBottom: '8px' }}>
-                          No ValueSkins yet. Tap a category below to purchase.
-                        </div>
-                      )}
-                      {brandValueSkins.length < 3 ? (
-                        <div style={{ fontSize: '12px', color: C.textSecondary }}>
-                          Tap any profession below to add it. Creators with that ValueSkin will see you as a match.
-                        </div>
-                      ) : (
-                        <div style={{ fontSize: '12px', color: C.warning }}>
-                          All 3 slots filled. Remove a skin in Settings to add a new one.
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div style={{ marginBottom: '20px' }}>
-                      <div style={{ fontSize: '12px', fontWeight: 700, color: C.textMuted, letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: '10px' }}>
-                        Assign to slot
-                      </div>
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        {SLOTS.map((slot) => {
-                          const current = valueSkins[slot];
-                          const active = assigningSlot === slot;
-                          return (
-                            <button
-                              key={slot}
-                              onClick={() => setAssigningSlot(active ? null : slot)}
-                              style={{
-                                flex: 1, padding: '10px 8px',
-                                background: active ? `${SLOT_COLORS[slot]}20` : C.card,
-                                border: `2px solid ${active ? SLOT_COLORS[slot] : C.border}`,
-                                borderRadius: '10px', cursor: 'pointer', transition: 'all 0.15s',
-                              }}
-                            >
-                              <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.6px', textTransform: 'uppercase', color: SLOT_COLORS[slot], marginBottom: '4px' }}>
-                                {SLOT_LABELS[slot]}
-                              </div>
-                              <div style={{ fontSize: '12px', color: current ? C.text : C.textMuted, fontWeight: current ? 600 : 400 }}>
-                                {current ? (PROFESSION_BADGES[current.profession]?.abbreviation ?? current.profession) : 'Empty'}
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                      {assigningSlot && (
-                        <div style={{ fontSize: '12px', color: SLOT_COLORS[assigningSlot], marginTop: '8px', fontWeight: 600 }}>
-                          Selecting for {SLOT_LABELS[assigningSlot]} slot — tap any badge below to apply ($10)
-                        </div>
-                      )}
-                      {!assigningSlot && (
-                        <div style={{ fontSize: '12px', color: C.textMuted, marginTop: '8px' }}>
-                          Select a slot above, then choose a profession badge.
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                    {Object.values(PROFESSIONS).map((prof) => {
-                      const isBrand = marketplaceRole === 'brand';
-                      const brandOwns = isBrand && prof.subProfessions.some(sp => brandValueSkins.includes(sp));
-                      const isCurrentSlotActive = !isBrand && assigningSlot && prof.subProfessions.includes(valueSkins[assigningSlot]?.profession ?? '');
-                      const canClick = isBrand ? brandValueSkins.length < 3 : !!assigningSlot;
+              <div style={{ padding: '0 16px 16px' }}>
+                {/* Slot assignment pills */}
+                {marketplaceRole !== 'brand' && (
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+                    {SLOTS.map((slot) => {
+                      const current = valueSkins[slot];
+                      const active = assigningSlot === slot;
+                      const slotColor = SLOT_COLORS[slot];
                       return (
                         <button
-                          key={prof.name}
-                          onClick={() => { if (canClick) { setStoreCategory(prof.name); setShowStoreModal(true); } }}
+                          key={slot}
+                          onClick={() => setAssigningSlot(active ? null : slot)}
                           style={{
-                            padding: '14px', background: (isCurrentSlotActive || brandOwns) ? `rgba(0,102,204,0.1)` : C.card,
-                            border: `1px solid ${(isCurrentSlotActive || brandOwns) ? C.primary : C.border}`,
-                            borderRadius: '10px', color: C.text, cursor: canClick ? 'pointer' : 'default',
-                            fontWeight: '600', fontSize: '14px', textAlign: 'left', transition: 'all 0.15s',
-                            opacity: canClick ? 1 : 0.6,
+                            flex: 1, padding: '10px 8px', borderRadius: '12px', cursor: 'pointer',
+                            background: active ? `${slotColor}20` : C.card,
+                            border: active ? `2px solid ${slotColor}` : '2px solid transparent',
+                            transition: 'all 0.15s',
                           }}
-                          onMouseEnter={(e) => { if (canClick) e.currentTarget.style.borderColor = C.primary; }}
-                          onMouseLeave={(e) => { if (!isCurrentSlotActive && !brandOwns) e.currentTarget.style.borderColor = C.border; }}
                         >
-                          <div style={{ marginBottom: '4px' }}>{prof.name}</div>
-                          <div style={{ fontSize: '12px', color: (isCurrentSlotActive || brandOwns) ? C.primary : C.textSecondary, fontWeight: 700 }}>
-                            {brandOwns ? 'Owned' : isCurrentSlotActive ? 'Active' : canClick ? '$10' : '\u2014'}
+                          <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.6px', textTransform: 'uppercase', color: slotColor, marginBottom: '2px' }}>
+                            {SLOT_LABELS[slot]}
+                          </div>
+                          <div style={{ fontSize: '13px', color: current ? C.text : C.textMuted, fontWeight: current ? 600 : 400 }}>
+                            {current ? (PROFESSION_BADGES[current.profession]?.abbreviation ?? current.profession) : 'Empty'}
                           </div>
                         </button>
                       );
                     })}
                   </div>
-                </div>
-              )}
+                )}
 
+                {/* Brand: owned skins summary */}
+                {marketplaceRole === 'brand' && (
+                  <div style={{ marginBottom: '16px' }}>
+                    <div style={{ fontSize: '13px', fontWeight: 600, color: C.textSecondary, marginBottom: '8px' }}>Your ValueSkins ({brandValueSkins.length}/3)</div>
+                    {brandValueSkins.length > 0 && (
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                        {brandValueSkins.map(skin => (
+                          <span key={skin} style={{ fontSize: '13px', fontWeight: 600, color: C.primary, background: `${C.primary}15`, padding: '6px 14px', borderRadius: '20px' }}>{skin}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {assigningSlot && (
+                  <div style={{ fontSize: '13px', color: SLOT_COLORS[assigningSlot], marginBottom: '12px', fontWeight: 600 }}>
+                    Selecting for {SLOT_LABELS[assigningSlot]} slot
+                  </div>
+                )}
+
+                {/* 2-column category grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  {Object.values(PROFESSIONS).map((prof) => {
+                    const isBrand = marketplaceRole === 'brand';
+                    const brandOwns = isBrand && prof.subProfessions.some(sp => brandValueSkins.includes(sp));
+                    const isCurrentSlotActive = !isBrand && assigningSlot && prof.subProfessions.includes(valueSkins[assigningSlot]?.profession ?? '');
+                    const canClick = isBrand ? brandValueSkins.length < 3 : !!assigningSlot;
+                    return (
+                      <button
+                        key={prof.name}
+                        onClick={() => { if (canClick) { setStoreCategory(prof.name); setShowStoreModal(true); } }}
+                        style={{
+                          padding: '16px 14px', textAlign: 'left',
+                          background: (isCurrentSlotActive || brandOwns) ? `${C.primary}12` : C.card,
+                          border: 'none', borderRadius: '14px', cursor: canClick ? 'pointer' : 'default',
+                          transition: 'all 0.15s', opacity: canClick ? 1 : 0.5,
+                        }}
+                      >
+                        <div style={{ fontSize: '15px', fontWeight: 600, color: C.text, marginBottom: '4px' }}>{prof.name}</div>
+                        <div style={{ fontSize: '12px', color: (isCurrentSlotActive || brandOwns) ? C.primary : C.textMuted, fontWeight: 600 }}>
+                          {brandOwns ? 'Owned' : isCurrentSlotActive ? 'Active' : canClick ? `${prof.subProfessions.length} skins` : '\u2014'}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </>
           )}
 
           {/* ── NOTIFICATIONS VIEW ────────────────────────────── */}
           {activeView === 'notifications' && (
             <>
-              <div style={{ height: '60px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', paddingLeft: '20px', fontWeight: 'bold', fontSize: '16px', background: C.surface }}>
-                Notifications
+              <div style={{ height: '52px', display: 'flex', alignItems: 'center', paddingLeft: '16px', paddingRight: '16px', position: 'sticky', top: 0, background: C.bg, zIndex: 10 }}>
+                <span style={{ fontSize: '22px', fontWeight: 700, color: C.text }}>Notifications</span>
               </div>
               {!hasValueSkin ? (
                 <div style={{ textAlign: 'center', padding: '60px 20px', color: C.textMuted }}>
@@ -5047,33 +5009,53 @@ export default function InstagramDemoPage() {
                     <div style={{ fontSize: '12px' }}>Activity from deals, communities, and skins will appear here</div>
                   </div>
                 ) : (
-                  notifications.map(n => {
-                    const iconMap: Record<string, { bg: string; color: string; label: string }> = {
-                      deal: { bg: 'rgba(0,102,204,0.08)', color: C.primary, label: 'DEAL' },
-                      community: { bg: 'rgba(139,92,246,0.08)', color: '#8B5CF6', label: 'COMMUNITY' },
-                      skin: { bg: 'rgba(16,185,129,0.08)', color: '#10B981', label: 'SKIN' },
-                      system: { bg: 'rgba(100,100,100,0.08)', color: C.textSecondary, label: 'SYSTEM' },
-                    };
-                    const icon = iconMap[n.type] || iconMap.system;
-                    return (
-                      <div key={n.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '14px 16px', borderBottom: `1px solid ${C.border}`, background: n.read ? 'transparent' : 'rgba(0,102,204,0.03)' }}>
-                        <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: icon.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                          <span style={{ fontSize: '9px', fontWeight: 700, color: icon.color }}>{icon.label.slice(0, 2)}</span>
-                        </div>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: '13px', color: C.text, lineHeight: 1.45, fontWeight: n.read ? 400 : 500 }}>{n.text}</div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-                            <span style={{ fontSize: '11px', color: C.textMuted }}>{n.time}</span>
-                            <span style={{ fontSize: '9px', fontWeight: 700, color: icon.color, background: icon.bg, padding: '1px 6px', borderRadius: '4px' }}>{icon.label}</span>
-                            {(n.type === 'deal' || n.type === 'community') && (
-                              <a href="#" onClick={(e) => { e.preventDefault(); window.open('https://instagram.com', '_blank'); }} style={{ fontSize: '10px', fontWeight: 600, color: C.primary, textDecoration: 'none', cursor: 'pointer' }} onMouseEnter={e => { e.currentTarget.style.textDecoration = 'underline'; }} onMouseLeave={e => { e.currentTarget.style.textDecoration = 'none'; }}>View Profile →</a>
-                            )}
-                          </div>
-                        </div>
-                        {!n.read && <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: C.primary, flexShrink: 0, marginTop: '6px' }} />}
-                      </div>
-                    );
-                  })
+                  <>
+                    {/* New section */}
+                    {notifications.filter(n => !n.read).length > 0 && (
+                      <>
+                        <div style={{ padding: '14px 16px 8px', fontSize: '15px', fontWeight: 700, color: C.text }}>New</div>
+                        {notifications.filter(n => !n.read).map(n => {
+                          const avatarColors: Record<string, string> = { deal: '#0095F6', community: '#7C3AED', skin: '#00D46A', system: '#666' };
+                          const avatarColor = avatarColors[n.type] || '#666';
+                          const brandInitial = n.text.match(/^(\w)/)?.[1] || 'N';
+                          return (
+                            <div key={n.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px' }}>
+                              <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: `linear-gradient(135deg, ${avatarColor}, ${avatarColor}99)`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                <span style={{ fontSize: '16px', fontWeight: 700, color: '#fff' }}>{brandInitial}</span>
+                              </div>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: '14px', color: C.text, lineHeight: 1.4 }}>{n.text}</div>
+                                <div style={{ fontSize: '12px', color: C.textMuted, marginTop: '2px' }}>{n.time}</div>
+                              </div>
+                              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: C.primary, flexShrink: 0 }} />
+                            </div>
+                          );
+                        })}
+                      </>
+                    )}
+                    {/* Earlier section */}
+                    {notifications.filter(n => n.read).length > 0 && (
+                      <>
+                        <div style={{ padding: '14px 16px 8px', fontSize: '15px', fontWeight: 700, color: C.text }}>Earlier</div>
+                        {notifications.filter(n => n.read).map(n => {
+                          const avatarColors: Record<string, string> = { deal: '#0095F6', community: '#7C3AED', skin: '#00D46A', system: '#666' };
+                          const avatarColor = avatarColors[n.type] || '#666';
+                          const brandInitial = n.text.match(/^(\w)/)?.[1] || 'N';
+                          return (
+                            <div key={n.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px' }}>
+                              <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: avatarColor, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, opacity: 0.7 }}>
+                                <span style={{ fontSize: '16px', fontWeight: 700, color: '#fff' }}>{brandInitial}</span>
+                              </div>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: '14px', color: C.textSecondary, lineHeight: 1.4 }}>{n.text}</div>
+                                <div style={{ fontSize: '12px', color: C.textMuted, marginTop: '2px' }}>{n.time}</div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </>
+                    )}
+                  </>
                 )}
               </div>
               )}
@@ -5083,8 +5065,8 @@ export default function InstagramDemoPage() {
           {/* ── EXPLORE VIEW ──────────────────────────────────── */}
           {activeView === 'explore' && (
             <>
-              <div style={{ height: '60px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', paddingLeft: '20px', fontWeight: 'bold', fontSize: '16px', background: C.surface }}>
-                Explore
+              <div style={{ height: '52px', display: 'flex', alignItems: 'center', paddingLeft: '16px', position: 'sticky', top: 0, background: C.bg, zIndex: 10 }}>
+                <span style={{ fontSize: '22px', fontWeight: 700, color: C.text }}>Explore</span>
               </div>
               {/* Tabs */}
               <div style={{ display: 'flex', borderBottom: `1px solid ${C.border}` }}>
@@ -6317,9 +6299,9 @@ function NavItem({ label, active, onClick, badgeCount }: { label: string; active
   return (
     <button
       onClick={onClick}
-      style={{ background: active ? 'rgba(0,102,204,0.1)' : 'transparent', border: 'none', borderRadius: '8px', padding: '10px 16px', color: active ? C.primary : C.textSecondary, fontWeight: active ? '600' : '500', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px', transition: 'all 0.15s', width: '100%', justifyContent: 'flex-start', position: 'relative' }}
-      onMouseEnter={(e) => { if (!active) { e.currentTarget.style.color = C.text; e.currentTarget.style.background = C.surfaceAlt; } }}
-      onMouseLeave={(e) => { if (!active) { e.currentTarget.style.color = C.textSecondary; e.currentTarget.style.background = 'transparent'; } }}
+      style={{ background: 'transparent', border: 'none', borderRadius: '10px', padding: '12px 14px', color: active ? C.text : C.textSecondary, fontWeight: active ? 700 : 400, fontSize: '15px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px', transition: 'all 0.15s', width: '100%', justifyContent: 'flex-start', position: 'relative' }}
+      onMouseEnter={(e) => { if (!active) { e.currentTarget.style.color = C.text; } }}
+      onMouseLeave={(e) => { if (!active) { e.currentTarget.style.color = C.textSecondary; } }}
     >
       <span>{label}</span>
       {badgeCount !== undefined && badgeCount > 0 && (
@@ -6335,7 +6317,7 @@ function SkinManagementModal({ slot, onClose, valueSkins, hiddenSkins, onHide, o
 
   const isHidden = hiddenSkins.has(slot);
   const SLOT_LABELS: Record<ValueSkinSlot, string> = { profession: 'Professional', passion: 'Passion', hobby: 'Hobby' };
-  const SLOT_COLORS: Record<ValueSkinSlot, string> = { profession: '#0066CC', passion: '#880E4F', hobby: '#37474F' };
+  const SLOT_COLORS: Record<ValueSkinSlot, string> = { profession: '#0095F6', passion: '#880E4F', hobby: '#37474F' };
 
   return (
     <Modal onClose={onClose}>
@@ -6425,8 +6407,8 @@ function SkinManagementModal({ slot, onClose, valueSkins, hiddenSkins, onHide, o
 
 function Modal({ onClose, children }: { onClose: () => void; children: React.ReactNode }) {
   return (
-    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-      <div style={{ background: C.surface, borderRadius: '16px', padding: '24px', maxWidth: '500px', width: '95vw', maxHeight: '90vh', overflowY: 'auto', position: 'relative', border: `1px solid ${C.border}` }}>
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+      <div style={{ background: C.card, borderRadius: '20px', padding: '24px', maxWidth: '500px', width: '95vw', maxHeight: '90vh', overflowY: 'auto', position: 'relative' }}>
         <button onClick={onClose} style={{ position: 'absolute', top: '16px', right: '16px', background: 'none', border: 'none', color: C.textMuted, fontSize: '24px', cursor: 'pointer', lineHeight: 1 }}>×</button>
         {children}
       </div>
