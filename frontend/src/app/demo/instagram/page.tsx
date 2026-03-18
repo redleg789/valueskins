@@ -1655,13 +1655,9 @@ export default function InstagramDemoPage() {
                         filter: isDragging ? 'drop-shadow(0 4px 12px rgba(0,0,0,0.5))' : 'none',
                       }}
                     >
-                      {badge?.stickerImage ? (
-                        <img src={badge.stickerImage} alt={profession} style={{ width: '28px', height: '28px', objectFit: 'contain', pointerEvents: 'none', display: 'block' }} />
-                      ) : (
-                        <span style={{ fontSize: '10px', fontWeight: 700, color: '#fff', background: badge?.color ?? '#444', padding: '3px 7px', borderRadius: '6px', pointerEvents: 'none', whiteSpace: 'nowrap' }}>
-                          {badge?.abbreviation ?? profession.slice(0, 3).toUpperCase()}
-                        </span>
-                      )}
+                      <span style={{ fontSize: '22px', lineHeight: 1, pointerEvents: 'none', display: 'block' }}>
+                        {badge?.emoji ?? badge?.abbreviation ?? profession.slice(0, 3).toUpperCase()}
+                      </span>
                     </div>
                   );
                 })}
