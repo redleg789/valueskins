@@ -79,6 +79,31 @@ React components that fetch data must fall back to hardcoded data if the API ret
 - **Fix**: Added conditional fallback: `const displayProfessions = professions.length > 0 ? professions : PROFESSIONS`
 - **Pattern**: For critical UI data, always have a hardcoded fallback. Check `state.length > 0` before using async data.
 
+### 12. Firebase (and any SDK) must NEVER initialize during SSR/prerendering
+Exporting a module-level SDK instance (even behind a Proxy) causes Vercel prerendering to crash because `ref()`, `onValue()`, and other SDK functions validate config internally — the Proxy trick does NOT prevent this.
+- **Bug**: `export const db = new Proxy(...)` in firebase.ts still crashed because `ref(db, path)` called during SSR triggers Firebase's internal URL validation before the Proxy's `get` trap can return undefined.
+- **Impact**: Vercel build fails with "Invalid Firebase Database URL" every time. Wasted 3+ deploy cycles.
+- **Fix**: Export a `getDb()` function that returns `null` during SSR. Every callsite must call `getDb()` inside `useEffect`/callbacks and bail if null.
+- **Pattern**: Never export SDK instances at module level. Always export a lazy getter that returns null server-side. Guard every usage with a null check. This applies to Firebase, Supabase, Stripe, or any SDK that validates config at initialization time.
+
+### 13. Proxy pattern does NOT make SDKs SSR-safe
+A JS Proxy only intercepts property access on the proxy object itself. It does NOT intercept what happens when you pass that proxy as an argument to an SDK function like `ref(db, path)`. The SDK function receives the proxy, calls internal methods, and crashes before the Proxy trap ever fires.
+- **Pattern**: Proxies are useless for SSR-safety of third-party SDKs. Use conditional initialization (return null during SSR) instead.
+
+### 14. Never declare React hooks inside map/loops
+Declaring `useState` inside `.map()` creates a new hook instance per render, destroying state and breaking React's hook rules.
+- **Bug**: Added `const [hoveringSkin, setHoveringSkin] = useState(...)` inside `ownedSkins.map()` — state was lost between renders
+- **Impact**: Hover effects didn't work, confusing UX
+- **Fix**: Declare state at component level (e.g., `const [hoveringSkin, setHoveringSkin] = useState(null)`) and use closures to track which item is hovered
+- **Pattern**: Hooks are only valid at the top level of a component or custom hook, never inside loops, conditionals, or callbacks
+
+### 15. Show validation errors to users, never silently fail
+When a user action is blocked (e.g., missing required field), always show a toast, modal, or inline error. Silent failures confuse users.
+- **Bug**: Creator clicked a skin in store without selecting a slot first → `if (!assigningSlot) return;` silently exited with no feedback
+- **Impact**: User saw "try again" error message from somewhere else, thought the app was broken
+- **Fix**: Show toast: `"Select a slot first"` before returning
+- **Pattern**: Every guard clause that returns early must inform the user why, either with a toast, error message, or disabled button state
+
 ---
 
 ## Settings Page — UI-Only Changes (Prod-Ready Implementation Pending)
