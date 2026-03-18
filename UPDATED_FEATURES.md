@@ -2,6 +2,65 @@
 
 ---
 
+## Full UI Redesign — Instagram Native Dark Mode (2026-03-18)
+
+### Color System Overhaul
+- Primary color updated from `#0066CC` to Instagram blue `#0095F6`
+- Background changed to pure black `#000000` matching Instagram dark mode
+- Surface/card colors updated to `#121212` / `#1A1A1A` for proper depth hierarchy
+- Text colors tuned: primary `#F5F5F5`, secondary `#A8A8A8`, muted `#666666`
+- Semantic colors updated: success `#00D46A`, danger `#ED4956`, warning `#FFAB00`, accent `#7C3AED`
+
+### Notifications View
+- Instagram-style layout with "New" and "Earlier" sections
+- Brand avatar circles with gradient backgrounds and initials
+- Unread indicator dots, cleaner typography
+- Removed old tag/badge system in favor of clean rows
+
+### Creator Marketplace
+- New tab-style toggle: "Brand Deals" / "Creator Collabs" with pill-shaped active state
+- Scrollable category filter chips (All, per-skin, Barter)
+- Redesigned deal cards: brand avatar circle, name, type, match %, budget, deliverable pills (e.g. "2 Reels", "3 Stories"), "View Deal" / "Details" buttons
+- Barter filter now inline as a chip instead of separate button
+
+### ValueSkins Store
+- Search bar at top for profession filtering
+- Slot assignment pills (Professional / Passion / Hobby) with clean borders
+- 2-column grid of category cards with borderless rounded design
+- Shows sub-profession count per category
+
+### Deal Room
+- Shield icon with brand name in circular avatar header
+- "All messages logged with UTC timestamps" notice with shield icon
+- Accept / Counter / Decline buttons with distinct colors (green/blue/red outline)
+- Cleaner container styling with rounded corners
+
+### Brand Dashboard (Applicant List)
+- Search bar at top
+- Clean row-based applicant list (avatar, name, handle, level badge, engagement, match %, rate)
+- Inline Accept/Decline buttons per row
+- Status labels for accepted/rejected applicants
+
+### Profile — VALUESKINS VERIFIED Section
+- New "VALUESKINS VERIFIED" card on profile with centered header
+- 3 circular badges with gradient backgrounds and profession icons
+- Level pills below each badge (e.g. "Lv.2")
+- Replaces scattered skin placement options
+
+### Level-Up Modal
+- Clean white background modal (not dark)
+- Large circular gradient badge showing new level number
+- Before/After level comparison
+- Single blue "Continue" CTA button
+
+### Navigation & Layout
+- Sidebar: slimmer 240px width, Instagram-italic branding, borderless nav items
+- All view headers: 22px bold title, no borders, sticky positioning
+- Bottom mobile nav: cleaner spacing
+- Toast notifications: dark card style with blue checkmark
+
+---
+
 ## Marketplace & Deal Room — Session (2026-03-17)
 
 ### Brand Brief — Campaign Description Fields
@@ -179,8 +238,8 @@ Platform is user-selectable in Settings > Creator Platform.
 - Each ValueSkin (profession/passion/hobby) levels independently from 1-5
 - XP thresholds: Lv.1 (0 XP), Lv.2 (50 XP), Lv.3 (200 XP), Lv.4 (500 XP), Lv.5 (1000 XP)
 - Base XP is manually seeded per skin on purchase (profession: 350, passion: 120, hobby: 30)
-- Follower count only counts as bonus XP when user owns exactly 1 skin (avoids attribution ambiguity)
-- Bonus XP formula: `log10(followers) * 40` (e.g., 1M followers ≈ +240 XP)
+- Follower count and views are NOT factors in leveling — engagement quality only
+- XP gained through deal completions, community engagement, link/purchase activity
 - Levels are displayed only when clicking individual skin in profile, not on the profile itself
 
 ### Per-Skin Pitch & Showcase
