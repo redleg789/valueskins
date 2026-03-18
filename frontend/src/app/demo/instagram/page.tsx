@@ -816,6 +816,8 @@ export default function InstagramDemoPage() {
   const [safetyProposalFormOnly, setSafetyProposalFormOnly] = useState(true);
   const [safetyOffPlatformBlock, setSafetyOffPlatformBlock] = useState(true);
   const [safetyNewBrandWarmIntro, setSafetyNewBrandWarmIntro] = useState(true);
+  type DealCommMode = 'valueskins_chatroom' | 'platform_dms';
+  const [dealCommMode, setDealCommMode] = useState<DealCommMode>('valueskins_chatroom');
   const [safetyNewBrandDealCount, setSafetyNewBrandDealCount] = useState(0);
   const [savedSafetyToast, setSavedSafetyToast] = useState(false);
   // Creator-side safety controls
@@ -934,6 +936,14 @@ export default function InstagramDemoPage() {
   const [newCampaignLocation, setNewCampaignLocation] = useState('');
   const [newCampaignDeliverables, setNewCampaignDeliverables] = useState('');
   const [newCampaignNonNeg, setNewCampaignNonNeg] = useState<string[]>([]);
+  const [newCampaignAbout, setNewCampaignAbout] = useState('');
+  const [newCampaignCompensation, setNewCampaignCompensation] = useState('Paid');
+  const [newCampaignExclusivity, setNewCampaignExclusivity] = useState('None');
+  const [newCampaignUsageRights, setNewCampaignUsageRights] = useState('30 days, social only');
+  const [newCampaignRevisionLimit, setNewCampaignRevisionLimit] = useState(2);
+  const [newCampaignAudienceTarget, setNewCampaignAudienceTarget] = useState('');
+  const [newCampaignRequirements, setNewCampaignRequirements] = useState<string[]>([]);
+  const [newCampaignReqInput, setNewCampaignReqInput] = useState('');
 
   // Convenience aliases for backward compatibility
   const persistCampaigns = (updated: Campaign[]) => { setCampaigns(updated); };
@@ -2804,6 +2814,17 @@ export default function InstagramDemoPage() {
                     <button onClick={() => { setMarketplaceRole('none'); setNegotiatingCreator(null); }} style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: '6px', padding: '4px 10px', fontSize: '11px', color: C.textSecondary, cursor: 'pointer' }}>Switch Role</button>
                   </div>
                   <div style={{ padding: '20px' }}>
+                    {/* Prominent New Campaign CTA */}
+                    {!showCampaignCreator && activeBrandSkin && (
+                      <button
+                        onClick={() => setShowCampaignCreator(true)}
+                        style={{ width: '100%', background: C.primary, border: 'none', borderRadius: '10px', padding: '14px', color: '#fff', fontWeight: 700, fontSize: '14px', cursor: 'pointer', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        Create New Campaign
+                      </button>
+                    )}
+
                     {/* New Campaign Creator Modal */}
                     {showCampaignCreator && (
                       <div style={{ position:'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.75)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:9999 }}>
@@ -2819,8 +2840,13 @@ export default function InstagramDemoPage() {
                             </div>
                           ))}
                           <div style={{ marginBottom:'12px' }}>
-                            <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>Description *</div>
-                            <textarea value={newCampaignDesc} onChange={e=>setNewCampaignDesc(e.target.value)} rows={3} placeholder="Describe the campaign and what you need from creators" style={{ width:'100%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', color:C.text, padding:'8px 10px', fontSize:'13px', fontFamily:'inherit', outline:'none', resize:'none', boxSizing:'border-box' as const }} />
+                            <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>About your product / campaign *</div>
+                            <div style={{ fontSize:'10px', color:C.textMuted, marginBottom:'6px' }}>Creators need to understand what they are promoting. Be specific — what is the product, who is it for, and what makes it worth their audience's trust.</div>
+                            <textarea value={newCampaignAbout} onChange={e=>setNewCampaignAbout(e.target.value)} rows={4} placeholder="e.g. We build CI/CD tooling for startups. 50K+ teams use our pipeline automation. Looking for authentic dev voices to demo our v3 launch features." style={{ width:'100%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', color:C.text, padding:'8px 10px', fontSize:'13px', fontFamily:'inherit', outline:'none', resize:'none', boxSizing:'border-box' as const }} />
+                          </div>
+                          <div style={{ marginBottom:'12px' }}>
+                            <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>Campaign description *</div>
+                            <textarea value={newCampaignDesc} onChange={e=>setNewCampaignDesc(e.target.value)} rows={2} placeholder="Briefly describe the type of content and goal of this campaign" style={{ width:'100%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', color:C.text, padding:'8px 10px', fontSize:'13px', fontFamily:'inherit', outline:'none', resize:'none', boxSizing:'border-box' as const }} />
                           </div>
                           <div style={{ marginBottom:'12px' }}>
                             <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'6px' }}>Required ValueSkin (profession) *</div>
@@ -2870,6 +2896,74 @@ export default function InstagramDemoPage() {
                               ))}
                             </div>
                           </div>
+                          {/* Compensation type */}
+                          <div style={{ marginBottom:'12px' }}>
+                            <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'6px' }}>Compensation type *</div>
+                            <div style={{ display:'flex', gap:'6px', flexWrap:'wrap' }}>
+                              {['Paid','Paid + Barter','Barter only','Performance-based'].map(t => (
+                                <button key={t} onClick={()=>setNewCampaignCompensation(t)} style={{ padding:'5px 10px', borderRadius:'6px', fontSize:'11px', fontWeight:600, cursor:'pointer', background:newCampaignCompensation===t?`${C.primary}15`:C.bg, color:newCampaignCompensation===t?C.primary:C.textSecondary, border:`1px solid ${newCampaignCompensation===t?C.primary:C.border}` }}>{t}</button>
+                              ))}
+                            </div>
+                          </div>
+                          {/* Exclusivity & Usage Rights */}
+                          <div style={{ display:'flex', gap:'10px', marginBottom:'12px' }}>
+                            <div style={{ flex:1 }}>
+                              <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>Exclusivity</div>
+                              <select value={newCampaignExclusivity} onChange={e=>setNewCampaignExclusivity(e.target.value)} style={{ width:'100%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', color:C.text, padding:'8px 10px', fontSize:'12px', fontFamily:'inherit', outline:'none', boxSizing:'border-box' as const }}>
+                                <option value="None">None</option>
+                                <option value="14 days">14 days</option>
+                                <option value="30 days">30 days</option>
+                                <option value="60 days">60 days</option>
+                                <option value="90 days">90 days</option>
+                              </select>
+                            </div>
+                            <div style={{ flex:1 }}>
+                              <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>Usage rights</div>
+                              <select value={newCampaignUsageRights} onChange={e=>setNewCampaignUsageRights(e.target.value)} style={{ width:'100%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', color:C.text, padding:'8px 10px', fontSize:'12px', fontFamily:'inherit', outline:'none', boxSizing:'border-box' as const }}>
+                                <option value="30 days, social only">30 days, social only</option>
+                                <option value="60 days, social only">60 days, social only</option>
+                                <option value="90 days, all platforms">90 days, all platforms</option>
+                                <option value="120 days, all platforms">120 days, all platforms</option>
+                                <option value="180 days, all platforms">180 days, all platforms</option>
+                                <option value="Perpetual">Perpetual</option>
+                              </select>
+                            </div>
+                          </div>
+                          {/* Revision limit & Target audience */}
+                          <div style={{ display:'flex', gap:'10px', marginBottom:'12px' }}>
+                            <div style={{ flex:1 }}>
+                              <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>Revision limit</div>
+                              <div style={{ display:'flex', gap:'4px' }}>
+                                {[1,2,3,4,5].map(n => (
+                                  <button key={n} onClick={()=>setNewCampaignRevisionLimit(n)} style={{ flex:1, padding:'7px 0', borderRadius:'6px', fontSize:'12px', fontWeight:700, cursor:'pointer', background:newCampaignRevisionLimit===n?C.primary:C.bg, color:newCampaignRevisionLimit===n?'#fff':C.textSecondary, border:`1px solid ${newCampaignRevisionLimit===n?C.primary:C.border}` }}>{n}</button>
+                                ))}
+                              </div>
+                            </div>
+                            <div style={{ flex:1 }}>
+                              <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>Target audience *</div>
+                              <input type="text" value={newCampaignAudienceTarget} onChange={e=>setNewCampaignAudienceTarget(e.target.value)} placeholder="e.g. Developers, 25-40" style={{ width:'100%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', color:C.text, padding:'8px 10px', fontSize:'12px', fontFamily:'inherit', outline:'none', boxSizing:'border-box' as const }} />
+                            </div>
+                          </div>
+                          {/* Requirements — what creators must meet */}
+                          <div style={{ marginBottom:'12px' }}>
+                            <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>Creator requirements</div>
+                            <div style={{ fontSize:'10px', color:C.textMuted, marginBottom:'6px' }}>What must a creator have or do to qualify? Creators see this before applying.</div>
+                            <div style={{ display:'flex', gap:'6px', marginBottom:'6px' }}>
+                              <input type="text" value={newCampaignReqInput} onChange={e=>setNewCampaignReqInput(e.target.value)} placeholder="e.g. Must have active GitHub profile" onKeyDown={e => { if (e.key === 'Enter' && newCampaignReqInput.trim()) { e.preventDefault(); setNewCampaignRequirements(prev=>[...prev,newCampaignReqInput.trim()]); setNewCampaignReqInput(''); }}} style={{ flex:1, background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', color:C.text, padding:'7px 10px', fontSize:'12px', fontFamily:'inherit', outline:'none', boxSizing:'border-box' as const }} />
+                              <button onClick={()=>{ if (newCampaignReqInput.trim()) { setNewCampaignRequirements(prev=>[...prev,newCampaignReqInput.trim()]); setNewCampaignReqInput(''); }}} style={{ background:C.primary, border:'none', borderRadius:'8px', padding:'7px 12px', color:'#fff', fontSize:'11px', fontWeight:600, cursor:'pointer' }}>Add</button>
+                            </div>
+                            {newCampaignRequirements.length > 0 && (
+                              <div style={{ display:'flex', flexDirection:'column', gap:'4px' }}>
+                                {newCampaignRequirements.map((req, idx) => (
+                                  <div key={idx} style={{ display:'flex', alignItems:'center', gap:'6px', fontSize:'11px', color:C.text, padding:'4px 8px', background:C.bg, borderRadius:'6px', border:`1px solid ${C.border}` }}>
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                    <span style={{ flex:1 }}>{req}</span>
+                                    <button onClick={()=>setNewCampaignRequirements(prev=>prev.filter((_,i)=>i!==idx))} style={{ background:'none', border:'none', color:C.textMuted, cursor:'pointer', fontSize:'14px', lineHeight:1 }}>x</button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                           <div style={{ marginBottom:'16px' }}>
                             <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>Application deadline</div>
                             <input type="date" value={newCampaignDeadline} onChange={e=>setNewCampaignDeadline(e.target.value)} style={{ width:'100%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', color:C.text, padding:'8px 10px', fontSize:'13px', fontFamily:'inherit', outline:'none', boxSizing:'border-box' as const }} />
@@ -2878,13 +2972,15 @@ export default function InstagramDemoPage() {
                             onClick={() => {
                               const missing: string[] = [];
                               if (!newCampaignTitle.trim()) missing.push('Title');
+                              if (!newCampaignAbout.trim()) missing.push('About product/campaign');
                               if (!newCampaignDesc.trim()) missing.push('Description');
                               if (!newCampaignBudget) missing.push('Budget');
+                              if (!newCampaignAudienceTarget.trim()) missing.push('Target audience');
                               if (newCampaignProfessions.length===0) missing.push('Required ValueSkin');
                               if (missing.length > 0) { setPurchaseToast(`Missing: ${missing.join(', ')}`); setTimeout(()=>setPurchaseToast(null),4000); return; }
-                              const newC: Campaign = { id:Date.now(), brandProfession:activeBrandSkin??'', title:newCampaignTitle, description:newCampaignDesc, requiredProfessions:newCampaignProfessions, minLevel:newCampaignMinLevel, maxLevel:newCampaignMaxLevel, budget:newCampaignBudget, deadline:newCampaignDeadline, location:newCampaignLocation, nonNegotiables:newCampaignNonNeg, deliverables:newCampaignDeliverables, status:'open', applicants:0 };
+                              const newC: Campaign = { id:Date.now(), brandProfession:activeBrandSkin??'', title:newCampaignTitle, description:newCampaignDesc, about:newCampaignAbout, requiredProfessions:newCampaignProfessions, minLevel:newCampaignMinLevel, maxLevel:newCampaignMaxLevel, budget:newCampaignBudget, deadline:newCampaignDeadline, location:newCampaignLocation, nonNegotiables:newCampaignNonNeg, deliverables:newCampaignDeliverables, compensationType:newCampaignCompensation, exclusivity:newCampaignExclusivity, usageRights:newCampaignUsageRights, revisionLimit:newCampaignRevisionLimit, audienceTarget:newCampaignAudienceTarget, requirements:newCampaignRequirements, status:'open', applicants:0 };
                               persistCampaigns([...campaigns, newC]);
-                              setShowCampaignCreator(false); setNewCampaignTitle(''); setNewCampaignDesc(''); setNewCampaignBudget(''); setNewCampaignDeadline(''); setNewCampaignProfessions([]); setNewCampaignMinLevel(1); setNewCampaignMaxLevel(5); setNewCampaignLocation(''); setNewCampaignDeliverables(''); setNewCampaignNonNeg([]);
+                              setShowCampaignCreator(false); setNewCampaignTitle(''); setNewCampaignDesc(''); setNewCampaignAbout(''); setNewCampaignBudget(''); setNewCampaignDeadline(''); setNewCampaignProfessions([]); setNewCampaignMinLevel(1); setNewCampaignMaxLevel(5); setNewCampaignLocation(''); setNewCampaignDeliverables(''); setNewCampaignNonNeg([]); setNewCampaignCompensation('Paid'); setNewCampaignExclusivity('None'); setNewCampaignUsageRights('30 days, social only'); setNewCampaignRevisionLimit(2); setNewCampaignAudienceTarget(''); setNewCampaignRequirements([]); setNewCampaignReqInput('');
                               setPurchaseToast('Campaign published — visible to matching creators now'); setTimeout(()=>setPurchaseToast(null),3000);
                             }}
                             style={{ width:'100%', background:C.primary, border:'none', borderRadius:'8px', padding:'11px', color:'#fff', fontWeight:700, fontSize:'14px', cursor:'pointer' }}
@@ -4692,6 +4788,127 @@ export default function InstagramDemoPage() {
                   style={{ width: '100%', marginTop: '16px', padding: '11px', background: C.primary, border: 'none', borderRadius: '8px', color: '#fff', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}
                 >
                   {adminSavedFeaturesTab ? 'Feature flags saved' : 'Save Feature Flags'}
+                </button>
+              </div>
+
+              {/* ── DEAL COMMUNICATION MODE ───────────────────────── */}
+              <div style={{ padding: '20px', borderTop: `1px solid ${C.border}` }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                  <div style={{ fontSize: '13px', fontWeight: 700, color: C.text }}>Deal Communication Mode</div>
+                </div>
+                <div style={{ fontSize: '11px', color: C.textSecondary, marginBottom: '16px', lineHeight: 1.5 }}>
+                  Choose how brand deals and negotiations happen on the platform. This is a platform-level decision that affects all users.
+                </div>
+
+                {/* Option 1: ValueSkins Chatroom */}
+                <div
+                  onClick={() => setDealCommMode('valueskins_chatroom')}
+                  style={{
+                    background: dealCommMode === 'valueskins_chatroom' ? 'rgba(0,102,204,0.06)' : C.card,
+                    border: `2px solid ${dealCommMode === 'valueskins_chatroom' ? C.primary : C.border}`,
+                    borderRadius: '12px', padding: '16px', marginBottom: '10px', cursor: 'pointer', transition: 'all 0.15s',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <div style={{ fontSize: '14px', fontWeight: 700, color: C.text }}>ValueSkins Deal Room</div>
+                    <div style={{ width: '20px', height: '20px', borderRadius: '50%', border: `2px solid ${dealCommMode === 'valueskins_chatroom' ? C.primary : C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {dealCommMode === 'valueskins_chatroom' && <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: C.primary }} />}
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '11px', color: C.textSecondary, lineHeight: 1.6 }}>
+                    Separate deal room environment purpose-built for negotiations. Offers, counters, contracts, and chat happen inside ValueSkins. Isolated from personal DMs.
+                  </div>
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '10px' }}>
+                    {['Immutable audit log', 'Hash-chain integrity', 'Exact-second timestamps', 'Seen receipts', 'Deal reference IDs', 'Contract signing'].map(f => (
+                      <span key={f} style={{ padding: '3px 8px', borderRadius: '4px', fontSize: '9px', fontWeight: 600, background: 'rgba(0,102,204,0.1)', color: C.primary }}>{f}</span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Option 2: Platform DMs */}
+                <div
+                  onClick={() => setDealCommMode('platform_dms')}
+                  style={{
+                    background: dealCommMode === 'platform_dms' ? 'rgba(0,102,204,0.06)' : C.card,
+                    border: `2px solid ${dealCommMode === 'platform_dms' ? C.primary : C.border}`,
+                    borderRadius: '12px', padding: '16px', marginBottom: '10px', cursor: 'pointer', transition: 'all 0.15s',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <div style={{ fontSize: '14px', fontWeight: 700, color: C.text }}>Platform DMs (Instagram, etc.)</div>
+                    <div style={{ width: '20px', height: '20px', borderRadius: '50%', border: `2px solid ${dealCommMode === 'platform_dms' ? C.primary : C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {dealCommMode === 'platform_dms' && <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: C.primary }} />}
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '11px', color: C.textSecondary, lineHeight: 1.6 }}>
+                    Route deal conversations through the platform's existing DM system. Creators and brands communicate in the same inbox they already use. ValueSkins injects a compliance layer on top.
+                  </div>
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '10px' }}>
+                    {['Familiar UX', 'No context switching', 'Existing notification system'].map(f => (
+                      <span key={f} style={{ padding: '3px 8px', borderRadius: '4px', fontSize: '9px', fontWeight: 600, background: 'rgba(255,255,255,0.06)', color: C.textSecondary }}>{f}</span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Non-negotiable security notice */}
+                <div style={{ background: 'rgba(211,47,47,0.06)', border: '1px solid rgba(211,47,47,0.2)', borderRadius: '10px', padding: '14px 16px', marginBottom: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d32f2f" strokeWidth="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    <span style={{ fontSize: '12px', fontWeight: 700, color: '#d32f2f' }}>Non-negotiable — applies to both modes</span>
+                  </div>
+                  <div style={{ fontSize: '11px', color: C.textSecondary, lineHeight: 1.6 }}>
+                    Regardless of communication mode, the following security features are enforced on every deal message and cannot be disabled:
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '10px' }}>
+                    {[
+                      { label: 'Immutable audit trail', desc: 'Every message, offer, counter, and phase change is stored as an append-only record. No edits, no deletions.' },
+                      { label: 'Exact-second timestamps', desc: 'Send time, delivery time, and read time logged to the second in UTC for every message.' },
+                      { label: 'Hash-chain integrity', desc: 'Each event is SHA-256 hashed with the previous event hash. Tampering with any record breaks the chain.' },
+                      { label: 'Seen receipts with proof', desc: 'The exact moment the other party reads a message is recorded and visible to both sides.' },
+                      { label: 'No ghosting enforcement', desc: 'Neither party can exit a live deal without selecting a documented rejection reason. Repeat offenders lose trust score.' },
+                      { label: 'Exportable transcript', desc: 'Full deal history exportable as a legally defensible PDF at any time by either party.' },
+                    ].map(item => (
+                      <div key={item.label} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', padding: '6px 0' }}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#d32f2f" strokeWidth="2.5" strokeLinecap="round" style={{ marginTop: 2, flexShrink: 0 }}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                        <div>
+                          <div style={{ fontSize: '11px', fontWeight: 700, color: C.text }}>{item.label}</div>
+                          <div style={{ fontSize: '10px', color: C.textMuted, lineHeight: 1.4 }}>{item.desc}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {dealCommMode === 'platform_dms' && (
+                  <div style={{ background: 'rgba(230,81,0,0.06)', border: '1px solid rgba(230,81,0,0.2)', borderRadius: '10px', padding: '14px 16px' }}>
+                    <div style={{ fontSize: '12px', fontWeight: 700, color: C.text, marginBottom: '6px' }}>Integration requirements for Platform DMs</div>
+                    <div style={{ fontSize: '11px', color: C.textSecondary, lineHeight: 1.6 }}>
+                      If DMs are chosen as the communication channel, the platform must expose the following hooks to ValueSkins:
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '8px' }}>
+                      {[
+                        'Message webhook: every DM in a deal thread forwarded to ValueSkins for audit logging',
+                        'Read receipt webhook: exact timestamp when recipient opens the message',
+                        'Message metadata injection: ValueSkins appends audit ID and hash to each message payload',
+                        'Thread isolation: deal-tagged DM threads are flagged and cannot be deleted by either party',
+                        'Moderation override: platform moderators can freeze a deal thread on abuse reports',
+                        'Export API: full thread exportable via API with all metadata for legal compliance',
+                      ].map((req, i) => (
+                        <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '6px', fontSize: '10px', color: C.text, lineHeight: 1.5 }}>
+                          <span style={{ color: C.primary, fontWeight: 700, flexShrink: 0 }}>{i + 1}.</span>
+                          {req}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <button
+                  onClick={() => { setPurchaseToast(`Communication mode set to: ${dealCommMode === 'valueskins_chatroom' ? 'ValueSkins Deal Room' : 'Platform DMs with security layer'}`); setTimeout(() => setPurchaseToast(null), 3000); }}
+                  style={{ width: '100%', marginTop: '14px', padding: '11px', background: C.primary, border: 'none', borderRadius: '8px', color: '#fff', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}
+                >
+                  Save Communication Mode
                 </button>
               </div>
             </>

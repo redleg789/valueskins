@@ -81,6 +81,7 @@ export type Campaign = {
   brandProfession: string;
   title: string;
   description: string;
+  about?: string;
   requiredProfessions: string[];
   minLevel: number;
   maxLevel: number;
@@ -89,6 +90,12 @@ export type Campaign = {
   location: string;
   nonNegotiables: string[];
   deliverables: string;
+  compensationType?: string;
+  exclusivity?: string;
+  usageRights?: string;
+  revisionLimit?: number;
+  audienceTarget?: string;
+  requirements?: string[];
   status: 'open' | 'closed' | 'expired';
   applicants: number;
 };
