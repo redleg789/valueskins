@@ -1588,9 +1588,6 @@ export default function InstagramDemoPage() {
                         {isFollowing ? 'Following' : 'Follow'}
                       </button>
                       <button style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: '8px', color: C.text, padding: '7px 16px', fontWeight: 600, fontSize: '14px', cursor: 'pointer' }}>Message</button>
-                      <button onClick={() => setEditingProfile(true)} style={{ background: 'none', border: 'none', color: C.textMuted, cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' }}>
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
-                      </button>
                     </div>
 
                     {/* Stats row */}
