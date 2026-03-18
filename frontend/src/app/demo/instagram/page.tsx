@@ -1999,12 +1999,6 @@ export default function InstagramDemoPage() {
                           </div>
                           <div style={{ fontSize: '16px', fontWeight: 700, color: C.text, marginBottom: '8px' }}>{title}</div>
                           <div style={{ fontSize: '13px', color: C.textSecondary, lineHeight: 1.5, marginBottom: '20px' }}>{desc}</div>
-                          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: '8px', padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.textSecondary} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <rect x="2" y="2" width="20" height="20" rx="5" /><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" /><line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
-                            </svg>
-                            <span style={{ fontSize: '13px', color: C.textSecondary, fontWeight: 500 }}>Continue with Instagram</span>
-                          </div>
                         </button>
                       ))}
                     </div>
