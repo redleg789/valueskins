@@ -2154,7 +2154,7 @@ export default function InstagramDemoPage() {
                               ) : (
                                 <div style={{ background: C.surfaceAlt, borderRadius: '10px', padding: '14px', border: `1px solid rgba(0,102,204,0.3)` }}>
                                   {/* Deal Room header */}
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                                     <div style={{ fontSize: '11px', fontWeight: 700, color: C.primary, textTransform: 'uppercase', letterSpacing: '0.6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
@@ -2171,6 +2171,12 @@ export default function InstagramDemoPage() {
                                     {dealRoomPhase === 'accepted' && (
                                       <div style={{ fontSize: '11px', fontWeight: 700, color: C.textSecondary, background: C.surfaceAlt, padding: '3px 8px', borderRadius: '6px' }}>Deal Accepted</div>
                                     )}
+                                  </div>
+
+                                  {/* Audit trail notice — always visible */}
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '10px', padding: '5px 8px', background: 'rgba(0,102,204,0.06)', borderRadius: '6px', border: '1px solid rgba(0,102,204,0.15)' }}>
+                                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                    <span style={{ fontSize: '9px', color: C.primary, fontWeight: 600 }}>All activity in this room is timestamped, hashed, and stored as an immutable record.</span>
                                   </div>
 
                                   {/* Brand identity + intent */}
@@ -2226,9 +2232,13 @@ export default function InstagramDemoPage() {
                                           />
                                         </div>
                                       </div>
-                                      <div style={{ fontSize: '10px', color: C.textMuted, marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                      <div style={{ fontSize: '10px', color: C.textMuted, marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={C.textMuted} strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                                         Only visible to you and {opp.brand} · Auto-expires in {offerExpiresLabel}
+                                      </div>
+                                      <div style={{ fontSize: '9px', color: C.primary, marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '4px', opacity: 0.8 }}>
+                                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                        Offer logged · {new Date().toISOString().replace('T', ' ').slice(0, 19)} UTC
                                       </div>
                                       <div style={{ display: 'flex', gap: '6px' }}>
                                         <button onClick={() => {
@@ -2352,17 +2362,35 @@ export default function InstagramDemoPage() {
                                     </div>
                                   )}
 
-                                  {dealRoomPhase === 'accepted' && (
-                                    <>
-                                      <div style={{ padding: '12px', background: 'rgba(46,125,50,0.08)', borderRadius: '8px', marginBottom: '10px' }}>
-                                        <div style={{ fontSize: '13px', fontWeight: 700, color: C.textSecondary, marginBottom: '4px' }}>Deal accepted!</div>
-                                        <div style={{ fontSize: '12px', color: C.textSecondary }}>Enter the chat room to negotiate details and finalize.</div>
-                                      </div>
-                                      <button onClick={() => setDealRoomPhase('chatroom')} style={{ width: '100%', background: C.primary, border: 'none', padding: '10px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}>
-                                        Enter Chat Room
-                                      </button>
-                                    </>
-                                  )}
+                                  {dealRoomPhase === 'accepted' && (() => {
+                                    const refId = `DR-${activeDealKey ? Math.abs(activeDealKey.split('').reduce((a, c) => a + c.charCodeAt(0), 0) % 9000 + 1000) : '0000'}-${opp.brand.replace(/\s/g, '').slice(0, 3).toUpperCase()}`;
+                                    const signedAt = new Date().toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
+                                    return (
+                                      <>
+                                        <div style={{ padding: '12px', background: 'rgba(46,125,50,0.08)', borderRadius: '8px', marginBottom: '8px', border: '1px solid rgba(46,125,50,0.2)' }}>
+                                          <div style={{ fontSize: '13px', fontWeight: 700, color: C.success, marginBottom: '6px' }}>Terms accepted</div>
+                                          <div style={{ fontSize: '11px', color: C.textSecondary, marginBottom: '8px' }}>Both parties have agreed. The deal terms are now locked and recorded.</div>
+                                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                            <div style={{ fontSize: '10px', color: C.textMuted, display: 'flex', gap: '6px' }}>
+                                              <span style={{ color: C.textSecondary, fontWeight: 600 }}>Reference</span>
+                                              <span style={{ fontFamily: 'monospace', color: C.text }}>{refId}</span>
+                                            </div>
+                                            <div style={{ fontSize: '10px', color: C.textMuted, display: 'flex', gap: '6px' }}>
+                                              <span style={{ color: C.textSecondary, fontWeight: 600 }}>Signed</span>
+                                              <span style={{ fontFamily: 'monospace', color: C.text }}>{signedAt}</span>
+                                            </div>
+                                            <div style={{ fontSize: '9px', color: C.primary, display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                                              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                              Immutable record — all prior negotiation history preserved
+                                            </div>
+                                          </div>
+                                        </div>
+                                        <button onClick={() => setDealRoomPhase('chatroom')} style={{ width: '100%', background: C.primary, border: 'none', padding: '10px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}>
+                                          Enter Chat Room
+                                        </button>
+                                      </>
+                                    );
+                                  })()}
 
                                   {dealRoomPhase === 'chatroom' && (
                                     <>
@@ -2372,12 +2400,13 @@ export default function InstagramDemoPage() {
                                         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: C.bg, borderRadius: '8px', border: `1px solid ${C.border}`, overflow: 'hidden' }}>
                                           <div style={{ padding: '8px 10px', borderBottom: `1px solid ${C.border}`, fontSize: '11px', fontWeight: 700, color: C.primary, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                              <div style={{ width: 6, height: 6, borderRadius: '50%', background: C.success }} />
+                                              <div style={{ width: 6, height: 6, borderRadius: '50%', background: C.success, animation: 'pulse 2s ease-in-out infinite' }} />
                                               Deal Room Chat
                                             </div>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                              <span style={{ fontSize: 9, color: C.textMuted, fontWeight: 400 }}>All messages are recorded and legally documented</span>
-                                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={C.textMuted} strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'rgba(211,47,47,0.08)', border: '1px solid rgba(211,47,47,0.2)', borderRadius: '5px', padding: '2px 6px' }}>
+                                              <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#d32f2f', animation: 'pulse 1.4s ease-in-out infinite' }} />
+                                              <span style={{ fontSize: '9px', color: '#d32f2f', fontWeight: 700, letterSpacing: '0.4px' }}>RECORDING</span>
+                                              <span style={{ fontSize: '9px', color: C.textMuted, fontWeight: 400 }}>{chatMessages.length} events</span>
                                             </div>
                                           </div>
                                           {/* Messages */}
@@ -2394,17 +2423,27 @@ export default function InstagramDemoPage() {
                                                   lineHeight: 1.4,
                                                 }}>
                                                   {msg.text}
-                                                  <div style={{ fontSize: '9px', color: msg.sender === 'me' ? 'rgba(255,255,255,0.5)' : C.textMuted, marginTop: '2px', textAlign: 'right', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 3 }}>
-                                                    {msg.time}
-                                                    {msg.sender === 'me' && (
-                                                      <span style={{ display: 'inline-flex', gap: 1 }}>
-                                                        {/* Double check = seen, single = delivered */}
-                                                        {(msg.seen || mi < chatMessages.length - 1) ? (
-                                                          <svg width="16" height="10" viewBox="0 0 16 10" fill="none" stroke="#4fc3f7" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="1,5 4,8 8,2"/><polyline points="6,5 9,8 13,2"/></svg>
-                                                        ) : (
-                                                          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="1,5 3.5,8 9,2"/></svg>
-                                                        )}
-                                                      </span>
+                                                  <div style={{ fontSize: '9px', color: msg.sender === 'me' ? 'rgba(255,255,255,0.5)' : C.textMuted, marginTop: '3px', textAlign: 'right' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 3 }}>
+                                                      <span>{msg.time}</span>
+                                                      {msg.sender === 'me' && (
+                                                        <span style={{ display: 'inline-flex', gap: 1 }}>
+                                                          {msg.seen ? (
+                                                            <svg width="16" height="10" viewBox="0 0 16 10" fill="none" stroke="#4fc3f7" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="1,5 4,8 8,2"/><polyline points="6,5 9,8 13,2"/></svg>
+                                                          ) : (
+                                                            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="1,5 3.5,8 9,2"/></svg>
+                                                          )}
+                                                        </span>
+                                                      )}
+                                                    </div>
+                                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '3px', marginTop: '1px', opacity: 0.7 }}>
+                                                      <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                                      <span>Logged · {msg.isoTime ? new Date(msg.isoTime).toISOString().replace('T', ' ').slice(0, 19) + ' UTC' : '—'}</span>
+                                                    </div>
+                                                    {msg.seen && msg.seenAt && (
+                                                      <div style={{ marginTop: '1px', opacity: 0.7 }}>
+                                                        Seen · {new Date(msg.seenAt).toISOString().replace('T', ' ').slice(0, 19) + ' UTC'}
+                                                      </div>
                                                     )}
                                                   </div>
                                                 </div>
@@ -2416,25 +2455,31 @@ export default function InstagramDemoPage() {
                                             e.preventDefault();
                                             if (!chatInput.trim()) return;
                                             const now = new Date();
-                                            const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-                                            setChatMessages(prev => [...prev, { id: Date.now(), sender: 'me', text: chatInput.trim(), time: timeStr, seen: false }]);
+                                            const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: false });
+                                            const isoNow = now.toISOString();
+                                            setChatMessages(prev => [...prev, { id: Date.now(), sender: 'me', text: chatInput.trim(), time: timeStr, isoTime: isoNow, seen: false }]);
                                             setChatInput('');
-                                            // Mark previous messages as seen when brand replies, then add reply
+                                            // Simulate brand reading + replying
                                             setTimeout(() => {
-                                              const replies = [
-                                                'Sounds good! Let me check with my team.',
-                                                'Great point. We can work with that.',
-                                                'Agreed. Let\'s finalize the terms.',
-                                                'Perfect, I\'ll update the brief.',
-                                                'That works for us. Ready to proceed?',
-                                              ];
-                                              const replyTime = new Date();
-                                              const replyTimeStr = replyTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-                                              setChatMessages(prev => [
-                                                ...prev.map(m => m.sender === 'me' ? { ...m, seen: true } : m),
-                                                { id: Date.now(), sender: 'brand' as const, text: replies[Math.floor(Math.random() * replies.length)], time: replyTimeStr, seen: false },
-                                              ]);
-                                            }, 1500);
+                                              const seenAt = new Date().toISOString();
+                                              // Mark creator messages as seen with exact timestamp
+                                              setChatMessages(prev => prev.map(m => m.sender === 'me' && !m.seen ? { ...m, seen: true, seenAt } : m));
+                                              setTimeout(() => {
+                                                const replies = [
+                                                  'Sounds good! Let me check with my team.',
+                                                  'Great point. We can work with that.',
+                                                  'Agreed. Let\'s finalize the terms.',
+                                                  'Perfect, I\'ll update the brief.',
+                                                  'That works for us. Ready to proceed?',
+                                                ];
+                                                const replyTime = new Date();
+                                                const replyTimeStr = replyTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: false });
+                                                setChatMessages(prev => [
+                                                  ...prev,
+                                                  { id: Date.now(), sender: 'brand' as const, text: replies[Math.floor(Math.random() * replies.length)], time: replyTimeStr, isoTime: replyTime.toISOString(), seen: false },
+                                                ]);
+                                              }, 800);
+                                            }, 1200);
                                           }} style={{ display: 'flex', gap: '4px', padding: '6px', borderTop: `1px solid ${C.border}` }}>
                                             <input
                                               type="text"

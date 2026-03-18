@@ -37,8 +37,20 @@ export type ChatMessage = {
   id: number;
   sender: 'me' | 'brand';
   text: string;
-  time: string;
+  time: string;       // display time (e.g. "2:34 PM")
+  isoTime: string;    // full ISO timestamp for audit log (e.g. "2026-03-18T14:34:07.421Z")
   seen?: boolean;
+  seenAt?: string;    // ISO timestamp of when the other party opened/read the message
+};
+
+// A single entry in the deal's immutable event ledger
+export type DealEvent = {
+  id: number;
+  type: 'offer_sent' | 'offer_received' | 'counter_sent' | 'counter_received' | 'accepted' | 'rejected' | 'message_sent' | 'message_seen' | 'deal_signed' | 'content_submitted' | 'content_approved' | 'payment_released';
+  actor: 'creator' | 'brand' | 'system';
+  label: string;       // human-readable description
+  isoTime: string;     // ISO timestamp
+  hash: string;        // SHA-256 of (prevHash + type + actor + isoTime + label) — chain integrity
 };
 
 export type SharedApplication = {
@@ -276,7 +288,7 @@ export function useDealSync() {
       counterAmount: '',
       brandResponseAmount: '',
       chatMessages: [
-        { id: 1, sender: 'brand' as const, text: 'Hey! Excited to work together on this campaign.', time: 'just now', seen: false },
+        { id: 1, sender: 'brand' as const, text: 'Hey! Excited to work together on this campaign.', time: 'just now', isoTime: new Date().toISOString(), seen: false },
       ],
       chatInput: '',
       performanceClause: false,
@@ -294,7 +306,7 @@ export function useDealSync() {
         offerAmount: '',
         counterAmount: '',
         chatMessages: [
-          { id: 1, sender: 'brand' as const, text: 'Hey! Excited to work together on this campaign.', time: 'just now', seen: false },
+          { id: 1, sender: 'brand' as const, text: 'Hey! Excited to work together on this campaign.', time: 'just now', isoTime: new Date().toISOString(), seen: false },
         ],
         chatInput: '',
         performanceClause: false,
@@ -368,6 +380,7 @@ export function useDealSync() {
       sender,
       text,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      isoTime: new Date().toISOString(),
       seen: false,
     };
 
