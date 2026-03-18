@@ -2036,13 +2036,12 @@ export default function InstagramDemoPage() {
 
                     {/* Category filter chips — scrollable */}
                     <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '12px', scrollbarWidth: 'none' }}>
-                      {['All', ...ownedSkins.map(s => s.profession)].map(skin => {
-                        const isAll = skin === 'All';
-                        const isActive = isAll ? !selectedMarketplaceSkin : selectedMarketplaceSkin === skin;
+                      {ownedSkins.map(s => s.profession).map(skin => {
+                        const isActive = selectedMarketplaceSkin === skin;
                         return (
                           <button
                             key={skin}
-                            onClick={() => { setSelectedMarketplaceSkin(isAll ? (ownedSkins[0]?.profession || null) : skin); setNegotiatingOpp(null); }}
+                            onClick={() => { setSelectedMarketplaceSkin(skin); setNegotiatingOpp(null); }}
                             style={{
                               padding: '7px 16px', borderRadius: '20px', border: 'none', whiteSpace: 'nowrap',
                               background: isActive ? C.text : C.card,
@@ -2054,17 +2053,6 @@ export default function InstagramDemoPage() {
                           </button>
                         );
                       })}
-                      <button
-                        onClick={() => setFilterOppsBarterOnly(p => !p)}
-                        style={{
-                          padding: '7px 16px', borderRadius: '20px', border: 'none', whiteSpace: 'nowrap', flexShrink: 0,
-                          background: filterOppsBarterOnly ? C.success : C.card,
-                          color: filterOppsBarterOnly ? '#000' : C.textSecondary,
-                          fontWeight: 600, fontSize: '13px', cursor: 'pointer',
-                        }}
-                      >
-                        Barter
-                      </button>
                     </div>
                   </div>
 
