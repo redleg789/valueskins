@@ -669,6 +669,44 @@ export default function InstagramDemoPage() {
   const setDealOfferAmount = (v: string) => { if (activeDealKey) updateDeal(activeDealKey, { offerAmount: v }); };
   const dealCounterAmount = activeDeal?.counterAmount ?? '';
   const setDealCounterAmount = (v: string) => { if (activeDealKey) updateDeal(activeDealKey, { counterAmount: v }); };
+  const dealBrandResponseAmount = activeDeal?.brandResponseAmount ?? '';
+
+  // Simulate brand reviewing a creator counter-offer.
+  // Picks one of four realistic outcomes after a delay (3-6s).
+  const simulateBrandResponse = (creatorCounter: number, brandOffer: number, key: string) => {
+    const diff = creatorCounter - brandOffer;
+    const pct = diff / brandOffer;
+    // Determine outcome based on how far the counter is from the original offer
+    const rand = Math.random();
+    let outcome: 'accept' | 'counter' | 'last_offer' | 'reject';
+    if (pct <= 0.05) {
+      // Within 5% — brand almost always accepts
+      outcome = rand < 0.85 ? 'accept' : 'counter';
+    } else if (pct <= 0.2) {
+      // 5-20% gap — brand likely counters back
+      outcome = rand < 0.15 ? 'accept' : rand < 0.65 ? 'counter' : rand < 0.85 ? 'last_offer' : 'reject';
+    } else {
+      // >20% gap — brand more likely to push back hard or reject
+      outcome = rand < 0.05 ? 'accept' : rand < 0.35 ? 'counter' : rand < 0.65 ? 'last_offer' : 'reject';
+    }
+    const delay = 3000 + Math.random() * 3000; // 3-6 seconds
+    setTimeout(() => {
+      if (outcome === 'accept') {
+        updateDeal(key, { phase: 'accepted', brandResponseAmount: String(creatorCounter) });
+      } else if (outcome === 'counter') {
+        // Brand meets halfway
+        const midpoint = Math.round((creatorCounter + brandOffer) / 2 / 50) * 50;
+        updateDeal(key, { phase: 'brand_countered', brandResponseAmount: String(midpoint) });
+      } else if (outcome === 'last_offer') {
+        // Brand slightly above original but below midpoint
+        const lastOffer = Math.round((brandOffer + (creatorCounter - brandOffer) * 0.25) / 50) * 50;
+        updateDeal(key, { phase: 'brand_countered', brandResponseAmount: String(lastOffer) });
+      } else {
+        updateDeal(key, { phase: 'brand_rejected', brandResponseAmount: '' });
+      }
+    }, delay);
+  };
+
   const chatMessages = activeDeal?.chatMessages ?? [];
   const setChatMessages = (fn: ((prev: DealState['chatMessages']) => DealState['chatMessages']) | DealState['chatMessages']) => {
     if (!activeDealKey) return;
@@ -2242,10 +2280,76 @@ export default function InstagramDemoPage() {
                                         />
                                       </div>
                                       <div style={{ display: 'flex', gap: '6px' }}>
-                                        <button onClick={() => { setDealRoomPhase('offer'); setDealOfferAmount(dealCounterAmount); }} style={{ flex: 1, background: C.primary, border: 'none', padding: '8px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '12px' }}>Send Counter</button>
+                                        <button
+                                          onClick={() => {
+                                            if (!dealCounterAmount || !activeDealKey) return;
+                                            setDealRoomPhase('brand_considering');
+                                            simulateBrandResponse(parseInt(dealCounterAmount), parseInt(dealOfferAmount || '5000'), activeDealKey);
+                                          }}
+                                          style={{ flex: 1, background: dealCounterAmount ? C.primary : C.border, border: 'none', padding: '8px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: dealCounterAmount ? 'pointer' : 'not-allowed', fontSize: '12px' }}
+                                        >Send Counter</button>
                                         <button onClick={() => setDealRoomPhase('offer')} style={{ background: 'none', border: `1px solid ${C.border}`, padding: '8px 12px', borderRadius: '8px', color: C.textSecondary, cursor: 'pointer', fontSize: '12px' }}>Back</button>
                                       </div>
                                     </>
+                                  )}
+
+                                  {dealRoomPhase === 'brand_considering' && (
+                                    <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                                      <div style={{ width: '32px', height: '32px', border: `3px solid ${C.border}`, borderTopColor: C.primary, borderRadius: '50%', margin: '0 auto 14px', animation: 'spin 0.9s linear infinite' }} />
+                                      <div style={{ fontSize: '14px', fontWeight: 600, color: C.text, marginBottom: '6px' }}>Counter sent</div>
+                                      <div style={{ fontSize: '12px', color: C.textSecondary, lineHeight: 1.5 }}>
+                                        Waiting for the brand to review your counter-offer.<br />This usually takes a few minutes.
+                                      </div>
+                                      <div style={{ marginTop: '12px', fontSize: '11px', color: C.textMuted }}>You will be notified when they respond.</div>
+                                    </div>
+                                  )}
+
+                                  {dealRoomPhase === 'brand_countered' && (
+                                    <>
+                                      <div style={{ background: 'rgba(230,81,0,0.06)', borderRadius: '8px', padding: '10px 12px', marginBottom: '10px', border: '1px solid rgba(230,81,0,0.2)' }}>
+                                        <div style={{ fontSize: '11px', fontWeight: 700, color: C.textSecondary, marginBottom: '6px' }}>Brand responded</div>
+                                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '4px' }}>
+                                          <span style={{ fontSize: '22px', fontWeight: 800, color: C.text }}>${parseInt(dealBrandResponseAmount || '0').toLocaleString()}</span>
+                                          <span style={{ fontSize: '12px', color: C.textMuted }}>/post</span>
+                                        </div>
+                                        <div style={{ fontSize: '11px', color: C.textSecondary }}>
+                                          Your ask: ${parseInt(dealCounterAmount || '0').toLocaleString()} · Brand's original: ${parseInt(dealOfferAmount || '0').toLocaleString()}
+                                        </div>
+                                      </div>
+                                      <div style={{ fontSize: '11px', color: C.textMuted, marginBottom: '12px', lineHeight: 1.4 }}>
+                                        The brand has reviewed your counter and responded with their offer above. Accept, counter again, or decline.
+                                      </div>
+                                      <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
+                                        <button
+                                          onClick={() => { updateDeal(activeDealKey!, { phase: 'accepted', offerAmount: dealBrandResponseAmount }); }}
+                                          style={{ flex: 1, background: C.success, border: 'none', padding: '8px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '12px' }}
+                                        >Accept ${parseInt(dealBrandResponseAmount || '0').toLocaleString()}</button>
+                                        <button
+                                          onClick={() => { setDealCounterAmount(''); setDealRoomPhase('counter'); }}
+                                          style={{ flex: 1, background: C.primary, border: 'none', padding: '8px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '12px' }}
+                                        >Counter Again</button>
+                                      </div>
+                                      <button
+                                        onClick={() => setNegotiatingOpp(null)}
+                                        style={{ width: '100%', background: 'none', border: `1px solid ${C.border}`, padding: '8px', borderRadius: '8px', color: C.textSecondary, cursor: 'pointer', fontSize: '12px' }}
+                                      >Decline</button>
+                                    </>
+                                  )}
+
+                                  {dealRoomPhase === 'brand_rejected' && (
+                                    <div style={{ textAlign: 'center', padding: '16px 0' }}>
+                                      <div style={{ width: '36px', height: '36px', background: 'rgba(211,47,47,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d32f2f" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                      </div>
+                                      <div style={{ fontSize: '14px', fontWeight: 600, color: C.text, marginBottom: '6px' }}>Counter declined</div>
+                                      <div style={{ fontSize: '12px', color: C.textSecondary, lineHeight: 1.5, marginBottom: '14px' }}>
+                                        The brand wasn't able to meet your counter-offer at this time.
+                                      </div>
+                                      <button
+                                        onClick={() => setNegotiatingOpp(null)}
+                                        style={{ width: '100%', background: 'none', border: `1px solid ${C.border}`, padding: '8px', borderRadius: '8px', color: C.textSecondary, cursor: 'pointer', fontSize: '12px' }}
+                                      >Close</button>
+                                    </div>
                                   )}
 
                                   {dealRoomPhase === 'accepted' && (
@@ -2470,7 +2574,7 @@ export default function InstagramDemoPage() {
                                     </>
                                   )}
 
-                                  {!['offer','counter','accepted','chatroom','checklist','softhold'].includes(dealRoomPhase) && (
+                                  {!['offer','counter','brand_considering','brand_countered','brand_rejected','accepted','chatroom','checklist','softhold'].includes(dealRoomPhase) && (
                                     <button onClick={() => setNegotiatingOpp(null)} style={{ width: '100%', background: 'none', border: `1px solid ${C.border}`, padding: '8px', borderRadius: '8px', color: C.textSecondary, cursor: 'pointer', fontSize: '12px' }}>Close</button>
                                   )}
                                 </div>
