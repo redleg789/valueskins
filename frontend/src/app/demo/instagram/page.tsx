@@ -309,12 +309,7 @@ export default function InstagramDemoPage() {
   const [editingProfile, setEditingProfile] = useState(false);
 
   // Notifications
-  const [notifications, setNotifications] = useState<Array<{ id: number; type: string; text: string; time: string; read: boolean }>>([
-    { id: 1, type: 'deal', text: 'Stripe wants to collaborate on a Product Review campaign', time: '2h ago', read: false },
-    { id: 2, type: 'community', text: 'You were accepted into SWE Underground', time: '5h ago', read: false },
-    { id: 3, type: 'skin', text: 'Your Software Engineer skin reached Level 2', time: '1d ago', read: true },
-    { id: 4, type: 'deal', text: 'Figma approved your deliverables', time: '2d ago', read: true },
-  ]);
+  const [notifications, setNotifications] = useState<Array<{ id: number; type: string; text: string; time: string; read: boolean }>>([]);
 
   // Onboarding
   const [onboardingDone, setOnboardingDone] = useState(() => {
@@ -544,6 +539,25 @@ export default function InstagramDemoPage() {
       setSelectedMarketplaceSkin(ownedProfessions[0]);
     }
   }, [valueSkins, selectedMarketplaceSkin]);
+
+  // Clear stale localStorage on version bump — reset all in-memory state
+  useEffect(() => {
+    const VERSION = 'v2';
+    if (typeof window === 'undefined') return;
+    if (localStorage.getItem('vs_demo_version') !== VERSION) {
+      localStorage.removeItem('vs_demo_value_skins');
+      localStorage.removeItem('vs_demo_persist');
+      localStorage.removeItem('vs_demo_deal_sync');
+      localStorage.removeItem('vs_demo_hidden_skins');
+      localStorage.setItem('vs_demo_version', VERSION);
+      setValueSkins({});
+      setOnboardingDone(false);
+      setMarketplaceRole('none');
+      setBrandValueSkins([]);
+      setActiveBrandSkin(null);
+      setSelectedMarketplaceSkin(null);
+    }
+  }, []);
 
   // Negotiation state — tracks which opportunity/creator has opened negotiation
   const [negotiatingOpp, setNegotiatingOpp] = useState<number | null>(null);
