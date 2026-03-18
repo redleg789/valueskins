@@ -291,3 +291,38 @@ Platform is user-selectable in Settings > Creator Platform.
 - Only brand name is now clickable (opens Instagram in new tab)
 - All buttons (Enter Deal Room, Enable Barter, Ask) are now fully functional
 - Counter-offer buttons work as expected without navigation override
+
+---
+
+## Things Left To Make Prod-Ready
+
+### Counter-Offer Flow — Currently Simulated
+The brand "consideration" delay (3–6s timeout → random outcome) is MVP-only simulation.
+
+**In production:**
+- When creator submits a counter, the brand receives a real push/in-app notification with the counter amount, original offer, and creator profile summary
+- Brand acts from their own deal room interface (accept / counter / reject) — no simulation, no timeout
+- Creator's deal room stays in "Awaiting brand response" state until the brand actually responds
+- Notification includes a direct deep-link into the brand's deal room
+
+### No Ghosting Policy — Required Before Launch
+If either party rejects or withdraws at any point in the negotiation or deal lifecycle, the other party must receive a documented rejection notification. Ghosting is not permitted on the platform.
+
+**Rejection notification must include:**
+- Who rejected (brand or creator — not anonymous)
+- At what stage the rejection occurred (counter-offer, deal review, post-submission, etc.)
+- The reason, selected from a required dropdown (e.g. "Budget misalignment", "Creative direction doesn't fit", "Timeline conflict", "No longer pursuing this deal") — free text is optional but the category is mandatory
+- Timestamp
+
+**This applies to:**
+- Brand declining a creator counter-offer
+- Creator declining a brand counter or final offer
+- Brand withdrawing an active offer before acceptance
+- Creator withdrawing from a deal after acceptance (with escalation rules)
+- Brand rejecting submitted content during the review phase
+
+**Enforcement:**
+- Neither party can close or exit a live deal room without selecting a rejection reason — the UI must block the action until a reason is submitted
+- Repeat ghosting (exiting without reason) should flag the account and reduce trust score
+- Rejection records are stored per deal room for audit purposes and visible to platform moderators
+
