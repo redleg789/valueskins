@@ -233,112 +233,7 @@ type Opportunity = {
 };
 
 // Opportunities vary by profession — different brands want different skills
-const OPPORTUNITIES_BY_PROFESSION: Record<string, Opportunity[]> = {
-  'Software Engineer': [
-    { brand: 'TechFlow Labs', instagramUrl: 'https://instagram.com/techflowlabs', type: 'Tech review video', match: '94%', featured: true, willingToBarter: false,
-      about: 'TechFlow Labs builds CI/CD tooling for startups. 50K+ teams use their pipeline automation. Looking for authentic dev voices to demo v3 launch features.',
-      budget: '$4,500 - $6,000', deadline: '2026-04-15', deliverables: [{ format: 'Reel', count: 2 }, { format: 'Story', count: 3 }],
-      requirements: ['Must have active GitHub profile', 'Minimum 10K tech-focused followers', 'Prior dev tool content preferred'],
-      exclusivity: '30 days', usageRights: '90 days, social only', revisionLimit: 2, compensationType: 'Paid', location: 'Remote', audienceTarget: 'Software developers, 25-40' },
-    { brand: 'CloudBase', instagramUrl: 'https://instagram.com/cloudbasedb', type: 'Product integration', match: '89%', featured: false, willingToBarter: true,
-      about: 'CloudBase is a serverless database platform competing with Supabase. Series A funded, 12K developers on waitlist. Want real integration content, not ads.',
-      budget: '$3,000 - $4,500', deadline: '2026-04-01', deliverables: [{ format: 'Reel', count: 1 }, { format: 'Story', count: 2 }, { format: 'Post', count: 1 }],
-      requirements: ['Build a real mini-project using CloudBase', 'Show actual code, not slides', 'Mention 1 honest con alongside pros'],
-      exclusivity: 'None', usageRights: '60 days, all platforms', revisionLimit: 1, compensationType: 'Paid + Barter (free Pro tier for 1 year)', location: 'Remote', audienceTarget: 'Full-stack developers, indie hackers' },
-    { brand: 'DevTools Pro', instagramUrl: 'https://instagram.com/devtoolspro', type: 'Developer tool demo', match: '78%', featured: false, willingToBarter: false,
-      about: 'DevTools Pro makes browser debugging extensions used by 200K+ devs. Launching a React-specific profiler and need content showing real performance wins.',
-      budget: '$2,500 - $3,500', deadline: '2026-05-01', deliverables: [{ format: 'Reel', count: 1 }, { format: 'Story', count: 4 }],
-      requirements: ['React experience required', 'Show before/after performance comparison', 'Authentic tone, no scripted reads'],
-      exclusivity: '14 days', usageRights: '30 days, Instagram only', revisionLimit: 2, compensationType: 'Paid', location: 'Remote', audienceTarget: 'Frontend developers, React community' },
-  ],
-  'Data Scientist': [
-    { brand: 'DataStack AI', type: 'ML tool walkthrough', match: '96%', featured: true, willingToBarter: false,
-      about: 'DataStack AI provides no-code ML model deployment. Used by 8K data teams. Looking for data scientists to showcase real model deployment workflows.',
-      budget: '$5,000 - $7,000', deadline: '2026-04-20', deliverables: [{ format: 'Reel', count: 2 }, { format: 'Story', count: 3 }],
-      requirements: ['Active ML/data science audience', 'Deploy a real model on the platform during content', 'Mention pricing transparency'],
-      exclusivity: '45 days', usageRights: '90 days, all platforms', revisionLimit: 2, compensationType: 'Paid', location: 'Remote', audienceTarget: 'Data scientists, ML engineers, 28-45' },
-    { brand: 'Kaggle Partners', type: 'Competition sponsorship', match: '85%', featured: false, willingToBarter: true,
-      about: 'Kaggle Partners sponsors competition prizes and wants content creators to document their competition journey — strategy, code, learnings.',
-      budget: '$2,000 - $3,500', deadline: '2026-05-15', deliverables: [{ format: 'Reel', count: 3 }],
-      requirements: ['Active Kaggle profile with at least 1 medal', 'Document a full competition run', 'Educational tone'],
-      exclusivity: 'None', usageRights: '60 days, social only', revisionLimit: 1, compensationType: 'Paid + Barter (competition credits)', location: 'Remote', audienceTarget: 'Data science students, Kaggle community' },
-    { brand: 'Snowflake', type: 'Data pipeline tutorial', match: '81%', featured: false, willingToBarter: false,
-      about: 'Snowflake is expanding creator marketing to reach mid-market data teams. Want tutorials showing real data pipeline setups, not just product overviews.',
-      budget: '$6,000 - $8,000', deadline: '2026-04-30', deliverables: [{ format: 'Reel', count: 1 }, { format: 'Post', count: 2 }],
-      requirements: ['Prior experience with Snowflake or similar (BigQuery, Redshift)', 'Tutorial must be reproducible', 'Include cost comparison if possible'],
-      exclusivity: '60 days', usageRights: '180 days, all platforms', revisionLimit: 3, compensationType: 'Paid', location: 'Remote', audienceTarget: 'Data engineers, analytics managers' },
-  ],
-  'UX/UI Designer': [
-    { brand: 'Figma', type: 'Design system showcase', match: '97%', featured: true, willingToBarter: false,
-      about: 'Figma wants designers to showcase real design systems built with their new variable modes. Targeting the design systems community specifically.',
-      budget: '$5,500 - $7,500', deadline: '2026-04-10', deliverables: [{ format: 'Reel', count: 2 }, { format: 'Story', count: 5 }],
-      requirements: ['Active design portfolio', 'Must use Figma variable modes (not legacy styles)', 'Show a real client or personal project'],
-      exclusivity: '30 days', usageRights: '120 days, all platforms', revisionLimit: 2, compensationType: 'Paid', location: 'Remote', audienceTarget: 'Product designers, design system leads, 24-38' },
-    { brand: 'Framer', type: 'Landing page build', match: '91%', featured: false, willingToBarter: true,
-      about: 'Framer is pushing their new CMS features. Want designers to build a real landing page live on camera — design to deploy in one Reel.',
-      budget: '$3,500 - $5,000', deadline: '2026-04-25', deliverables: [{ format: 'Reel', count: 1 }, { format: 'Story', count: 3 }],
-      requirements: ['Framer experience preferred', 'Must deploy live during content', 'Show responsive design on mobile'],
-      exclusivity: 'None', usageRights: '60 days, social only', revisionLimit: 1, compensationType: 'Paid + Barter (Framer Pro for 2 years)', location: 'Remote', audienceTarget: 'Web designers, freelancers, indie builders' },
-    { brand: 'Webflow', type: 'No-code design review', match: '84%', featured: false, willingToBarter: false,
-      about: 'Webflow wants honest reviews of their new AI-assisted design features from experienced designers who can compare it to hand-coded approaches.',
-      budget: '$3,000 - $4,000', deadline: '2026-05-10', deliverables: [{ format: 'Reel', count: 1 }, { format: 'Story', count: 2 }],
-      requirements: ['Must compare Webflow AI vs manual approach', 'Honest pros and cons', 'Not a Webflow employee or affiliate'],
-      exclusivity: '14 days', usageRights: '30 days, Instagram only', revisionLimit: 2, compensationType: 'Paid', location: 'Remote', audienceTarget: 'Designers considering no-code tools' },
-  ],
-  'Fitness Coach': [
-    { brand: 'Nike Training', type: 'Workout series', match: '93%', featured: true, willingToBarter: false,
-      about: 'Nike Training Club is launching a new home workout series and wants fitness creators to produce branded workout content using Nike gear.',
-      budget: '$6,000 - $10,000', deadline: '2026-04-05', deliverables: [{ format: 'Reel', count: 3 }, { format: 'Story', count: 5 }],
-      requirements: ['Certified fitness professional', 'Must wear Nike gear during content', 'Include warm-up and cool-down in each workout'],
-      exclusivity: '60 days (no competing sportswear brands)', usageRights: '180 days, all platforms + Nike app', revisionLimit: 3, compensationType: 'Paid', location: 'Remote (ship Nike gear to you)', audienceTarget: 'Fitness enthusiasts, 18-35, global' },
-    { brand: 'MyProtein', type: 'Supplement review', match: '87%', featured: false, willingToBarter: true,
-      about: 'MyProtein wants authentic reviews of their new plant-based protein line from fitness professionals who can speak to macros and taste honestly.',
-      budget: '$2,000 - $3,500', deadline: '2026-04-20', deliverables: [{ format: 'Reel', count: 1 }, { format: 'Story', count: 3 }],
-      requirements: ['Must try the product for at least 2 weeks before content', 'Show nutritional breakdown', 'Honest review including taste'],
-      exclusivity: '14 days', usageRights: '60 days, social only', revisionLimit: 1, compensationType: 'Paid + Barter (6 months product supply)', location: 'Remote', audienceTarget: 'Gym-goers, nutrition-focused audience' },
-    { brand: 'Peloton', type: 'At-home fitness collab', match: '79%', featured: false, willingToBarter: false,
-      about: 'Peloton is targeting creators who can show how their platform integrates with existing fitness routines. Not an ad — a genuine "day in my life" approach.',
-      budget: '$4,000 - $5,500', deadline: '2026-05-01', deliverables: [{ format: 'Reel', count: 2 }, { format: 'Story', count: 4 }],
-      requirements: ['Own or be willing to use a Peloton bike/tread', 'Show real workout data and metrics', 'Day-in-the-life format preferred'],
-      exclusivity: '30 days', usageRights: '90 days, all platforms', revisionLimit: 2, compensationType: 'Paid', location: 'Remote (equipment provided if needed)', audienceTarget: 'Home fitness, busy professionals, 25-45' },
-  ],
-  'Chef': [
-    { brand: 'HelloFresh', type: 'Recipe creation', match: '95%', featured: true, willingToBarter: false,
-      about: 'HelloFresh wants chefs to create original recipes using their meal kit ingredients, showing the upgrade from standard kit to chef-level dish.',
-      budget: '$4,000 - $6,500', deadline: '2026-04-12', deliverables: [{ format: 'Reel', count: 2 }, { format: 'Story', count: 4 }],
-      requirements: ['Professional culinary background', 'Use only HelloFresh kit ingredients', 'Show the basic version vs your elevated version'],
-      exclusivity: '30 days (no competing meal kits)', usageRights: '90 days, all platforms', revisionLimit: 2, compensationType: 'Paid', location: 'Remote', audienceTarget: 'Home cooks, foodies, 25-45' },
-    { brand: 'KitchenAid', type: 'Appliance showcase', match: '88%', featured: false, willingToBarter: true,
-      about: 'KitchenAid launching a new stand mixer color line. Want chefs to showcase the mixer in action with a signature recipe.',
-      budget: '$3,000 - $4,500', deadline: '2026-04-30', deliverables: [{ format: 'Reel', count: 1 }, { format: 'Story', count: 3 }],
-      requirements: ['Must feature the KitchenAid mixer prominently', 'Recipe must use at least 2 mixer attachments', 'Show the mixer in your kitchen setup'],
-      exclusivity: '14 days', usageRights: '60 days, social only', revisionLimit: 1, compensationType: 'Paid + Barter (keep the mixer, retail $450)', location: 'Remote (mixer shipped)', audienceTarget: 'Home bakers, kitchen enthusiasts' },
-    { brand: 'MasterClass', type: 'Cooking class promo', match: '82%', featured: false, willingToBarter: false,
-      about: 'MasterClass wants food creators to promote their cooking curriculum by recreating a technique from the platform and sharing their honest learning experience.',
-      budget: '$3,500 - $5,000', deadline: '2026-05-15', deliverables: [{ format: 'Reel', count: 1 }, { format: 'Post', count: 1 }],
-      requirements: ['Watch at least 2 MasterClass cooking lessons before creating content', 'Show the technique you learned', 'Honest review of the teaching quality'],
-      exclusivity: 'None', usageRights: '30 days, Instagram only', revisionLimit: 2, compensationType: 'Paid', location: 'Remote', audienceTarget: 'Aspiring home cooks, culinary students' },
-  ],
-};
-
-// Fallback opportunities for professions not explicitly listed
-const DEFAULT_OPPORTUNITIES: Opportunity[] = [
-  { brand: 'BrandConnect', type: 'Sponsored content', match: '85%', featured: true, willingToBarter: false,
-    about: 'BrandConnect is a platform connecting brands with niche creators. Looking for authentic sponsored content that matches your expertise.',
-    budget: '$2,500 - $4,000', deadline: '2026-04-30', deliverables: [{ format: 'Reel', count: 1 }, { format: 'Story', count: 2 }],
-    requirements: ['Minimum 5K followers', 'Content must align with your ValueSkin profession', 'Authentic voice required'],
-    exclusivity: 'None', usageRights: '30 days, Instagram only', revisionLimit: 2, compensationType: 'Paid', location: 'Remote', audienceTarget: 'Niche professionals' },
-  { brand: 'CreatorFund', type: 'Brand partnership', match: '79%', featured: false, willingToBarter: true,
-    about: 'CreatorFund is a VC-backed initiative sponsoring early-stage creators in exchange for long-term partnership potential. Great for emerging voices.',
-    budget: '$1,500 - $3,000', deadline: '2026-05-15', deliverables: [{ format: 'Reel', count: 2 }],
-    requirements: ['Growing audience in your niche', 'Willing to track campaign performance metrics', 'Open to feedback on content'],
-    exclusivity: 'None', usageRights: '60 days, all platforms', revisionLimit: 1, compensationType: 'Paid + Barter (mentorship access)', location: 'Remote', audienceTarget: 'Niche audiences' },
-  { brand: 'InfluencerHub', type: 'Campaign collaboration', match: '72%', featured: false, willingToBarter: false,
-    about: 'InfluencerHub runs multi-creator campaigns. They bundle 5-10 creators per campaign to amplify reach. Looking for reliable collaborators.',
-    budget: '$2,000 - $3,500', deadline: '2026-05-01', deliverables: [{ format: 'Reel', count: 1 }, { format: 'Story', count: 3 }],
-    requirements: ['Must meet deadline strictly (multi-creator coordination)', 'Follow brand guidelines provided', 'Prior brand deal experience preferred'],
-    exclusivity: '7 days', usageRights: '30 days, social only', revisionLimit: 2, compensationType: 'Paid', location: 'Remote', audienceTarget: 'General professional audience' },
-];
+// No hardcoded opportunities — only real brand-created campaigns from Firebase appear
 
 const SLOTS: ValueSkinSlot[] = ['profession', 'passion', 'hobby'];
 
@@ -937,6 +832,21 @@ export default function InstagramDemoPage() {
     }
   }, [firebaseState.deals]);
 
+  // Sync Firebase messages into deal chatMessages
+  useEffect(() => {
+    const fbMessages = firebaseState.messages;
+    if (Object.keys(fbMessages).length > 0) {
+      setDealStates(prev => {
+        const merged = { ...prev };
+        for (const [dealKey, msgs] of Object.entries(fbMessages)) {
+          const existing = merged[dealKey] || {};
+          merged[dealKey] = { ...existing, chatMessages: msgs as ChatMessage[] };
+        }
+        return merged;
+      });
+    }
+  }, [firebaseState.messages]);
+
   // Sync Firebase notifications
   useEffect(() => {
     // Firebase always active
@@ -952,37 +862,7 @@ export default function InstagramDemoPage() {
     }
   }, [firebaseState.notifications]);
 
-  const defaultCampaigns: Campaign[] = [
-    { id:1, brandProfession:'Software Engineer', title:'React Expert for SaaS Launch', description:'We need an authentic Software Engineer to demo our dev tool to a tech audience. 2x Reels.', requiredProfessions:['Software Engineer','Data Scientist'], minLevel:2, maxLevel:5, budget:'5000', deadline:'2026-03-15', location:'USA', nonNegotiables:['NDA required','Usage rights: 90 days'], deliverables:'2x Instagram Reels', status:'expired', applicants:3 },
-    { id:2, brandProfession:'UX/UI Designer', title:'Mobile App Design Review', description:'UI/UX designer to review and showcase our new mobile app. 1x Reel, 3x Stories.', requiredProfessions:['UX/UI Designer','Product Manager'], minLevel:1, maxLevel:5, budget:'4500', deadline:'2026-03-20', location:'Remote', nonNegotiables:['Exclusivity: 30 days'], deliverables:'1x Reel, 3x Stories', status:'open', applicants:1 },
-    { id:3, brandProfession:'Fitness Coach', title:'Spring Fitness Challenge', description:'Fitness coach to lead a 7-day challenge campaign. 3x Reels.', requiredProfessions:['Fitness Coach','Nutritionist'], minLevel:1, maxLevel:3, budget:'3800', deadline:'2026-04-01', location:'Remote', nonNegotiables:[], deliverables:'3x Instagram Reels', status:'open', applicants:2 },
-  ];
-
-  const defaultApplications: SharedApplication[] = [
-    { id:9001, campaignId:2, campaignTitle:'Mobile App Design Review', creatorProfession:'UX/UI Designer', creatorHandle:'@priya_designs', status:'pending', appliedAt:'2026-03-16',
-      creatorName:'Priya Sharma', creatorFollowers:'1.2M', creatorEngagement:'5.8%', creatorLevel:3, creatorMatchScore:'91%', creatorRate:'$6,000', creatorDealCompletionRate:91,
-      creatorPortfolio:['Figma design showcase — 3.4M views','Framer landing page — 1.2M views'], creatorAudienceLocation:'India', creatorAudienceAge:'18-24', creatorResponseTimeHrs:12,
-      creatorInstagramUrl:'https://instagram.com/priya_designs' },
-    { id:9002, campaignId:3, campaignTitle:'Spring Fitness Challenge', creatorProfession:'Fitness Coach', creatorHandle:'@fitjordan', status:'pending', appliedAt:'2026-03-15',
-      creatorName:'Jordan Blake', creatorFollowers:'670K', creatorEngagement:'8.1%', creatorLevel:2, creatorMatchScore:'88%', creatorRate:'$3,500', creatorDealCompletionRate:96,
-      creatorPortfolio:['30-day transform challenge — 1.8M views'], creatorAudienceLocation:'USA', creatorAudienceAge:'25-34', creatorResponseTimeHrs:4,
-      creatorInstagramUrl:'https://instagram.com/fitjordan' },
-    { id:9003, campaignId:3, campaignTitle:'Spring Fitness Challenge', creatorProfession:'Nutritionist', creatorHandle:'@elena_nutrition', status:'pending', appliedAt:'2026-03-14',
-      creatorName:'Elena Rodriguez', creatorFollowers:'420K', creatorEngagement:'6.4%', creatorLevel:1, creatorMatchScore:'82%', creatorRate:'$2,800', creatorDealCompletionRate:89,
-      creatorPortfolio:[], creatorAudienceLocation:'Spain', creatorAudienceAge:'25-34', creatorResponseTimeHrs:8,
-      creatorInstagramUrl:'https://instagram.com/elena_nutrition' },
-  ];
-
-  // Seed default campaigns + applications on first load
-  useEffect(() => {
-    if (dealSync.loaded && campaigns.length === 0) {
-      setCampaigns(defaultCampaigns);
-    }
-    if (dealSync.loaded && sharedApplications.length === 0) {
-      setSharedApplications(defaultApplications);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dealSync.loaded]);
+  // No seeded campaigns or applications — only real data from Firebase
 
   const [marketplaceTab, setMarketplaceTab] = useState<'creators' | 'campaigns' | 'applications' | 'sent'>('creators');
   const [showCampaignCreator, setShowCampaignCreator] = useState(false);
@@ -1152,6 +1032,7 @@ export default function InstagramDemoPage() {
   );
 
   const hasValueSkin = Object.values(valueSkins).some(entry => entry?.profession);
+  const hasAnySkin = hasValueSkin || brandValueSkins.length > 0;
 
   // List of owned skins for the marketplace skin selector
   const ownedSkins = Object.entries(valueSkins)
@@ -1193,9 +1074,7 @@ export default function InstagramDemoPage() {
       audienceTarget: c.audienceTarget || '',
     }));
   const activeOpportunities = selectedMarketplaceSkin
-    ? [...campaignOpportunities, ...(OPPORTUNITIES_BY_PROFESSION[selectedMarketplaceSkin] ?? DEFAULT_OPPORTUNITIES)]
-        .slice()
-        .sort((a, b) => parseInt(b.match) - parseInt(a.match))
+    ? campaignOpportunities.slice().sort((a, b) => parseInt(b.match) - parseInt(a.match))
     : [];
 
   // Deals the creator missed (expired campaigns matching their skins)
@@ -2022,7 +1901,7 @@ export default function InstagramDemoPage() {
           {activeView === 'mim' && (
             <>
               {/* Layer 1: Gate — no ValueSkin */}
-              {!hasValueSkin && (
+              {!hasAnySkin && (
                 <>
                   <div style={{ height: '60px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', paddingLeft: '20px', fontWeight: 'bold', fontSize: '16px', background: C.surface }}>Marketplace</div>
                   <div style={{ padding: '60px 20px', textAlign: 'center' }}>
@@ -2046,7 +1925,7 @@ export default function InstagramDemoPage() {
               )}
 
               {/* Layer 2: Role selection */}
-              {hasValueSkin && marketplaceRole === 'none' && (
+              {hasAnySkin && marketplaceRole === 'none' && (
                 <>
                   <div style={{ padding: '12px 16px 0', position: 'sticky', top: 0, background: C.bg, zIndex: 10 }}>
                     <span style={{ fontSize: '22px', fontWeight: 700, color: C.text }}>Marketplace</span>
@@ -2166,6 +2045,13 @@ export default function InstagramDemoPage() {
                     {/* Opportunities for selected skin */}
                     {creatorMarketplaceMode === 'brand' && selectedMarketplaceSkin && (
                       <>
+                        {activeOpportunities.filter(opp => !filterOppsBarterOnly || opp.willingToBarter).length === 0 && (
+                          <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+                            <div style={{ fontSize: '14px', color: C.textSecondary, lineHeight: 1.6 }}>
+                              No campaigns targeting {selectedMarketplaceSkin} yet. Brands will create campaigns that appear here in real-time.
+                            </div>
+                          </div>
+                        )}
                         {activeOpportunities.filter(opp => !filterOppsBarterOnly || opp.willingToBarter).map((opp, i) => {
                           const dealKey = `${selectedMarketplaceSkin}:${i}`;
                           const existingDeal = dealStates[dealKey];
@@ -2853,7 +2739,7 @@ export default function InstagramDemoPage() {
               )}
 
               {/* Layer 3b: Brand Marketplace */}
-              {hasValueSkin && marketplaceRole === 'brand' && (
+              {hasAnySkin && marketplaceRole === 'brand' && (
                 <>
                   <div style={{ padding: '12px 16px 0', position: 'sticky', top: 0, background: C.bg, zIndex: 10 }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
@@ -5127,7 +5013,7 @@ export default function InstagramDemoPage() {
               <div style={{ height: '52px', display: 'flex', alignItems: 'center', paddingLeft: '16px', paddingRight: '16px', position: 'sticky', top: 0, background: C.bg, zIndex: 10 }}>
                 <span style={{ fontSize: '22px', fontWeight: 700, color: C.text }}>Notifications</span>
               </div>
-              {!hasValueSkin ? (
+              {!hasAnySkin ? (
                 <div style={{ textAlign: 'center', padding: '60px 20px', color: C.textMuted }}>
                   <div style={{ fontSize: '14px', marginBottom: '4px' }}>No notifications yet</div>
                   <div style={{ fontSize: '12px' }}>Select or purchase a ValueSkin to start receiving activity notifications.</div>
