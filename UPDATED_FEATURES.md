@@ -339,3 +339,32 @@ If either party rejects or withdraws at any point in the negotiation or deal lif
 - Placement chooser accessible from the Avatar Style panel on the profile
 - Above/below stats and below bio use larger skin badges for better visibility
 - Placement preference persisted across sessions
+
+### Shapeless Skin Stickers
+- Skin badges no longer have any shape boundary — no circles, squares, or borders
+- Raw sticker images render as-is with transparent backgrounds
+- Abbreviation fallbacks display as colored text with no container
+
+### Full Brand Campaign Brief Form
+- Prominent "Create New Campaign" button at the top of brand marketplace
+- Required "About your product/campaign" field — brands must explain what creators will promote
+- Compensation type selector: Paid, Paid + Barter, Barter only, Performance-based
+- Exclusivity period dropdown, usage rights dropdown, revision limit selector (1-5)
+- Target audience field (required)
+- Creator requirements builder: add/remove checklist items that creators see before applying
+- All fields validated before publish — missing required fields show specific error
+
+### Deal Communication Mode — Admin Panel
+- Platform (e.g. Meta) chooses between ValueSkins Deal Room or existing Platform DMs
+- ValueSkins Deal Room: isolated negotiation environment purpose-built for deals
+- Platform DMs: conversations routed through existing DM system with compliance layer injected
+- Non-negotiable security layer enforced on BOTH modes (cannot be disabled):
+  - Immutable audit trail (append-only, no edits, no deletions)
+  - Exact-second UTC timestamps on every message
+  - SHA-256 hash-chain integrity across all events
+  - Seen receipts with exact read time
+  - No ghosting enforcement (rejection reason required to exit)
+  - Exportable PDF transcript for legal use
+- If Platform DMs chosen, shows 6 integration requirements the platform must support:
+  message webhooks, read receipt hooks, metadata injection, thread isolation,
+  moderation override, and export API
