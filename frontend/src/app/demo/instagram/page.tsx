@@ -1,7 +1,7 @@
 'use client';
 // per-skin levels, individual skin click, onboarding gate
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useLevelConfig, useReputationConfig } from '@/lib/useConfigStorage';
 import { useDealSync, type DealState, type DealRoomPhase, type SharedApplication, type Campaign, type ChatMessage } from '@/lib/useDealSync';
@@ -535,9 +535,10 @@ export default function InstagramDemoPage() {
   const [assigningSlot, setAssigningSlot] = useState<ValueSkinSlot | null>(null);
 
   const [valueskinAvatarEnabled, setValueskinAvatarEnabled] = useState(false);
-  type SkinPlacement = 'next-to-name' | 'below-bio' | 'above-stats' | 'below-stats';
-  const [skinPlacement, setSkinPlacement] = useState<SkinPlacement>('next-to-name');
-  const [skinDragOver, setSkinDragOver] = useState<SkinPlacement | null>(null);
+  const [skinPositions, setSkinPositions] = useState<Record<string, {x: number, y: number}>>({});
+  const [draggingSkin, setDraggingSkin] = useState<string | null>(null);
+  const draggingOffset = useRef<{x: number, y: number}>({x: 0, y: 0});
+  const profileAreaRef = useRef<HTMLDivElement>(null);
   const [showAvatarSettings, setShowAvatarSettings] = useState(false);
   const [purchaseToast, setPurchaseToast] = useState<string | null>(null);
 
@@ -588,7 +589,7 @@ export default function InstagramDemoPage() {
         if (d.brandProfileSelections) setBrandProfileSelections(d.brandProfileSelections);
         if (d.creatorEnergy) setCreatorEnergy(d.creatorEnergy);
         if (d.metrics) setMetrics(d.metrics);
-        if (d.skinPlacement) setSkinPlacement(d.skinPlacement);
+        if (d.skinPositions) setSkinPositions(d.skinPositions);
       }
     } catch (e) { /* ignore */ }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -980,14 +981,14 @@ export default function InstagramDemoPage() {
         selectedCountry, selectedLanguages, rateCard, profileDealTypes, willingToBarter,
         notifications, onboardingDone, joinedCommunities, dmMessages, communityMessages,
         skinXP, brandProfileSelections, creatorEnergy, metrics, skinPitchTexts, skinPitchVideos,
-        skinPlacement,
+        skinPositions,
       }));
     } catch (e) { /* ignore */ }
   }, [marketplaceRole, brandValueSkins, activeBrandSkin, profileName, profileBio, profileAvatar,
       selectedCountry, selectedLanguages, rateCard, profileDealTypes, willingToBarter,
       notifications, onboardingDone, joinedCommunities, dmMessages, communityMessages,
       skinXP, brandProfileSelections, creatorEnergy, metrics, skinsLoaded, skinPitchTexts, skinPitchVideos,
-      skinPlacement]);
+      skinPositions]);
 
   const handleFollow = () => {
     setIsFollowing(!isFollowing);
@@ -1536,188 +1537,142 @@ export default function InstagramDemoPage() {
                     enabled={valueskinAvatarEnabled}
                     onChange={(v) => { setValueskinAvatarEnabled(v); }}
                   />
-                  {/* Skin placement chooser */}
                   {hasValueSkin && (
-                    <div style={{ marginTop: '16px' }}>
-                      <div style={{ fontSize: '12px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>Skin Placement</div>
-                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                        {([
-                          { value: 'next-to-name' as SkinPlacement, label: 'Next to name' },
-                          { value: 'above-stats' as SkinPlacement, label: 'Above stats' },
-                          { value: 'below-stats' as SkinPlacement, label: 'Below stats' },
-                          { value: 'below-bio' as SkinPlacement, label: 'Below bio' },
-                        ]).map(opt => (
-                          <button
-                            key={opt.value}
-                            onClick={() => setSkinPlacement(opt.value)}
-                            style={{
-                              padding: '6px 12px', borderRadius: '16px', fontSize: '11px', fontWeight: 600, cursor: 'pointer',
-                              background: skinPlacement === opt.value ? C.primary : 'transparent',
-                              color: skinPlacement === opt.value ? '#fff' : C.textSecondary,
-                              border: `1px solid ${skinPlacement === opt.value ? C.primary : C.border}`,
-                            }}
-                          >{opt.label}</button>
-                        ))}
-                      </div>
+                    <div style={{ marginTop: '12px', fontSize: '11px', color: C.textMuted }}>
+                      Drag your skin badges anywhere on your profile.
                     </div>
                   )}
                 </div>
               )}
 
               {/* Profile Info */}
-              <div style={{ padding: isMobile ? '12px' : '20px' }}>
-                <div style={{ display: 'flex', alignItems: isMobile ? 'center' : 'flex-start', flexDirection: isMobile ? 'column' : 'row', marginBottom: '24px', gap: isMobile ? '12px' : 0 }}>
-                  {/* Profile photo */}
-                  <div style={{ marginRight: isMobile ? 0 : '40px', flexShrink: 0 }}>
+              <div
+                ref={profileAreaRef}
+                style={{ padding: isMobile ? '12px' : '20px 20px 0', position: 'relative' }}
+                onMouseMove={e => {
+                  if (!draggingSkin || !profileAreaRef.current) return;
+                  const rect = profileAreaRef.current.getBoundingClientRect();
+                  const x = e.clientX - rect.left - draggingOffset.current.x;
+                  const y = e.clientY - rect.top - draggingOffset.current.y;
+                  setSkinPositions(prev => ({ ...prev, [draggingSkin]: { x, y } }));
+                }}
+                onMouseUp={() => setDraggingSkin(null)}
+                onMouseLeave={() => setDraggingSkin(null)}
+              >
+                {/* Instagram desktop layout: large avatar left, info right */}
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: isMobile ? '16px' : '32px', marginBottom: '20px' }}>
+                  {/* Avatar */}
+                  <div style={{ flexShrink: 0 }}>
                     <ProfilePhotoWithLongPress
                       showValueskinAvatar={valueskinAvatarEnabled}
                       level={currentLevel}
                       valueSkins={valueSkins}
                       avatarUrl="https://api.dicebear.com/7.x/avataaars/svg?seed=Saketh"
                       displayName="Saketh Velamuri"
-                      size={isMobile ? 72 : 86}
+                      size={isMobile ? 77 : 150}
                       onValueSkinsChange={setValueSkins}
                     />
                   </div>
 
-                  {/* Stats */}
-                  <div style={{ flex: 1, width: isMobile ? '100%' : 'auto' }}>
-                    {/* Name + stickers (if placement is next-to-name) */}
-                    <div style={{ display: 'flex', gap: '8px', marginBottom: skinPlacement === 'above-stats' ? '10px' : '20px', alignItems: 'center', flexWrap: 'wrap', justifyContent: isMobile ? 'center' : 'flex-start' }}>
-                      <h2 style={{ fontSize: isMobile ? '16px' : '20px', fontWeight: 'bold', margin: 0, color: C.text }}>
-                        Saketh Velamuri
-                      </h2>
-                      {skinPlacement === 'next-to-name' && (
-                        <div
-                          draggable={!isMobile}
-                          onDragStart={e => { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', 'skin'); }}
-                          onDragEnd={() => setSkinDragOver(null)}
-                          style={{ display: 'flex', gap: '8px', alignItems: 'center', position: 'relative', cursor: isMobile ? 'default' : 'grab' }}
-                        >
-                          <ValueSkinStickers
-                            valueSkins={valueSkins}
-                            onValueSkinsChange={setValueSkins}
-                            size="default"
-                            level={currentLevel}
-                            onSkinClick={(profession) => setShowSkinShowcaseModal(profession)}
-                          />
-                        </div>
-                      )}
-                      {skinPlacement !== 'next-to-name' && !isMobile && (
-                        <div
-                          onDragOver={e => { e.preventDefault(); setSkinDragOver('next-to-name'); }}
-                          onDragLeave={() => setSkinDragOver(null)}
-                          onDrop={e => { e.preventDefault(); setSkinPlacement('next-to-name'); setSkinDragOver(null); }}
-                          style={{ width: '60px', height: '28px', borderRadius: '8px', border: `1.5px dashed ${skinDragOver === 'next-to-name' ? C.primary : C.border}`, background: skinDragOver === 'next-to-name' ? `${C.primary}10` : 'transparent', transition: 'all 0.15s', flexShrink: 0 }}
-                        />
-                      )}
-                    </div>
-
-                    {/* Skins above stats */}
-                    {skinPlacement === 'above-stats' ? (
-                      <div
-                        draggable={!isMobile}
-                        onDragStart={e => { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', 'skin'); }}
-                        onDragEnd={() => setSkinDragOver(null)}
-                        style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '14px', justifyContent: isMobile ? 'center' : 'flex-start', cursor: isMobile ? 'default' : 'grab' }}
-                      >
-                        <ValueSkinStickers valueSkins={valueSkins} onValueSkinsChange={setValueSkins} size="large" level={currentLevel} onSkinClick={(p) => setShowSkinShowcaseModal(p)} />
-                      </div>
-                    ) : !isMobile && (
-                      <div
-                        onDragOver={e => { e.preventDefault(); setSkinDragOver('above-stats'); }}
-                        onDragLeave={() => setSkinDragOver(null)}
-                        onDrop={e => { e.preventDefault(); setSkinPlacement('above-stats'); setSkinDragOver(null); }}
-                        style={{ height: '28px', borderRadius: '8px', border: `1.5px dashed ${skinDragOver === 'above-stats' ? C.primary : C.border}`, background: skinDragOver === 'above-stats' ? `${C.primary}10` : 'transparent', transition: 'all 0.15s', marginBottom: '14px' }}
-                      />
-                    )}
-
-                    <div style={{ display: 'flex', gap: isMobile ? '16px' : '20px', marginBottom: '20px', fontSize: isMobile ? '13px' : '14px', justifyContent: isMobile ? 'center' : 'flex-start' }}>
-                      <button onClick={() => setShowMetricsModal(true)} style={{ background: 'none', border: 'none', color: C.text, padding: 0, cursor: 'pointer', textAlign: 'center' }}>
-                        <strong>{(metrics.followers / 1000).toFixed(0)}k</strong>
-                        <div style={{ fontSize: '12px', color: C.textSecondary }}>followers</div>
-                      </button>
-                      <div style={{ textAlign: 'center' }}><strong>47</strong><div style={{ fontSize: '12px', color: C.textSecondary }}>posts</div></div>
-                      <div style={{ textAlign: 'center' }}><strong>450</strong><div style={{ fontSize: '12px', color: C.textSecondary }}>following</div></div>
-                    </div>
-
-                    <div style={{ display: 'flex', justifyContent: isMobile ? 'center' : 'flex-start' }}>
+                  {/* Right side info */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    {/* Username row */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: isMobile ? '18px' : '20px', fontWeight: 300, color: C.text, letterSpacing: '-0.3px' }}>sakethvelamuri</span>
                       <button
                         onClick={handleFollow}
-                        style={{ background: isFollowing ? C.surfaceAlt : C.primary, border: `1px solid ${isFollowing ? C.borderLight : C.primary}`, borderRadius: '8px', color: '#fff', padding: '8px 24px', fontWeight: '600', fontSize: '14px', cursor: 'pointer' }}
+                        style={{ background: isFollowing ? C.card : C.primary, border: `1px solid ${isFollowing ? C.border : C.primary}`, borderRadius: '8px', color: isFollowing ? C.text : '#fff', padding: '7px 16px', fontWeight: 600, fontSize: '14px', cursor: 'pointer' }}
                       >
                         {isFollowing ? 'Following' : 'Follow'}
                       </button>
+                      <button style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: '8px', color: C.text, padding: '7px 16px', fontWeight: 600, fontSize: '14px', cursor: 'pointer' }}>Message</button>
+                      <button onClick={() => setEditingProfile(true)} style={{ background: 'none', border: 'none', color: C.textMuted, cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' }}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+                      </button>
                     </div>
 
-                    {/* Skins below stats */}
-                    {skinPlacement === 'below-stats' ? (
-                      <div
-                        draggable={!isMobile}
-                        onDragStart={e => { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', 'skin'); }}
-                        onDragEnd={() => setSkinDragOver(null)}
-                        style={{ display: 'flex', gap: '10px', alignItems: 'center', marginTop: '14px', justifyContent: isMobile ? 'center' : 'flex-start', cursor: isMobile ? 'default' : 'grab' }}
-                      >
-                        <ValueSkinStickers valueSkins={valueSkins} onValueSkinsChange={setValueSkins} size="large" level={currentLevel} onSkinClick={(p) => setShowSkinShowcaseModal(p)} />
+                    {/* Stats row */}
+                    <div style={{ display: 'flex', gap: '32px', marginBottom: '16px', fontSize: '15px' }}>
+                      <div><strong style={{ color: C.text }}>47</strong> <span style={{ color: C.textSecondary }}>posts</span></div>
+                      <button onClick={() => setShowMetricsModal(true)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: '15px', color: C.text }}>
+                        <strong>{(metrics.followers / 1000).toFixed(0)}K</strong> <span style={{ color: C.textSecondary }}>followers</span>
+                      </button>
+                      <div><strong style={{ color: C.text }}>450</strong> <span style={{ color: C.textSecondary }}>following</span></div>
+                    </div>
+
+                    {/* Bio */}
+                    {editingProfile ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <input type="text" value={profileName} onChange={e => setProfileName(e.target.value)}
+                          style={{ padding: '8px 10px', borderRadius: '8px', border: `1px solid ${C.border}`, background: C.surface, color: C.text, fontSize: '14px', fontWeight: 600, maxWidth: '280px' }} />
+                        <textarea value={profileBio} onChange={e => setProfileBio(e.target.value)} rows={3}
+                          style={{ padding: '8px 10px', borderRadius: '8px', border: `1px solid ${C.border}`, background: C.surface, color: C.text, fontSize: '13px', fontFamily: 'inherit', resize: 'none', lineHeight: 1.5, maxWidth: '280px' }} />
+                        <button onClick={() => setEditingProfile(false)}
+                          style={{ alignSelf: 'flex-start', padding: '6px 16px', borderRadius: '6px', border: 'none', background: C.primary, color: '#fff', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                          Save
+                        </button>
                       </div>
-                    ) : !isMobile && (
-                      <div
-                        onDragOver={e => { e.preventDefault(); setSkinDragOver('below-stats'); }}
-                        onDragLeave={() => setSkinDragOver(null)}
-                        onDrop={e => { e.preventDefault(); setSkinPlacement('below-stats'); setSkinDragOver(null); }}
-                        style={{ height: '28px', borderRadius: '8px', border: `1.5px dashed ${skinDragOver === 'below-stats' ? C.primary : C.border}`, background: skinDragOver === 'below-stats' ? `${C.primary}10` : 'transparent', transition: 'all 0.15s', marginTop: '14px' }}
-                      />
+                    ) : (
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: '14px', color: C.text, marginBottom: '2px' }}>{profileName}</div>
+                        <div style={{ fontSize: '13px', color: C.text, lineHeight: '1.6', whiteSpace: 'pre-line' }}>{profileBio}</div>
+                      </div>
                     )}
                   </div>
                 </div>
 
-                {/* Bio — editable */}
-                <div style={{ marginBottom: '16px', textAlign: isMobile ? 'center' : 'left' }}>
-                  {editingProfile ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <input type="text" value={profileName} onChange={e => setProfileName(e.target.value)}
-                        style={{ padding: '8px 10px', borderRadius: '8px', border: `1px solid ${C.border}`, background: C.surface, color: C.text, fontSize: '14px', fontWeight: 600 }} />
-                      <textarea value={profileBio} onChange={e => setProfileBio(e.target.value)} rows={3}
-                        style={{ padding: '8px 10px', borderRadius: '8px', border: `1px solid ${C.border}`, background: C.surface, color: C.text, fontSize: '13px', fontFamily: 'inherit', resize: 'none', lineHeight: 1.5 }} />
-                      <button onClick={() => setEditingProfile(false)}
-                        style={{ alignSelf: 'flex-start', padding: '6px 16px', borderRadius: '6px', border: 'none', background: C.primary, color: '#fff', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
-                        Save
-                      </button>
+                {/* Freely draggable skin badges — each positioned independently */}
+                {hasValueSkin && !isMobile && ownedSkins.map(({ slot, profession }, idx) => {
+                  const badge = PROFESSION_BADGES[profession];
+                  const badgeColor = badge?.color ?? SLOT_COLORS[slot];
+                  const level = getSkinLevel(profession);
+                  const pos = skinPositions[profession] ?? { x: 160 + idx * 56, y: 8 };
+                  const isDragging = draggingSkin === profession;
+                  return (
+                    <div
+                      key={profession}
+                      onMouseDown={e => {
+                        e.preventDefault();
+                        const el = e.currentTarget.getBoundingClientRect();
+                        const rect = profileAreaRef.current?.getBoundingClientRect();
+                        if (!rect) return;
+                        draggingOffset.current = { x: e.clientX - rect.left - pos.x, y: e.clientY - rect.top - pos.y };
+                        setDraggingSkin(profession);
+                      }}
+                      onClick={e => { if (!isDragging) { e.stopPropagation(); setShowSkinShowcaseModal(profession); } }}
+                      style={{
+                        position: 'absolute',
+                        left: pos.x,
+                        top: pos.y,
+                        cursor: isDragging ? 'grabbing' : 'grab',
+                        userSelect: 'none',
+                        zIndex: isDragging ? 100 : 10,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '3px',
+                        filter: isDragging ? 'drop-shadow(0 4px 12px rgba(0,0,0,0.5))' : 'none',
+                        transition: isDragging ? 'none' : 'filter 0.15s',
+                      }}
+                    >
+                      <div style={{
+                        width: '44px', height: '44px', borderRadius: '50%',
+                        background: `linear-gradient(135deg, ${badgeColor}, ${badgeColor}99)`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        border: `2px solid ${badgeColor}`,
+                      }}>
+                        {badge?.stickerImage ? (
+                          <img src={badge.stickerImage} alt={profession} style={{ width: '26px', height: '26px', objectFit: 'contain', pointerEvents: 'none' }} />
+                        ) : (
+                          <span style={{ fontSize: '10px', fontWeight: 700, color: '#fff', pointerEvents: 'none' }}>
+                            {badge?.abbreviation ?? profession.slice(0, 3).toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                      <span style={{ fontSize: '9px', fontWeight: 700, color: '#fff', background: badgeColor, padding: '1px 7px', borderRadius: '8px', whiteSpace: 'nowrap' }}>Lv.{level}</span>
                     </div>
-                  ) : (
-                    <>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '600', marginBottom: '4px', color: C.text }}>
-                        {profileName}
-                        <button onClick={() => setEditingProfile(true)}
-                          style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: '6px', padding: '3px 10px', fontSize: '11px', fontWeight: 600, color: C.textMuted, cursor: 'pointer' }}>
-                          Edit
-                        </button>
-                      </div>
-                      <div style={{ color: C.textSecondary, fontSize: isMobile ? '12px' : '14px', lineHeight: '1.5', whiteSpace: 'pre-line' }}>
-                        {profileBio}
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                {/* Skins below bio */}
-                {skinPlacement === 'below-bio' ? (
-                  <div
-                    draggable={!isMobile}
-                    onDragStart={e => { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', 'skin'); }}
-                    onDragEnd={() => setSkinDragOver(null)}
-                    style={{ display: 'flex', gap: '10px', alignItems: 'center', marginTop: '12px', justifyContent: isMobile ? 'center' : 'flex-start', cursor: isMobile ? 'default' : 'grab' }}
-                  >
-                    <ValueSkinStickers valueSkins={valueSkins} onValueSkinsChange={setValueSkins} size="large" level={currentLevel} onSkinClick={(p) => setShowSkinShowcaseModal(p)} />
-                  </div>
-                ) : !isMobile && (
-                  <div
-                    onDragOver={e => { e.preventDefault(); setSkinDragOver('below-bio'); }}
-                    onDragLeave={() => setSkinDragOver(null)}
-                    onDrop={e => { e.preventDefault(); setSkinPlacement('below-bio'); setSkinDragOver(null); }}
-                    style={{ height: '28px', borderRadius: '8px', border: `1.5px dashed ${skinDragOver === 'below-bio' ? C.primary : C.border}`, background: skinDragOver === 'below-bio' ? `${C.primary}10` : 'transparent', transition: 'all 0.15s', marginTop: '12px' }}
-                  />
-                )}
+                  );
+                })}
 
 
                 {/* Barter signal badge */}
