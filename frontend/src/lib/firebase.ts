@@ -4,7 +4,9 @@ import { getDatabase, Database } from 'firebase/database';
 let app: FirebaseApp | null = null;
 let database: Database | null = null;
 
-function getFirebaseDb(): Database {
+// Returns null during SSR — safe for prerendering
+export function getDb(): Database | null {
+  if (typeof window === 'undefined') return null;
   if (database) return database;
   const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'skins-backend';
   const config = {
@@ -20,12 +22,3 @@ function getFirebaseDb(): Database {
   database = getDatabase(app);
   return database;
 }
-
-// Proxy that lazily initializes — safe for SSR/prerendering
-export const db = new Proxy({} as Database, {
-  get(_target, prop) {
-    if (typeof window === 'undefined') return undefined;
-    const realDb = getFirebaseDb();
-    return (realDb as unknown as Record<string | symbol, unknown>)[prop];
-  },
-});
