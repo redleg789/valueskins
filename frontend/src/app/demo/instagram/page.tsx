@@ -397,7 +397,7 @@ export default function InstagramDemoPage() {
   const [activeView, setActiveView] = useState<'profile' | 'mim' | 'store' | 'admin' | 'messages' | 'settings' | 'explore' | 'notifications'>('profile');
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
+    const check = () => setIsMobile(window.innerWidth < 480);
     check();
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
@@ -538,6 +538,7 @@ export default function InstagramDemoPage() {
   const [skinPositions, setSkinPositions] = useState<Record<string, {x: number, y: number}>>({});
   const [draggingSkin, setDraggingSkin] = useState<string | null>(null);
   const draggingOffset = useRef<{x: number, y: number}>({x: 0, y: 0});
+  const dragMoved = useRef(false);
   const profileAreaRef = useRef<HTMLDivElement>(null);
   const [showAvatarSettings, setShowAvatarSettings] = useState(false);
   const [purchaseToast, setPurchaseToast] = useState<string | null>(null);
@@ -1551,6 +1552,7 @@ export default function InstagramDemoPage() {
                 style={{ padding: isMobile ? '12px' : '20px 20px 0', position: 'relative' }}
                 onMouseMove={e => {
                   if (!draggingSkin || !profileAreaRef.current) return;
+                  dragMoved.current = true;
                   const rect = profileAreaRef.current.getBoundingClientRect();
                   const x = e.clientX - rect.left - draggingOffset.current.x;
                   const y = e.clientY - rect.top - draggingOffset.current.y;
@@ -1622,54 +1624,44 @@ export default function InstagramDemoPage() {
                 </div>
 
                 {/* Freely draggable skin badges — each positioned independently */}
-                {hasValueSkin && !isMobile && ownedSkins.map(({ slot, profession }, idx) => {
+                {hasValueSkin && ownedSkins.map(({ slot, profession }, idx) => {
                   const badge = PROFESSION_BADGES[profession];
-                  const badgeColor = badge?.color ?? SLOT_COLORS[slot];
-                  const level = getSkinLevel(profession);
-                  const pos = skinPositions[profession] ?? { x: 160 + idx * 56, y: 8 };
+                  const pos = skinPositions[profession] ?? { x: 180 + idx * 40, y: 12 };
                   const isDragging = draggingSkin === profession;
                   return (
                     <div
                       key={profession}
                       onMouseDown={e => {
+                        if (isMobile) return;
                         e.preventDefault();
-                        const el = e.currentTarget.getBoundingClientRect();
+                        dragMoved.current = false;
                         const rect = profileAreaRef.current?.getBoundingClientRect();
                         if (!rect) return;
                         draggingOffset.current = { x: e.clientX - rect.left - pos.x, y: e.clientY - rect.top - pos.y };
                         setDraggingSkin(profession);
                       }}
-                      onClick={e => { if (!isDragging) { e.stopPropagation(); setShowSkinShowcaseModal(profession); } }}
+                      onClick={e => {
+                        if (dragMoved.current) { dragMoved.current = false; return; }
+                        e.stopPropagation();
+                        setShowSkinShowcaseModal(profession);
+                      }}
                       style={{
                         position: 'absolute',
                         left: pos.x,
                         top: pos.y,
-                        cursor: isDragging ? 'grabbing' : 'grab',
+                        cursor: isMobile ? 'pointer' : (isDragging ? 'grabbing' : 'grab'),
                         userSelect: 'none',
                         zIndex: isDragging ? 100 : 10,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        gap: '3px',
                         filter: isDragging ? 'drop-shadow(0 4px 12px rgba(0,0,0,0.5))' : 'none',
-                        transition: isDragging ? 'none' : 'filter 0.15s',
                       }}
                     >
-                      <div style={{
-                        width: '44px', height: '44px', borderRadius: '50%',
-                        background: `linear-gradient(135deg, ${badgeColor}, ${badgeColor}99)`,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        border: `2px solid ${badgeColor}`,
-                      }}>
-                        {badge?.stickerImage ? (
-                          <img src={badge.stickerImage} alt={profession} style={{ width: '26px', height: '26px', objectFit: 'contain', pointerEvents: 'none' }} />
-                        ) : (
-                          <span style={{ fontSize: '10px', fontWeight: 700, color: '#fff', pointerEvents: 'none' }}>
-                            {badge?.abbreviation ?? profession.slice(0, 3).toUpperCase()}
-                          </span>
-                        )}
-                      </div>
-                      <span style={{ fontSize: '9px', fontWeight: 700, color: '#fff', background: badgeColor, padding: '1px 7px', borderRadius: '8px', whiteSpace: 'nowrap' }}>Lv.{level}</span>
+                      {badge?.stickerImage ? (
+                        <img src={badge.stickerImage} alt={profession} style={{ width: '28px', height: '28px', objectFit: 'contain', pointerEvents: 'none', display: 'block' }} />
+                      ) : (
+                        <span style={{ fontSize: '10px', fontWeight: 700, color: '#fff', background: badge?.color ?? '#444', padding: '3px 7px', borderRadius: '6px', pointerEvents: 'none', whiteSpace: 'nowrap' }}>
+                          {badge?.abbreviation ?? profession.slice(0, 3).toUpperCase()}
+                        </span>
+                      )}
                     </div>
                   );
                 })}
