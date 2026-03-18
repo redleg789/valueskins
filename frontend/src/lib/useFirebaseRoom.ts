@@ -51,6 +51,17 @@ export const useFirebaseRoom = (roomId: string | null, userRole: 'brand' | 'crea
       setState(prev => ({ ...prev, notifications: data ? Object.values(data) : [] }));
     });
 
+    const unsubMessages = onValue(ref(db, `${basePath}/messages`), (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const parsed: Record<string, ChatMessage[]> = {};
+        for (const [dealKey, msgs] of Object.entries(data)) {
+          parsed[dealKey] = Object.values(msgs as Record<string, ChatMessage>);
+        }
+        setState(prev => ({ ...prev, messages: parsed }));
+      }
+    });
+
     setSyncing(false);
 
     return () => {
@@ -58,6 +69,7 @@ export const useFirebaseRoom = (roomId: string | null, userRole: 'brand' | 'crea
       unsubDeals();
       unsubApps();
       unsubNotifs();
+      unsubMessages();
     };
   }, []);
 
