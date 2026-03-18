@@ -2130,17 +2130,11 @@ export default function InstagramDemoPage() {
                                 </button>
                                 <button
                                   onClick={() => {
-                                    if (opp.willingToBarter && !willingToBarter) { setWillingToBarter(true); return; }
                                     const key = `${selectedMarketplaceSkin}:${i}`;
                                     setNegotiatingOpp(i);
-                                    updateDeal(key, { phase: 'offer', offerAmount: '', counterAmount: '' });
+                                    updateDeal(key, { phase: 'chatroom', offerAmount: '', counterAmount: '' });
                                   }}
-                                  style={{
-                                    flex: 1, fontSize: '13px', fontWeight: 700, color: '#fff',
-                                    background: C.primary, border: 'none', padding: '10px', borderRadius: '10px',
-                                    cursor: opp.willingToBarter && !willingToBarter ? 'not-allowed' : 'pointer',
-                                    opacity: opp.willingToBarter && !willingToBarter ? 0.5 : 1,
-                                  }}
+                                  style={{ flex: 1, fontSize: '13px', fontWeight: 700, color: '#fff', background: C.primary, border: 'none', padding: '10px', borderRadius: '10px', cursor: 'pointer' }}
                                 >
                                   View Deal
                                 </button>
@@ -2154,7 +2148,7 @@ export default function InstagramDemoPage() {
                                     <span style={{ fontSize: '11px', fontWeight: 700, color: C.primary, textTransform: 'uppercase', letterSpacing: '0.6px' }}>Deal Room · <a href={opp.instagramUrl || `https://instagram.com/${opp.brand.replace(/\s+/g, '')}`} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ color: C.primary, textDecoration: 'none', cursor: 'pointer' }} onMouseEnter={e => { e.currentTarget.style.textDecoration = 'underline'; }} onMouseLeave={e => { e.currentTarget.style.textDecoration = 'none'; }}>{opp.brand}</a></span>
                                   </div>
                                   <span style={{ fontSize: '10px', fontWeight: 600, color: C.textSecondary, background: C.bg, padding: '2px 8px', borderRadius: '4px', border: `1px solid ${C.border}` }}>
-                                    {existingDeal.phase === 'chatroom' ? 'In Chat' : existingDeal.phase === 'offer' ? 'Offer Pending' : existingDeal.phase === 'counter' ? 'Counter Offer' : existingDeal.phase === 'accepted' ? 'Accepted' : existingDeal.phase === 'checklist' ? 'Checklist' : existingDeal.phase === 'softhold' ? 'Soft Hold' : 'Active'}
+                                    {existingDeal.phase === 'chatroom' ? 'In Chat' : existingDeal.phase === 'formal_offer' ? 'Formal Offer' : existingDeal.phase === 'accepted' ? 'Accepted' : existingDeal.phase === 'checklist' ? 'Checklist' : existingDeal.phase === 'softhold' ? 'Soft Hold' : 'Active'}
                                   </span>
                                 </div>
                               ) : (
@@ -2171,7 +2165,7 @@ export default function InstagramDemoPage() {
                                         Deal Room · <a href={opp.instagramUrl || `https://instagram.com/${opp.brand.replace(/\s+/g, '')}`} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ color: C.primary, textDecoration: 'none' }}>{opp.brand}</a>
                                       </div>
                                       <div style={{ fontSize: '12px', color: C.textMuted }}>
-                                        {dealRoomPhase === 'offer' ? `Expires in ${offerExpiresLabel}` : dealRoomPhase === 'accepted' ? 'Deal Accepted' : 'Negotiation in progress'}
+                                        {dealRoomPhase === 'accepted' ? 'Deal accepted — terms locked' : dealRoomPhase === 'formal_offer' ? 'Review formal offer' : 'Negotiate freely — price, terms, everything'}
                                       </div>
                                     </div>
                                   </div>
@@ -2219,176 +2213,124 @@ export default function InstagramDemoPage() {
                                     </span>
                                   </div>
 
-                                  {dealRoomPhase === 'offer' && (
-                                    <>
-                                      <div style={{ fontSize: '12px', color: C.textSecondary, marginBottom: '8px', lineHeight: 1.5 }}>
-                                        Brand offer has arrived. Respond to their offer or submit a counter-offer — prices are only visible inside this room.
-                                      </div>
-                                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '10px', position: 'relative' }}>
-                                        <span style={{ fontSize: '13px', color: C.textMuted }}>Their offer ($):</span>
-                                        <div style={{ position: 'relative', flex: 1 }}>
-                                          <input
-                                            type="text"
-                                            disabled={true}
-                                            value={dealOfferAmount || creatorRate}
-                                            style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: '8px', color: C.text, padding: '6px 10px', fontSize: '15px', fontWeight: 700, fontFamily: 'inherit', outline: 'none', width: '100px', opacity: 0.8, cursor: 'not-allowed' }}
-                                          />
+                                  {dealRoomPhase === 'formal_offer' && (() => {
+                                    const agreedPrice = dealCounterAmount || dealOfferAmount || opp.budget.replace(/[^0-9]/g, '') || '5000';
+                                    const totalPrice = parseInt(agreedPrice) || 5000;
+                                    const advPct = advancePercent;
+                                    const uploadPct = Math.round((100 - advancePercent) * 0.6);
+                                    const approvalPct = 100 - advPct - uploadPct;
+                                    const refId = `DR-${activeDealKey ? Math.abs(activeDealKey.split('').reduce((a, c) => a + c.charCodeAt(0), 0) % 9000 + 1000) : '0000'}-${opp.brand.replace(/\s/g, '').slice(0, 3).toUpperCase()}`;
+                                    return (
+                                      <>
+                                        <div style={{ fontSize: '11px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '12px' }}>Formal Offer — Review &amp; Accept</div>
+                                        <div style={{ fontSize: '11px', color: C.textSecondary, marginBottom: '14px', lineHeight: 1.5 }}>
+                                          The brand has submitted their final offer based on your chat negotiation. This document is the binding record of what was agreed.
                                         </div>
-                                      </div>
-                                      <div style={{ fontSize: '10px', color: C.textMuted, marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={C.textMuted} strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                                        Only visible to you and {opp.brand} · Auto-expires in {offerExpiresLabel}
-                                      </div>
-                                      <div style={{ fontSize: '9px', color: C.primary, marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '4px', opacity: 0.8 }}>
-                                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                                        Offer logged · {new Date().toISOString().replace('T', ' ').slice(0, 19)} UTC
-                                      </div>
-                                      <div style={{ display: 'flex', gap: '8px' }}>
-                                        <button onClick={() => {
-                                          setDealRoomPhase('accepted');
-                                          const newApp: SharedApplication = {
-                                            id: Date.now(),
-                                            campaignId: -1,
-                                            campaignTitle: `Deal with ${opp.brand}`,
-                                            creatorProfession: selectedMarketplaceSkin || '',
-                                            creatorHandle: '@creator_demo',
-                                            status: 'accepted',
-                                            appliedAt: new Date().toLocaleDateString(),
-                                            creatorName: profileName || 'Demo Creator',
-                                            creatorFollowers: `${(metrics.followers / 1000).toFixed(metrics.followers >= 1000000 ? 1 : 0)}${metrics.followers >= 1000000 ? 'M' : 'K'}`,
-                                            creatorEngagement: `${metrics.engagement.toFixed(1)}%`,
-                                            creatorLevel: ownedSkins.length > 0 ? getSkinLevel(selectedMarketplaceSkin || ownedSkins[0].profession, metrics.followers, ownedSkins.length) : 1,
-                                            creatorMatchScore: '94%',
-                                            creatorRate: rateCard.reel ? `$${rateCard.reel}` : '$3,000',
-                                            creatorDealCompletionRate: 95,
-                                            creatorPortfolio: [],
-                                            creatorAudienceLocation: selectedCountry || 'USA',
-                                            creatorAudienceAge: '25-34',
-                                            creatorResponseTimeHrs: 6,
-                                            creatorInstagramUrl: `https://instagram.com/${('@creator_demo').replace('@', '')}`,
-                                          };
-                                          persistApplications([...sharedApplications, newApp]);
-                                        }} style={{ flex: 1, background: C.success, border: 'none', padding: '10px', borderRadius: '10px', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '13px' }}>Accept</button>
-                                        <button onClick={() => setDealRoomPhase('counter')} style={{ flex: 1, background: C.primary, border: 'none', padding: '10px', borderRadius: '10px', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '13px' }}>Counter</button>
-                                        <button onClick={() => setNegotiatingOpp(null)} style={{ flex: 1, background: 'transparent', border: `1px solid ${C.border}`, padding: '10px', borderRadius: '10px', color: C.danger, fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}>Decline</button>
-                                      </div>
-                                    </>
-                                  )}
 
-                                  {dealRoomPhase === 'counter' && (
-                                    <>
-                                      <div style={{ fontSize: '12px', color: C.textSecondary, marginBottom: '8px' }}>Enter your counter-offer. Brand has 24h to respond or it auto-expires.</div>
-                                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '10px', padding: '8px 10px', background: C.card, borderRadius: '8px', border: `1px solid ${C.border}` }}>
-                                        <div style={{ fontSize: '11px', color: C.textMuted }}>Your current ask: <strong style={{ color: C.text }}>${creatorRate}</strong></div>
-                                      </div>
-                                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '10px' }}>
-                                        <span style={{ fontSize: '13px', color: C.textMuted }}>Your counter ($):</span>
-                                        <input
-                                          type="text"
-                                          value={dealCounterAmount}
-                                          onChange={(e) => setDealCounterAmount(e.target.value.replace(/[^0-9]/g, ''))}
-                                          placeholder="Enter amount"
-                                          style={{ background: C.bg, border: `1px solid ${C.primary}`, borderRadius: '8px', color: C.text, padding: '6px 10px', fontSize: '15px', fontWeight: 700, fontFamily: 'inherit', outline: 'none', width: '100px' }}
-                                        />
-                                      </div>
-                                      <div style={{ display: 'flex', gap: '6px' }}>
-                                        <button
-                                          onClick={() => {
-                                            if (!dealCounterAmount || !activeDealKey) return;
-                                            setDealRoomPhase('brand_considering');
-                                            simulateBrandResponse(parseInt(dealCounterAmount), parseInt(dealOfferAmount || '5000'), activeDealKey);
-                                          }}
-                                          style={{ flex: 1, background: dealCounterAmount ? C.primary : C.border, border: 'none', padding: '8px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: dealCounterAmount ? 'pointer' : 'not-allowed', fontSize: '12px' }}
-                                        >Send Counter</button>
-                                        <button onClick={() => setDealRoomPhase('offer')} style={{ background: 'none', border: `1px solid ${C.border}`, padding: '8px 12px', borderRadius: '8px', color: C.textSecondary, cursor: 'pointer', fontSize: '12px' }}>Back</button>
-                                      </div>
-                                    </>
-                                  )}
-
-                                  {dealRoomPhase === 'brand_considering' && (
-                                    <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                                      <div style={{ width: '32px', height: '32px', border: `3px solid ${C.border}`, borderTopColor: C.primary, borderRadius: '50%', margin: '0 auto 14px', animation: 'spin 0.9s linear infinite' }} />
-                                      <div style={{ fontSize: '14px', fontWeight: 600, color: C.text, marginBottom: '6px' }}>Counter sent</div>
-                                      <div style={{ fontSize: '12px', color: C.textSecondary, lineHeight: 1.5 }}>
-                                        Waiting for the brand to review your counter-offer.<br />This usually takes a few minutes.
-                                      </div>
-                                      <div style={{ marginTop: '12px', fontSize: '11px', color: C.textMuted }}>You will be notified when they respond.</div>
-                                    </div>
-                                  )}
-
-                                  {dealRoomPhase === 'brand_countered' && (
-                                    <>
-                                      <div style={{ background: 'rgba(230,81,0,0.06)', borderRadius: '8px', padding: '10px 12px', marginBottom: '10px', border: '1px solid rgba(230,81,0,0.2)' }}>
-                                        <div style={{ fontSize: '11px', fontWeight: 700, color: C.textSecondary, marginBottom: '6px' }}>Brand responded</div>
-                                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '4px' }}>
-                                          <span style={{ fontSize: '22px', fontWeight: 800, color: C.text }}>${parseInt(dealBrandResponseAmount || '0').toLocaleString()}</span>
-                                          <span style={{ fontSize: '12px', color: C.textMuted }}>/post</span>
+                                        {/* Price */}
+                                        <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: '10px', padding: '12px', marginBottom: '10px' }}>
+                                          <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Agreed Total</div>
+                                          <div style={{ fontSize: '24px', fontWeight: 800, color: C.text }}>${totalPrice.toLocaleString()}</div>
+                                          <div style={{ fontSize: '11px', color: C.textSecondary, marginTop: '2px' }}>{opp.type}</div>
                                         </div>
-                                        <div style={{ fontSize: '11px', color: C.textSecondary }}>
-                                          Your ask: ${parseInt(dealCounterAmount || '0').toLocaleString()} · Brand's original: ${parseInt(dealOfferAmount || '0').toLocaleString()}
-                                        </div>
-                                      </div>
-                                      <div style={{ fontSize: '11px', color: C.textMuted, marginBottom: '12px', lineHeight: 1.4 }}>
-                                        The brand has reviewed your counter and responded with their offer above. Accept, counter again, or decline.
-                                      </div>
-                                      <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
-                                        <button
-                                          onClick={() => { updateDeal(activeDealKey!, { phase: 'accepted', offerAmount: dealBrandResponseAmount }); }}
-                                          style={{ flex: 1, background: C.success, border: 'none', padding: '8px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '12px' }}
-                                        >Accept ${parseInt(dealBrandResponseAmount || '0').toLocaleString()}</button>
-                                        <button
-                                          onClick={() => { setDealCounterAmount(''); setDealRoomPhase('counter'); }}
-                                          style={{ flex: 1, background: C.primary, border: 'none', padding: '8px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '12px' }}
-                                        >Counter Again</button>
-                                      </div>
-                                      <button
-                                        onClick={() => setNegotiatingOpp(null)}
-                                        style={{ width: '100%', background: 'none', border: `1px solid ${C.border}`, padding: '8px', borderRadius: '8px', color: C.textSecondary, cursor: 'pointer', fontSize: '12px' }}
-                                      >Decline</button>
-                                    </>
-                                  )}
 
-                                  {dealRoomPhase === 'brand_rejected' && (
-                                    <div style={{ textAlign: 'center', padding: '16px 0' }}>
-                                      <div style={{ width: '36px', height: '36px', background: 'rgba(211,47,47,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d32f2f" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                                      </div>
-                                      <div style={{ fontSize: '14px', fontWeight: 600, color: C.text, marginBottom: '6px' }}>Counter declined</div>
-                                      <div style={{ fontSize: '12px', color: C.textSecondary, lineHeight: 1.5, marginBottom: '14px' }}>
-                                        The brand wasn't able to meet your counter-offer at this time.
-                                      </div>
-                                      <button
-                                        onClick={() => setNegotiatingOpp(null)}
-                                        style={{ width: '100%', background: 'none', border: `1px solid ${C.border}`, padding: '8px', borderRadius: '8px', color: C.textSecondary, cursor: 'pointer', fontSize: '12px' }}
-                                      >Close</button>
-                                    </div>
-                                  )}
+                                        {/* Payment split */}
+                                        <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: '10px', padding: '12px', marginBottom: '10px' }}>
+                                          <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>Payment Schedule (your terms)</div>
+                                          {[
+                                            { label: 'Advance', desc: 'Paid before work begins', pct: advPct, color: C.success },
+                                            { label: 'On upload', desc: 'Paid when content is submitted', pct: uploadPct, color: C.primary },
+                                            { label: 'On approval', desc: 'Paid after brand signs off', pct: approvalPct, color: C.warning },
+                                          ].map(row => (
+                                            <div key={row.label} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+                                              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: row.color, flexShrink: 0 }} />
+                                              <div style={{ flex: 1 }}>
+                                                <div style={{ fontSize: '12px', fontWeight: 600, color: C.text }}>{row.label} <span style={{ color: C.textMuted, fontWeight: 400 }}>· {row.desc}</span></div>
+                                              </div>
+                                              <div style={{ fontSize: '13px', fontWeight: 700, color: row.color }}>{row.pct}% <span style={{ fontSize: '11px', color: C.textMuted, fontWeight: 400 }}>(${Math.round(totalPrice * row.pct / 100).toLocaleString()})</span></div>
+                                            </div>
+                                          ))}
+                                        </div>
+
+                                        {/* Deliverables */}
+                                        <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: '10px', padding: '12px', marginBottom: '10px' }}>
+                                          <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Deliverables</div>
+                                          {opp.deliverables.map((d, di) => (
+                                            <div key={di} style={{ fontSize: '12px', color: C.text, marginBottom: '3px' }}>{d.count}x {d.format}</div>
+                                          ))}
+                                          <div style={{ fontSize: '11px', color: C.textMuted, marginTop: '4px' }}>Deadline: {new Date(opp.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
+                                        </div>
+
+                                        {/* Ref + timestamp */}
+                                        <div style={{ fontSize: '10px', color: C.textMuted, marginBottom: '14px', display: 'flex', gap: '6px', alignItems: 'center' }}>
+                                          <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                          <span style={{ fontFamily: 'monospace' }}>{refId}</span>
+                                          <span>· Submitted {new Date().toISOString().replace('T', ' ').slice(0, 19)} UTC</span>
+                                        </div>
+
+                                        <div style={{ display: 'flex', gap: '8px' }}>
+                                          <button
+                                            onClick={() => {
+                                              updateDeal(activeDealKey!, { phase: 'accepted', offerAmount: agreedPrice });
+                                              const newApp: SharedApplication = {
+                                                id: Date.now(), campaignId: -1,
+                                                campaignTitle: `Deal with ${opp.brand}`,
+                                                creatorProfession: selectedMarketplaceSkin || '',
+                                                creatorHandle: '@creator_demo', status: 'accepted',
+                                                appliedAt: new Date().toLocaleDateString(),
+                                                creatorName: profileName || 'Demo Creator',
+                                                creatorFollowers: `${(metrics.followers / 1000).toFixed(metrics.followers >= 1000000 ? 1 : 0)}${metrics.followers >= 1000000 ? 'M' : 'K'}`,
+                                                creatorEngagement: `${metrics.engagement.toFixed(1)}%`,
+                                                creatorLevel: ownedSkins.length > 0 ? getSkinLevel(selectedMarketplaceSkin || ownedSkins[0].profession, metrics.followers, ownedSkins.length) : 1,
+                                                creatorMatchScore: '94%', creatorRate: rateCard.reel ? `$${rateCard.reel}` : '$3,000',
+                                                creatorDealCompletionRate: 95, creatorPortfolio: [],
+                                                creatorAudienceLocation: selectedCountry || 'USA', creatorAudienceAge: '25-34',
+                                                creatorResponseTimeHrs: 6, creatorInstagramUrl: `https://instagram.com/creator_demo`,
+                                              };
+                                              persistApplications([...sharedApplications, newApp]);
+                                            }}
+                                            style={{ flex: 2, background: C.success, border: 'none', padding: '11px', borderRadius: '10px', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '13px' }}
+                                          >Accept Deal</button>
+                                          <button
+                                            onClick={() => setDealRoomPhase('chatroom')}
+                                            style={{ flex: 1, background: 'transparent', border: `1px solid ${C.border}`, padding: '11px', borderRadius: '10px', color: C.textSecondary, fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}
+                                          >Back to Chat</button>
+                                        </div>
+                                      </>
+                                    );
+                                  })()}
 
                                   {dealRoomPhase === 'accepted' && (() => {
+                                    const agreedPrice = dealCounterAmount || dealOfferAmount || opp.budget.replace(/[^0-9]/g, '') || '5000';
+                                    const totalPrice = parseInt(agreedPrice) || 5000;
+                                    const advPct = advancePercent;
+                                    const uploadPct = Math.round((100 - advancePercent) * 0.6);
+                                    const approvalPct = 100 - advPct - uploadPct;
                                     const refId = `DR-${activeDealKey ? Math.abs(activeDealKey.split('').reduce((a, c) => a + c.charCodeAt(0), 0) % 9000 + 1000) : '0000'}-${opp.brand.replace(/\s/g, '').slice(0, 3).toUpperCase()}`;
                                     const signedAt = new Date().toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
                                     return (
                                       <>
-                                        <div style={{ padding: '12px', background: 'rgba(46,125,50,0.08)', borderRadius: '8px', marginBottom: '8px', border: '1px solid rgba(46,125,50,0.2)' }}>
-                                          <div style={{ fontSize: '13px', fontWeight: 700, color: C.success, marginBottom: '6px' }}>Terms accepted</div>
-                                          <div style={{ fontSize: '11px', color: C.textSecondary, marginBottom: '8px' }}>Both parties have agreed. The deal terms are now locked and recorded.</div>
-                                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                            <div style={{ fontSize: '10px', color: C.textMuted, display: 'flex', gap: '6px' }}>
-                                              <span style={{ color: C.textSecondary, fontWeight: 600 }}>Reference</span>
-                                              <span style={{ fontFamily: 'monospace', color: C.text }}>{refId}</span>
+                                        <div style={{ padding: '12px', background: 'rgba(46,125,50,0.08)', borderRadius: '10px', marginBottom: '10px', border: '1px solid rgba(46,125,50,0.2)' }}>
+                                          <div style={{ fontSize: '13px', fontWeight: 700, color: C.success, marginBottom: '4px' }}>Deal accepted</div>
+                                          <div style={{ fontSize: '11px', color: C.textSecondary, marginBottom: '8px' }}>Terms are locked and recorded. Chat remains open for coordination.</div>
+                                          <div style={{ fontSize: '12px', fontWeight: 700, color: C.text, marginBottom: '6px' }}>${totalPrice.toLocaleString()} total</div>
+                                          {[
+                                            { label: 'Advance', pct: advPct },
+                                            { label: 'On upload', pct: uploadPct },
+                                            { label: 'On approval', pct: approvalPct },
+                                          ].map(r => (
+                                            <div key={r.label} style={{ fontSize: '11px', color: C.textSecondary, display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+                                              <span>{r.label}</span>
+                                              <span style={{ color: C.text, fontWeight: 600 }}>{r.pct}% (${Math.round(totalPrice * r.pct / 100).toLocaleString()})</span>
                                             </div>
-                                            <div style={{ fontSize: '10px', color: C.textMuted, display: 'flex', gap: '6px' }}>
-                                              <span style={{ color: C.textSecondary, fontWeight: 600 }}>Signed</span>
-                                              <span style={{ fontFamily: 'monospace', color: C.text }}>{signedAt}</span>
-                                            </div>
-                                            <div style={{ fontSize: '9px', color: C.primary, display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
-                                              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                                              Immutable record — all prior negotiation history preserved
-                                            </div>
+                                          ))}
+                                          <div style={{ marginTop: '8px', fontSize: '9px', color: C.primary, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                            <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                            <span style={{ fontFamily: 'monospace' }}>{refId}</span> · {signedAt}
                                           </div>
                                         </div>
                                         <button onClick={() => setDealRoomPhase('chatroom')} style={{ width: '100%', background: C.primary, border: 'none', padding: '10px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}>
-                                          Enter Chat Room
+                                          Open Chat
                                         </button>
                                       </>
                                     );
@@ -2514,35 +2456,19 @@ export default function InstagramDemoPage() {
                                             ))}
                                           </div>
 
-                                          {/* Payment */}
+                                          {/* Brand submits formal offer */}
                                           <div style={{ background: C.bg, borderRadius: '8px', border: `1px solid ${C.border}`, padding: '8px' }}>
-                                            <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Payment</div>
-                                            <div style={{ display: 'flex', gap: '4px', marginBottom: '6px' }}>
-                                              <div style={{ flex: 1, textAlign: 'center', padding: '4px', background: C.surfaceAlt, borderRadius: '4px' }}>
-                                                <div style={{ fontSize: '12px', fontWeight: 700, color: C.textSecondary }}>{advancePercent}%</div>
-                                                <div style={{ fontSize: '8px', color: C.textMuted }}>Advance</div>
-                                              </div>
-                                              <div style={{ flex: 1, textAlign: 'center', padding: '4px', background: C.surfaceAlt, borderRadius: '4px' }}>
-                                                <div style={{ fontSize: '12px', fontWeight: 700, color: C.primary }}>{100 - advancePercent}%</div>
-                                                <div style={{ fontSize: '8px', color: C.textMuted }}>Perf.</div>
-                                              </div>
-                                            </div>
-                                            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '10px', color: C.text }}>
-                                              <input type="checkbox" checked={performanceClause} onChange={(e) => { setPerformanceClause(e.target.checked); if (!e.target.checked) setAdvancePercent(100); }} style={{ width: 10, height: 10 }} />
-                                              Perf. clause
-                                            </label>
-                                            {performanceClause && (
-                                              <input type="range" min="70" max="100" value={advancePercent} onChange={(e) => setAdvancePercent(Number(e.target.value))} style={{ width: '100%', marginTop: '4px' }} />
-                                            )}
-                                            <div style={{ fontSize: '9px', color: C.textSecondary, marginTop: '4px', textAlign: 'center' }}>Payment locked</div>
+                                            <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Brand</div>
+                                            <button
+                                              onClick={() => setDealRoomPhase('formal_offer')}
+                                              style={{ width: '100%', background: C.primary, border: 'none', padding: '7px', borderRadius: '6px', color: '#fff', fontWeight: 600, fontSize: '11px', cursor: 'pointer', lineHeight: 1.3 }}
+                                            >
+                                              Submit Formal Offer
+                                            </button>
+                                            <div style={{ fontSize: '9px', color: C.textMuted, marginTop: '5px', textAlign: 'center' }}>Simulates brand action</div>
                                           </div>
                                         </div>
                                       </div>
-
-                                      {/* Done button */}
-                                      <button onClick={() => { setDealRoomPhase('checklist'); }} style={{ width: '100%', background: C.success, border: 'none', padding: '10px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px', marginTop: '10px' }}>
-                                        Done, Accept Now
-                                      </button>
                                     </>
                                   )}
 
