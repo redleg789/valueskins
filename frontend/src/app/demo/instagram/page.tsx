@@ -535,6 +535,8 @@ export default function InstagramDemoPage() {
   const [assigningSlot, setAssigningSlot] = useState<ValueSkinSlot | null>(null);
 
   const [valueskinAvatarEnabled, setValueskinAvatarEnabled] = useState(false);
+  type SkinPlacement = 'next-to-name' | 'below-bio' | 'above-stats' | 'below-stats';
+  const [skinPlacement, setSkinPlacement] = useState<SkinPlacement>('next-to-name');
   const [showAvatarSettings, setShowAvatarSettings] = useState(false);
   const [purchaseToast, setPurchaseToast] = useState<string | null>(null);
 
@@ -585,6 +587,7 @@ export default function InstagramDemoPage() {
         if (d.brandProfileSelections) setBrandProfileSelections(d.brandProfileSelections);
         if (d.creatorEnergy) setCreatorEnergy(d.creatorEnergy);
         if (d.metrics) setMetrics(d.metrics);
+        if (d.skinPlacement) setSkinPlacement(d.skinPlacement);
       }
     } catch (e) { /* ignore */ }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -964,12 +967,14 @@ export default function InstagramDemoPage() {
         selectedCountry, selectedLanguages, rateCard, profileDealTypes, willingToBarter,
         notifications, onboardingDone, joinedCommunities, dmMessages, communityMessages,
         skinXP, brandProfileSelections, creatorEnergy, metrics, skinPitchTexts, skinPitchVideos,
+        skinPlacement,
       }));
     } catch (e) { /* ignore */ }
   }, [marketplaceRole, brandValueSkins, activeBrandSkin, profileName, profileBio, profileAvatar,
       selectedCountry, selectedLanguages, rateCard, profileDealTypes, willingToBarter,
       notifications, onboardingDone, joinedCommunities, dmMessages, communityMessages,
-      skinXP, brandProfileSelections, creatorEnergy, metrics, skinsLoaded, skinPitchTexts, skinPitchVideos]);
+      skinXP, brandProfileSelections, creatorEnergy, metrics, skinsLoaded, skinPitchTexts, skinPitchVideos,
+      skinPlacement]);
 
   const handleFollow = () => {
     setIsFollowing(!isFollowing);
@@ -1521,8 +1526,33 @@ export default function InstagramDemoPage() {
                 <div style={{ padding: '16px 20px', borderBottom: `1px solid ${C.border}`, background: C.surface }}>
                   <ValueskinAvatarToggle
                     enabled={valueskinAvatarEnabled}
-                    onChange={(v) => { setValueskinAvatarEnabled(v); setShowAvatarSettings(false); }}
+                    onChange={(v) => { setValueskinAvatarEnabled(v); }}
                   />
+                  {/* Skin placement chooser */}
+                  {hasValueSkin && (
+                    <div style={{ marginTop: '16px' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>Skin Placement</div>
+                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                        {([
+                          { value: 'next-to-name' as SkinPlacement, label: 'Next to name' },
+                          { value: 'above-stats' as SkinPlacement, label: 'Above stats' },
+                          { value: 'below-stats' as SkinPlacement, label: 'Below stats' },
+                          { value: 'below-bio' as SkinPlacement, label: 'Below bio' },
+                        ]).map(opt => (
+                          <button
+                            key={opt.value}
+                            onClick={() => setSkinPlacement(opt.value)}
+                            style={{
+                              padding: '6px 12px', borderRadius: '16px', fontSize: '11px', fontWeight: 600, cursor: 'pointer',
+                              background: skinPlacement === opt.value ? C.primary : 'transparent',
+                              color: skinPlacement === opt.value ? '#fff' : C.textSecondary,
+                              border: `1px solid ${skinPlacement === opt.value ? C.primary : C.border}`,
+                            }}
+                          >{opt.label}</button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1544,22 +1574,30 @@ export default function InstagramDemoPage() {
 
                   {/* Stats */}
                   <div style={{ flex: 1, width: isMobile ? '100%' : 'auto' }}>
-                    {/* Name + up to 3 stickers (each clickable → About Me) */}
-                    <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', alignItems: 'center', flexWrap: 'wrap', justifyContent: isMobile ? 'center' : 'flex-start' }}>
+                    {/* Name + stickers (if placement is next-to-name) */}
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: skinPlacement === 'above-stats' ? '10px' : '20px', alignItems: 'center', flexWrap: 'wrap', justifyContent: isMobile ? 'center' : 'flex-start' }}>
                       <h2 style={{ fontSize: isMobile ? '16px' : '20px', fontWeight: 'bold', margin: 0, color: C.text }}>
                         Saketh Velamuri
                       </h2>
-                      {/* ValueSkin stickers — click individual skin to open its showcase */}
-                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', position: 'relative' }}>
-                        <ValueSkinStickers
-                          valueSkins={valueSkins}
-                          onValueSkinsChange={setValueSkins}
-                          size="default"
-                          level={currentLevel}
-                          onSkinClick={(profession) => setShowSkinShowcaseModal(profession)}
-                        />
-                      </div>
+                      {skinPlacement === 'next-to-name' && (
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', position: 'relative' }}>
+                          <ValueSkinStickers
+                            valueSkins={valueSkins}
+                            onValueSkinsChange={setValueSkins}
+                            size="default"
+                            level={currentLevel}
+                            onSkinClick={(profession) => setShowSkinShowcaseModal(profession)}
+                          />
+                        </div>
+                      )}
                     </div>
+
+                    {/* Skins above stats */}
+                    {skinPlacement === 'above-stats' && (
+                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '14px', justifyContent: isMobile ? 'center' : 'flex-start' }}>
+                        <ValueSkinStickers valueSkins={valueSkins} onValueSkinsChange={setValueSkins} size="large" level={currentLevel} onSkinClick={(p) => setShowSkinShowcaseModal(p)} />
+                      </div>
+                    )}
 
                     <div style={{ display: 'flex', gap: isMobile ? '16px' : '20px', marginBottom: '20px', fontSize: isMobile ? '13px' : '14px', justifyContent: isMobile ? 'center' : 'flex-start' }}>
                       <button onClick={() => setShowMetricsModal(true)} style={{ background: 'none', border: 'none', color: C.text, padding: 0, cursor: 'pointer', textAlign: 'center' }}>
@@ -1578,6 +1616,13 @@ export default function InstagramDemoPage() {
                         {isFollowing ? 'Following' : 'Follow'}
                       </button>
                     </div>
+
+                    {/* Skins below stats */}
+                    {skinPlacement === 'below-stats' && (
+                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginTop: '14px', justifyContent: isMobile ? 'center' : 'flex-start' }}>
+                        <ValueSkinStickers valueSkins={valueSkins} onValueSkinsChange={setValueSkins} size="large" level={currentLevel} onSkinClick={(p) => setShowSkinShowcaseModal(p)} />
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -1609,6 +1654,13 @@ export default function InstagramDemoPage() {
                     </>
                   )}
                 </div>
+
+                {/* Skins below bio */}
+                {skinPlacement === 'below-bio' && (
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginTop: '12px', justifyContent: isMobile ? 'center' : 'flex-start' }}>
+                    <ValueSkinStickers valueSkins={valueSkins} onValueSkinsChange={setValueSkins} size="large" level={currentLevel} onSkinClick={(p) => setShowSkinShowcaseModal(p)} />
+                  </div>
+                )}
 
                 {/* Barter signal badge — read-only on profile, editable in Settings */}
                 {hasValueSkin && willingToBarter && (
@@ -5760,11 +5812,11 @@ export default function InstagramDemoPage() {
                 const badge = PROFESSION_BADGES[profession];
                 const color = badge?.color ?? C.primary;
                 return (
-                  <div key={profession} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', background: C.card, borderRadius: '8px', marginBottom: '6px', border: `1px solid ${C.border}` }}>
+                  <div key={profession} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', background: C.card, borderRadius: '12px', marginBottom: '6px', border: `1px solid ${C.border}` }}>
                     {badge?.stickerImage ? (
-                      <img src={badge.stickerImage} alt={profession} style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
+                      <img src={badge.stickerImage} alt={profession} style={{ width: '28px', height: '28px', objectFit: 'cover', borderRadius: '50%' }} />
                     ) : (
-                      <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: `${color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', fontWeight: 700, color }}>{badge?.abbreviation ?? '?'}</div>
+                      <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: `linear-gradient(135deg, ${color}, ${color}dd)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', fontWeight: 700, color: '#fff' }}>{badge?.abbreviation ?? '?'}</div>
                     )}
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: '13px', fontWeight: 600, color: C.text }}>{profession}</div>
