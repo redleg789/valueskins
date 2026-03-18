@@ -14,7 +14,7 @@ import { api } from './api';
 
 // ---- Types matching the demo page's DealState ----
 
-export type DealRoomPhase = 'brief' | 'offer' | 'counter' | 'brand_considering' | 'brand_countered' | 'brand_rejected' | 'chatroom' | 'checklist' | 'accepted' | 'softhold';
+export type DealRoomPhase = 'brief' | 'offer' | 'counter' | 'brand_considering' | 'brand_countered' | 'brand_rejected' | 'chatroom' | 'formal_offer' | 'checklist' | 'accepted' | 'softhold';
 
 export type DealState = {
   phase: DealRoomPhase;
