@@ -179,50 +179,19 @@ export function ProfessionSticker({
           flexShrink: 0,
         }}
       >
-        {/* Badge — circular with XP ring arc */}
-        <div style={{ position: 'relative', width: `${dim + 6}px`, height: `${dim + 6}px`, flexShrink: 0 }}>
-          {/* XP ring arc — conic gradient showing level progress */}
-          <svg
-            width={dim + 6} height={dim + 6}
-            viewBox={`0 0 ${dim + 6} ${dim + 6}`}
-            style={{ position: 'absolute', top: 0, left: 0 }}
-          >
-            <circle
-              cx={(dim + 6) / 2} cy={(dim + 6) / 2} r={(dim + 2) / 2}
-              fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="2"
-            />
-            <circle
-              cx={(dim + 6) / 2} cy={(dim + 6) / 2} r={(dim + 2) / 2}
-              fill="none" stroke={badge.color} strokeWidth="2"
-              strokeDasharray={`${Math.PI * (dim + 2)}`}
-              strokeDashoffset={`${Math.PI * (dim + 2) * (1 - Math.min((level ?? 1) / 5, 1))}`}
-              strokeLinecap="round"
-              transform={`rotate(-90 ${(dim + 6) / 2} ${(dim + 6) / 2})`}
-              style={{ transition: 'stroke-dashoffset 0.5s ease' }}
-            />
-          </svg>
-          {/* Inner circle */}
-          <div style={{ position: 'absolute', top: '3px', left: '3px', width: `${dim}px`, height: `${dim}px`, borderRadius: '50%', overflow: 'hidden' }}>
-            {badge.stickerImage ? (
-              <img
-                src={badge.stickerImage}
-                alt={badge.label}
-                draggable={false}
-                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%', display: 'block' }}
-              />
-            ) : (
-              <div style={{
-                width: '100%', height: '100%', borderRadius: '50%',
-                background: `linear-gradient(135deg, ${badge.color}, ${badge.color}dd)`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <span style={{ color: '#fff', fontSize, fontWeight: 700, letterSpacing: '-0.3px', lineHeight: 1 }}>
-                  {badge.abbreviation}
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
+        {/* Sticker — no shape, no border, no background. Just the raw icon floating free. */}
+        {badge.stickerImage ? (
+          <img
+            src={badge.stickerImage}
+            alt={badge.label}
+            draggable={false}
+            style={{ width: `${dim}px`, height: `${dim}px`, objectFit: 'contain', display: 'block', flexShrink: 0 }}
+          />
+        ) : (
+          <span style={{ fontSize, fontWeight: 700, color: badge.color, letterSpacing: '-0.3px', lineHeight: 1, flexShrink: 0 }}>
+            {badge.abbreviation}
+          </span>
+        )}
       </div>
 
       {showPanel && (

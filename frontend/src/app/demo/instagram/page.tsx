@@ -5814,9 +5814,9 @@ export default function InstagramDemoPage() {
                 return (
                   <div key={profession} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', background: C.card, borderRadius: '12px', marginBottom: '6px', border: `1px solid ${C.border}` }}>
                     {badge?.stickerImage ? (
-                      <img src={badge.stickerImage} alt={profession} style={{ width: '28px', height: '28px', objectFit: 'cover', borderRadius: '50%' }} />
+                      <img src={badge.stickerImage} alt={profession} style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
                     ) : (
-                      <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: `linear-gradient(135deg, ${color}, ${color}dd)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', fontWeight: 700, color: '#fff' }}>{badge?.abbreviation ?? '?'}</div>
+                      <span style={{ fontSize: '13px', fontWeight: 700, color }}>{badge?.abbreviation ?? '?'}</span>
                     )}
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: '13px', fontWeight: 600, color: C.text }}>{profession}</div>
