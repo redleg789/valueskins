@@ -6446,7 +6446,7 @@ export default function InstagramDemoPage() {
               const isBrand = marketplaceRole === 'brand';
               const abbr = defined?.abbreviation ?? sub.split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0, 3);
               const badgeColor = defined?.color ?? (assigningSlot ? SLOT_COLORS[assigningSlot] : C.primary);
-              const stickerSrc = defined?.stickerImage;
+              const stickerSrc = defined?.stickerImage || `/Stickers/${sub.toLowerCase().replace(/[\/\s]+/g, '-').replace(/[^a-z0-9-]/g, '')}.png`;
               const isOwned = isBrand && brandValueSkins.includes(sub);
               const isActiveHere = !isBrand && assigningSlot && valueSkins[assigningSlot]?.profession === sub;
               const isUsedElsewhere = !isBrand && !isActiveHere && assignedProfessions.has(sub);
@@ -6469,14 +6469,13 @@ export default function InstagramDemoPage() {
                   onMouseEnter={(e) => { if (!disabled && !isActiveHere && !isOwned) { e.currentTarget.style.borderColor = C.primary; e.currentTarget.style.background = C.surfaceAlt; } }}
                   onMouseLeave={(e) => { if (!isActiveHere && !isOwned) { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = C.card; } }}
                 >
-                  {/* Skin image or fallback abbreviation */}
-                  {stickerSrc ? (
-                    <img src={stickerSrc} alt={sub} style={{ width: '56px', height: '56px', objectFit: 'contain', borderRadius: '8px' }} />
-                  ) : (
-                    <div style={{ width: '56px', height: '56px', borderRadius: '8px', background: `${badgeColor}20`, border: `1px solid ${badgeColor}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: badgeColor, fontSize: '16px', fontWeight: 800 }}>
-                      {abbr}
-                    </div>
-                  )}
+                  {/* Skin sticker — auto-derives path from profession name, falls back to abbreviation */}
+                  <img
+                    src={stickerSrc}
+                    alt={sub}
+                    style={{ width: '56px', height: '56px', objectFit: 'contain', borderRadius: '8px' }}
+                    onError={(e) => { const el = e.currentTarget; const fallback = document.createElement('div'); fallback.style.cssText = `width:56px;height:56px;border-radius:8px;background:${badgeColor}20;border:1px solid ${badgeColor}40;display:flex;align-items:center;justify-content:center;color:${badgeColor};font-size:16px;font-weight:800`; fallback.textContent = abbr; el.replaceWith(fallback); }}
+                  />
                   <span style={{ fontSize: '12px', fontWeight: 600, textAlign: 'center', lineHeight: 1.3 }}>{sub}</span>
                   {(isActiveHere || isOwned) && (
                     <div style={{ position: 'absolute', top: '6px', right: '6px' }}>
