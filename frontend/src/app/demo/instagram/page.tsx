@@ -928,6 +928,24 @@ export default function InstagramDemoPage() {
   const [brandApprovalPhase, setBrandApprovalPhase] = useState<BrandApprovalPhase>('accepted');
   const [dealUploadSimulated, setDealUploadSimulated] = useState(false);
   const [completedDeals, setCompletedDeals] = useState<Array<{id:number;brand:string;amount:number;completedAt:string;deliverable:string;}>>([]);
+  // Deliverable checklist tracking (per-deliverable status)
+  const [deliverableStatuses, setDeliverableStatuses] = useState<Record<number, 'pending'|'uploaded'|'approved'>>({});
+  // Deal cancellation
+  const [showCancelDealModal, setShowCancelDealModal] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+  // Deal rating (post-completion)
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [dealRating, setDealRating] = useState(0);
+  const [dealRatingComment, setDealRatingComment] = useState('');
+  const [ratingSubmitted, setRatingSubmitted] = useState(false);
+  // Brand-side rating
+  const [brandShowRatingModal, setBrandShowRatingModal] = useState(false);
+  const [brandDealRating, setBrandDealRating] = useState(0);
+  const [brandRatingComment, setBrandRatingComment] = useState('');
+  const [brandRatingSubmitted, setBrandRatingSubmitted] = useState(false);
+  // Payment milestone tracking
+  type MilestoneStatus = 'pending'|'released';
+  const [paymentMilestones, setPaymentMilestones] = useState<Record<string, MilestoneStatus>>({ advance: 'pending', upload: 'pending', approval: 'pending' });
   // Gap 5: level-up
   const [showLevelUpModal, setShowLevelUpModal] = useState(false);
   const [levelUpFrom, setLevelUpFrom] = useState(1);
@@ -2407,9 +2425,22 @@ export default function InstagramDemoPage() {
                                             <span style={{ fontFamily: 'monospace' }}>{refId}</span> · {signedAt}
                                           </div>
                                         </div>
-                                        <button onClick={() => setDealRoomPhase('chatroom')} style={{ width: '100%', background: C.primary, border: 'none', padding: '10px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}>
-                                          Open Chat
-                                        </button>
+                                        {/* Deadline & Rights summary */}
+                                        <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', padding:'10px', marginBottom:'10px' }}>
+                                          {opp.deadline && (
+                                            <div style={{ fontSize:'11px', color:C.text, marginBottom:'3px' }}>Deadline: <strong>{new Date(opp.deadline).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' })}</strong></div>
+                                          )}
+                                          <div style={{ fontSize:'11px', color:C.text, marginBottom:'3px' }}>Usage rights: <strong>{opp.usageRights || `${opp.revisionLimit * 30} days`}</strong></div>
+                                          <div style={{ fontSize:'11px', color:C.text }}>Exclusivity: <strong>{opp.exclusivity || 'None'}</strong></div>
+                                        </div>
+                                        <div style={{ display:'flex', gap:'8px' }}>
+                                          <button onClick={() => setDealRoomPhase('chatroom')} style={{ flex:2, background: C.primary, border: 'none', padding: '10px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}>
+                                            Open Chat
+                                          </button>
+                                          <button onClick={() => setShowCancelDealModal(true)} style={{ flex:1, background:'none', border:`1px solid rgba(239,68,68,0.3)`, padding:'10px', borderRadius:'8px', color:'#ef4444', fontSize:'12px', cursor:'pointer', fontWeight:500 }}>
+                                            Cancel
+                                          </button>
+                                        </div>
                                       </>
                                     );
                                   })()}
@@ -2604,31 +2635,115 @@ export default function InstagramDemoPage() {
                                     </>
                                   )}
 
-                                  {dealRoomPhase === 'softhold' && creatorDealLifecycle === 'deliverables' && (
+                                  {dealRoomPhase === 'softhold' && creatorDealLifecycle === 'deliverables' && (() => {
+                                    const agreedPrice = parseInt(dealCounterAmount || dealOfferAmount || '5000') || 5000;
+                                    const advPct = advancePercent;
+                                    const uploadPct = Math.round((100 - advancePercent) * 0.6);
+                                    const approvalPct = 100 - advPct - uploadPct;
+                                    const oppDeliverables = opp.deliverables?.length ? opp.deliverables : [{ format: 'Instagram Reel', count: 1 }];
+                                    const deadlineStr = opp.deadline ? new Date(opp.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : null;
+                                    const daysLeft = opp.deadline ? Math.ceil((new Date(opp.deadline).getTime() - Date.now()) / 86400000) : null;
+                                    const allUploaded = oppDeliverables.every((_d: {format:string;count:number}, i: number) => deliverableStatuses[i] === 'uploaded' || deliverableStatuses[i] === 'approved');
+                                    return (
                                     <>
                                       <div style={{ fontSize:'11px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.6px', marginBottom:'10px' }}>Upload Deliverables</div>
-                                      <div style={{ background:C.bg, borderRadius:'8px', padding:'12px', border:`1px solid ${C.border}`, marginBottom:'12px' }}>
-                                        <div style={{ fontSize:'12px', fontWeight:600, color:C.text, marginBottom:'4px' }}>Deliverable: 1 x Instagram Reel</div>
-                                        <div style={{ fontSize:'11px', color:C.textMuted }}>Format: MP4, max 50MB</div>
+
+                                      {/* Deadline countdown */}
+                                      {deadlineStr && (
+                                        <div style={{ background: daysLeft !== null && daysLeft <= 3 ? 'rgba(239,68,68,0.08)' : C.bg, border: `1px solid ${daysLeft !== null && daysLeft <= 3 ? 'rgba(239,68,68,0.3)' : C.border}`, borderRadius:'8px', padding:'10px', marginBottom:'10px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                                          <div>
+                                            <div style={{ fontSize:'10px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.4px' }}>Deadline</div>
+                                            <div style={{ fontSize:'13px', fontWeight:600, color:C.text }}>{deadlineStr}</div>
+                                          </div>
+                                          {daysLeft !== null && (
+                                            <div style={{ fontSize:'12px', fontWeight:700, color: daysLeft <= 3 ? '#ef4444' : daysLeft <= 7 ? '#f59e0b' : C.success }}>
+                                              {daysLeft <= 0 ? 'Overdue' : `${daysLeft}d left`}
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
+
+                                      {/* Usage rights & exclusivity */}
+                                      <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', padding:'10px', marginBottom:'10px' }}>
+                                        <div style={{ fontSize:'10px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.4px', marginBottom:'6px' }}>Rights & Exclusivity</div>
+                                        <div style={{ fontSize:'11px', color:C.text, marginBottom:'3px' }}>Usage rights: <strong>{opp.usageRights || `${opp.revisionLimit * 30} days`}</strong></div>
+                                        <div style={{ fontSize:'11px', color:C.text, marginBottom:'3px' }}>Exclusivity: <strong>{opp.exclusivity || 'None'}</strong></div>
+                                        <div style={{ fontSize:'11px', color:C.text }}>Revision limit: <strong>{opp.revisionLimit} round{opp.revisionLimit !== 1 ? 's' : ''}</strong></div>
                                       </div>
+
+                                      {/* Per-deliverable checklist */}
+                                      <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', padding:'10px', marginBottom:'10px' }}>
+                                        <div style={{ fontSize:'10px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.4px', marginBottom:'8px' }}>Deliverables ({oppDeliverables.reduce((a: number, d: {format:string;count:number}) => a + d.count, 0)} items)</div>
+                                        {oppDeliverables.map((d, di) => {
+                                          const status = deliverableStatuses[di] || 'pending';
+                                          return (
+                                            <div key={di} style={{ display:'flex', alignItems:'center', gap:'8px', padding:'8px', background: status === 'uploaded' ? 'rgba(0,102,204,0.05)' : status === 'approved' ? 'rgba(46,125,50,0.05)' : 'transparent', borderRadius:'6px', marginBottom:'4px', border:`1px solid ${status === 'approved' ? 'rgba(46,125,50,0.2)' : status === 'uploaded' ? 'rgba(0,102,204,0.2)' : C.border}` }}>
+                                              <div style={{ width:'20px', height:'20px', borderRadius:'5px', background: status === 'approved' ? C.success : status === 'uploaded' ? C.primary : C.border, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                                                {status !== 'pending' ? <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg> : <span style={{ fontSize:'10px', color:'#fff', fontWeight:700 }}>{di + 1}</span>}
+                                              </div>
+                                              <div style={{ flex:1 }}>
+                                                <div style={{ fontSize:'12px', fontWeight:600, color:C.text }}>{d.count}x {d.format}</div>
+                                                <div style={{ fontSize:'10px', color:C.textMuted }}>{status === 'approved' ? 'Approved' : status === 'uploaded' ? 'Submitted — awaiting review' : 'Not uploaded'}</div>
+                                              </div>
+                                              {status === 'pending' && (
+                                                <button onClick={() => setDeliverableStatuses(prev => ({ ...prev, [di]: 'uploaded' }))} style={{ background:C.primary, border:'none', borderRadius:'6px', padding:'4px 10px', color:'#fff', fontSize:'10px', fontWeight:600, cursor:'pointer' }}>Upload</button>
+                                              )}
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+
+                                      {/* Payment milestone tracker */}
+                                      <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', padding:'10px', marginBottom:'10px' }}>
+                                        <div style={{ fontSize:'10px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.4px', marginBottom:'8px' }}>Payment Milestones</div>
+                                        {[
+                                          { key: 'advance' as const, label: 'Advance', pct: advPct, color: C.success },
+                                          { key: 'upload' as const, label: 'On upload', pct: uploadPct, color: C.primary },
+                                          { key: 'approval' as const, label: 'On approval', pct: approvalPct, color: '#f59e0b' },
+                                        ].map(m => (
+                                          <div key={m.key} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'6px 0', borderBottom:`1px solid ${C.border}` }}>
+                                            <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
+                                              <div style={{ width:'8px', height:'8px', borderRadius:'50%', background: paymentMilestones[m.key] === 'released' ? C.success : m.color, opacity: paymentMilestones[m.key] === 'released' ? 1 : 0.4 }} />
+                                              <span style={{ fontSize:'11px', color:C.text, fontWeight:500 }}>{m.label}</span>
+                                            </div>
+                                            <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
+                                              <span style={{ fontSize:'12px', fontWeight:700, color: paymentMilestones[m.key] === 'released' ? C.success : C.text }}>${Math.round(agreedPrice * m.pct / 100).toLocaleString()}</span>
+                                              <span style={{ fontSize:'9px', fontWeight:600, color: paymentMilestones[m.key] === 'released' ? C.success : C.textMuted, textTransform:'uppercase' }}>{paymentMilestones[m.key] === 'released' ? 'Paid' : 'Pending'}</span>
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+
                                       <div style={{ background:'rgba(46,125,50,0.06)', border:'1px solid rgba(46,125,50,0.2)', borderRadius:'8px', padding:'10px', marginBottom:'12px', fontSize:'11px', color:C.textSecondary }}>
-                                        Brand payment on-hold: ${parseInt(dealCounterAmount || '5000').toLocaleString()} — released on approval
+                                        Brand payment on-hold: ${agreedPrice.toLocaleString()} — released per milestones above
                                       </div>
-                                      {!dealUploadSimulated ? (
-                                        <button onClick={() => { setDealUploadSimulated(true); setCreatorDealLifecycle('submitted'); }} style={{ width:'100%', background:C.primary, border:'none', padding:'10px', borderRadius:'8px', color:'#fff', fontWeight:600, cursor:'pointer', fontSize:'13px' }}>
-                                          Simulate Upload
+
+                                      {/* Submit all — only when all deliverables uploaded */}
+                                      {allUploaded && (
+                                        <button onClick={() => { setCreatorDealLifecycle('submitted'); setPaymentMilestones(prev => ({ ...prev, advance: 'released', upload: 'released' })); }} style={{ width:'100%', background:C.primary, border:'none', padding:'10px', borderRadius:'8px', color:'#fff', fontWeight:600, cursor:'pointer', fontSize:'13px', marginBottom:'8px' }}>
+                                          Submit for Review
                                         </button>
-                                      ) : null}
+                                      )}
+
+                                      {/* Cancel deal */}
+                                      <button onClick={() => setShowCancelDealModal(true)} style={{ width:'100%', background:'none', border:`1px solid rgba(239,68,68,0.3)`, padding:'8px', borderRadius:'8px', color:'#ef4444', fontSize:'11px', cursor:'pointer', fontWeight:500 }}>
+                                        Cancel Deal
+                                      </button>
                                     </>
-                                  )}
+                                    );
+                                  })()}
 
                                   {dealRoomPhase === 'softhold' && creatorDealLifecycle === 'submitted' && (
                                     <>
                                       <div style={{ background:'rgba(0,102,204,0.06)', border:`1px solid rgba(0,102,204,0.2)`, borderRadius:'8px', padding:'12px', marginBottom:'12px' }}>
-                                        <div style={{ fontSize:'13px', fontWeight:700, color:C.text, marginBottom:'4px' }}>Deliverable Submitted</div>
-                                        <div style={{ fontSize:'11px', color:C.textSecondary }}>Waiting for brand approval — typically within 48h.</div>
+                                        <div style={{ fontSize:'13px', fontWeight:700, color:C.text, marginBottom:'4px' }}>Deliverables Submitted</div>
+                                        <div style={{ fontSize:'11px', color:C.textSecondary, marginBottom:'8px' }}>Waiting for brand approval — typically within 48h.</div>
+                                        {/* Payment milestone status */}
+                                        <div style={{ fontSize:'10px', color:C.textMuted, marginBottom:'2px' }}>Advance: <span style={{ color:C.success, fontWeight:600 }}>Paid</span></div>
+                                        <div style={{ fontSize:'10px', color:C.textMuted, marginBottom:'2px' }}>Upload milestone: <span style={{ color:C.success, fontWeight:600 }}>Paid</span></div>
+                                        <div style={{ fontSize:'10px', color:C.textMuted }}>Approval milestone: <span style={{ color:'#f59e0b', fontWeight:600 }}>Pending brand approval</span></div>
                                       </div>
-                                      <button onClick={() => { setCreatorDealLifecycle('approved'); handleDealComplete(parseInt(dealCounterAmount || '5000'), 'Brand', '1x Instagram Reel'); }} style={{ width:'100%', background:'none', border:`1px solid ${C.border}`, padding:'8px', borderRadius:'8px', color:C.textMuted, fontSize:'11px', cursor:'pointer' }}>
+                                      <button onClick={() => { setCreatorDealLifecycle('approved'); setPaymentMilestones({ advance:'released', upload:'released', approval:'released' }); handleDealComplete(parseInt(dealCounterAmount || '5000'), opp.brand || 'Brand', opp.deliverables?.map((d: {count:number;format:string}) => `${d.count}x ${d.format}`).join(', ') || '1x Instagram Reel'); }} style={{ width:'100%', background:'none', border:`1px solid ${C.border}`, padding:'8px', borderRadius:'8px', color:C.textMuted, fontSize:'11px', cursor:'pointer' }}>
                                         Simulate: Brand approved
                                       </button>
                                     </>
@@ -2641,12 +2756,36 @@ export default function InstagramDemoPage() {
                                           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={C.textSecondary} strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
                                         </div>
                                         <div style={{ fontSize:'15px', fontWeight:700, color:C.text, marginBottom:'4px' }}>Deal Complete</div>
-                                        <div style={{ fontSize:'12px', color:C.textSecondary, marginBottom:'16px' }}>Your deliverable was approved.</div>
+                                        <div style={{ fontSize:'12px', color:C.textSecondary, marginBottom:'16px' }}>All deliverables approved. All milestones paid.</div>
                                         <div style={{ background:'rgba(46,125,50,0.06)', border:'1px solid rgba(46,125,50,0.2)', borderRadius:'8px', padding:'12px', marginBottom:'14px' }}>
-                                          <div style={{ fontSize:'11px', color:C.textMuted, marginBottom:'2px' }}>Earnings</div>
+                                          <div style={{ fontSize:'11px', color:C.textMuted, marginBottom:'2px' }}>Total Earnings</div>
                                           <div style={{ fontSize:'22px', fontWeight:800, color:C.success }}>${parseInt(dealCounterAmount || '5000').toLocaleString()}</div>
+                                          <div style={{ fontSize:'10px', color:C.textMuted, marginTop:'4px' }}>Advance + Upload + Approval milestones</div>
                                         </div>
-                                        <button onClick={() => { if (activeDealKey) { setDealStates(prev => { const next = {...prev}; delete next[activeDealKey]; return next; }); } setNegotiatingOpp(null); setCreatorDealLifecycle('checklist'); setDealUploadSimulated(false); }} style={{ width:'100%', background:C.primary, border:'none', padding:'10px', borderRadius:'8px', color:'#fff', fontWeight:600, cursor:'pointer', fontSize:'13px' }}>
+
+                                        {/* Rating section */}
+                                        {!ratingSubmitted ? (
+                                          <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:'10px', padding:'14px', marginBottom:'14px', textAlign:'left' }}>
+                                            <div style={{ fontSize:'11px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.4px', marginBottom:'8px' }}>Rate this brand</div>
+                                            <div style={{ display:'flex', gap:'6px', marginBottom:'10px', justifyContent:'center' }}>
+                                              {[1,2,3,4,5].map(star => (
+                                                <button key={star} onClick={() => setDealRating(star)} style={{ background:'none', border:'none', cursor:'pointer', fontSize:'24px', color: star <= dealRating ? '#f59e0b' : C.border, transition:'color 0.1s', padding:'2px' }}>
+                                                  {star <= dealRating ? '\u2605' : '\u2606'}
+                                                </button>
+                                              ))}
+                                            </div>
+                                            <textarea value={dealRatingComment} onChange={e => setDealRatingComment(e.target.value)} placeholder="How was working with this brand?" rows={2} style={{ width:'100%', background:C.card, border:`1px solid ${C.border}`, borderRadius:'6px', padding:'8px', fontSize:'12px', color:C.text, resize:'none', boxSizing:'border-box' }} />
+                                            <button onClick={() => { setRatingSubmitted(true); setPurchaseToast('Rating submitted'); setTimeout(() => setPurchaseToast(null), 3000); }} disabled={dealRating === 0} style={{ width:'100%', background: dealRating > 0 ? C.primary : C.border, border:'none', padding:'8px', borderRadius:'6px', color:'#fff', fontWeight:600, fontSize:'12px', cursor: dealRating > 0 ? 'pointer' : 'not-allowed', marginTop:'8px', opacity: dealRating > 0 ? 1 : 0.5 }}>
+                                              Submit Rating
+                                            </button>
+                                          </div>
+                                        ) : (
+                                          <div style={{ background:'rgba(0,102,204,0.06)', border:`1px solid rgba(0,102,204,0.2)`, borderRadius:'8px', padding:'10px', marginBottom:'14px', fontSize:'12px', color:C.textSecondary }}>
+                                            Rating submitted: {dealRating}/5
+                                          </div>
+                                        )}
+
+                                        <button onClick={() => { if (activeDealKey) { setDealStates(prev => { const next = {...prev}; delete next[activeDealKey]; return next; }); } setNegotiatingOpp(null); setCreatorDealLifecycle('checklist'); setDealUploadSimulated(false); setDeliverableStatuses({}); setPaymentMilestones({ advance:'pending', upload:'pending', approval:'pending' }); setDealRating(0); setDealRatingComment(''); setRatingSubmitted(false); }} style={{ width:'100%', background:C.primary, border:'none', padding:'10px', borderRadius:'8px', color:'#fff', fontWeight:600, cursor:'pointer', fontSize:'13px' }}>
                                           Withdraw to Bank
                                         </button>
                                       </div>
@@ -3069,6 +3208,26 @@ export default function InstagramDemoPage() {
                           <div style={{ display:'flex', gap:'8px' }}>
                             <button onClick={() => { setShowBatchSendModal(false); setLastCreatedCampaignId(null); setBatchSendCreatorIds(new Set()); }} style={{ flex:1, background:'none', border:`1px solid ${C.border}`, borderRadius:'8px', padding:'11px', color:C.text, fontWeight:700, fontSize:'13px', cursor:'pointer' }}>Skip</button>
                             <button onClick={() => { batchSendCreatorIds.forEach(idx => { const creator = BRAND_MARKETPLACE_CREATORS[idx]; const app: SharedApplication = { id:Date.now() + idx, campaignId:lastCreatedCampaignId ?? 0, campaignTitle:campaigns.find(c => c.id === lastCreatedCampaignId)?.title || 'Campaign', creatorProfession:creator.valueSkin || '', creatorHandle:creator.handle || '', creatorName:creator.name, status:'pending', appliedAt:new Date().toISOString() }; firebaseCreateApplication(app); firebaseSendNotification(creator.handle || '', 'campaign', `${profileName} invited you to: ${campaigns.find(c => c.id === lastCreatedCampaignId)?.title || 'Campaign'}`); }); setPurchaseToast(`Campaign sent to ${batchSendCreatorIds.size} creator${batchSendCreatorIds.size !== 1 ? 's' : ''}`); setTimeout(() => setPurchaseToast(null), 3000); setShowBatchSendModal(false); setLastCreatedCampaignId(null); setBatchSendCreatorIds(new Set()); }} style={{ flex:1, background:batchSendCreatorIds.size > 0 ? C.primary : C.border, border:'none', borderRadius:'8px', padding:'11px', color:'#fff', fontWeight:700, fontSize:'13px', cursor: batchSendCreatorIds.size > 0 ? 'pointer' : 'not-allowed', opacity: batchSendCreatorIds.size > 0 ? 1 : 0.5 }}>Send to {batchSendCreatorIds.size} Creator{batchSendCreatorIds.size !== 1 ? 's' : ''}</button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Cancel Deal Modal */}
+                    {showCancelDealModal && (
+                      <div style={{ position:'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.6)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:9999, padding:'16px' }}>
+                        <div style={{ background:C.surface, borderRadius:'14px', padding:'20px', maxWidth:'380px', width:'100%', border:`1px solid ${C.border}` }}>
+                          <div style={{ fontSize:'15px', fontWeight:700, color:C.text, marginBottom:'4px' }}>Cancel this deal?</div>
+                          <div style={{ fontSize:'12px', color:C.textSecondary, marginBottom:'14px' }}>This action cannot be undone. The brand will be notified.</div>
+                          <div style={{ fontSize:'11px', fontWeight:600, color:C.textMuted, marginBottom:'6px' }}>Reason</div>
+                          {['Scheduling conflict', 'Terms changed after agreement', 'Found better opportunity', 'Brand unresponsive', 'Personal reasons', 'Other'].map(reason => (
+                            <button key={reason} onClick={() => setCancelReason(reason)} style={{ display:'block', width:'100%', textAlign:'left', background: cancelReason === reason ? `${C.primary}12` : C.card, border: `1px solid ${cancelReason === reason ? C.primary : C.border}`, borderRadius:'8px', padding:'9px 12px', fontSize:'12px', color:C.text, cursor:'pointer', marginBottom:'4px', fontWeight: cancelReason === reason ? 600 : 400 }}>
+                              {reason}
+                            </button>
+                          ))}
+                          <div style={{ display:'flex', gap:'8px', marginTop:'14px' }}>
+                            <button onClick={() => { setShowCancelDealModal(false); setCancelReason(''); }} style={{ flex:1, background:'none', border:`1px solid ${C.border}`, borderRadius:'8px', padding:'10px', color:C.text, fontWeight:600, fontSize:'13px', cursor:'pointer' }}>Keep Deal</button>
+                            <button onClick={() => { if (activeDealKey) { setDealStates(prev => { const next = {...prev}; delete next[activeDealKey]; return next; }); } setNegotiatingOpp(null); setCreatorDealLifecycle('checklist'); setDealUploadSimulated(false); setDeliverableStatuses({}); setPaymentMilestones({ advance:'pending', upload:'pending', approval:'pending' }); setShowCancelDealModal(false); setCancelReason(''); setPurchaseToast('Deal cancelled'); setTimeout(() => setPurchaseToast(null), 3000); }} disabled={!cancelReason} style={{ flex:1, background: cancelReason ? '#ef4444' : C.border, border:'none', borderRadius:'8px', padding:'10px', color:'#fff', fontWeight:600, fontSize:'13px', cursor: cancelReason ? 'pointer' : 'not-allowed', opacity: cancelReason ? 1 : 0.5 }}>Cancel Deal</button>
                           </div>
                         </div>
                       </div>
@@ -4020,10 +4179,28 @@ export default function InstagramDemoPage() {
                                       </div>
                                       <div style={{ fontSize:'14px', fontWeight:700, color:C.text, marginBottom:'4px' }}>Deal Complete</div>
                                       <div style={{ fontSize:'12px', color:C.textSecondary, marginBottom:'12px' }}>Payment released: ${parseInt(simulatedCounterAmount).toLocaleString()}</div>
-                                      <div style={{ display:'flex', gap:'6px' }}>
-                                        <button onClick={() => setPurchaseToast('Rating submitted — thank you')} style={{ flex:1, background:C.surfaceAlt, border:`1px solid ${C.border}`, padding:'8px', borderRadius:'8px', color:C.text, fontSize:'12px', cursor:'pointer' }}>Rate Creator</button>
-                                        <button onClick={() => { setNegotiatingCreator(null); setBrandDealPhase('brief'); setBrandApprovalPhase('accepted'); }} style={{ flex:1, background:C.primary, border:'none', padding:'8px', borderRadius:'8px', color:'#fff', fontWeight:600, fontSize:'12px', cursor:'pointer' }}>Done</button>
-                                      </div>
+                                      {/* Brand rating for creator */}
+                                      {!brandRatingSubmitted ? (
+                                        <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:'10px', padding:'14px', marginBottom:'12px', textAlign:'left' }}>
+                                          <div style={{ fontSize:'11px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.4px', marginBottom:'8px' }}>Rate this creator</div>
+                                          <div style={{ display:'flex', gap:'6px', marginBottom:'10px', justifyContent:'center' }}>
+                                            {[1,2,3,4,5].map(star => (
+                                              <button key={star} onClick={() => setBrandDealRating(star)} style={{ background:'none', border:'none', cursor:'pointer', fontSize:'24px', color: star <= brandDealRating ? '#f59e0b' : C.border, transition:'color 0.1s', padding:'2px' }}>
+                                                {star <= brandDealRating ? '\u2605' : '\u2606'}
+                                              </button>
+                                            ))}
+                                          </div>
+                                          <textarea value={brandRatingComment} onChange={e => setBrandRatingComment(e.target.value)} placeholder="How was working with this creator?" rows={2} style={{ width:'100%', background:C.card, border:`1px solid ${C.border}`, borderRadius:'6px', padding:'8px', fontSize:'12px', color:C.text, resize:'none', boxSizing:'border-box' }} />
+                                          <button onClick={() => { setBrandRatingSubmitted(true); setPurchaseToast('Rating submitted'); setTimeout(() => setPurchaseToast(null), 3000); }} disabled={brandDealRating === 0} style={{ width:'100%', background: brandDealRating > 0 ? C.primary : C.border, border:'none', padding:'8px', borderRadius:'6px', color:'#fff', fontWeight:600, fontSize:'12px', cursor: brandDealRating > 0 ? 'pointer' : 'not-allowed', marginTop:'8px', opacity: brandDealRating > 0 ? 1 : 0.5 }}>
+                                            Submit Rating
+                                          </button>
+                                        </div>
+                                      ) : (
+                                        <div style={{ background:'rgba(0,102,204,0.06)', border:`1px solid rgba(0,102,204,0.2)`, borderRadius:'8px', padding:'10px', marginBottom:'12px', fontSize:'12px', color:C.textSecondary }}>
+                                          Rating submitted: {brandDealRating}/5
+                                        </div>
+                                      )}
+                                      <button onClick={() => { setNegotiatingCreator(null); setBrandDealPhase('brief'); setBrandApprovalPhase('accepted'); setBrandDealRating(0); setBrandRatingComment(''); setBrandRatingSubmitted(false); }} style={{ width:'100%', background:C.primary, border:'none', padding:'8px', borderRadius:'8px', color:'#fff', fontWeight:600, fontSize:'12px', cursor:'pointer' }}>Done</button>
                                     </div>
                                   )}
                                 </>
