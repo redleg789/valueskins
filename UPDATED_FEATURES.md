@@ -326,3 +326,16 @@ If either party rejects or withdraws at any point in the negotiation or deal lif
 - Repeat ghosting (exiting without reason) should flag the account and reduce trust score
 - Rejection records are stored per deal room for audit purposes and visible to platform moderators
 
+
+### Circular Skin Badges with XP Ring
+- Skin badges are now circular (story-ring style) instead of boxy rectangles
+- Each badge shows an XP progress arc around it — ring fills proportional to current level (1–5)
+- Sticker images render as circles, fallback abbreviations display on a gradient circle
+- Consistent across profile, XP modal, marketplace, and deal rooms
+
+### Creator-Controlled Skin Placement
+- Creators can choose where their ValueSkin badges appear on their profile
+- 4 placement options: Next to name (default), Above stats, Below stats, Below bio
+- Placement chooser accessible from the Avatar Style panel on the profile
+- Above/below stats and below bio use larger skin badges for better visibility
+- Placement preference persisted across sessions
