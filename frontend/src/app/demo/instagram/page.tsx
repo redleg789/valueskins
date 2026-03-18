@@ -847,12 +847,14 @@ export default function InstagramDemoPage({ roomId = null, userRole = null, user
   const [collabRequestOpen, setCollabRequestOpen] = useState<number | null>(null);
   const [collabIdea, setCollabIdea] = useState('');
   const [collabFormat, setCollabFormat] = useState('');
+  const [collabBudget, setCollabBudget] = useState('');
   const [collabPaid, setCollabPaid] = useState(false);
   const [collabNegotiable, setCollabNegotiable] = useState(true);
   const [collabSentNames, setCollabSentNames] = useState<string[]>([]);
   const [collabTargetSkin, setCollabTargetSkin] = useState<string | null>(null);
   const [collabView, setCollabView] = useState<'browse' | 'sent'>('browse');
   const [collabCompFilter, setCollabCompFilter] = useState<'all' | 'paid' | 'unpaid' | 'barter'>('all');
+  const [c2cDealType, setC2cDealType] = useState<'c2c'>('c2c');
   const [firebaseNotifications, setFirebaseNotifications] = useState<Array<{id: string; type: 'campaign' | 'application' | 'message'; message: string; createdAt: number; read: boolean}>>([]);
 
   // Brand field filter — which ValueSkin profession the brand wants to target
@@ -2724,9 +2726,46 @@ export default function InstagramDemoPage({ roomId = null, userRole = null, user
                                     <button onClick={() => setCollabPaid(true)} style={{ flex: 1, padding: '7px', borderRadius: '8px', border: `1px solid ${collabPaid ? C.primary : C.border}`, background: collabPaid ? `${C.primary}12` : C.bg, color: collabPaid ? C.primary : C.textSecondary, fontWeight: 600, fontSize: '11px', cursor: 'pointer' }}>Paid</button>
                                     <button onClick={() => setCollabNegotiable(p => !p)} style={{ flex: 1, padding: '7px', borderRadius: '8px', border: `1px solid ${collabNegotiable ? C.accent : C.border}`, background: collabNegotiable ? 'rgba(94,106,210,0.1)' : C.bg, color: collabNegotiable ? C.accent : C.textSecondary, fontWeight: 600, fontSize: '11px', cursor: 'pointer' }}>Negotiable</button>
                                   </div>
+                                  {collabPaid && (
+                                    <div style={{ marginBottom: '12px' }}>
+                                      <div style={{ fontSize: '11px', color: C.textMuted, fontWeight: 600, marginBottom: '4px' }}>Budget</div>
+                                      <input
+                                        type="text"
+                                        placeholder="e.g. $1500"
+                                        value={collabBudget}
+                                        onChange={e => setCollabBudget(e.target.value)}
+                                        style={{ width: '100%', background: C.bg, border: `1px solid ${C.border}`, borderRadius: '8px', color: C.text, padding: '7px 10px', fontSize: '12px', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+                                      />
+                                    </div>
+                                  )}
                                   <button
-                                    onClick={() => { if (collabIdea.trim()) { setCollabSentNames(p => [...p, creator.name]); setCollabRequestOpen(null); const msg = `Collab request: ${collabIdea.trim()} (${collabFormat || 'format TBD'}, ${collabPaid ? 'Paid' : 'Unpaid'})`; setCollabIdea(''); setCollabFormat(''); if (roomId) { firebaseSendNotification(creator.handle || '', 'message', msg); } setPurchaseToast('Collab request sent'); setTimeout(() => setPurchaseToast(null), 3000); } }}
-                                    style={{ width: '100%', background: collabIdea.trim() ? C.accent : C.border, border: 'none', padding: '9px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: collabIdea.trim() ? 'pointer' : 'not-allowed', fontSize: '13px' }}
+                                    onClick={() => {
+                                      if (collabIdea.trim() && (!collabPaid || collabBudget.trim())) {
+                                        const c2cKey = `${profileName}:${creator.name}`;
+                                        const c2cDeal: Partial<DealState> = {
+                                          phase: 'chatroom',
+                                          intent: 'explore',
+                                          briefFilled: true,
+                                          briefTitle: collabIdea.trim(),
+                                          offerAmount: collabBudget || '0',
+                                          counterAmount: '',
+                                          brandResponseAmount: '',
+                                          chatMessages: [],
+                                          chatInput: '',
+                                          performanceClause: false,
+                                          advancePercent: 50,
+                                        };
+                                        setDealStates(prev => ({ ...prev, [c2cKey]: { ...getOrCreateDeal(c2cKey), ...c2cDeal } }));
+                                        setCollabSentNames(p => [...p, creator.name]);
+                                        setCollabRequestOpen(null);
+                                        const msg = `C2C Collab: ${collabIdea.trim()} (${collabFormat || 'format TBD'}, ${collabPaid ? `$${collabBudget}` : 'Unpaid'})`;
+                                        setCollabIdea(''); setCollabFormat(''); setCollabBudget('');
+                                        if (roomId) { firebaseSendNotification(creator.handle || '', 'message', msg); }
+                                        setPurchaseToast('Collab request sent');
+                                        setTimeout(() => setPurchaseToast(null), 3000);
+                                      }
+                                    }}
+                                    style={{ width: '100%', background: collabIdea.trim() && (!collabPaid || collabBudget.trim()) ? C.accent : C.border, border: 'none', padding: '9px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: collabIdea.trim() && (!collabPaid || collabBudget.trim()) ? 'pointer' : 'not-allowed', fontSize: '13px' }}
                                   >
                                     Send Collab Request
                                   </button>
