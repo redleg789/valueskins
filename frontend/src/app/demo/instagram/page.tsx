@@ -933,7 +933,8 @@ export default function InstagramDemoPage() {
   const [creatorDealLifecycle, setCreatorDealLifecycle] = useState<CreatorDealLifecycle>('checklist');
   const [brandApprovalPhase, setBrandApprovalPhase] = useState<BrandApprovalPhase>('accepted');
   const [dealUploadSimulated, setDealUploadSimulated] = useState(false);
-  const [completedDeals, setCompletedDeals] = useState<Array<{id:number;brand:string;amount:number;completedAt:string;deliverable:string;}>>([]);
+  type CompletedDeal = { id:number; brand:string; amount:number; completedAt:string; deliverable:string; usageRightsDays?:number; exclusivityDays?:number; exclusivitySkin?:string; disputed?:boolean; disputeReason?:string; disputeStatus?:'filed'|'under_review'|'resolved'; contractSignedAt?:string; };
+  const [completedDeals, setCompletedDeals] = useState<CompletedDeal[]>([]);
   // Deliverable checklist tracking (per-deliverable status)
   const [deliverableStatuses, setDeliverableStatuses] = useState<Record<number, 'pending'|'uploaded'|'approved'>>({});
   // Deal cancellation
@@ -952,6 +953,18 @@ export default function InstagramDemoPage() {
   // Payment milestone tracking
   type MilestoneStatus = 'pending'|'released';
   const [paymentMilestones, setPaymentMilestones] = useState<Record<string, MilestoneStatus>>({ advance: 'pending', upload: 'pending', approval: 'pending' });
+  // Dispute filing
+  const [showDisputeModal, setShowDisputeModal] = useState<number|null>(null);
+  const [disputeEvidence, setDisputeEvidence] = useState('');
+  // Contract agreement (before finalization)
+  const [contractChecks, setContractChecks] = useState<Record<string, boolean>>({});
+  const [contractSignature, setContractSignature] = useState('');
+  // Exclusivity tracking (active exclusivities from completed deals)
+  const activeExclusivities = completedDeals.filter(d => {
+    if (!d.exclusivityDays || !d.exclusivitySkin) return false;
+    const expiresAt = new Date(d.completedAt).getTime() + d.exclusivityDays * 86400000;
+    return expiresAt > Date.now();
+  });
   // Gap 5: level-up
   const [showLevelUpModal, setShowLevelUpModal] = useState(false);
   const [levelUpFrom, setLevelUpFrom] = useState(1);
@@ -1064,14 +1077,24 @@ export default function InstagramDemoPage() {
     setTimeout(() => setPurchaseToast(null), 3000);
   };
 
-  const handleDealComplete = (earnedAmount: number, brandName: string, deliverable: string, skinProfession?: string) => {
+  // Rate intelligence — market rate range based on skin, followers, engagement
+  const getMarketRate = (skin: string): { low: number; mid: number; high: number } => {
+    const followerK = metrics.followers / 1000;
+    const base = followerK < 10 ? 200 : followerK < 50 ? 800 : followerK < 200 ? 2500 : followerK < 1000 ? 8000 : 25000;
+    const engagementMultiplier = metrics.engagement > 5 ? 1.4 : metrics.engagement > 3 ? 1.15 : 1;
+    const skinMultiplier = ['Software Engineer', 'Doctor', 'Lawyer', 'Investment Banker', 'CEO'].includes(skin) ? 1.5 : ['Actor', 'Musician', 'Professional Athlete'].includes(skin) ? 1.3 : 1;
+    const mid = Math.round(base * engagementMultiplier * skinMultiplier);
+    return { low: Math.round(mid * 0.6), mid, high: Math.round(mid * 1.5) };
+  };
+
+  const handleDealComplete = (earnedAmount: number, brandName: string, deliverable: string, skinProfession?: string, usageRightsDays?: number, exclusivityDays?: number, exclusivitySkin?: string) => {
     const updatedMetrics = {
       ...metrics,
       dealsCompleted: metrics.dealsCompleted + 1,
       avgDealValue: Math.round((metrics.avgDealValue * metrics.dealsCompleted + earnedAmount * 100) / (metrics.dealsCompleted + 1)),
     };
     setMetrics(updatedMetrics);
-    setCompletedDeals(prev => [...prev, { id: Date.now(), brand: brandName, amount: earnedAmount, completedAt: new Date().toLocaleDateString(), deliverable }]);
+    setCompletedDeals(prev => [...prev, { id: Date.now(), brand: brandName, amount: earnedAmount, completedAt: new Date().toLocaleDateString(), deliverable, usageRightsDays, exclusivityDays, exclusivitySkin, contractSignedAt: contractSignature ? new Date().toISOString() : undefined }]);
 
     // Add XP to the skin this deal was completed under
     const targetSkin = skinProfession || selectedMarketplaceSkin || ownedSkins[0]?.profession;
@@ -2334,6 +2357,24 @@ export default function InstagramDemoPage() {
                                           <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Agreed Total</div>
                                           <div style={{ fontSize: '24px', fontWeight: 800, color: C.text }}>${totalPrice.toLocaleString()}</div>
                                           <div style={{ fontSize: '11px', color: C.textSecondary, marginTop: '2px' }}>{opp.type}</div>
+                                          {/* Rate intelligence */}
+                                          {(() => {
+                                            const rate = getMarketRate(selectedMarketplaceSkin || 'Creator');
+                                            const isBelow = totalPrice < rate.low;
+                                            const isAbove = totalPrice > rate.high;
+                                            const isWithin = !isBelow && !isAbove;
+                                            return (
+                                              <div style={{ marginTop:'8px', background: isBelow ? 'rgba(239,68,68,0.08)' : isAbove ? 'rgba(46,125,50,0.08)' : 'rgba(0,102,204,0.06)', border:`1px solid ${isBelow ? 'rgba(239,68,68,0.2)' : isAbove ? 'rgba(46,125,50,0.2)' : 'rgba(0,102,204,0.15)'}`, borderRadius:'6px', padding:'8px' }}>
+                                                <div style={{ fontSize:'10px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.4px', marginBottom:'4px' }}>Market Rate Intelligence</div>
+                                                <div style={{ fontSize:'11px', color:C.text }}>
+                                                  Creators with your profile typically charge <strong>${rate.low.toLocaleString()} — ${rate.high.toLocaleString()}</strong>
+                                                </div>
+                                                <div style={{ fontSize:'11px', fontWeight:600, color: isBelow ? '#ef4444' : isAbove ? C.success : C.primary, marginTop:'2px' }}>
+                                                  {isBelow ? 'This offer is below market rate' : isAbove ? 'This offer is above market rate' : 'This offer is within market range'}
+                                                </div>
+                                              </div>
+                                            );
+                                          })()}
                                         </div>
 
                                         {/* Payment split */}
@@ -2370,8 +2411,46 @@ export default function InstagramDemoPage() {
                                           <span>· Submitted {new Date().toISOString().replace('T', ' ').slice(0, 19)} UTC</span>
                                         </div>
 
+                                        {/* Exclusivity conflict warning */}
+                                        {activeExclusivities.some(d => d.exclusivitySkin === (selectedMarketplaceSkin || '')) && (
+                                          <div style={{ background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.3)', borderRadius:'8px', padding:'10px', marginBottom:'10px' }}>
+                                            <div style={{ fontSize:'11px', fontWeight:700, color:'#ef4444', marginBottom:'3px' }}>Exclusivity Conflict</div>
+                                            <div style={{ fontSize:'11px', color:C.textSecondary, lineHeight:1.4 }}>
+                                              You have an active exclusivity agreement with <strong>{activeExclusivities.find(d => d.exclusivitySkin === selectedMarketplaceSkin)?.brand}</strong> for this skin.
+                                              Accepting this deal may violate that agreement.
+                                            </div>
+                                          </div>
+                                        )}
+
+                                        {/* Contract agreement */}
+                                        <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:'10px', padding:'12px', marginBottom:'10px' }}>
+                                          <div style={{ fontSize:'10px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'8px' }}>Contract Terms</div>
+                                          {[
+                                            { key: 'deliverables', label: `I agree to deliver ${opp.deliverables.map(d => `${d.count}x ${d.format}`).join(', ')} by ${new Date(opp.deadline).toLocaleDateString('en-US', { month:'short', day:'numeric' })}` },
+                                            { key: 'payment', label: `Payment of $${totalPrice.toLocaleString()} split as: ${advPct}% advance, ${uploadPct}% on upload, ${approvalPct}% on approval` },
+                                            { key: 'usage', label: `Brand may use content for ${opp.usageRights || 'agreed period'} per usage rights terms` },
+                                            { key: 'exclusivity', label: `Exclusivity: ${opp.exclusivity || 'None'} — I will not promote competing brands during this period` },
+                                            { key: 'revisions', label: `Up to ${opp.revisionLimit} revision round${opp.revisionLimit !== 1 ? 's' : ''} included at no extra cost` },
+                                          ].map(term => (
+                                            <label key={term.key} style={{ display:'flex', alignItems:'flex-start', gap:'8px', padding:'6px 0', borderBottom:`1px solid ${C.border}`, cursor:'pointer', fontSize:'11px', color:C.text, lineHeight:1.4 }}>
+                                              <input type="checkbox" checked={!!contractChecks[term.key]} onChange={() => setContractChecks(prev => ({ ...prev, [term.key]: !prev[term.key] }))} style={{ marginTop:'2px', accentColor:C.primary, flexShrink:0 }} />
+                                              {term.label}
+                                            </label>
+                                          ))}
+                                          <div style={{ marginTop:'10px' }}>
+                                            <div style={{ fontSize:'10px', color:C.textMuted, marginBottom:'4px' }}>Type your full name to sign</div>
+                                            <input value={contractSignature} onChange={e => setContractSignature(e.target.value)} placeholder={profileName || 'Your Name'} style={{ width:'100%', background:C.card, border:`1px solid ${C.border}`, borderRadius:'6px', padding:'8px', fontSize:'12px', color:C.text, boxSizing:'border-box', fontStyle:'italic' }} />
+                                          </div>
+                                        </div>
+
+                                        {(() => {
+                                          const allChecked = ['deliverables','payment','usage','exclusivity','revisions'].every(k => contractChecks[k]);
+                                          const signed = contractSignature.trim().length >= 2;
+                                          const canAccept = allChecked && signed;
+                                          return (
                                         <div style={{ display: 'flex', gap: '8px' }}>
                                           <button
+                                            disabled={!canAccept}
                                             onClick={() => {
                                               updateDeal(activeDealKey!, { phase: 'accepted', offerAmount: agreedPrice });
                                               const newApp: SharedApplication = {
@@ -2391,13 +2470,15 @@ export default function InstagramDemoPage() {
                                               };
                                               persistApplications([...sharedApplications, newApp]);
                                             }}
-                                            style={{ flex: 2, background: C.success, border: 'none', padding: '11px', borderRadius: '10px', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '13px' }}
+                                            style={{ flex: 2, background: canAccept ? C.success : C.border, border: 'none', padding: '11px', borderRadius: '10px', color: '#fff', fontWeight: 700, cursor: canAccept ? 'pointer' : 'not-allowed', fontSize: '13px', opacity: canAccept ? 1 : 0.5 }}
                                           >Accept Deal</button>
                                           <button
                                             onClick={() => setDealRoomPhase('chatroom')}
                                             style={{ flex: 1, background: 'transparent', border: `1px solid ${C.border}`, padding: '11px', borderRadius: '10px', color: C.textSecondary, fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}
                                           >Back to Chat</button>
                                         </div>
+                                          );
+                                        })()}
                                       </>
                                     );
                                   })()}
@@ -2749,7 +2830,7 @@ export default function InstagramDemoPage() {
                                         <div style={{ fontSize:'10px', color:C.textMuted, marginBottom:'2px' }}>Upload milestone: <span style={{ color:C.success, fontWeight:600 }}>Paid</span></div>
                                         <div style={{ fontSize:'10px', color:C.textMuted }}>Approval milestone: <span style={{ color:'#f59e0b', fontWeight:600 }}>Pending brand approval</span></div>
                                       </div>
-                                      <button onClick={() => { setCreatorDealLifecycle('approved'); setPaymentMilestones({ advance:'released', upload:'released', approval:'released' }); handleDealComplete(parseInt(dealCounterAmount || '5000'), opp.brand || 'Brand', opp.deliverables?.map((d: {count:number;format:string}) => `${d.count}x ${d.format}`).join(', ') || '1x Instagram Reel'); }} style={{ width:'100%', background:'none', border:`1px solid ${C.border}`, padding:'8px', borderRadius:'8px', color:C.textMuted, fontSize:'11px', cursor:'pointer' }}>
+                                      <button onClick={() => { setCreatorDealLifecycle('approved'); setPaymentMilestones({ advance:'released', upload:'released', approval:'released' }); handleDealComplete(parseInt(dealCounterAmount || '5000'), opp.brand || 'Brand', opp.deliverables?.map((d: {count:number;format:string}) => `${d.count}x ${d.format}`).join(', ') || '1x Instagram Reel', undefined, opp.revisionLimit ? opp.revisionLimit * 30 : 90, opp.exclusivity && opp.exclusivity !== 'None' ? 30 : undefined, opp.exclusivity && opp.exclusivity !== 'None' ? selectedMarketplaceSkin || undefined : undefined); }} style={{ width:'100%', background:'none', border:`1px solid ${C.border}`, padding:'8px', borderRadius:'8px', color:C.textMuted, fontSize:'11px', cursor:'pointer' }}>
                                         Simulate: Brand approved
                                       </button>
                                     </>
@@ -2791,9 +2872,54 @@ export default function InstagramDemoPage() {
                                           </div>
                                         )}
 
-                                        <button onClick={() => { if (activeDealKey) { setDealStates(prev => { const next = {...prev}; delete next[activeDealKey]; return next; }); } setNegotiatingOpp(null); setCreatorDealLifecycle('checklist'); setDealUploadSimulated(false); setDeliverableStatuses({}); setPaymentMilestones({ advance:'pending', upload:'pending', approval:'pending' }); setDealRating(0); setDealRatingComment(''); setRatingSubmitted(false); }} style={{ width:'100%', background:C.primary, border:'none', padding:'10px', borderRadius:'8px', color:'#fff', fontWeight:600, cursor:'pointer', fontSize:'13px' }}>
-                                          Withdraw to Bank
-                                        </button>
+                                        {/* Escrow release summary */}
+                                        <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', padding:'10px', marginBottom:'10px', textAlign:'left' }}>
+                                          <div style={{ fontSize:'10px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.4px', marginBottom:'6px' }}>Escrow Release</div>
+                                          {[
+                                            { label:'Advance', status:'Released on deal acceptance' },
+                                            { label:'Upload milestone', status:'Released on content submission' },
+                                            { label:'Approval milestone', status:'Released on brand approval' },
+                                          ].map(m => (
+                                            <div key={m.label} style={{ display:'flex', alignItems:'center', gap:'6px', padding:'3px 0', fontSize:'11px' }}>
+                                              <div style={{ width:'8px', height:'8px', borderRadius:'50%', background:C.success }} />
+                                              <span style={{ color:C.text, flex:1 }}>{m.label}</span>
+                                              <span style={{ color:C.success, fontSize:'10px' }}>{m.status}</span>
+                                            </div>
+                                          ))}
+                                        </div>
+
+                                        {/* Usage rights & exclusivity tracker */}
+                                        {opp && (
+                                          <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', padding:'10px', marginBottom:'10px', textAlign:'left' }}>
+                                            <div style={{ fontSize:'10px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.4px', marginBottom:'6px' }}>Active Rights</div>
+                                            <div style={{ fontSize:'11px', color:C.text, marginBottom:'3px' }}>
+                                              Content usage: <strong>{opp.usageRights || `${opp.revisionLimit * 30} days`}</strong>
+                                              <span style={{ color:C.textMuted }}> — expires {new Date(Date.now() + (opp.revisionLimit || 3) * 30 * 86400000).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' })}</span>
+                                            </div>
+                                            {opp.exclusivity && opp.exclusivity !== 'None' && (
+                                              <div style={{ fontSize:'11px', color:C.text }}>
+                                                Exclusivity: <strong>{opp.exclusivity}</strong>
+                                                <span style={{ color:'#f59e0b' }}> — do not accept competing deals</span>
+                                              </div>
+                                            )}
+                                          </div>
+                                        )}
+
+                                        {/* Contract record */}
+                                        {contractSignature && (
+                                          <div style={{ background:'rgba(0,102,204,0.04)', border:`1px solid rgba(0,102,204,0.15)`, borderRadius:'8px', padding:'8px 10px', marginBottom:'10px', fontSize:'10px', color:C.textMuted, textAlign:'left' }}>
+                                            Contract signed by <strong style={{ color:C.text, fontStyle:'italic' }}>{contractSignature}</strong> on {new Date().toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' })}
+                                          </div>
+                                        )}
+
+                                        <div style={{ display:'flex', gap:'8px' }}>
+                                          <button onClick={() => { if (activeDealKey) { setDealStates(prev => { const next = {...prev}; delete next[activeDealKey]; return next; }); } setNegotiatingOpp(null); setCreatorDealLifecycle('checklist'); setDealUploadSimulated(false); setDeliverableStatuses({}); setPaymentMilestones({ advance:'pending', upload:'pending', approval:'pending' }); setDealRating(0); setDealRatingComment(''); setRatingSubmitted(false); setContractChecks({}); setContractSignature(''); }} style={{ flex:2, background:C.primary, border:'none', padding:'10px', borderRadius:'8px', color:'#fff', fontWeight:600, cursor:'pointer', fontSize:'13px' }}>
+                                            Withdraw to Bank
+                                          </button>
+                                          <button onClick={() => setShowDisputeModal(Date.now())} style={{ flex:1, background:'none', border:`1px solid rgba(239,68,68,0.3)`, padding:'10px', borderRadius:'8px', color:'#ef4444', fontSize:'11px', cursor:'pointer', fontWeight:500 }}>
+                                            Dispute
+                                          </button>
+                                        </div>
                                       </div>
                                     </>
                                   )}
@@ -3240,6 +3366,35 @@ export default function InstagramDemoPage() {
                     )}
 
                     {/* Feature 2: Creator Profile Modal */}
+                    {/* Dispute Modal */}
+                    {showDisputeModal !== null && (
+                      <div style={{ position:'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.6)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:9999, padding:'16px' }}>
+                        <div style={{ background:C.surface, borderRadius:'14px', padding:'20px', maxWidth:'400px', width:'100%', border:`1px solid ${C.border}` }}>
+                          <div style={{ fontSize:'15px', fontWeight:700, color:C.text, marginBottom:'4px' }}>File a Dispute</div>
+                          <div style={{ fontSize:'12px', color:C.textSecondary, marginBottom:'14px' }}>Disputes are reviewed within 48 hours. Provide evidence to support your claim.</div>
+                          <div style={{ fontSize:'11px', fontWeight:600, color:C.textMuted, marginBottom:'6px' }}>Reason</div>
+                          {['Brand did not pay after approval', 'Brand used content beyond agreed rights', 'Brand violated exclusivity terms', 'Content was used without credit', 'Payment amount was incorrect', 'Other'].map(reason => (
+                            <button key={reason} onClick={() => setDisputeReason(reason)} style={{ display:'block', width:'100%', textAlign:'left', background: disputeReason === reason ? `${C.primary}12` : C.card, border: `1px solid ${disputeReason === reason ? C.primary : C.border}`, borderRadius:'8px', padding:'9px 12px', fontSize:'12px', color:C.text, cursor:'pointer', marginBottom:'4px', fontWeight: disputeReason === reason ? 600 : 400 }}>
+                              {reason}
+                            </button>
+                          ))}
+                          <div style={{ marginTop:'10px' }}>
+                            <div style={{ fontSize:'11px', fontWeight:600, color:C.textMuted, marginBottom:'4px' }}>Evidence (describe or paste links)</div>
+                            <textarea value={disputeEvidence} onChange={e => setDisputeEvidence(e.target.value)} placeholder="Describe what happened, include screenshots or links..." rows={3} style={{ width:'100%', background:C.card, border:`1px solid ${C.border}`, borderRadius:'6px', padding:'8px', fontSize:'12px', color:C.text, resize:'none', boxSizing:'border-box' }} />
+                          </div>
+                          <div style={{ display:'flex', gap:'8px', marginTop:'14px' }}>
+                            <button onClick={() => { setShowDisputeModal(null); setDisputeReason(''); setDisputeEvidence(''); }} style={{ flex:1, background:'none', border:`1px solid ${C.border}`, borderRadius:'8px', padding:'10px', color:C.text, fontWeight:600, fontSize:'13px', cursor:'pointer' }}>Cancel</button>
+                            <button onClick={() => {
+                              setCompletedDeals(prev => prev.map(d => d.id === showDisputeModal ? { ...d, disputed: true, disputeReason, disputeStatus: 'filed' as const } : d));
+                              setPurchaseToast('Dispute filed — under review');
+                              setTimeout(() => setPurchaseToast(null), 3000);
+                              setShowDisputeModal(null); setDisputeReason(''); setDisputeEvidence('');
+                            }} disabled={!disputeReason} style={{ flex:1, background: disputeReason ? '#ef4444' : C.border, border:'none', borderRadius:'8px', padding:'10px', color:'#fff', fontWeight:600, fontSize:'13px', cursor: disputeReason ? 'pointer' : 'not-allowed', opacity: disputeReason ? 1 : 0.5 }}>File Dispute</button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     {showCreatorProfileModal && selectedProfileCreator && (
                       <div style={{ position:'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.75)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:9999, padding:'16px' }}>
                         <div style={{ background:C.surface, borderRadius:'16px', padding:'24px', maxWidth:'500px', width:'100%', maxHeight:'90vh', overflowY:'auto', border:`1px solid ${C.border}`, position:'relative' }}>
