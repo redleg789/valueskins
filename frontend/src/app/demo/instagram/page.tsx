@@ -986,7 +986,11 @@ export default function InstagramDemoPage() {
       return;
     }
     // Creator purchase — assign to slot
-    if (!assigningSlot) return;
+    if (!assigningSlot) {
+      setPurchaseToast('Select a slot first');
+      setTimeout(() => setPurchaseToast(null), 3000);
+      return;
+    }
     const badge = PROFESSION_BADGES[profession];
     const label = badge?.abbreviation ?? profession.split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0, 3);
     const slotLabel = SLOT_LABELS[assigningSlot];
@@ -5019,6 +5023,11 @@ export default function InstagramDemoPage() {
                   </div>
                 )}
 
+                {marketplaceRole !== 'brand' && !assigningSlot && (
+                  <div style={{ fontSize: '13px', color: C.warning, marginBottom: '12px', fontWeight: 600 }}>
+                    Select a slot above to assign a ValueSkin
+                  </div>
+                )}
                 {assigningSlot && (
                   <div style={{ fontSize: '13px', color: SLOT_COLORS[assigningSlot], marginBottom: '12px', fontWeight: 600 }}>
                     Selecting for {SLOT_LABELS[assigningSlot]} slot
