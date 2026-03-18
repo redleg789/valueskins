@@ -14,7 +14,7 @@ import { api } from './api';
 
 // ---- Types matching the demo page's DealState ----
 
-export type DealRoomPhase = 'brief' | 'offer' | 'counter' | 'chatroom' | 'checklist' | 'accepted' | 'softhold';
+export type DealRoomPhase = 'brief' | 'offer' | 'counter' | 'brand_considering' | 'brand_countered' | 'brand_rejected' | 'chatroom' | 'checklist' | 'accepted' | 'softhold';
 
 export type DealState = {
   phase: DealRoomPhase;
@@ -23,6 +23,7 @@ export type DealState = {
   briefTitle: string;
   offerAmount: string;
   counterAmount: string;
+  brandResponseAmount: string; // amount brand counter-offered back after creator countered
   chatMessages: ChatMessage[];
   chatInput: string;
   performanceClause: boolean;
@@ -164,6 +165,7 @@ export function useDealSync() {
                 briefTitle: room.opportunity_title || '',
                 offerAmount: '',
                 counterAmount: '',
+                brandResponseAmount: '',
                 chatMessages: [],
                 chatInput: '',
                 performanceClause: false,
@@ -272,6 +274,7 @@ export function useDealSync() {
       briefTitle: '',
       offerAmount: '',
       counterAmount: '',
+      brandResponseAmount: '',
       chatMessages: [
         { id: 1, sender: 'brand' as const, text: 'Hey! Excited to work together on this campaign.', time: 'just now', seen: false },
       ],
