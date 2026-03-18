@@ -78,6 +78,7 @@ export type SharedApplication = {
 
 export type Campaign = {
   id: number;
+  brandName?: string;
   brandProfession: string;
   title: string;
   description: string;

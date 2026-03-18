@@ -964,7 +964,7 @@ export default function InstagramDemoPage({ roomId = null, userRole = null, user
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dealSync.loaded]);
 
-  const [marketplaceTab, setMarketplaceTab] = useState<'creators' | 'campaigns' | 'applications'>('creators');
+  const [marketplaceTab, setMarketplaceTab] = useState<'creators' | 'campaigns' | 'applications' | 'sent'>('creators');
   const [showCampaignCreator, setShowCampaignCreator] = useState(false);
   const [newCampaignTitle, setNewCampaignTitle] = useState('');
   const [newCampaignDesc, setNewCampaignDesc] = useState('');
@@ -1140,19 +1140,41 @@ export default function InstagramDemoPage({ roomId = null, userRole = null, user
     ? Math.max(...ownedSkins.map(s => getSkinLevel(s.profession, metrics.followers, ownedSkins.length)))
     : 1;
 
-  // Opportunities for the currently selected skin — sorted by match % descending
-  const activeOpportunities = selectedMarketplaceSkin
-    ? (OPPORTUNITIES_BY_PROFESSION[selectedMarketplaceSkin] ?? DEFAULT_OPPORTUNITIES)
-        .slice()
-        .sort((a, b) => parseInt(b.match) - parseInt(a.match))
-    : [];
-
   // Auto-expire campaigns past deadline
   const today = new Date().toISOString().split('T')[0];
   const liveCampaigns = campaigns.map(c => {
     if (c.status === 'open' && c.deadline && c.deadline < today) return { ...c, status: 'expired' as const };
     return c;
   });
+
+  // Opportunities for the currently selected skin — sorted by match % descending
+  // Merge hardcoded opportunities with brand-created campaigns (converted to Opportunity format)
+  const campaignOpportunities: Opportunity[] = liveCampaigns
+    .filter(c => c.status === 'open' && selectedMarketplaceSkin && c.requiredProfessions.includes(selectedMarketplaceSkin))
+    .map(c => ({
+      brand: c.brandName || 'Brand',
+      type: c.title,
+      match: '100%',
+      featured: true,
+      willingToBarter: (c.compensationType || '').toLowerCase().includes('barter'),
+      about: c.about || c.description,
+      budget: `$${parseInt(c.budget || '0').toLocaleString()}`,
+      deadline: c.deadline,
+      deliverables: (c.deliverables || '').split(',').map(d => ({ format: d.trim(), count: 1 })),
+      requirements: c.requirements || [],
+      exclusivity: c.exclusivity || 'None',
+      usageRights: c.usageRights || '30 days, social only',
+      revisionLimit: c.revisionLimit || 2,
+      compensationType: c.compensationType || 'Paid',
+      location: c.location || 'Remote',
+      audienceTarget: c.audienceTarget || '',
+    }));
+  const activeOpportunities = selectedMarketplaceSkin
+    ? [...campaignOpportunities, ...(OPPORTUNITIES_BY_PROFESSION[selectedMarketplaceSkin] ?? DEFAULT_OPPORTUNITIES)]
+        .slice()
+        .sort((a, b) => parseInt(b.match) - parseInt(a.match))
+    : [];
+
   // Deals the creator missed (expired campaigns matching their skins)
   const missedDeals = selectedMarketplaceSkin
     ? liveCampaigns.filter(c => c.status === 'expired' && c.requiredProfessions.includes(selectedMarketplaceSkin))
@@ -2816,14 +2838,14 @@ export default function InstagramDemoPage({ roomId = null, userRole = null, user
                         <div style={{ background:C.surface, borderRadius:'16px', padding:'24px', maxWidth:'480px', width:'95vw', maxHeight:'90vh', overflowY:'auto', border:`1px solid ${C.border}`, position:'relative' }}>
                           <button onClick={() => setShowCampaignCreator(false)} style={{ position:'absolute', top:'16px', right:'16px', background:'none', border:'none', color:C.textMuted, fontSize:'22px', cursor:'pointer', lineHeight:1 }}>x</button>
                           <div style={{ fontSize:'16px', fontWeight:700, color:C.text, marginBottom:'16px' }}>Create Campaign</div>
-                          {[
-                            { label:'Campaign title', val:newCampaignTitle, set:setNewCampaignTitle, placeholder:'e.g. Spring Product Launch' },
-                          ].map(f => (
-                            <div key={f.label} style={{ marginBottom:'12px' }}>
-                              <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>{f.label} *</div>
-                              <input type="text" value={f.val} onChange={e=>f.set(e.target.value)} placeholder={f.placeholder} style={{ width:'100%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', color:C.text, padding:'8px 10px', fontSize:'13px', fontFamily:'inherit', outline:'none', boxSizing:'border-box' as const }} />
-                            </div>
-                          ))}
+                          <div style={{ marginBottom:'12px' }}>
+                            <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>Brand name *</div>
+                            <input type="text" value={profileName} onChange={e=>setProfileName(e.target.value)} placeholder="Your brand name" style={{ width:'100%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', color:C.text, padding:'8px 10px', fontSize:'13px', fontFamily:'inherit', outline:'none', boxSizing:'border-box' as const }} />
+                          </div>
+                          <div style={{ marginBottom:'12px' }}>
+                            <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>Campaign title *</div>
+                            <input type="text" value={newCampaignTitle} onChange={e=>setNewCampaignTitle(e.target.value)} placeholder="e.g. Spring Product Launch" style={{ width:'100%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', color:C.text, padding:'8px 10px', fontSize:'13px', fontFamily:'inherit', outline:'none', boxSizing:'border-box' as const }} />
+                          </div>
                           <div style={{ marginBottom:'12px' }}>
                             <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>About your product / campaign *</div>
                             <div style={{ fontSize:'10px', color:C.textMuted, marginBottom:'6px' }}>Creators need to understand what they are promoting. Be specific — what is the product, who is it for, and what makes it worth their audience's trust.</div>
@@ -2833,14 +2855,10 @@ export default function InstagramDemoPage({ roomId = null, userRole = null, user
                             <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>Campaign description *</div>
                             <textarea value={newCampaignDesc} onChange={e=>setNewCampaignDesc(e.target.value)} rows={2} placeholder="Briefly describe the type of content and goal of this campaign" style={{ width:'100%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', color:C.text, padding:'8px 10px', fontSize:'13px', fontFamily:'inherit', outline:'none', resize:'none', boxSizing:'border-box' as const }} />
                           </div>
-                          <div style={{ marginBottom:'12px' }}>
-                            <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'6px' }}>Required ValueSkin (profession) *</div>
-                            <div style={{ display:'flex', flexWrap:'wrap', gap:'6px' }}>
-                              {['Software Engineer','Full Stack Developer','Data Scientist','UX/UI Designer','Fitness Coach','Sports Coach','Nutritionist','Product Manager','Graphic Designer','Chef','Actor','Doctor','Financial Advisor','Football Player','Cricket Player','Hockey Player'].map(p => (
-                                <button key={p} onClick={() => setNewCampaignProfessions(prev => prev.includes(p) ? prev.filter(x=>x!==p) : [...prev,p])} style={{ padding:'5px 10px', borderRadius:'6px', fontSize:'11px', fontWeight:600, cursor:'pointer', background:newCampaignProfessions.includes(p)?`${C.primary}15`:C.bg, color:newCampaignProfessions.includes(p)?C.primary:C.textSecondary, border:`1px solid ${newCampaignProfessions.includes(p)?C.primary:C.border}` }}>{p}</button>
-                              ))}
-                            </div>
-                            <div style={{ fontSize:'10px', color:C.textMuted, marginTop:'5px' }}>Only creators with a matching ValueSkin can enter negotiation.</div>
+                          <div style={{ marginBottom:'12px', background:`${C.primary}08`, border:`1px solid ${C.primary}30`, borderRadius:'8px', padding:'10px 12px' }}>
+                            <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>Targeting creators with</div>
+                            <div style={{ fontSize:'14px', fontWeight:700, color:C.primary }}>{activeBrandSkin}</div>
+                            <div style={{ fontSize:'10px', color:C.textMuted, marginTop:'3px' }}>Auto-matched from your selected ValueSkin. Only creators with this skin will see your campaign.</div>
                           </div>
                           <div style={{ marginBottom:'12px' }}>
                             <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>Creator level range *</div>
@@ -2961,9 +2979,8 @@ export default function InstagramDemoPage({ roomId = null, userRole = null, user
                               if (!newCampaignDesc.trim()) missing.push('Description');
                               if (!newCampaignBudget) missing.push('Budget');
                               if (!newCampaignAudienceTarget.trim()) missing.push('Target audience');
-                              if (newCampaignProfessions.length===0) missing.push('Required ValueSkin');
                               if (missing.length > 0) { setPurchaseToast(`Missing: ${missing.join(', ')}`); setTimeout(()=>setPurchaseToast(null),4000); return; }
-                              const newC: Campaign = { id:Date.now(), brandProfession:activeBrandSkin??'', title:newCampaignTitle, description:newCampaignDesc, about:newCampaignAbout, requiredProfessions:newCampaignProfessions, minLevel:newCampaignMinLevel, maxLevel:newCampaignMaxLevel, budget:newCampaignBudget, deadline:newCampaignDeadline, location:newCampaignLocation, nonNegotiables:newCampaignNonNeg, deliverables:newCampaignDeliverables, compensationType:newCampaignCompensation, exclusivity:newCampaignExclusivity, usageRights:newCampaignUsageRights, revisionLimit:newCampaignRevisionLimit, audienceTarget:newCampaignAudienceTarget, requirements:newCampaignRequirements, status:'open', applicants:0 };
+                              const newC: Campaign = { id:Date.now(), brandName:profileName, brandProfession:activeBrandSkin??'', title:newCampaignTitle, description:newCampaignDesc, about:newCampaignAbout, requiredProfessions:[activeBrandSkin ?? ''], minLevel:newCampaignMinLevel, maxLevel:newCampaignMaxLevel, budget:newCampaignBudget, deadline:newCampaignDeadline, location:newCampaignLocation, nonNegotiables:newCampaignNonNeg, deliverables:newCampaignDeliverables, compensationType:newCampaignCompensation, exclusivity:newCampaignExclusivity, usageRights:newCampaignUsageRights, revisionLimit:newCampaignRevisionLimit, audienceTarget:newCampaignAudienceTarget, requirements:newCampaignRequirements, status:'open', applicants:0 };
                               persistCampaigns([...campaigns, newC]);
                               if (roomId) { firebaseCreateCampaign(newC); }
                               setShowCampaignCreator(false); setNewCampaignTitle(''); setNewCampaignDesc(''); setNewCampaignAbout(''); setNewCampaignBudget(''); setNewCampaignDeadline(''); setNewCampaignProfessions([]); setNewCampaignMinLevel(1); setNewCampaignMaxLevel(5); setNewCampaignLocation(''); setNewCampaignDeliverables(''); setNewCampaignNonNeg([]); setNewCampaignCompensation('Paid'); setNewCampaignExclusivity('None'); setNewCampaignUsageRights('30 days, social only'); setNewCampaignRevisionLimit(2); setNewCampaignAudienceTarget(''); setNewCampaignRequirements([]); setNewCampaignReqInput('');
@@ -3873,43 +3890,134 @@ export default function InstagramDemoPage({ roomId = null, userRole = null, user
                     })()}
                     </>)}
 
-                    {/* Your Campaigns — always visible below creator list */}
+                    {/* Campaign tabs: Your Campaigns | Sent Deals */}
                     <div style={{ marginTop:'24px', paddingTop:'20px', borderTop:`1px solid ${C.border}` }}>
-                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'14px' }}>
-                        <div style={{ fontSize:'12px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.6px' }}>Your Campaigns</div>
-                        <button onClick={() => setShowCampaignCreator(true)} style={{ background:C.primary, border:'none', borderRadius:'6px', padding:'6px 12px', fontSize:'12px', fontWeight:700, color:'#fff', cursor:'pointer' }}>+ New Campaign</button>
+                      <div style={{ display:'flex', gap:'0', marginBottom:'14px', borderBottom:`1px solid ${C.border}` }}>
+                        {(['campaigns', 'sent'] as const).map(tab => {
+                          const label = tab === 'campaigns' ? 'Your Campaigns' : 'Sent Deals';
+                          const count = tab === 'campaigns' ? campaigns.length : campaigns.filter(c => c.status === 'open').length;
+                          const isActive = marketplaceTab === tab;
+                          return (
+                            <button key={tab} onClick={() => setMarketplaceTab(tab)} style={{ flex:1, padding:'10px 0', background:'none', border:'none', borderBottom:`2px solid ${isActive ? C.primary : 'transparent'}`, color: isActive ? C.text : C.textMuted, fontSize:'12px', fontWeight:700, cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.5px' }}>
+                              {label} {count > 0 && <span style={{ fontSize:'10px', background: isActive ? C.primary : C.border, color:'#fff', padding:'1px 5px', borderRadius:'8px', marginLeft:'4px' }}>{count}</span>}
+                            </button>
+                          );
+                        })}
                       </div>
-                      {campaigns.length === 0 ? (
-                        <div style={{ textAlign:'center', padding:'24px 20px', color:C.textMuted }}>
-                          <div style={{ fontSize:'13px', marginBottom:'4px' }}>No campaigns yet</div>
-                          <div style={{ fontSize:'11px' }}>Create a campaign to start receiving creator applications.</div>
+
+                      {marketplaceTab === 'campaigns' && (<>
+                        <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:'10px' }}>
+                          <button onClick={() => setShowCampaignCreator(true)} style={{ background:C.primary, border:'none', borderRadius:'6px', padding:'6px 12px', fontSize:'12px', fontWeight:700, color:'#fff', cursor:'pointer' }}>+ New Campaign</button>
                         </div>
-                      ) : campaigns.map((c,i) => (
-                        <div key={i} style={{ background:C.card, borderRadius:'12px', padding:'14px', marginBottom:'10px', border:`1px solid ${C.border}` }}>
-                          <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'6px', flexWrap:'wrap', gap:'4px' }}>
-                            <span style={{ fontSize:'13px', fontWeight:700, color:C.text }}>{c.title}</span>
-                            <span style={{ fontSize:'12px', fontWeight:700, color:C.success }}>${parseInt(c.budget||'0').toLocaleString()}</span>
+                        {campaigns.length === 0 ? (
+                          <div style={{ textAlign:'center', padding:'24px 20px', color:C.textMuted }}>
+                            <div style={{ fontSize:'13px', marginBottom:'4px' }}>No campaigns yet</div>
+                            <div style={{ fontSize:'11px' }}>Create a campaign to start receiving creator applications.</div>
                           </div>
-                          <div style={{ fontSize:'11px', color:C.textSecondary, marginBottom:'8px', lineHeight:1.4 }}>{c.description}</div>
-                          <div style={{ display:'flex', gap:'5px', flexWrap:'wrap', marginBottom:'6px' }}>
-                            {c.requiredProfessions.map(p => <span key={p} style={{ fontSize:'10px', fontWeight:600, color:C.primary, background:`${C.primary}12`, padding:'2px 7px', borderRadius:'6px', border:`1px solid ${C.primary}30` }}>{p}</span>)}
-                          </div>
-                          <div style={{ display:'flex', gap:'12px', flexWrap:'wrap', fontSize:'10px', color:C.textMuted, marginBottom: c.nonNegotiables?.length ? '6px':'8px' }}>
-                            <span>Level: L{c.minLevel||1}{(c.maxLevel && c.maxLevel !== c.minLevel) ? `–L${c.maxLevel}` : ''}</span>
-                            {c.location && <span>{c.location}</span>}
-                            {c.deliverables && <span>{c.deliverables}</span>}
-                          </div>
-                          {c.nonNegotiables && c.nonNegotiables.length > 0 && (
-                            <div style={{ display:'flex', gap:'5px', flexWrap:'wrap', marginBottom:'8px' }}>
-                              {c.nonNegotiables.map(n=><span key={n} style={{ fontSize:'10px', color:C.textMuted, background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.2)', padding:'2px 7px', borderRadius:'6px' }}>{n}</span>)}
+                        ) : campaigns.map((c,i) => (
+                          <div key={i} style={{ background:C.card, borderRadius:'12px', padding:'14px', marginBottom:'10px', border:`1px solid ${C.border}` }}>
+                            <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'6px', flexWrap:'wrap', gap:'4px' }}>
+                              <span style={{ fontSize:'13px', fontWeight:700, color:C.text }}>{c.title}</span>
+                              <span style={{ fontSize:'12px', fontWeight:700, color:C.success }}>${parseInt(c.budget||'0').toLocaleString()}</span>
                             </div>
-                          )}
-                          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                            <span style={{ fontSize:'10px', color:C.textMuted }}>{c.applicants} applicant{c.applicants!==1?'s':''}{c.deadline?` · Deadline ${c.deadline}`:''}</span>
-                            <span style={{ fontSize:'10px', fontWeight:700, color:c.status==='expired'?C.textMuted:c.status==='open'?C.success:'#888', background:c.status==='expired'?'rgba(239,68,68,0.1)':c.status==='open'?C.surfaceAlt:'rgba(136,136,136,0.1)', padding:'2px 8px', borderRadius:'6px', textTransform:'uppercase' }}>{c.status}</span>
+                            {c.brandName && <div style={{ fontSize:'11px', color:C.textSecondary, marginBottom:'4px' }}>by {c.brandName}</div>}
+                            <div style={{ fontSize:'11px', color:C.textSecondary, marginBottom:'8px', lineHeight:1.4 }}>{c.description}</div>
+                            <div style={{ display:'flex', gap:'5px', flexWrap:'wrap', marginBottom:'6px' }}>
+                              {c.requiredProfessions.map(p => <span key={p} style={{ fontSize:'10px', fontWeight:600, color:C.primary, background:`${C.primary}12`, padding:'2px 7px', borderRadius:'6px', border:`1px solid ${C.primary}30` }}>{p}</span>)}
+                            </div>
+                            <div style={{ display:'flex', gap:'12px', flexWrap:'wrap', fontSize:'10px', color:C.textMuted, marginBottom: c.nonNegotiables?.length ? '6px':'8px' }}>
+                              <span>Level: L{c.minLevel||1}{(c.maxLevel && c.maxLevel !== c.minLevel) ? `–L${c.maxLevel}` : ''}</span>
+                              {c.location && <span>{c.location}</span>}
+                              {c.deliverables && <span>{c.deliverables}</span>}
+                            </div>
+                            {c.nonNegotiables && c.nonNegotiables.length > 0 && (
+                              <div style={{ display:'flex', gap:'5px', flexWrap:'wrap', marginBottom:'8px' }}>
+                                {c.nonNegotiables.map(n=><span key={n} style={{ fontSize:'10px', color:C.textMuted, background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.2)', padding:'2px 7px', borderRadius:'6px' }}>{n}</span>)}
+                              </div>
+                            )}
+                            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                              <span style={{ fontSize:'10px', color:C.textMuted }}>{c.applicants} applicant{c.applicants!==1?'s':''}{c.deadline?` · Deadline ${c.deadline}`:''}</span>
+                              <span style={{ fontSize:'10px', fontWeight:700, color:c.status==='expired'?C.textMuted:c.status==='open'?C.success:'#888', background:c.status==='expired'?'rgba(239,68,68,0.1)':c.status==='open'?C.surfaceAlt:'rgba(136,136,136,0.1)', padding:'2px 8px', borderRadius:'6px', textTransform:'uppercase' }}>{c.status}</span>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </>)}
+
+                      {marketplaceTab === 'sent' && (<>
+                        {campaigns.filter(c => c.status === 'open').length === 0 ? (
+                          <div style={{ textAlign:'center', padding:'24px 20px', color:C.textMuted }}>
+                            <div style={{ fontSize:'13px', marginBottom:'4px' }}>No active campaigns</div>
+                            <div style={{ fontSize:'11px' }}>Create a campaign to start tracking deals.</div>
+                          </div>
+                        ) : campaigns.filter(c => c.status === 'open').map((c, i) => {
+                          const matchingApps = sharedApplications.filter(a => a.campaignId === c.id);
+                          const activeDealsForCampaign = Object.entries(dealStates).filter(([key]) => key.includes(c.title));
+                          const getPhaseLabel = (phase: string) => {
+                            switch (phase) {
+                              case 'chatroom': return 'In negotiation';
+                              case 'formal_offer': return 'Formal offer sent';
+                              case 'accepted': return 'Deal accepted';
+                              case 'checklist': return 'Checklist phase';
+                              case 'softhold': return 'Deliverables in progress';
+                              default: return phase;
+                            }
+                          };
+                          const getPhaseColor = (phase: string) => {
+                            switch (phase) {
+                              case 'chatroom': return C.warning;
+                              case 'formal_offer': return C.primary;
+                              case 'accepted': return C.success;
+                              case 'checklist': return C.accent;
+                              case 'softhold': return '#22d3ee';
+                              default: return C.textMuted;
+                            }
+                          };
+                          return (
+                            <div key={i} style={{ background:C.card, borderRadius:'12px', padding:'14px', marginBottom:'10px', border:`1px solid ${C.border}` }}>
+                              <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'6px' }}>
+                                <span style={{ fontSize:'13px', fontWeight:700, color:C.text }}>{c.title}</span>
+                                <span style={{ fontSize:'12px', fontWeight:700, color:C.success }}>${parseInt(c.budget||'0').toLocaleString()}</span>
+                              </div>
+                              {c.brandName && <div style={{ fontSize:'11px', color:C.textSecondary, marginBottom:'8px' }}>by {c.brandName}</div>}
+                              {/* Status timeline */}
+                              <div style={{ borderLeft:`2px solid ${C.border}`, paddingLeft:'12px', marginBottom:'8px' }}>
+                                <div style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'6px' }}>
+                                  <div style={{ width:8, height:8, borderRadius:'50%', background:C.success, marginLeft:'-16px' }} />
+                                  <span style={{ fontSize:'11px', color:C.success, fontWeight:600 }}>Campaign sent</span>
+                                  <span style={{ fontSize:'10px', color:C.textMuted }}>{c.deadline ? new Date(c.deadline).toLocaleDateString() : ''}</span>
+                                </div>
+                                {matchingApps.length > 0 && (
+                                  <div style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'6px' }}>
+                                    <div style={{ width:8, height:8, borderRadius:'50%', background:C.primary, marginLeft:'-16px' }} />
+                                    <span style={{ fontSize:'11px', color:C.primary, fontWeight:600 }}>Seen by {matchingApps.length} creator{matchingApps.length !== 1 ? 's' : ''}</span>
+                                  </div>
+                                )}
+                                {matchingApps.filter(a => a.status === 'accepted').length > 0 && (
+                                  <div style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'6px' }}>
+                                    <div style={{ width:8, height:8, borderRadius:'50%', background:C.success, marginLeft:'-16px' }} />
+                                    <span style={{ fontSize:'11px', color:C.success, fontWeight:600 }}>{matchingApps.filter(a => a.status === 'accepted').length} accepted</span>
+                                  </div>
+                                )}
+                                {activeDealsForCampaign.map(([key, deal]) => (
+                                  <div key={key} style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'6px' }}>
+                                    <div style={{ width:8, height:8, borderRadius:'50%', background:getPhaseColor(deal.phase), marginLeft:'-16px' }} />
+                                    <span style={{ fontSize:'11px', color:getPhaseColor(deal.phase), fontWeight:600 }}>{getPhaseLabel(deal.phase)}</span>
+                                  </div>
+                                ))}
+                                {matchingApps.length === 0 && activeDealsForCampaign.length === 0 && (
+                                  <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
+                                    <div style={{ width:8, height:8, borderRadius:'50%', background:C.textMuted, marginLeft:'-16px', opacity:0.5 }} />
+                                    <span style={{ fontSize:'11px', color:C.textMuted }}>Waiting for creators...</span>
+                                  </div>
+                                )}
+                              </div>
+                              <div style={{ display:'flex', gap:'5px', flexWrap:'wrap' }}>
+                                {c.requiredProfessions.map(p => <span key={p} style={{ fontSize:'10px', fontWeight:600, color:C.primary, background:`${C.primary}12`, padding:'2px 7px', borderRadius:'6px' }}>{p}</span>)}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </>)}
                     </div>
 
                     {/* Applications Received */}
