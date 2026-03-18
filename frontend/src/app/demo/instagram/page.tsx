@@ -663,7 +663,13 @@ export default function InstagramDemoPage({ roomId = null, userRole = null, user
 
   // Deal sync hook — bridges localStorage with backend API
   const dealSync = useDealSync();
-  const { dealStates, setDealStates, getOrCreateDeal, updateDeal } = dealSync;
+  // Firebase room sync (for multiplayer mode) — must be before updateDeal wrapper
+  const { state: firebaseState, syncing: firebaseSyncing, createCampaign: firebaseCreateCampaign, updateDeal: firebaseUpdateDeal, addMessage: firebaseAddMessage, sendNotification: firebaseSendNotification, createApplication: firebaseCreateApplication } = useFirebaseRoom(roomId ?? null, userRole ?? null, userHandle);
+  const { dealStates, setDealStates, getOrCreateDeal, updateDeal: localUpdateDeal } = dealSync;
+  const updateDeal = useCallback((key: string, updates: Partial<DealState>) => {
+    localUpdateDeal(key, updates);
+    if (roomId) { firebaseUpdateDeal(key, updates); }
+  }, [localUpdateDeal, roomId, firebaseUpdateDeal]);
   const dealsLoaded = dealSync.loaded;
 
   // Active deal key derived from current skin + opp
@@ -905,22 +911,43 @@ export default function InstagramDemoPage({ roomId = null, userRole = null, user
   const [adminAllowLongTermContracts, setAdminAllowLongTermContracts] = useState(true);
   const [adminSavedFeaturesTab, setAdminSavedFeaturesTab] = useState(false);
 
-  // Firebase room sync (for multiplayer mode)
-  const { state: firebaseState, syncing: firebaseSyncing, createCampaign: firebaseCreateCampaign, updateDeal: firebaseUpdateDeal, addMessage: firebaseAddMessage, sendNotification: firebaseSendNotification, createApplication: firebaseCreateApplication } = useFirebaseRoom(roomId, userRole, userHandle);
-
   // Campaigns + applications — from deal sync hook (API-backed with localStorage fallback)
   const { applications: sharedApplications, setApplications: setSharedApplications, campaigns, setCampaigns } = dealSync;
 
-  // Merge Firebase campaigns into local state if in room mode
+  // Merge Firebase state into local state when in room mode (cross-device sync)
   useEffect(() => {
-    if (roomId && firebaseState.campaigns.length > 0) {
+    if (!roomId) return;
+    if (firebaseState.campaigns.length > 0) {
       setCampaigns(firebaseState.campaigns as Campaign[]);
     }
   }, [roomId, firebaseState.campaigns, setCampaigns]);
 
+  useEffect(() => {
+    if (!roomId) return;
+    if (firebaseState.applications.length > 0) {
+      setSharedApplications(firebaseState.applications as SharedApplication[]);
+    }
+  }, [roomId, firebaseState.applications, setSharedApplications]);
+
+  // Sync deal states from Firebase (other device's deal updates appear here)
+  useEffect(() => {
+    if (!roomId) return;
+    const fbDeals = firebaseState.deals;
+    if (Object.keys(fbDeals).length > 0) {
+      setDealStates(prev => {
+        const merged = { ...prev };
+        for (const [key, deal] of Object.entries(fbDeals)) {
+          merged[key] = { ...merged[key], ...(deal as DealState) };
+        }
+        return merged;
+      });
+    }
+  }, [roomId, firebaseState.deals]);
+
   // Sync Firebase notifications
   useEffect(() => {
-    if (roomId && firebaseState.notifications.length > 0) {
+    if (!roomId) return;
+    if (firebaseState.notifications.length > 0) {
       setFirebaseNotifications(firebaseState.notifications);
       const newNotifs = firebaseState.notifications.filter(n => !n.read);
       if (newNotifs.length > 0) {
@@ -987,7 +1014,10 @@ export default function InstagramDemoPage({ roomId = null, userRole = null, user
 
   // Convenience aliases for backward compatibility
   const persistCampaigns = (updated: Campaign[]) => { setCampaigns(updated); };
-  const persistApplications = (updated: SharedApplication[]) => { setSharedApplications(updated); };
+  const persistApplications = (updated: SharedApplication[]) => {
+    setSharedApplications(updated);
+    if (roomId) { updated.forEach(a => firebaseCreateApplication(a)); }
+  };
 
   // Keep legacy myApplications wired to sharedApplications for creator view
   const myApplications = sharedApplications;
@@ -2516,16 +2546,41 @@ export default function InstagramDemoPage({ roomId = null, userRole = null, user
                                             ))}
                                           </div>
 
+                                          {/* Payment split */}
+                                          <div style={{ background: C.bg, borderRadius: '8px', border: `1px solid ${C.border}`, padding: '8px' }}>
+                                            <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Payment Plan</div>
+                                            {(() => {
+                                              const uploadPct = Math.round((100 - advancePercent) * 0.6);
+                                              const approvalPct = 100 - advancePercent - uploadPct;
+                                              return (
+                                                <>
+                                                  <div style={{ marginBottom: '6px' }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', marginBottom: '2px' }}>
+                                                      <span style={{ color: C.success, fontWeight: 600 }}>Advance</span>
+                                                      <span style={{ color: C.text, fontWeight: 700 }}>{advancePercent}%</span>
+                                                    </div>
+                                                    <input type="range" min={0} max={100} step={5} value={advancePercent} onChange={e => setAdvancePercent(parseInt(e.target.value))} style={{ width: '100%', height: '4px', accentColor: C.success }} />
+                                                  </div>
+                                                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: C.textMuted, marginBottom: '2px' }}>
+                                                    <span>On upload</span><span style={{ color: C.primary, fontWeight: 600 }}>{uploadPct}%</span>
+                                                  </div>
+                                                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: C.textMuted }}>
+                                                    <span>On approval</span><span style={{ color: C.warning, fontWeight: 600 }}>{approvalPct}%</span>
+                                                  </div>
+                                                </>
+                                              );
+                                            })()}
+                                          </div>
+
                                           {/* Brand submits formal offer */}
                                           <div style={{ background: C.bg, borderRadius: '8px', border: `1px solid ${C.border}`, padding: '8px' }}>
-                                            <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Brand</div>
+                                            <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Finalize</div>
                                             <button
                                               onClick={() => setDealRoomPhase('formal_offer')}
                                               style={{ width: '100%', background: C.primary, border: 'none', padding: '7px', borderRadius: '6px', color: '#fff', fontWeight: 600, fontSize: '11px', cursor: 'pointer', lineHeight: 1.3 }}
                                             >
                                               Submit Formal Offer
                                             </button>
-                                            <div style={{ fontSize: '9px', color: C.textMuted, marginTop: '5px', textAlign: 'center' }}>Simulates brand action</div>
                                           </div>
                                         </div>
                                       </div>
