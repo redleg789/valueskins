@@ -537,6 +537,7 @@ export default function InstagramDemoPage() {
   const [valueskinAvatarEnabled, setValueskinAvatarEnabled] = useState(false);
   type SkinPlacement = 'next-to-name' | 'below-bio' | 'above-stats' | 'below-stats';
   const [skinPlacement, setSkinPlacement] = useState<SkinPlacement>('next-to-name');
+  const [skinDragOver, setSkinDragOver] = useState<SkinPlacement | null>(null);
   const [showAvatarSettings, setShowAvatarSettings] = useState(false);
   const [purchaseToast, setPurchaseToast] = useState<string | null>(null);
 
@@ -840,6 +841,8 @@ export default function InstagramDemoPage() {
   const [collabNegotiable, setCollabNegotiable] = useState(true);
   const [collabSentNames, setCollabSentNames] = useState<string[]>([]);
   const [collabTargetSkin, setCollabTargetSkin] = useState<string | null>(null);
+  const [collabView, setCollabView] = useState<'browse' | 'sent'>('browse');
+  const [collabCompFilter, setCollabCompFilter] = useState<'all' | 'paid' | 'unpaid' | 'barter'>('all');
 
   // Brand field filter — which ValueSkin profession the brand wants to target
   const [brandSearchQuery, setBrandSearchQuery] = useState('');
@@ -1338,7 +1341,7 @@ export default function InstagramDemoPage() {
                 {askModalOpp.brand.charAt(0)}
               </div>
               <div>
-                <div style={{ fontSize: '16px', fontWeight: 700, color: C.text }}>{askModalOpp.brand}</div>
+                <a href={askModalOpp.instagramUrl || `https://instagram.com/${askModalOpp.brand.replace(/\s+/g, '').toLowerCase()}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '16px', fontWeight: 700, color: C.text, textDecoration: 'none', display: 'block' }}>{askModalOpp.brand}</a>
                 <div style={{ fontSize: '12px', color: C.textSecondary }}>{askModalOpp.type}</div>
               </div>
             </div>
@@ -1585,7 +1588,12 @@ export default function InstagramDemoPage() {
                         Saketh Velamuri
                       </h2>
                       {skinPlacement === 'next-to-name' && (
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', position: 'relative' }}>
+                        <div
+                          draggable={!isMobile}
+                          onDragStart={e => { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', 'skin'); }}
+                          onDragEnd={() => setSkinDragOver(null)}
+                          style={{ display: 'flex', gap: '8px', alignItems: 'center', position: 'relative', cursor: isMobile ? 'default' : 'grab' }}
+                        >
                           <ValueSkinStickers
                             valueSkins={valueSkins}
                             onValueSkinsChange={setValueSkins}
@@ -1595,13 +1603,33 @@ export default function InstagramDemoPage() {
                           />
                         </div>
                       )}
+                      {skinPlacement !== 'next-to-name' && !isMobile && (
+                        <div
+                          onDragOver={e => { e.preventDefault(); setSkinDragOver('next-to-name'); }}
+                          onDragLeave={() => setSkinDragOver(null)}
+                          onDrop={e => { e.preventDefault(); setSkinPlacement('next-to-name'); setSkinDragOver(null); }}
+                          style={{ width: '60px', height: '28px', borderRadius: '8px', border: `1.5px dashed ${skinDragOver === 'next-to-name' ? C.primary : C.border}`, background: skinDragOver === 'next-to-name' ? `${C.primary}10` : 'transparent', transition: 'all 0.15s', flexShrink: 0 }}
+                        />
+                      )}
                     </div>
 
                     {/* Skins above stats */}
-                    {skinPlacement === 'above-stats' && (
-                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '14px', justifyContent: isMobile ? 'center' : 'flex-start' }}>
+                    {skinPlacement === 'above-stats' ? (
+                      <div
+                        draggable={!isMobile}
+                        onDragStart={e => { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', 'skin'); }}
+                        onDragEnd={() => setSkinDragOver(null)}
+                        style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '14px', justifyContent: isMobile ? 'center' : 'flex-start', cursor: isMobile ? 'default' : 'grab' }}
+                      >
                         <ValueSkinStickers valueSkins={valueSkins} onValueSkinsChange={setValueSkins} size="large" level={currentLevel} onSkinClick={(p) => setShowSkinShowcaseModal(p)} />
                       </div>
+                    ) : !isMobile && (
+                      <div
+                        onDragOver={e => { e.preventDefault(); setSkinDragOver('above-stats'); }}
+                        onDragLeave={() => setSkinDragOver(null)}
+                        onDrop={e => { e.preventDefault(); setSkinPlacement('above-stats'); setSkinDragOver(null); }}
+                        style={{ height: '28px', borderRadius: '8px', border: `1.5px dashed ${skinDragOver === 'above-stats' ? C.primary : C.border}`, background: skinDragOver === 'above-stats' ? `${C.primary}10` : 'transparent', transition: 'all 0.15s', marginBottom: '14px' }}
+                      />
                     )}
 
                     <div style={{ display: 'flex', gap: isMobile ? '16px' : '20px', marginBottom: '20px', fontSize: isMobile ? '13px' : '14px', justifyContent: isMobile ? 'center' : 'flex-start' }}>
@@ -1623,10 +1651,22 @@ export default function InstagramDemoPage() {
                     </div>
 
                     {/* Skins below stats */}
-                    {skinPlacement === 'below-stats' && (
-                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginTop: '14px', justifyContent: isMobile ? 'center' : 'flex-start' }}>
+                    {skinPlacement === 'below-stats' ? (
+                      <div
+                        draggable={!isMobile}
+                        onDragStart={e => { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', 'skin'); }}
+                        onDragEnd={() => setSkinDragOver(null)}
+                        style={{ display: 'flex', gap: '10px', alignItems: 'center', marginTop: '14px', justifyContent: isMobile ? 'center' : 'flex-start', cursor: isMobile ? 'default' : 'grab' }}
+                      >
                         <ValueSkinStickers valueSkins={valueSkins} onValueSkinsChange={setValueSkins} size="large" level={currentLevel} onSkinClick={(p) => setShowSkinShowcaseModal(p)} />
                       </div>
+                    ) : !isMobile && (
+                      <div
+                        onDragOver={e => { e.preventDefault(); setSkinDragOver('below-stats'); }}
+                        onDragLeave={() => setSkinDragOver(null)}
+                        onDrop={e => { e.preventDefault(); setSkinPlacement('below-stats'); setSkinDragOver(null); }}
+                        style={{ height: '28px', borderRadius: '8px', border: `1.5px dashed ${skinDragOver === 'below-stats' ? C.primary : C.border}`, background: skinDragOver === 'below-stats' ? `${C.primary}10` : 'transparent', transition: 'all 0.15s', marginTop: '14px' }}
+                      />
                     )}
                   </div>
                 </div>
@@ -1661,51 +1701,24 @@ export default function InstagramDemoPage() {
                 </div>
 
                 {/* Skins below bio */}
-                {skinPlacement === 'below-bio' && (
-                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginTop: '12px', justifyContent: isMobile ? 'center' : 'flex-start' }}>
+                {skinPlacement === 'below-bio' ? (
+                  <div
+                    draggable={!isMobile}
+                    onDragStart={e => { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', 'skin'); }}
+                    onDragEnd={() => setSkinDragOver(null)}
+                    style={{ display: 'flex', gap: '10px', alignItems: 'center', marginTop: '12px', justifyContent: isMobile ? 'center' : 'flex-start', cursor: isMobile ? 'default' : 'grab' }}
+                  >
                     <ValueSkinStickers valueSkins={valueSkins} onValueSkinsChange={setValueSkins} size="large" level={currentLevel} onSkinClick={(p) => setShowSkinShowcaseModal(p)} />
                   </div>
+                ) : !isMobile && (
+                  <div
+                    onDragOver={e => { e.preventDefault(); setSkinDragOver('below-bio'); }}
+                    onDragLeave={() => setSkinDragOver(null)}
+                    onDrop={e => { e.preventDefault(); setSkinPlacement('below-bio'); setSkinDragOver(null); }}
+                    style={{ height: '28px', borderRadius: '8px', border: `1.5px dashed ${skinDragOver === 'below-bio' ? C.primary : C.border}`, background: skinDragOver === 'below-bio' ? `${C.primary}10` : 'transparent', transition: 'all 0.15s', marginTop: '12px' }}
+                  />
                 )}
 
-                {/* VALUESKINS VERIFIED section — circular badges with level pills */}
-                {hasValueSkin && (
-                  <div style={{ marginTop: '20px', padding: '16px', background: C.card, borderRadius: '16px' }}>
-                    <div style={{ fontSize: '11px', fontWeight: 700, color: C.textMuted, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: '14px', textAlign: 'center' }}>
-                      ValueSkins Verified
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'center', gap: '24px' }}>
-                      {ownedSkins.map(({ slot, profession }) => {
-                        const badge = PROFESSION_BADGES[profession];
-                        const badgeColor = badge?.color ?? SLOT_COLORS[slot];
-                        const level = getSkinLevel(profession);
-                        return (
-                          <div key={slot} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer' }} onClick={() => setShowSkinShowcaseModal(profession)}>
-                            <div style={{
-                              width: '64px', height: '64px', borderRadius: '50%',
-                              background: `linear-gradient(135deg, ${badgeColor}, ${badgeColor}88)`,
-                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              border: `2px solid ${badgeColor}`,
-                            }}>
-                              {badge?.stickerImage ? (
-                                <img src={badge.stickerImage} alt={profession} style={{ width: '36px', height: '36px', objectFit: 'contain' }} />
-                              ) : (
-                                <span style={{ fontSize: '14px', fontWeight: 700, color: '#fff' }}>
-                                  {badge?.abbreviation ?? profession.slice(0, 3).toUpperCase()}
-                                </span>
-                              )}
-                            </div>
-                            <span style={{
-                              fontSize: '11px', fontWeight: 700, color: '#fff',
-                              background: badgeColor, padding: '2px 10px', borderRadius: '10px',
-                            }}>
-                              Lv.{level}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
 
                 {/* Barter signal badge */}
                 {hasValueSkin && willingToBarter && (
@@ -2701,41 +2714,78 @@ export default function InstagramDemoPage() {
                     {/* Creator Collab Mode */}
                     {creatorMarketplaceMode === 'collab' && (
                       <>
-                        <div style={{ background: 'rgba(94,106,210,0.06)', border: '1px solid rgba(94,106,210,0.2)', borderRadius: '10px', padding: '12px 14px', marginBottom: '16px' }}>
-                          <div style={{ fontSize: '12px', fontWeight: 700, color: C.text, marginBottom: '4px' }}>Creator Collabs</div>
-                          <div style={{ fontSize: '11px', color: C.textSecondary, lineHeight: 1.5 }}>Choose a ValuSkin to find creators with that skin. No match required — you can approach any creator.</div>
+                        {/* Browse / Sent tabs */}
+                        <div style={{ display: 'flex', background: C.card, borderRadius: '10px', padding: '3px', marginBottom: '14px' }}>
+                          {(['browse', 'sent'] as const).map(tab => (
+                            <button
+                              key={tab}
+                              onClick={() => setCollabView(tab)}
+                              style={{ flex: 1, padding: '9px 0', borderRadius: '8px', border: 'none', background: collabView === tab ? C.surfaceAlt : 'transparent', color: collabView === tab ? C.text : C.textSecondary, fontWeight: 600, fontSize: '13px', cursor: 'pointer', transition: 'all 0.15s', position: 'relative' }}
+                            >
+                              {tab === 'browse' ? 'Browse' : 'Sent'}
+                              {tab === 'sent' && collabSentNames.length > 0 && (
+                                <span style={{ position: 'absolute', top: '6px', right: '12px', width: '16px', height: '16px', borderRadius: '50%', background: C.primary, color: '#fff', fontSize: '9px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{collabSentNames.length}</span>
+                              )}
+                            </button>
+                          ))}
                         </div>
 
-                        {/* ValuSkin picker — all unique skins in the creator pool */}
-                        <div style={{ marginBottom: '16px' }}>
-                          <div style={{ fontSize: '11px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '8px' }}>Browse by ValuSkin</div>
-                          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                            {Array.from(new Set(BRAND_MARKETPLACE_CREATORS.map(c => c.valueSkin))).map(skin => {
-                              const b = PROFESSION_BADGES[skin];
-                              const abbr = b?.abbreviation ?? skin.split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0, 3);
-                              const color = b?.color ?? C.primary;
-                              const active = collabTargetSkin === skin;
-                              return (
-                                <button
-                                  key={skin}
-                                  onClick={() => { setCollabTargetSkin(active ? null : skin); setCollabRequestOpen(null); }}
-                                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '8px', border: `2px solid ${active ? color : C.border}`, background: active ? `${color}15` : C.card, cursor: 'pointer', transition: 'all 0.15s' }}
-                                >
-                                  <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '16px', height: '16px', borderRadius: '3px', background: color, color: '#fff', fontSize: '7px', fontWeight: 700 }}>{abbr}</span>
-                                  <span style={{ fontSize: '11px', fontWeight: 600, color: active ? C.text : C.textSecondary }}>{skin}</span>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-
-                        {!collabTargetSkin && (
-                          <div style={{ textAlign: 'center', padding: '30px 20px', color: C.textMuted, fontSize: '13px' }}>
-                            Select a ValuSkin above to see creators.
+                        {/* Sent requests view */}
+                        {collabView === 'sent' && (
+                          <div>
+                            {collabSentNames.length === 0 ? (
+                              <div style={{ textAlign: 'center', padding: '40px 20px', color: C.textMuted, fontSize: '13px' }}>No collab requests sent yet.</div>
+                            ) : (
+                              collabSentNames.map((name, i) => {
+                                const creator = BRAND_MARKETPLACE_CREATORS.find(c => c.name === name);
+                                const badge = creator ? PROFESSION_BADGES[creator.valueSkin] : null;
+                                const badgeColor = badge?.color ?? C.accent;
+                                const abbr = badge?.abbreviation ?? (creator?.valueSkin ?? '').split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0, 3);
+                                return (
+                                  <div key={i} style={{ background: C.card, borderRadius: '12px', padding: '14px', marginBottom: '10px', border: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                    <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${name.replace(/\s/g,'')}`} alt={name} style={{ width: '40px', height: '40px', borderRadius: '50%', background: C.surfaceAlt, border: `2px solid ${badgeColor}`, flexShrink: 0 }} />
+                                    <div style={{ flex: 1 }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
+                                        <span style={{ fontWeight: 700, fontSize: '14px', color: C.text }}>{name}</span>
+                                        {creator && (
+                                          <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '18px', height: '18px', borderRadius: '4px', background: badgeColor, color: '#fff', fontSize: '7px', fontWeight: 700 }}>{abbr}</span>
+                                        )}
+                                      </div>
+                                      <div style={{ fontSize: '11px', color: C.textSecondary }}>{creator?.handle ?? ''}</div>
+                                    </div>
+                                    <span style={{ fontSize: '11px', fontWeight: 600, color: C.textSecondary, background: C.surfaceAlt, padding: '4px 10px', borderRadius: '6px', flexShrink: 0 }}>Pending</span>
+                                  </div>
+                                );
+                              })
+                            )}
                           </div>
                         )}
 
-                        {collabTargetSkin && BRAND_MARKETPLACE_CREATORS.filter(c => c.valueSkin === collabTargetSkin).map((creator, i) => {
+                        {collabView === 'browse' && <>
+                        {/* Compensation type filter chips */}
+                        <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
+                          {(['all', 'paid', 'unpaid', 'barter'] as const).map(f => {
+                            const labels: Record<string, string> = { all: 'All', paid: 'Paid', unpaid: 'Unpaid', barter: 'Barter' };
+                            const active = collabCompFilter === f;
+                            return (
+                              <button
+                                key={f}
+                                onClick={() => { setCollabCompFilter(f); setCollabRequestOpen(null); }}
+                                style={{ padding: '7px 16px', borderRadius: '20px', border: 'none', whiteSpace: 'nowrap', background: active ? C.text : C.card, color: active ? C.bg : C.textSecondary, fontWeight: 600, fontSize: '13px', cursor: 'pointer', transition: 'all 0.15s' }}
+                              >
+                                {labels[f]}
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {BRAND_MARKETPLACE_CREATORS.filter(c => {
+                          if (collabCompFilter === 'all') return true;
+                          if (collabCompFilter === 'barter') return c.willingToBarter || c.dealTypes.includes('Barter');
+                          if (collabCompFilter === 'paid') return c.dealTypes.includes('Paid');
+                          if (collabCompFilter === 'unpaid') return !c.dealTypes.includes('Paid') && !c.willingToBarter;
+                          return true;
+                        }).map((creator, i) => {
                           const sent = collabSentNames.includes(creator.name);
                           const open = collabRequestOpen === i;
                           const badge = PROFESSION_BADGES[creator.valueSkin];
@@ -2801,6 +2851,7 @@ export default function InstagramDemoPage() {
                             </div>
                           );
                         })}
+                        </>}
                       </>
                     )}
 
