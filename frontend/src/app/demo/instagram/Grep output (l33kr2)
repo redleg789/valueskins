@@ -1,0 +1,10 @@
+737:  // Simulated: creator countered at this amount after brand sent offer
+2169:                                        Brand offer has arrived. Respond to their offer or submit a counter-offer — prices are only visible inside this room.
+2219:                                  {dealRoomPhase === 'counter' && (
+2221:                                      <div style={{ fontSize: '12px', color: C.textSecondary, marginBottom: '8px' }}>Enter your counter-offer. Brand has 24h to respond or it auto-expires.</div>
+3200:                                  {/* Simulate creator counter-offer */}
+3205:                                    Simulate: Creator countered → See counter-offer
+3231:                                    Simulate: Creator countered → See counter-offer
+3236:                              {/* Phase 4: Creator counter-offer received */}
+
+[Showing results with pagination = limit: 10, offset: 0]

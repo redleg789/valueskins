@@ -5,6 +5,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useLevelConfig, useReputationConfig } from '@/lib/useConfigStorage';
 import { useDealSync, type DealState, type DealRoomPhase, type SharedApplication, type Campaign, type ChatMessage } from '@/lib/useDealSync';
+import { useFirebaseRoom } from '@/lib/useFirebaseRoom';
 import {
   type ValueSkinMap,
   type ValueSkinSlot,
@@ -393,7 +394,14 @@ const MOCK_REPUTATION = {
   maxDealSize: 2000,
 };
 
-export default function InstagramDemoPage() {
+interface DemoPageProps {
+  roomId?: string | null;
+  userRole?: 'brand' | 'creator' | null;
+  userHandle?: string;
+  firebaseReady?: boolean;
+}
+
+export default function InstagramDemoPage({ roomId = null, userRole = null, userHandle = '', firebaseReady = false }: DemoPageProps) {
   const [activeView, setActiveView] = useState<'profile' | 'mim' | 'store' | 'admin' | 'messages' | 'settings' | 'explore' | 'notifications'>('profile');
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
@@ -845,6 +853,7 @@ export default function InstagramDemoPage() {
   const [collabTargetSkin, setCollabTargetSkin] = useState<string | null>(null);
   const [collabView, setCollabView] = useState<'browse' | 'sent'>('browse');
   const [collabCompFilter, setCollabCompFilter] = useState<'all' | 'paid' | 'unpaid' | 'barter'>('all');
+  const [firebaseNotifications, setFirebaseNotifications] = useState<Array<{id: string; type: 'campaign' | 'application' | 'message'; message: string; createdAt: number; read: boolean}>>([]);
 
   // Brand field filter — which ValueSkin profession the brand wants to target
   const [brandSearchQuery, setBrandSearchQuery] = useState('');
@@ -894,8 +903,32 @@ export default function InstagramDemoPage() {
   const [adminAllowLongTermContracts, setAdminAllowLongTermContracts] = useState(true);
   const [adminSavedFeaturesTab, setAdminSavedFeaturesTab] = useState(false);
 
+  // Firebase room sync (for multiplayer mode)
+  const { state: firebaseState, syncing: firebaseSyncing, createCampaign: firebaseCreateCampaign, updateDeal: firebaseUpdateDeal, addMessage: firebaseAddMessage, sendNotification: firebaseSendNotification, createApplication: firebaseCreateApplication } = useFirebaseRoom(roomId, userRole, userHandle);
+
   // Campaigns + applications — from deal sync hook (API-backed with localStorage fallback)
   const { applications: sharedApplications, setApplications: setSharedApplications, campaigns, setCampaigns } = dealSync;
+
+  // Merge Firebase campaigns into local state if in room mode
+  useEffect(() => {
+    if (roomId && firebaseState.campaigns.length > 0) {
+      setCampaigns(firebaseState.campaigns as Campaign[]);
+    }
+  }, [roomId, firebaseState.campaigns, setCampaigns]);
+
+  // Sync Firebase notifications
+  useEffect(() => {
+    if (roomId && firebaseState.notifications.length > 0) {
+      setFirebaseNotifications(firebaseState.notifications);
+      const newNotifs = firebaseState.notifications.filter(n => !n.read);
+      if (newNotifs.length > 0) {
+        newNotifs.forEach(n => {
+          const msg = n.type === 'campaign' ? `New campaign: ${n.message}` : n.type === 'application' ? `New application: ${n.message}` : `Message: ${n.message}`;
+          setNotifications(prev => [{ id: parseInt(n.id) || Date.now(), type: n.type, text: msg, time: 'just now', read: false }, ...prev.slice(0, 9)]);
+        });
+      }
+    }
+  }, [roomId, firebaseState.notifications]);
 
   const defaultCampaigns: Campaign[] = [
     { id:1, brandProfession:'Software Engineer', title:'React Expert for SaaS Launch', description:'We need an authentic Software Engineer to demo our dev tool to a tech audience. 2x Reels.', requiredProfessions:['Software Engineer','Data Scientist'], minLevel:2, maxLevel:5, budget:'5000', deadline:'2026-03-15', location:'USA', nonNegotiables:['NDA required','Usage rights: 90 days'], deliverables:'2x Instagram Reels', status:'expired', applicants:3 },
@@ -2401,13 +2434,16 @@ export default function InstagramDemoPage() {
                                             const now = new Date();
                                             const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: false });
                                             const isoNow = now.toISOString();
-                                            setChatMessages(prev => [...prev, { id: Date.now(), sender: 'me', text: chatInput.trim(), time: timeStr, isoTime: isoNow, seen: false }]);
+                                            const msgSender: 'brand' | 'creator' = (marketplaceRole as 'brand' | 'creator') === 'brand' ? 'brand' : 'creator';
+                                            const newMsg = { id: Date.now(), sender: msgSender, text: chatInput.trim(), time: timeStr, isoTime: isoNow, seen: false };
+                                            setChatMessages(prev => [...prev, newMsg]);
+                                            if (roomId) { firebaseAddMessage(activeDealKey ?? '', newMsg); }
                                             setChatInput('');
-                                            // Simulate brand reading + replying
+                                            // Simulate other party reading + replying
                                             setTimeout(() => {
                                               const seenAt = new Date().toISOString();
-                                              // Mark creator messages as seen with exact timestamp
-                                              setChatMessages(prev => prev.map(m => m.sender === 'me' && !m.seen ? { ...m, seen: true, seenAt } : m));
+                                              // Mark sender's messages as seen
+                                              setChatMessages(prev => prev.map(m => m.sender === msgSender && !m.seen ? { ...m, seen: true, seenAt } : m));
                                               setTimeout(() => {
                                                 const replies = [
                                                   'Sounds good! Let me check with my team.',
@@ -2418,10 +2454,10 @@ export default function InstagramDemoPage() {
                                                 ];
                                                 const replyTime = new Date();
                                                 const replyTimeStr = replyTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: false });
-                                                setChatMessages(prev => [
-                                                  ...prev,
-                                                  { id: Date.now(), sender: 'brand' as const, text: replies[Math.floor(Math.random() * replies.length)], time: replyTimeStr, isoTime: replyTime.toISOString(), seen: false },
-                                                ]);
+                                                const replySender: 'brand' | 'creator' = (marketplaceRole as 'brand' | 'creator') === 'brand' ? 'creator' : 'brand';
+                                                const replyMsg = { id: Date.now(), sender: replySender, text: replies[Math.floor(Math.random() * replies.length)], time: replyTimeStr, isoTime: replyTime.toISOString(), seen: false };
+                                                setChatMessages(prev => [...prev, replyMsg]);
+                                                if (roomId) { firebaseAddMessage(activeDealKey ?? '', replyMsg); }
                                               }, 800);
                                             }, 1200);
                                           }} style={{ display: 'flex', gap: '4px', padding: '6px', borderTop: `1px solid ${C.border}` }}>
@@ -2689,7 +2725,7 @@ export default function InstagramDemoPage() {
                                     <button onClick={() => setCollabNegotiable(p => !p)} style={{ flex: 1, padding: '7px', borderRadius: '8px', border: `1px solid ${collabNegotiable ? C.accent : C.border}`, background: collabNegotiable ? 'rgba(94,106,210,0.1)' : C.bg, color: collabNegotiable ? C.accent : C.textSecondary, fontWeight: 600, fontSize: '11px', cursor: 'pointer' }}>Negotiable</button>
                                   </div>
                                   <button
-                                    onClick={() => { if (collabIdea.trim()) { setCollabSentNames(p => [...p, creator.name]); setCollabRequestOpen(null); setCollabIdea(''); setCollabFormat(''); setPurchaseToast('Collab request sent'); setTimeout(() => setPurchaseToast(null), 3000); } }}
+                                    onClick={() => { if (collabIdea.trim()) { setCollabSentNames(p => [...p, creator.name]); setCollabRequestOpen(null); const msg = `Collab request: ${collabIdea.trim()} (${collabFormat || 'format TBD'}, ${collabPaid ? 'Paid' : 'Unpaid'})`; setCollabIdea(''); setCollabFormat(''); if (roomId) { firebaseSendNotification(creator.handle || '', 'message', msg); } setPurchaseToast('Collab request sent'); setTimeout(() => setPurchaseToast(null), 3000); } }}
                                     style={{ width: '100%', background: collabIdea.trim() ? C.accent : C.border, border: 'none', padding: '9px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: collabIdea.trim() ? 'pointer' : 'not-allowed', fontSize: '13px' }}
                                   >
                                     Send Collab Request
@@ -2890,6 +2926,7 @@ export default function InstagramDemoPage() {
                               if (missing.length > 0) { setPurchaseToast(`Missing: ${missing.join(', ')}`); setTimeout(()=>setPurchaseToast(null),4000); return; }
                               const newC: Campaign = { id:Date.now(), brandProfession:activeBrandSkin??'', title:newCampaignTitle, description:newCampaignDesc, about:newCampaignAbout, requiredProfessions:newCampaignProfessions, minLevel:newCampaignMinLevel, maxLevel:newCampaignMaxLevel, budget:newCampaignBudget, deadline:newCampaignDeadline, location:newCampaignLocation, nonNegotiables:newCampaignNonNeg, deliverables:newCampaignDeliverables, compensationType:newCampaignCompensation, exclusivity:newCampaignExclusivity, usageRights:newCampaignUsageRights, revisionLimit:newCampaignRevisionLimit, audienceTarget:newCampaignAudienceTarget, requirements:newCampaignRequirements, status:'open', applicants:0 };
                               persistCampaigns([...campaigns, newC]);
+                              if (roomId) { firebaseCreateCampaign(newC); }
                               setShowCampaignCreator(false); setNewCampaignTitle(''); setNewCampaignDesc(''); setNewCampaignAbout(''); setNewCampaignBudget(''); setNewCampaignDeadline(''); setNewCampaignProfessions([]); setNewCampaignMinLevel(1); setNewCampaignMaxLevel(5); setNewCampaignLocation(''); setNewCampaignDeliverables(''); setNewCampaignNonNeg([]); setNewCampaignCompensation('Paid'); setNewCampaignExclusivity('None'); setNewCampaignUsageRights('30 days, social only'); setNewCampaignRevisionLimit(2); setNewCampaignAudienceTarget(''); setNewCampaignRequirements([]); setNewCampaignReqInput('');
                               setPurchaseToast('Campaign published — visible to matching creators now'); setTimeout(()=>setPurchaseToast(null),3000);
                             }}

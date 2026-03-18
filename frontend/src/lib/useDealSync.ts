@@ -35,7 +35,7 @@ export type DealState = {
 
 export type ChatMessage = {
   id: number;
-  sender: 'me' | 'brand';
+  sender: 'me' | 'brand' | 'creator';
   text: string;
   time: string;       // display time (e.g. "2:34 PM")
   isoTime: string;    // full ISO timestamp for audit log (e.g. "2026-03-18T14:34:07.421Z")
