@@ -528,6 +528,7 @@ export default function InstagramDemoPage() {
 
   // Which ValueSkin the creator is viewing the marketplace for
   const [selectedMarketplaceSkin, setSelectedMarketplaceSkin] = useState<string | null>(null);
+  const [creatorCampaignSearch, setCreatorCampaignSearch] = useState('');
 
   // Auto-select single skin if only one is owned
   useEffect(() => {
@@ -871,6 +872,9 @@ export default function InstagramDemoPage() {
         newNotifs.forEach(n => {
           const msg = n.type === 'campaign' ? `New campaign: ${n.message}` : n.type === 'application' ? `New application: ${n.message}` : `Message: ${n.message}`;
           setNotifications(prev => [{ id: parseInt(n.id) || Date.now(), type: n.type, text: msg, time: 'just now', read: false }, ...prev.slice(0, 9)]);
+          // Feature 3: Show toast notification
+          setPurchaseToast(msg);
+          setTimeout(() => setPurchaseToast(null), 4000);
         });
       }
     }
@@ -898,6 +902,15 @@ export default function InstagramDemoPage() {
   const [newCampaignAudienceTarget, setNewCampaignAudienceTarget] = useState('');
   const [newCampaignRequirements, setNewCampaignRequirements] = useState<string[]>([]);
   const [newCampaignReqInput, setNewCampaignReqInput] = useState('');
+
+  // Feature 4: Batch campaign sending
+  const [showBatchSendModal, setShowBatchSendModal] = useState(false);
+  const [batchSendCreatorIds, setBatchSendCreatorIds] = useState<Set<number>>(new Set());
+  const [lastCreatedCampaignId, setLastCreatedCampaignId] = useState<number | null>(null);
+
+  // Feature 2: Creator profile display
+  const [showCreatorProfileModal, setShowCreatorProfileModal] = useState(false);
+  const [selectedProfileCreator, setSelectedProfileCreator] = useState<typeof BRAND_MARKETPLACE_CREATORS[0] | null>(null);
 
   // Convenience aliases for backward compatibility
   const persistCampaigns = (updated: Campaign[]) => { setCampaigns(updated); };
@@ -1671,6 +1684,31 @@ export default function InstagramDemoPage() {
                   </div>
                 )}
 
+                {/* Availability badge */}
+                {hasValueSkin && (notAvailableFrom || notAvailableTo) && (
+                  <div style={{
+                    borderRadius: '12px', padding: '10px 14px', marginTop: '8px',
+                    backgroundColor: `${C.warning}10`, border: `1px solid ${C.warningBorder}`,
+                    display: 'flex', alignItems: 'center', gap: '8px',
+                    fontSize: '13px', color: C.textSecondary, fontWeight: 600,
+                  }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.warning} strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <span>Unavailable {notAvailableFrom && `from ${notAvailableFrom}`}{notAvailableTo && ` to ${notAvailableTo}`}</span>
+                    <button onClick={() => setActiveView('settings')} style={{ background: 'none', border: 'none', color: C.textMuted, fontSize: '11px', cursor: 'pointer', marginLeft: 'auto' }}>Edit</button>
+                  </div>
+                )}
+                {hasValueSkin && !notAvailableFrom && !notAvailableTo && (
+                  <div style={{
+                    borderRadius: '12px', padding: '10px 14px', marginTop: '8px',
+                    backgroundColor: `${C.success}10`,
+                    display: 'flex', alignItems: 'center', gap: '8px',
+                    fontSize: '13px', color: C.textSecondary, fontWeight: 600,
+                  }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.success} strokeWidth="2" strokeLinecap="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                    <span>Available for deals</span>
+                  </div>
+                )}
+
                 {/* Credentials & Identity Section */}
                 {/* Compact Verified Credentials — inline chip row */}
                 <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '16px', alignItems: 'center' }}>
@@ -2050,6 +2088,16 @@ export default function InstagramDemoPage() {
                   </div>
 
                   <div style={{ padding: '0 16px 16px' }}>
+                    {/* Campaign search bar */}
+                    {selectedMarketplaceSkin && (
+                      <div style={{ position: 'relative', marginBottom: '12px' }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)' }}>
+                          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                        </svg>
+                        <input type="text" value={creatorCampaignSearch} onChange={e => setCreatorCampaignSearch(e.target.value)} placeholder="Search campaigns by brand, title, budget..." style={{ width: '100%', background: C.card, border: `1px solid ${creatorCampaignSearch ? C.primary : C.border}`, borderRadius: '10px', padding: '10px 10px 10px 32px', color: C.text, fontSize: '13px', boxSizing: 'border-box' as const, outline: 'none' }} />
+                        {creatorCampaignSearch && <button onClick={() => setCreatorCampaignSearch('')} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: C.textMuted, cursor: 'pointer', fontSize: '14px' }}>x</button>}
+                      </div>
+                    )}
                     {(<>
 
                     {/* Active Deals Banner */}
@@ -2079,14 +2127,14 @@ export default function InstagramDemoPage() {
                     {/* Opportunities for selected skin */}
                     {creatorMarketplaceMode === 'brand' && selectedMarketplaceSkin && (
                       <>
-                        {activeOpportunities.filter(opp => !filterOppsBarterOnly || opp.willingToBarter).length === 0 && (
+                        {activeOpportunities.filter(opp => (!filterOppsBarterOnly || opp.willingToBarter) && (!creatorCampaignSearch.trim() || opp.brand.toLowerCase().includes(creatorCampaignSearch.trim().toLowerCase()) || (opp.about||'').toLowerCase().includes(creatorCampaignSearch.trim().toLowerCase()) || (opp.budget||'').toLowerCase().includes(creatorCampaignSearch.trim().toLowerCase()))).length === 0 && (
                           <div style={{ textAlign: 'center', padding: '40px 20px' }}>
                             <div style={{ fontSize: '14px', color: C.textSecondary, lineHeight: 1.6 }}>
                               No campaigns targeting {selectedMarketplaceSkin} yet. Brands will create campaigns that appear here in real-time.
                             </div>
                           </div>
                         )}
-                        {activeOpportunities.filter(opp => !filterOppsBarterOnly || opp.willingToBarter).map((opp, i) => {
+                        {activeOpportunities.filter(opp => (!filterOppsBarterOnly || opp.willingToBarter) && (!creatorCampaignSearch.trim() || opp.brand.toLowerCase().includes(creatorCampaignSearch.trim().toLowerCase()) || (opp.about||'').toLowerCase().includes(creatorCampaignSearch.trim().toLowerCase()) || (opp.budget||'').toLowerCase().includes(creatorCampaignSearch.trim().toLowerCase()))).map((opp, i) => {
                           const dealKey = `${selectedMarketplaceSkin}:${i}`;
                           const existingDeal = dealStates[dealKey];
                           const hasActiveDeal = existingDeal && existingDeal.phase !== 'brief';
@@ -2153,6 +2201,11 @@ export default function InstagramDemoPage() {
                                 </div>
                               ) : (
                                 <div style={{ background: C.card, borderRadius: '16px', padding: '16px', border: `1px solid ${C.border}` }}>
+                                  {/* Deal Room Back Button */}
+                                  <button onClick={() => setNegotiatingOpp(null)} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: C.textSecondary, cursor: 'pointer', fontSize: '12px', fontWeight: 600, padding: '0 0 10px', marginBottom: '2px' }}>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.textSecondary} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                                    Back to marketplace
+                                  </button>
                                   {/* Deal Room header — shield + brand */}
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
                                     <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: `${C.primary}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -2167,6 +2220,31 @@ export default function InstagramDemoPage() {
                                       <div style={{ fontSize: '12px', color: C.textMuted }}>
                                         {dealRoomPhase === 'accepted' ? 'Deal accepted — terms locked' : dealRoomPhase === 'formal_offer' ? 'Review formal offer' : 'Negotiate freely — price, terms, everything'}
                                       </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Feature 1: Deal Lifecycle Phase Indicator */}
+                                  <div style={{ marginBottom:'12px', padding:'10px 12px', background:C.bg, borderRadius:'10px', border:`1px solid ${C.border}` }}>
+                                    <div style={{ fontSize:'9px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', marginBottom:'8px', letterSpacing:'0.5px' }}>Deal Progression</div>
+                                    <div style={{ display:'flex', alignItems:'center', gap:'4px' }}>
+                                      {(['offer_sent', 'countered', 'accepted', 'completed'] as const).map((phase, idx, arr) => {
+                                        const phaseNames = { offer_sent: 'Offer Sent', countered: 'Countered', accepted: 'Accepted', completed: 'Completed' };
+                                        const isActive = dealRoomPhase === phase || (dealRoomPhase === 'formal_offer' && phase === 'offer_sent') || (dealRoomPhase === 'brand_countered' && idx <= 1) || (dealRoomPhase === 'softhold' && phase === 'completed');
+                                        const isCompleted = (dealRoomPhase === 'accepted' && idx < 2) || (dealRoomPhase === 'softhold' && idx < 3);
+                                        return (
+                                          <React.Fragment key={phase}>
+                                            <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'4px' }}>
+                                              <div style={{ width:'28px', height:'28px', borderRadius:'50%', background:isCompleted?C.success:isActive?C.primary:C.border, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'11px', fontWeight:700, color: isCompleted || isActive ? '#fff' : C.textMuted, transition:'all 0.2s' }}>
+                                                {isCompleted ? '✓' : idx + 1}
+                                              </div>
+                                              <div style={{ fontSize:'8px', color: isActive ? C.primary : C.textMuted, fontWeight: isActive ? 700 : 400, textAlign:'center', minWidth:'40px' }}>{phaseNames[phase]}</div>
+                                            </div>
+                                            {idx < arr.length - 1 && (
+                                              <div style={{ flex:1, height:'2px', background: isCompleted ? C.success : C.border, margin:'0 2px', marginTop:'-8px' }} />
+                                            )}
+                                          </React.Fragment>
+                                        );
+                                      })}
                                     </div>
                                   </div>
 
@@ -2951,8 +3029,12 @@ export default function InstagramDemoPage() {
                               const newC: Campaign = { id:Date.now(), brandName:profileName, brandProfession:activeBrandSkin??'', title:newCampaignTitle, description:newCampaignDesc, about:newCampaignAbout, requiredProfessions:[activeBrandSkin ?? ''], minLevel:newCampaignMinLevel, maxLevel:newCampaignMaxLevel, budget:newCampaignBudget, deadline:newCampaignDeadline, location:newCampaignLocation, nonNegotiables:newCampaignNonNeg, deliverables:newCampaignDeliverables, compensationType:newCampaignCompensation, exclusivity:newCampaignExclusivity, usageRights:newCampaignUsageRights, revisionLimit:newCampaignRevisionLimit, audienceTarget:newCampaignAudienceTarget, requirements:newCampaignRequirements, status:'open', applicants:0 };
                               persistCampaigns([...campaigns, newC]);
                               firebaseCreateCampaign(newC);
-                              setShowCampaignCreator(false); setNewCampaignTitle(''); setNewCampaignDesc(''); setNewCampaignAbout(''); setNewCampaignBudget(''); setNewCampaignDeadline(''); setNewCampaignProfessions([]); setNewCampaignMinLevel(1); setNewCampaignMaxLevel(5); setNewCampaignLocation(''); setNewCampaignDeliverables(''); setNewCampaignNonNeg([]); setNewCampaignCompensation('Paid'); setNewCampaignExclusivity('None'); setNewCampaignUsageRights('30 days, social only'); setNewCampaignRevisionLimit(2); setNewCampaignAudienceTarget(''); setNewCampaignRequirements([]); setNewCampaignReqInput('');
-                              setPurchaseToast('Campaign published — visible to matching creators now'); setTimeout(()=>setPurchaseToast(null),3000);
+                              setShowCampaignCreator(false);
+                              setLastCreatedCampaignId(newC.id);
+                              setShowBatchSendModal(true);
+                              setBatchSendCreatorIds(new Set());
+                              setNewCampaignTitle(''); setNewCampaignDesc(''); setNewCampaignAbout(''); setNewCampaignBudget(''); setNewCampaignDeadline(''); setNewCampaignProfessions([]); setNewCampaignMinLevel(1); setNewCampaignMaxLevel(5); setNewCampaignLocation(''); setNewCampaignDeliverables(''); setNewCampaignNonNeg([]); setNewCampaignCompensation('Paid'); setNewCampaignExclusivity('None'); setNewCampaignUsageRights('30 days, social only'); setNewCampaignRevisionLimit(2); setNewCampaignAudienceTarget(''); setNewCampaignRequirements([]); setNewCampaignReqInput('');
+                              setPurchaseToast('Campaign published'); setTimeout(()=>setPurchaseToast(null),2000);
                             }}
                             style={{ width:'100%', background:C.primary, border:'none', borderRadius:'8px', padding:'11px', color:'#fff', fontWeight:700, fontSize:'14px', cursor:'pointer' }}
                           >
@@ -2961,6 +3043,92 @@ export default function InstagramDemoPage() {
                         </div>
                       </div>
                     )}
+
+                    {/* Feature 4: Batch Campaign Sending Modal */}
+                    {showBatchSendModal && lastCreatedCampaignId && (
+                      <div style={{ position:'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.75)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:9999 }}>
+                        <div style={{ background:C.surface, borderRadius:'16px', padding:'24px', maxWidth:'480px', width:'95vw', maxHeight:'90vh', overflowY:'auto', border:`1px solid ${C.border}`, position:'relative' }}>
+                          <button onClick={() => { setShowBatchSendModal(false); setLastCreatedCampaignId(null); setBatchSendCreatorIds(new Set()); }} style={{ position:'absolute', top:'16px', right:'16px', background:'none', border:'none', color:C.textMuted, fontSize:'22px', cursor:'pointer', lineHeight:1 }}>x</button>
+                          <div style={{ fontSize:'16px', fontWeight:700, color:C.text, marginBottom:'4px' }}>Send Campaign to Creators</div>
+                          <div style={{ fontSize:'12px', color:C.textSecondary, marginBottom:'16px' }}>Select creators to invite to "{campaigns.find(c => c.id === lastCreatedCampaignId)?.title || 'Campaign'}"</div>
+                          <div style={{ maxHeight:'400px', overflowY:'auto', marginBottom:'16px', border:`1px solid ${C.border}`, borderRadius:'8px', background:C.bg }}>
+                            {BRAND_MARKETPLACE_CREATORS.map((creator, idx) => (
+                              <div key={creator.name} style={{ padding:'12px 12px', borderBottom: idx < BRAND_MARKETPLACE_CREATORS.length - 1 ? `1px solid ${C.border}` : 'none', display:'flex', gap:'10px', alignItems:'center', cursor:'pointer' }} onClick={() => { setBatchSendCreatorIds(prev => { const newSet = new Set(prev); if (newSet.has(idx)) newSet.delete(idx); else newSet.add(idx); return newSet; }); }}>
+                                <input type="checkbox" checked={batchSendCreatorIds.has(idx)} onChange={() => {}} style={{ cursor:'pointer', width:'18px', height:'18px', accentColor:C.primary }} />
+                                <div style={{ flex:1 }}>
+                                  <div style={{ fontSize:'13px', fontWeight:600, color:C.text }}>{creator.name}</div>
+                                  <div style={{ fontSize:'11px', color:C.textSecondary }}>{creator.valueSkin} · {creator.followers} followers</div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          <div style={{ marginBottom:'16px', padding:'10px 12px', background:`${C.primary}08`, border:`1px solid ${C.primary}30`, borderRadius:'8px' }}>
+                            <div style={{ fontSize:'13px', fontWeight:700, color:C.text, marginBottom:'4px' }}>{batchSendCreatorIds.size} creator{batchSendCreatorIds.size !== 1 ? 's' : ''} selected</div>
+                            <div style={{ fontSize:'11px', color:C.textSecondary }}>Each will receive a notification about your campaign</div>
+                          </div>
+                          <div style={{ display:'flex', gap:'8px' }}>
+                            <button onClick={() => { setShowBatchSendModal(false); setLastCreatedCampaignId(null); setBatchSendCreatorIds(new Set()); }} style={{ flex:1, background:'none', border:`1px solid ${C.border}`, borderRadius:'8px', padding:'11px', color:C.text, fontWeight:700, fontSize:'13px', cursor:'pointer' }}>Skip</button>
+                            <button onClick={() => { batchSendCreatorIds.forEach(idx => { const creator = BRAND_MARKETPLACE_CREATORS[idx]; const app: SharedApplication = { id:Date.now() + idx, campaignId:lastCreatedCampaignId ?? 0, campaignTitle:campaigns.find(c => c.id === lastCreatedCampaignId)?.title || 'Campaign', creatorProfession:creator.valueSkin || '', creatorHandle:creator.handle || '', creatorName:creator.name, status:'pending', appliedAt:new Date().toISOString() }; firebaseCreateApplication(app); firebaseSendNotification(creator.handle || '', 'campaign', `${profileName} invited you to: ${campaigns.find(c => c.id === lastCreatedCampaignId)?.title || 'Campaign'}`); }); setPurchaseToast(`Campaign sent to ${batchSendCreatorIds.size} creator${batchSendCreatorIds.size !== 1 ? 's' : ''}`); setTimeout(() => setPurchaseToast(null), 3000); setShowBatchSendModal(false); setLastCreatedCampaignId(null); setBatchSendCreatorIds(new Set()); }} style={{ flex:1, background:batchSendCreatorIds.size > 0 ? C.primary : C.border, border:'none', borderRadius:'8px', padding:'11px', color:'#fff', fontWeight:700, fontSize:'13px', cursor: batchSendCreatorIds.size > 0 ? 'pointer' : 'not-allowed', opacity: batchSendCreatorIds.size > 0 ? 1 : 0.5 }}>Send to {batchSendCreatorIds.size} Creator{batchSendCreatorIds.size !== 1 ? 's' : ''}</button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Feature 2: Creator Profile Modal */}
+                    {showCreatorProfileModal && selectedProfileCreator && (
+                      <div style={{ position:'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.75)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:9999, padding:'16px' }}>
+                        <div style={{ background:C.surface, borderRadius:'16px', padding:'24px', maxWidth:'500px', width:'100%', maxHeight:'90vh', overflowY:'auto', border:`1px solid ${C.border}`, position:'relative' }}>
+                          <button onClick={() => { setShowCreatorProfileModal(false); setSelectedProfileCreator(null); }} style={{ position:'absolute', top:'16px', right:'16px', background:'none', border:'none', color:C.textMuted, fontSize:'22px', cursor:'pointer', lineHeight:1 }}>x</button>
+                          <div style={{ display:'flex', gap:'12px', alignItems:'flex-start', marginBottom:'16px' }}>
+                            <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${selectedProfileCreator.name.replace(/\s/g,'')}`} alt={selectedProfileCreator.name} style={{ width:'60px', height:'60px', borderRadius:'50%', background:C.surfaceAlt }} />
+                            <div style={{ flex:1 }}>
+                              <div style={{ fontSize:'16px', fontWeight:700, color:C.text, marginBottom:'4px' }}>{selectedProfileCreator.name}</div>
+                              <a href={`https://instagram.com/${selectedProfileCreator.handle.replace('@', '')}`} target="_blank" rel="noopener noreferrer" style={{ fontSize:'12px', color:C.primary, textDecoration:'none' }}>{selectedProfileCreator.handle}</a>
+                              <div style={{ fontSize:'11px', color:C.textSecondary, marginTop:'4px' }}>4.8★ rating from {Math.floor(Math.random() * 15) + 5} deals</div>
+                            </div>
+                          </div>
+                          <div style={{ marginBottom:'16px', padding:'10px 12px', background:C.card, borderRadius:'10px', border:`1px solid ${C.border}` }}>
+                            <div style={{ fontSize:'10px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', marginBottom:'8px' }}>Quick Stats</div>
+                            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px' }}>
+                              <div><div style={{ fontSize:'12px', fontWeight:700, color:C.text }}>{selectedProfileCreator.followers}</div><div style={{ fontSize:'9px', color:C.textMuted }}>Followers</div></div>
+                              <div><div style={{ fontSize:'12px', fontWeight:700, color:C.text }}>{selectedProfileCreator.engagement}</div><div style={{ fontSize:'9px', color:C.textMuted }}>Engagement</div></div>
+                              <div><div style={{ fontSize:'12px', fontWeight:700, color:C.text }}>{selectedProfileCreator.dealCompletionRate}%</div><div style={{ fontSize:'9px', color:C.textMuted }}>Completion Rate</div></div>
+                              <div><div style={{ fontSize:'12px', fontWeight:700, color:C.text }}>${(selectedProfileCreator.minDealUsd / 1000).toFixed(1)}K</div><div style={{ fontSize:'9px', color:C.textMuted }}>Min Deal</div></div>
+                            </div>
+                          </div>
+                          <div style={{ marginBottom:'16px' }}>
+                            <div style={{ fontSize:'11px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', marginBottom:'8px' }}>ValueSkin</div>
+                            <div style={{ fontSize:'13px', fontWeight:700, color:C.text, background:C.card, padding:'10px 12px', borderRadius:'8px', border:`1px solid ${C.border}` }}>{selectedProfileCreator.valueSkin}</div>
+                          </div>
+                          <div style={{ marginBottom:'16px' }}>
+                            <div style={{ fontSize:'11px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', marginBottom:'8px' }}>Audience</div>
+                            <div style={{ display:'flex', gap:'6px', flexWrap:'wrap' }}>
+                              <span style={{ fontSize:'10px', padding:'4px 8px', background:C.card, borderRadius:'6px', border:`1px solid ${C.border}`, color:C.textSecondary }}>{selectedProfileCreator.audienceAgeRange}</span>
+                              <span style={{ fontSize:'10px', padding:'4px 8px', background:C.card, borderRadius:'6px', border:`1px solid ${C.border}`, color:C.textSecondary }}>{selectedProfileCreator.audienceLocation}</span>
+                              <span style={{ fontSize:'10px', padding:'4px 8px', background:C.card, borderRadius:'6px', border:`1px solid ${C.border}`, color:C.textSecondary }}>{selectedProfileCreator.audienceLang}</span>
+                            </div>
+                          </div>
+                          <div style={{ marginBottom:'16px' }}>
+                            <div style={{ fontSize:'11px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', marginBottom:'8px' }}>Deal Types</div>
+                            <div style={{ display:'flex', gap:'6px', flexWrap:'wrap' }}>
+                              {selectedProfileCreator.dealTypes.map(dt => (
+                                <span key={dt} style={{ fontSize:'10px', fontWeight:600, padding:'4px 8px', background:C.card, borderRadius:'6px', border:`1px solid ${C.border}`, color:C.textSecondary }}>{dt}</span>
+                              ))}
+                            </div>
+                          </div>
+                          <div style={{ marginBottom:'16px' }}>
+                            <div style={{ fontSize:'11px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', marginBottom:'8px' }}>Portfolio</div>
+                            <div style={{ display:'flex', flexDirection:'column', gap:'6px' }}>
+                              {selectedProfileCreator.portfolio.map((p, idx) => (
+                                <div key={idx} style={{ fontSize:'11px', color:C.text, padding:'6px 8px', background:C.card, borderRadius:'6px', border:`1px solid ${C.border}` }}>▶ {p}</div>
+                              ))}
+                            </div>
+                          </div>
+                          <button onClick={() => { setShowCreatorProfileModal(false); setSelectedProfileCreator(null); }} style={{ width:'100%', background:C.primary, border:'none', borderRadius:'8px', padding:'11px', color:'#fff', fontWeight:700, fontSize:'13px', cursor:'pointer' }}>Close</button>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Brand Identity — skin selector or redirect to store */}
                     {brandValueSkins.length > 0 ? (
                       <div style={{ background:C.card, border:`1px solid rgba(230,81,0,0.3)`, borderRadius:'12px', padding:'14px 16px', marginBottom:'14px' }}>
@@ -3243,15 +3411,20 @@ export default function InstagramDemoPage() {
                               />
                             </a>
                             <div style={{ flex: 1 }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <span onClick={e => { e.stopPropagation(); setPreviewCreator(creator); }} style={{ fontWeight: 700, fontSize: '14px', cursor: 'pointer' }}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                                <span onClick={e => { e.stopPropagation(); setSelectedProfileCreator(creator); setShowCreatorProfileModal(true); }} style={{ fontWeight: 700, fontSize: '14px', cursor: 'pointer' }}
                                   onMouseEnter={e => { e.currentTarget.style.textDecoration = 'underline'; }}
                                   onMouseLeave={e => { e.currentTarget.style.textDecoration = 'none'; }}>{creator.name}</span>
                                 <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '20px', height: '20px', borderRadius: '4px', background: badgeColor, color: '#fff', fontSize: '7px', fontWeight: 700 }}>{abbr}</span>
                                 {creator.featured && <span style={{ fontSize: '10px', fontWeight: 700, color: C.primary, background: `${C.primary}15`, padding: '2px 6px', borderRadius: '4px' }}>TOP MATCH</span>}
                                 {creator.willingToBarter && <span style={{ fontSize: '10px', fontWeight: 700, color: C.textSecondary, background: C.surfaceAlt, padding: '2px 6px', borderRadius: '4px' }}>OPEN TO BARTER</span>}
                               </div>
-                              <a href={`https://instagram.com/${creator.handle.replace('@', '')}`} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontSize: '12px', color: C.primary, textDecoration: 'none', cursor: 'pointer' }} onMouseEnter={e => { e.currentTarget.style.textDecoration = 'underline'; }} onMouseLeave={e => { e.currentTarget.style.textDecoration = 'none'; }}>{creator.handle}</a>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <a href={`https://instagram.com/${creator.handle.replace('@', '')}`} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontSize: '12px', color: C.primary, textDecoration: 'none', cursor: 'pointer' }} onMouseEnter={e => { e.currentTarget.style.textDecoration = 'underline'; }} onMouseLeave={e => { e.currentTarget.style.textDecoration = 'none'; }}>{creator.handle}</a>
+                                <span style={{ fontSize: '11px', color: C.textSecondary }}>·</span>
+                                <span style={{ fontSize: '11px', color: C.textSecondary }}>4.8★ from {Math.floor(Math.random() * 15) + 5} deals</span>
+                                <button onClick={() => { setSelectedProfileCreator(creator); setShowCreatorProfileModal(true); }} style={{ marginLeft: 'auto', fontSize: '10px', fontWeight: 600, color: C.primary, background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>View Profile</button>
+                              </div>
                             </div>
                             <div style={{ textAlign: 'right' }}>
                               <div style={{ fontSize: '16px', fontWeight: 800, color: C.primary }}>{creator.matchScore}</div>
@@ -3397,6 +3570,11 @@ export default function InstagramDemoPage() {
                             })()
                           ) : (
                             <div style={{ background: C.surfaceAlt, borderRadius: '10px', padding: '14px', border: `1px solid rgba(230,81,0,0.3)` }}>
+                              {/* Brand Deal Room Back Button */}
+                              <button onClick={() => setNegotiatingCreator(null)} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: C.textSecondary, cursor: 'pointer', fontSize: '11px', fontWeight: 600, padding: '0 0 8px' }}>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.textSecondary} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                                Back to creators
+                              </button>
                               {/* Deal Room Header */}
                               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                                 <div>
@@ -3418,6 +3596,29 @@ export default function InstagramDemoPage() {
                                     Respond within 23h 12m
                                   </div>
                                 )}
+                              </div>
+
+                              {/* Deal Lifecycle Phase Indicator — brand view */}
+                              <div style={{ marginBottom:'12px', padding:'8px 10px', background:C.bg, borderRadius:'8px', border:`1px solid ${C.border}` }}>
+                                <div style={{ fontSize:'9px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', marginBottom:'6px', letterSpacing:'0.5px' }}>Deal Progression</div>
+                                <div style={{ display:'flex', alignItems:'center', gap:'3px' }}>
+                                  {(['brief', 'pending', 'counter', 'accepted'] as const).map((phase, idx, arr) => {
+                                    const phaseNames = { brief: 'Brief', pending: 'Sent', counter: 'Counter', accepted: 'Accepted' };
+                                    const phaseOrder = ['brief', 'pending', 'counter', 'accepted'];
+                                    const currentIdx = phaseOrder.indexOf(brandDealPhase);
+                                    const isCompleted = idx < currentIdx;
+                                    const isActive = idx === currentIdx;
+                                    return (
+                                      <React.Fragment key={phase}>
+                                        <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'3px' }}>
+                                          <div style={{ width:'24px', height:'24px', borderRadius:'50%', background:isCompleted?C.success:isActive?C.primary:C.border, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'10px', fontWeight:700, color:isCompleted||isActive?'#fff':C.textMuted }}>{isCompleted?'\u2713':idx+1}</div>
+                                          <div style={{ fontSize:'7px', color:isActive?C.primary:C.textMuted, fontWeight:isActive?700:400, textAlign:'center', minWidth:'36px' }}>{phaseNames[phase]}</div>
+                                        </div>
+                                        {idx < arr.length - 1 && <div style={{ flex:1, height:'2px', background:isCompleted?C.success:C.border, margin:'0 1px', marginTop:'-8px' }} />}
+                                      </React.Fragment>
+                                    );
+                                  })}
+                                </div>
                               </div>
 
                               {/* Phase 1: Mandatory Brief */}
@@ -4985,6 +5186,24 @@ export default function InstagramDemoPage() {
                           <div style={{ fontSize: '13px', color: current ? C.text : C.textMuted, fontWeight: current ? 600 : 400 }}>
                             {current ? (PROFESSION_BADGES[current.profession]?.abbreviation ?? current.profession) : 'Empty'}
                           </div>
+                          {current && (() => {
+                            const level = getSkinLevel(current.profession);
+                            const progress = getSkinXPProgress(current.profession);
+                            const xp = skinXP[current.profession] || 0;
+                            const thresholds = [0, 50, 200, 500, 1000];
+                            const nextXP = level >= 5 ? 1000 : thresholds[level];
+                            return (
+                              <div style={{ marginTop: '4px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  <span style={{ fontSize: '9px', fontWeight: 700, color: slotColor }}>Lv.{level}</span>
+                                  <div style={{ flex: 1, height: '3px', borderRadius: '2px', background: C.border, overflow: 'hidden' }}>
+                                    <div style={{ width: `${progress}%`, height: '100%', background: slotColor, borderRadius: '2px' }} />
+                                  </div>
+                                </div>
+                                <div style={{ fontSize: '8px', color: C.textMuted, marginTop: '1px' }}>{level >= 5 ? 'MAX' : `${xp}/${nextXP} XP`}</div>
+                              </div>
+                            );
+                          })()}
                         </button>
                       );
                     })}
@@ -4998,7 +5217,10 @@ export default function InstagramDemoPage() {
                     {brandValueSkins.length > 0 && (
                       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                         {brandValueSkins.map(skin => (
-                          <span key={skin} style={{ fontSize: '13px', fontWeight: 600, color: C.primary, background: `${C.primary}15`, padding: '6px 14px', borderRadius: '20px' }}>{skin}</span>
+                          <span key={skin} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 600, color: C.primary, background: `${C.primary}15`, padding: '6px 14px', borderRadius: '20px' }}>
+                            {skin}
+                            <button onClick={(e) => { e.stopPropagation(); setBrandValueSkins(prev => prev.filter(s => s !== skin)); if (activeBrandSkin === skin) setActiveBrandSkin(brandValueSkins.find(s => s !== skin) || null); setPurchaseToast(`Removed ${skin} from brand skins`); setTimeout(() => setPurchaseToast(null), 3000); }} style={{ background: 'none', border: 'none', color: C.textMuted, cursor: 'pointer', fontSize: '14px', lineHeight: 1, padding: 0 }}>x</button>
+                          </span>
                         ))}
                       </div>
                     )}
@@ -5049,8 +5271,11 @@ export default function InstagramDemoPage() {
           {/* ── NOTIFICATIONS VIEW ────────────────────────────── */}
           {activeView === 'notifications' && (
             <>
-              <div style={{ height: '52px', display: 'flex', alignItems: 'center', paddingLeft: '16px', paddingRight: '16px', position: 'sticky', top: 0, background: C.bg, zIndex: 10 }}>
+              <div style={{ height: '52px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: '16px', paddingRight: '16px', position: 'sticky', top: 0, background: C.bg, zIndex: 10 }}>
                 <span style={{ fontSize: '22px', fontWeight: 700, color: C.text }}>Notifications</span>
+                {notifications.length > 0 && (
+                  <button onClick={() => { setNotifications([]); setPurchaseToast('Notifications cleared'); setTimeout(() => setPurchaseToast(null), 2000); }} style={{ background: 'none', border: 'none', fontSize: '12px', color: C.primary, cursor: 'pointer', fontWeight: 600 }}>Clear all</button>
+                )}
               </div>
               {!hasAnySkin ? (
                 <div style={{ textAlign: 'center', padding: '60px 20px', color: C.textMuted }}>
@@ -5075,7 +5300,7 @@ export default function InstagramDemoPage() {
                           const avatarColor = avatarColors[n.type] || '#666';
                           const brandInitial = n.text.match(/^(\w)/)?.[1] || 'N';
                           return (
-                            <div key={n.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px' }}>
+                            <div key={n.id} onClick={() => setNotifications(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x))} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', cursor: 'pointer' }}>
                               <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: `linear-gradient(135deg, ${avatarColor}, ${avatarColor}99)`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                 <span style={{ fontSize: '16px', fontWeight: 700, color: '#fff' }}>{brandInitial}</span>
                               </div>
@@ -5083,6 +5308,7 @@ export default function InstagramDemoPage() {
                                 <div style={{ fontSize: '14px', color: C.text, lineHeight: 1.4 }}>{n.text}</div>
                                 <div style={{ fontSize: '12px', color: C.textMuted, marginTop: '2px' }}>{n.time}</div>
                               </div>
+                              <button onClick={(e) => { e.stopPropagation(); setNotifications(prev => prev.filter(x => x.id !== n.id)); }} style={{ background: 'none', border: 'none', color: C.textMuted, cursor: 'pointer', fontSize: '14px', padding: '4px' }}>x</button>
                               <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: C.primary, flexShrink: 0 }} />
                             </div>
                           );
@@ -5304,9 +5530,12 @@ export default function InstagramDemoPage() {
           {/* ── SETTINGS VIEW ────────────────────────────────── */}
           {activeView === 'settings' && (
             <>
-              <div style={{ height: '60px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', paddingLeft: '20px', fontWeight: 'bold', fontSize: '16px', background: C.surface }}>
-                Settings
-                <span style={{ fontSize: '11px', fontWeight: 600, color: C.textSecondary, marginLeft: '10px' }}>ValueSkins preferences</span>
+              <div style={{ height: '60px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: '20px', paddingRight: '20px', fontWeight: 'bold', fontSize: '16px', background: C.surface }}>
+                <div>
+                  Settings
+                  <span style={{ fontSize: '11px', fontWeight: 600, color: C.textSecondary, marginLeft: '10px' }}>ValueSkins preferences</span>
+                </div>
+                <span style={{ fontSize: '11px', fontWeight: 600, color: C.success }}>Auto-saved</span>
               </div>
               <div style={{ padding: '20px' }}>
 
