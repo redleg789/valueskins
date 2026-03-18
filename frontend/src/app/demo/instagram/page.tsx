@@ -488,7 +488,6 @@ export default function InstagramDemoPage() {
   }, []);
 
   const [showSkinManageModal, setShowSkinManageModal] = useState<ValueSkinSlot | null>(null);
-  const [hoveringSkin, setHoveringSkin] = useState<string | null>(null);
 
   useLevelConfig();
   const { factors } = useReputationConfig();
@@ -1603,7 +1602,6 @@ export default function InstagramDemoPage() {
                   const badge = PROFESSION_BADGES[profession];
                   const pos = skinPositions[profession] ?? { x: 180 + idx * 40, y: 12 };
                   const isDragging = draggingSkin === profession;
-                  const [hoveringSkin, setHoveringSkin] = useState<string | null>(null);
                   return (
                     <div
                       key={profession}
@@ -1621,8 +1619,6 @@ export default function InstagramDemoPage() {
                         e.stopPropagation();
                         setShowSkinShowcaseModal(profession);
                       }}
-                      onMouseEnter={() => setHoveringSkin(profession)}
-                      onMouseLeave={() => setHoveringSkin(null)}
                       style={{
                         position: 'absolute',
                         left: pos.x,
@@ -1636,36 +1632,6 @@ export default function InstagramDemoPage() {
                       <span style={{ fontSize: '22px', lineHeight: 1, pointerEvents: 'none', display: 'block' }}>
                         {badge?.emoji ?? badge?.abbreviation ?? profession.slice(0, 3).toUpperCase()}
                       </span>
-                      {hoveringSkin === profession && (
-                        <button
-                          onClick={e => {
-                            e.stopPropagation();
-                            setShowSkinManageModal(slot);
-                          }}
-                          style={{
-                            position: 'absolute',
-                            top: '-8px',
-                            right: '-8px',
-                            width: '20px',
-                            height: '20px',
-                            borderRadius: '50%',
-                            background: C.danger ?? '#ef4444',
-                            border: 'none',
-                            color: '#fff',
-                            fontSize: '12px',
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            padding: 0,
-                            lineHeight: 1,
-                          }}
-                          title="Remove skin"
-                        >
-                          ×
-                        </button>
-                      )}
                     </div>
                   );
                 })}
