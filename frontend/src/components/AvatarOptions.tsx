@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback } from 'react';
 import type { IdentityAttestation, AttestationCategory, CredentialDisplayConfiguration } from '@/lib/credential-protocol';
 import { createAttestation, computeAuthenticityIndex, entryToAttestation, attestationToEntry, DEFAULT_DISPLAY_CONFIG } from '@/lib/credential-protocol';
+import { STICKER_MANIFEST } from '@/generated/sticker-manifest';
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -181,9 +182,9 @@ export function ProfessionSticker({
         }}
       >
         {/* Sticker — no shape, no border, no background. Just the raw icon floating free. */}
-        {badge.stickerImage ? (
+        {(badge.stickerImage || STICKER_MANIFEST[profession]) ? (
           <img
-            src={badge.stickerImage}
+            src={badge.stickerImage || STICKER_MANIFEST[profession]}
             alt={badge.label}
             draggable={false}
             style={{ width: `${dim}px`, height: `${dim}px`, objectFit: 'contain', display: 'block', flexShrink: 0 }}
@@ -348,9 +349,9 @@ function AboutMePanel({
               {/* Slot header */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
                 {slotBadge && (
-                  slotBadge.stickerImage ? (
+                  (slotBadge.stickerImage || STICKER_MANIFEST[entry.profession]) ? (
                     <img
-                      src={slotBadge.stickerImage}
+                      src={slotBadge.stickerImage || STICKER_MANIFEST[entry.profession]}
                       alt={slotBadge.label}
                       draggable={false}
                       style={{ width: '28px', height: '28px', borderRadius: '7px', imageRendering: 'pixelated', flexShrink: 0 }}

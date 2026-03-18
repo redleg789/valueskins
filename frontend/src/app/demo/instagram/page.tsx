@@ -17,6 +17,12 @@ import {
   PROFESSION_BADGES,
   defaultAboutMe,
 } from '@/components/AvatarOptions';
+import { STICKER_MANIFEST } from '@/generated/sticker-manifest';
+
+/** Get sticker image path for any profession — checks PROFESSION_BADGES first, then auto-generated manifest */
+function getStickerForProfession(profession: string): string | undefined {
+  return PROFESSION_BADGES[profession]?.stickerImage || STICKER_MANIFEST[profession];
+}
 
 const C = {
   primary: '#0095F6',
@@ -1230,8 +1236,8 @@ export default function InstagramDemoPage() {
               return (
                 <>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                    {skinBadge?.stickerImage ? (
-                      <img src={skinBadge.stickerImage} alt={showSkinShowcaseModal} style={{ width: '40px', height: '40px', objectFit: 'contain' }} />
+                    {getStickerForProfession(showSkinShowcaseModal) ? (
+                      <img src={getStickerForProfession(showSkinShowcaseModal)!} alt={showSkinShowcaseModal} style={{ width: '40px', height: '40px', objectFit: 'contain' }} />
                     ) : (
                       <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: `${skinColor}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700, color: skinColor }}>{skinBadge?.abbreviation ?? '?'}</div>
                     )}
@@ -3311,8 +3317,8 @@ export default function InstagramDemoPage() {
                                   border: `2px solid ${isActive ? (badge?.color ?? C.primary) : C.border}`,
                                 }}
                               >
-                                {badge?.stickerImage ? (
-                                  <img src={badge.stickerImage} alt={skin} style={{ width:'32px', height:'32px', objectFit:'contain', margin:'0 auto 4px' }} />
+                                {getStickerForProfession(skin) ? (
+                                  <img src={getStickerForProfession(skin)!} alt={skin} style={{ width:'32px', height:'32px', objectFit:'contain', margin:'0 auto 4px' }} />
                                 ) : (
                                   <div style={{ fontSize:'10px', fontWeight:700, letterSpacing:'0.5px', textTransform:'uppercase', color: badge?.color ?? C.primary, marginBottom:'3px' }}>
                                     {badge?.abbreviation ?? skin.slice(0,3).toUpperCase()}
@@ -5568,8 +5574,8 @@ export default function InstagramDemoPage() {
                         style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px', background: C.card, borderRadius: '8px', border: `1px solid ${C.border}`, cursor: 'pointer', transition: 'border-color 0.15s' }}
                         onMouseEnter={e => { e.currentTarget.style.borderColor = badge.color; }}
                         onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; }}>
-                        {badge.stickerImage ? (
-                          <img src={badge.stickerImage} alt={name} style={{ width: '36px', height: '36px', objectFit: 'contain' }} />
+                        {getStickerForProfession(name) ? (
+                          <img src={getStickerForProfession(name)!} alt={name} style={{ width: '36px', height: '36px', objectFit: 'contain' }} />
                         ) : (
                           <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: `${badge.color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 700, color: badge.color }}>{badge.abbreviation}</div>
                         )}
@@ -5623,8 +5629,9 @@ export default function InstagramDemoPage() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
                       {(() => {
                         const badge = PROFESSION_BADGES[previewCreator.valueSkin];
-                        return badge?.stickerImage ? (
-                          <img src={badge.stickerImage} alt={previewCreator.valueSkin} style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
+                        const sticker = getStickerForProfession(previewCreator.valueSkin);
+                        return sticker ? (
+                          <img src={sticker} alt={previewCreator.valueSkin} style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
                         ) : (
                           <div style={{ width: '20px', height: '20px', borderRadius: '4px', background: (badge?.color ?? C.primary), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '7px', fontWeight: 700, color: '#fff' }}>{badge?.abbreviation ?? '?'}</div>
                         );
@@ -6095,8 +6102,8 @@ export default function InstagramDemoPage() {
                                     style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', background: C.bg, borderRadius: '8px', border: `1px solid ${C.border}`, cursor: 'pointer', transition: 'border-color 0.15s' }}
                                     onMouseEnter={e => { e.currentTarget.style.borderColor = C.primary; }}
                                     onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; }}>
-                                    {badge?.stickerImage ? (
-                                      <img src={badge.stickerImage} alt={skinName} style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
+                                    {getStickerForProfession(skinName) ? (
+                                      <img src={getStickerForProfession(skinName)!} alt={skinName} style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
                                     ) : (
                                       <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: `${badge?.color ?? C.primary}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', fontWeight: 700, color: badge?.color ?? C.primary }}>{badge?.abbreviation ?? '?'}</div>
                                     )}
@@ -6474,8 +6481,8 @@ export default function InstagramDemoPage() {
                 const color = badge?.color ?? C.primary;
                 return (
                   <div key={profession} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', background: C.card, borderRadius: '12px', marginBottom: '6px', border: `1px solid ${C.border}` }}>
-                    {badge?.stickerImage ? (
-                      <img src={badge.stickerImage} alt={profession} style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
+                    {getStickerForProfession(profession) ? (
+                      <img src={getStickerForProfession(profession)!} alt={profession} style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
                     ) : (
                       <span style={{ fontSize: '13px', fontWeight: 700, color }}>{badge?.abbreviation ?? '?'}</span>
                     )}
@@ -6623,7 +6630,7 @@ export default function InstagramDemoPage() {
               const isBrand = marketplaceRole === 'brand';
               const abbr = defined?.abbreviation ?? sub.split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0, 3);
               const badgeColor = defined?.color ?? (assigningSlot ? SLOT_COLORS[assigningSlot] : C.primary);
-              const stickerSrc = defined?.stickerImage || `/Stickers/${sub.toLowerCase().replace(/[\/\s]+/g, '-').replace(/[^a-z0-9-]/g, '')}.png`;
+              const stickerSrc = defined?.stickerImage || STICKER_MANIFEST[sub];
               const isOwned = isBrand && brandValueSkins.includes(sub);
               const isActiveHere = !isBrand && assigningSlot && valueSkins[assigningSlot]?.profession === sub;
               const isUsedElsewhere = !isBrand && !isActiveHere && assignedProfessions.has(sub);
@@ -6646,13 +6653,14 @@ export default function InstagramDemoPage() {
                   onMouseEnter={(e) => { if (!disabled && !isActiveHere && !isOwned) { e.currentTarget.style.borderColor = C.primary; e.currentTarget.style.background = C.surfaceAlt; } }}
                   onMouseLeave={(e) => { if (!isActiveHere && !isOwned) { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = C.card; } }}
                 >
-                  {/* Skin sticker — auto-derives path from profession name, falls back to abbreviation */}
-                  <img
-                    src={stickerSrc}
-                    alt={sub}
-                    style={{ width: '56px', height: '56px', objectFit: 'contain', borderRadius: '8px' }}
-                    onError={(e) => { const el = e.currentTarget; const fallback = document.createElement('div'); fallback.style.cssText = `width:56px;height:56px;border-radius:8px;background:${badgeColor}20;border:1px solid ${badgeColor}40;display:flex;align-items:center;justify-content:center;color:${badgeColor};font-size:16px;font-weight:800`; fallback.textContent = abbr; el.replaceWith(fallback); }}
-                  />
+                  {/* Skin sticker from auto-generated manifest, abbreviation fallback */}
+                  {stickerSrc ? (
+                    <img src={stickerSrc} alt={sub} style={{ width: '56px', height: '56px', objectFit: 'contain', borderRadius: '8px' }} />
+                  ) : (
+                    <div style={{ width: '56px', height: '56px', borderRadius: '8px', background: `${badgeColor}20`, border: `1px solid ${badgeColor}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: badgeColor, fontSize: '16px', fontWeight: 800 }}>
+                      {abbr}
+                    </div>
+                  )}
                   <span style={{ fontSize: '12px', fontWeight: 600, textAlign: 'center', lineHeight: 1.3 }}>{sub}</span>
                   {(isActiveHere || isOwned) && (
                     <div style={{ position: 'absolute', top: '6px', right: '6px' }}>
