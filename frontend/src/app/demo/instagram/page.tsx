@@ -2451,10 +2451,12 @@ export default function InstagramDemoPage() {
                                             { key: 'exclusivity', label: `Exclusivity: ${opp.exclusivity || 'None'} — I will not promote competing brands during this period` },
                                             { key: 'revisions', label: `Up to ${opp.revisionLimit} revision round${opp.revisionLimit !== 1 ? 's' : ''} included at no extra cost` },
                                           ].map(term => (
-                                            <label key={term.key} style={{ display:'flex', alignItems:'flex-start', gap:'8px', padding:'6px 0', borderBottom:`1px solid ${C.border}`, cursor:'pointer', fontSize:'11px', color:C.text, lineHeight:1.4 }}>
-                                              <input type="checkbox" checked={!!contractChecks[term.key]} onChange={() => setContractChecks(prev => ({ ...prev, [term.key]: !prev[term.key] }))} style={{ marginTop:'2px', accentColor:C.primary, flexShrink:0 }} />
-                                              {term.label}
-                                            </label>
+                                            <div key={term.key} onClick={() => setContractChecks(prev => ({ ...prev, [term.key]: !prev[term.key] }))} style={{ display:'flex', alignItems:'flex-start', gap:'10px', padding:'8px 0', borderBottom:`1px solid ${C.border}`, cursor:'pointer', fontSize:'11px', color: contractChecks[term.key] ? C.text : C.textSecondary, lineHeight:1.4, transition:'color 0.15s' }}>
+                                              <div style={{ width:18, height:18, borderRadius:4, border: contractChecks[term.key] ? `2px solid ${C.success}` : `2px solid ${C.border}`, background: contractChecks[term.key] ? C.success : 'transparent', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, marginTop:1, transition:'all 0.15s' }}>
+                                                {contractChecks[term.key] && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>}
+                                              </div>
+                                              <span style={{ textDecoration: contractChecks[term.key] ? 'line-through' : 'none', opacity: contractChecks[term.key] ? 0.7 : 1 }}>{term.label}</span>
+                                            </div>
                                           ))}
                                           <div style={{ marginTop:'10px' }}>
                                             <div style={{ fontSize:'10px', color:C.textMuted, marginBottom:'4px' }}>Signature jurisdiction</div>
