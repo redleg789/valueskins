@@ -5259,35 +5259,92 @@ export default function InstagramDemoPage() {
                                     </div>
                                   </div>
 
-                                  {/* Escrow stages */}
-                                  <div style={{ marginBottom: '12px' }}>
-                                    <div style={{ fontSize: '11px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>Escrow Stages</div>
-                                    {[
-                                      { stage: 'Advance', pct: '30%', status: brandApprovalPhase === 'accepted' ? 'Awaiting escrow deposit' : 'Funded — held in escrow' },
-                                      { stage: 'Milestone', pct: '40%', status: 'Released on content delivery' },
-                                      { stage: 'Completion', pct: '30%', status: 'Released on your approval' },
-                                    ].map((s, si) => (
-                                      <div key={si} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 10px', background: C.bg, borderRadius: '6px', marginBottom: '4px', border: `1px solid ${C.border}` }}>
-                                        <div>
-                                          <div style={{ fontSize: '12px', fontWeight: 600, color: C.text }}>{s.stage} ({s.pct})</div>
-                                          <div style={{ fontSize: '10px', color: C.textMuted }}>{s.status}</div>
+                                  {/* Escrow stages — only for paid/c2c_paid */}
+                                  {(dealType === 'paid' || dealType === 'c2c_paid') && (
+                                    <div style={{ marginBottom: '12px' }}>
+                                      <div style={{ fontSize: '11px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>Escrow Stages</div>
+                                      {[
+                                        { stage: 'Advance', pct: '30%', status: brandApprovalPhase === 'accepted' ? 'Awaiting escrow deposit' : 'Funded — held in escrow' },
+                                        { stage: 'Milestone', pct: '40%', status: 'Released on content delivery' },
+                                        { stage: 'Completion', pct: '30%', status: 'Released on your approval' },
+                                      ].map((s, si) => (
+                                        <div key={si} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 10px', background: C.bg, borderRadius: '6px', marginBottom: '4px', border: `1px solid ${C.border}` }}>
+                                          <div>
+                                            <div style={{ fontSize: '12px', fontWeight: 600, color: C.text }}>{s.stage} ({s.pct})</div>
+                                            <div style={{ fontSize: '10px', color: C.textMuted }}>{s.status}</div>
+                                          </div>
+                                          <div style={{ fontSize: '12px', fontWeight: 700, color: C.text }}>
+                                            ${Math.round(parseInt(simulatedCounterAmount) * parseFloat(s.pct) / 100).toLocaleString()}
+                                          </div>
                                         </div>
-                                        <div style={{ fontSize: '12px', fontWeight: 700, color: C.text }}>
-                                          ${Math.round(parseInt(simulatedCounterAmount) * parseFloat(s.pct) / 100).toLocaleString()}
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-
-                                  {brandApprovalPhase === 'accepted' && (
-                                    <button
-                                      onClick={() => setBrandApprovalPhase('funding')}
-                                      style={{ width: '100%', background: C.primary, border: 'none', padding: '9px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}
-                                    >
-                                      Fund Escrow to Begin
-                                    </button>
+                                      ))}
+                                    </div>
                                   )}
-                                  {brandApprovalPhase === 'funding' && (() => {
+
+                                  {brandApprovalPhase === 'accepted' && (() => {
+                                    switch(dealType) {
+                                      case 'paid':
+                                      case 'c2c_paid':
+                                        return (
+                                          <button
+                                            onClick={() => setBrandApprovalPhase('funding')}
+                                            style={{ width: '100%', background: C.primary, border: 'none', padding: '9px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}
+                                          >
+                                            Fund Escrow to Begin
+                                          </button>
+                                        );
+                                      case 'barter':
+                                        return (
+                                          <div style={{ background:'rgba(59,130,246,0.06)', border:`1px solid rgba(59,130,246,0.2)`, borderRadius:'8px', padding:'12px' }}>
+                                            <div style={{ fontSize:'13px', fontWeight:700, color:C.text, marginBottom:'4px' }}>Prepare Product Shipment</div>
+                                            <div style={{ fontSize:'11px', color:C.textSecondary, marginBottom:'10px' }}>Enter tracking information when you ship the product</div>
+                                            <input
+                                              type="text"
+                                              value={goodsTrackingInput}
+                                              onChange={e => setGoodsTrackingInput(e.target.value)}
+                                              placeholder="Tracking number (e.g., 1Z999AA1012345678)"
+                                              style={{ width:'100%', background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:'6px', color:C.text, padding:'8px 10px', fontSize:'11px', fontFamily:'inherit', outline:'none', marginBottom:'10px', boxSizing:'border-box' }}
+                                            />
+                                            {activeDeal?.isInternationalDeal && (
+                                              <label style={{ display:'flex', alignItems:'flex-start', gap:'8px', marginBottom:'10px', cursor:'pointer' }}>
+                                                <input
+                                                  type="checkbox"
+                                                  checked={intlCustomsAcknowledged}
+                                                  onChange={e => setIntlCustomsAcknowledged(e.target.checked)}
+                                                  style={{ marginTop:'3px', cursor:'pointer' }}
+                                                />
+                                                <span style={{ fontSize:'11px', color:C.textSecondary, lineHeight:1.4 }}>I confirm this shipment complies with applicable customs and import regulations for the creator's country.</span>
+                                              </label>
+                                            )}
+                                            <button
+                                              disabled={!goodsTrackingInput || (activeDeal?.isInternationalDeal && !intlCustomsAcknowledged)}
+                                              onClick={() => {
+                                                setGoodsTrackerStatus('goods_shipped');
+                                                if (brandDealKey) {
+                                                  updateDeal(brandDealKey, { goodsTrackerStatus: 'goods_shipped', goodsTrackingNumber: goodsTrackingInput, customsComplianceAcknowledged: intlCustomsAcknowledged });
+                                                }
+                                                setBrandApprovalPhase('funding');
+                                                setPurchaseToast('Shipment marked as sent');
+                                                setTimeout(() => setPurchaseToast(null), 3000);
+                                              }}
+                                              style={{ width:'100%', background: goodsTrackingInput && (!activeDeal?.isInternationalDeal || intlCustomsAcknowledged) ? C.primary : C.border, border:'none', borderRadius:'6px', padding:'8px', color:'#fff', fontWeight:600, cursor: goodsTrackingInput && (!activeDeal?.isInternationalDeal || intlCustomsAcknowledged) ? 'pointer' : 'not-allowed', opacity: goodsTrackingInput && (!activeDeal?.isInternationalDeal || intlCustomsAcknowledged) ? 1 : 0.5, fontSize:'11px' }}
+                                            >
+                                              Mark as Shipped
+                                            </button>
+                                          </div>
+                                        );
+                                      case 'c2c_collab':
+                                        return (
+                                          <div style={{ background:'rgba(59,130,246,0.06)', border:`1px solid rgba(59,130,246,0.2)`, borderRadius:'8px', padding:'12px', textAlign:'center' }}>
+                                            <div style={{ fontSize:'13px', fontWeight:700, color:C.text, marginBottom:'4px' }}>Waiting for Content</div>
+                                            <div style={{ fontSize:'11px', color:C.textSecondary }}>The initiator is creating your collaborative content. You'll approve it when they submit.</div>
+                                          </div>
+                                        );
+                                      default:
+                                        return null;
+                                    }
+                                  })()}
+                                  {(dealType === 'paid' || dealType === 'c2c_paid') && brandApprovalPhase === 'funding' && (() => {
                                     const totalAmount = parseInt(simulatedCounterAmount) || 5000;
                                     return (
                                       <div style={{ marginTop:'12px' }}>
@@ -5326,7 +5383,7 @@ export default function InstagramDemoPage() {
                                       </div>
                                     );
                                   })()}
-                                  {brandApprovalPhase === 'funded' && (
+                                  {(dealType === 'paid' || dealType === 'c2c_paid') && brandApprovalPhase === 'funded' && (
                                     <div style={{ textAlign:'center', padding:'16px 0' }}>
                                       <div style={{ width:'44px', height:'44px', borderRadius:'50%', background:'rgba(46,125,50,0.1)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 10px' }}>
                                         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={C.success} strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
@@ -5335,54 +5392,136 @@ export default function InstagramDemoPage() {
                                       <div style={{ fontSize:'12px', color:C.textSecondary, marginTop:'4px' }}>Creator has been notified to begin work</div>
                                     </div>
                                   )}
-                                  {brandApprovalPhase === 'reviewing' && (
-                                    <div style={{ marginTop:'12px' }}>
-                                      <div style={{ fontSize:'11px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'10px' }}>Review Creator Deliverables</div>
-                                      <div style={{ background:C.bg, borderRadius:'8px', padding:'12px', border:`1px solid ${C.border}`, marginBottom:'10px' }}>
-                                        <div style={{ fontSize:'12px', fontWeight:600, color:C.text, marginBottom:'4px' }}>Deliverable: 1x Instagram Reel</div>
-                                        <div style={{ fontSize:'11px', color:C.textSecondary, marginBottom:'8px' }}>Submitted 2 hours ago</div>
-                                        <div style={{ display:'flex', gap:'6px' }}>
-                                          <button style={{ flex:1, background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:'6px', padding:'5px', fontSize:'11px', color:C.text, cursor:'pointer' }}>View File</button>
-                                          <button style={{ flex:1, background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:'6px', padding:'5px', fontSize:'11px', color:C.text, cursor:'pointer' }}>Download</button>
-                                        </div>
-                                      </div>
-                                      <div style={{ display:'flex', gap:'8px' }}>
-                                        <button
-                                          onClick={() => {
-                                            const agreedAmt = parseInt(simulatedCounterAmount || '5000');
-                                            const approvalAmt = Math.round(agreedAmt * 0.3);
-                                            setBrandApprovalPhase('approved');
-                                            // Sync approval through dealStates for creator to see real-time
-                                            if (brandDealKey) {
-                                              updateDeal(brandDealKey, {
-                                                brandApprovalPhase: 'approved',
-                                                paymentMilestones: { advance: 'released', upload: 'released', approval: 'released' },
-                                                creatorDealLifecycle: 'approved'
-                                              });
-                                              firebaseSendNotification('Creator', 'application', `Deliverables approved! Final payment released: $${approvalAmt.toLocaleString()}`);
-                                            }
-                                            setPurchaseToast(`Deliverable approved — $${approvalAmt.toLocaleString()} approval payment released to creator`);
-                                            setTimeout(() => setPurchaseToast(null), 3500);
-                                          }}
-                                          style={{ flex:1, background:C.success, border:'none', padding:'9px', borderRadius:'8px', color:'#fff', fontWeight:600, cursor:'pointer', fontSize:'13px' }}
-                                        >
-                                          Approve
-                                        </button>
-                                        <button
-                                          onClick={() => {
-                                            if (brandDealKey) {
-                                              firebaseSendNotification('Creator', 'application', `Brand requested revision — please update your deliverables`);
-                                            }
-                                            setPurchaseToast('Revision requested — creator notified');
-                                            setTimeout(() => setPurchaseToast(null), 3000);
-                                          }}
-                                          style={{ flex:1, background:'none', border:`1px solid ${C.border}`, padding:'9px', borderRadius:'8px', color:C.textSecondary, fontWeight:600, cursor:'pointer', fontSize:'13px' }}
-                                        >
-                                          Request Revision
-                                        </button>
-                                      </div>
+                                  {dealType === 'barter' && brandApprovalPhase === 'funding' && (
+                                    <div style={{ background:'rgba(34,197,94,0.06)', border:`1px solid rgba(34,197,94,0.2)`, borderRadius:'8px', padding:'12px', marginTop:'12px' }}>
+                                      <div style={{ fontSize:'13px', fontWeight:700, color:C.text, marginBottom:'4px' }}>Shipment Sent</div>
+                                      <div style={{ fontSize:'11px', color:C.textSecondary, marginBottom:'8px' }}>Tracking information delivered to creator. Waiting for them to confirm receipt.</div>
+                                      <button
+                                        onClick={() => {
+                                          setGoodsTrackerStatus('goods_shipped');
+                                          setBrandApprovalPhase('reviewing');
+                                          if (brandDealKey) {
+                                            updateDeal(brandDealKey, { goodsTrackerStatus: 'goods_shipped' });
+                                          }
+                                          setTimeout(() => setPurchaseToast('Creator will confirm receipt'), 2000);
+                                        }}
+                                        style={{ width:'100%', background:C.success, border:'none', padding:'8px', borderRadius:'6px', color:'#fff', fontWeight:600, cursor:'pointer', fontSize:'11px' }}
+                                      >
+                                        Continue to Content Review
+                                      </button>
                                     </div>
                                   )}
+                                  {dealType === 'c2c_collab' && brandApprovalPhase === 'funding' && (
+                                    <div style={{ background:'rgba(59,130,246,0.06)', border:`1px solid rgba(59,130,246,0.2)`, borderRadius:'8px', padding:'12px', marginTop:'12px' }}>
+                                      <div style={{ fontSize:'13px', fontWeight:700, color:C.text, marginBottom:'4px' }}>Ready for Content</div>
+                                      <div style={{ fontSize:'11px', color:C.textSecondary, marginBottom:'8px' }}>Waiting for initiator to submit collaborative content.</div>
+                                      <button
+                                        onClick={() => {
+                                          setBrandApprovalPhase('reviewing');
+                                          setTimeout(() => setPurchaseToast('Waiting for content submission'), 2000);
+                                        }}
+                                        style={{ width:'100%', background:C.primary, border:'none', padding:'8px', borderRadius:'6px', color:'#fff', fontWeight:600, cursor:'pointer', fontSize:'11px' }}
+                                      >
+                                        Continue
+                                      </button>
+                                    </div>
+                                  )}
+                                  {brandApprovalPhase === 'reviewing' && (() => {
+                                    if (dealType === 'paid' || dealType === 'c2c_paid') {
+                                      return (
+                                        <div style={{ marginTop:'12px' }}>
+                                          <div style={{ fontSize:'11px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'10px' }}>Review Creator Deliverables</div>
+                                          <div style={{ background:C.bg, borderRadius:'8px', padding:'12px', border:`1px solid ${C.border}`, marginBottom:'10px' }}>
+                                            <div style={{ fontSize:'12px', fontWeight:600, color:C.text, marginBottom:'4px' }}>Deliverable: 1x Instagram Reel</div>
+                                            <div style={{ fontSize:'11px', color:C.textSecondary, marginBottom:'8px' }}>Submitted 2 hours ago</div>
+                                            <div style={{ display:'flex', gap:'6px' }}>
+                                              <button style={{ flex:1, background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:'6px', padding:'5px', fontSize:'11px', color:C.text, cursor:'pointer' }}>View File</button>
+                                              <button style={{ flex:1, background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:'6px', padding:'5px', fontSize:'11px', color:C.text, cursor:'pointer' }}>Download</button>
+                                            </div>
+                                          </div>
+                                          <div style={{ display:'flex', gap:'8px' }}>
+                                            <button
+                                              onClick={() => {
+                                                const agreedAmt = parseInt(simulatedCounterAmount || '5000');
+                                                const approvalAmt = Math.round(agreedAmt * 0.3);
+                                                setBrandApprovalPhase('approved');
+                                                if (brandDealKey) {
+                                                  updateDeal(brandDealKey, {
+                                                    brandApprovalPhase: 'approved',
+                                                    paymentMilestones: { advance: 'released', upload: 'released', approval: 'released' },
+                                                    creatorDealLifecycle: 'approved'
+                                                  });
+                                                  firebaseSendNotification('Creator', 'application', `Deliverables approved! Final payment released: $${approvalAmt.toLocaleString()}`);
+                                                }
+                                                setPurchaseToast(`Deliverable approved — $${approvalAmt.toLocaleString()} approval payment released to creator`);
+                                                setTimeout(() => setPurchaseToast(null), 3500);
+                                              }}
+                                              style={{ flex:1, background:C.success, border:'none', padding:'9px', borderRadius:'8px', color:'#fff', fontWeight:600, cursor:'pointer', fontSize:'13px' }}
+                                            >
+                                              Approve
+                                            </button>
+                                            <button
+                                              onClick={() => {
+                                                if (brandDealKey) {
+                                                  firebaseSendNotification('Creator', 'application', `Brand requested revision — please update your deliverables`);
+                                                }
+                                                setPurchaseToast('Revision requested — creator notified');
+                                                setTimeout(() => setPurchaseToast(null), 3000);
+                                              }}
+                                              style={{ flex:1, background:'none', border:`1px solid ${C.border}`, padding:'9px', borderRadius:'8px', color:C.textSecondary, fontWeight:600, cursor:'pointer', fontSize:'13px' }}
+                                            >
+                                              Request Revision
+                                            </button>
+                                          </div>
+                                        </div>
+                                      );
+                                    } else if (dealType === 'barter' || dealType === 'c2c_collab') {
+                                      const contentLink = deliverableLinks[0] || '';
+                                      return (
+                                        <div style={{ marginTop:'12px' }}>
+                                          <div style={{ fontSize:'11px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'10px' }}>Review Content</div>
+                                          {contentLink ? (
+                                            <div style={{ background:C.bg, borderRadius:'8px', padding:'12px', border:`1px solid ${C.border}`, marginBottom:'10px' }}>
+                                              <div style={{ fontSize:'12px', fontWeight:600, color:C.text, marginBottom:'4px' }}>Instagram Post</div>
+                                              <div style={{ fontSize:'11px', color:C.textSecondary, marginBottom:'8px' }}>Submitted {new Date().toLocaleDateString('en-US', { month:'short', day:'numeric' })}</div>
+                                              <a href={contentLink} target="_blank" rel="noopener noreferrer" style={{ fontSize:'10px', color:C.primary, textDecoration:'none', display:'block', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', marginBottom:'8px' }}>{contentLink}</a>
+                                            </div>
+                                          ) : (
+                                            <div style={{ background:'rgba(239,68,68,0.06)', border:`1px solid rgba(239,68,68,0.2)`, borderRadius:'8px', padding:'12px', marginBottom:'10px' }}>
+                                              <div style={{ fontSize:'11px', color:'#ef4444' }}>Content not yet submitted</div>
+                                            </div>
+                                          )}
+                                          <div style={{ display:'flex', gap:'8px' }}>
+                                            <button
+                                              disabled={!contentLink}
+                                              onClick={() => {
+                                                setBrandApprovalPhase('approved');
+                                                if (dealType === 'barter') {
+                                                  setGoodsTrackerStatus('content_approved');
+                                                  if (brandDealKey) {
+                                                    updateDeal(brandDealKey, { goodsTrackerStatus: 'content_approved', brandApprovalPhase: 'approved' });
+                                                  }
+                                                }
+                                                if (dealType === 'c2c_collab') {
+                                                  setC2cContentStatus('content_approved');
+                                                  if (brandDealKey) {
+                                                    updateDeal(brandDealKey, { c2cContentStatus: 'content_approved', brandApprovalPhase: 'approved' });
+                                                  }
+                                                }
+                                                firebaseSendNotification('Creator', 'application', 'Content approved!');
+                                                setPurchaseToast('Content approved');
+                                                setTimeout(() => setPurchaseToast(null), 3000);
+                                              }}
+                                              style={{ flex:1, background: contentLink ? C.success : C.border, border:'none', padding:'9px', borderRadius:'8px', color:'#fff', fontWeight:600, cursor: contentLink ? 'pointer' : 'not-allowed', fontSize:'13px', opacity: contentLink ? 1 : 0.5 }}
+                                            >
+                                              Approve Content
+                                            </button>
+                                          </div>
+                                        </div>
+                                      );
+                                    }
+                                    return null;
+                                  })()}
                                   {brandApprovalPhase === 'approved' && (
                                     <div style={{ textAlign:'center', padding:'12px 0', marginTop:'12px' }}>
                                       <div style={{ width:'36px', height:'36px', borderRadius:'50%', background:C.surfaceAlt, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 8px' }}>
