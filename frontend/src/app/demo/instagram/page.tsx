@@ -50,6 +50,26 @@ const C = {
   accentBorder: 'rgba(124,58,237,0.25)',
 };
 
+// ---- Deal type helpers ----
+
+function resolveDealType(compensationType: string): DealState['dealType'] {
+  const ct = (compensationType || '').toLowerCase();
+  if (ct.includes('barter') || ct.includes('gifted') || ct.includes('product')) return 'barter';
+  return 'paid';
+}
+
+function isInternationalDeal(creatorLocation: string, campaignLocation: string): boolean {
+  if (!campaignLocation || ['remote','global','worldwide',''].includes(campaignLocation.toLowerCase())) return false;
+  return creatorLocation.toLowerCase() !== campaignLocation.toLowerCase();
+}
+
+const DEAL_LABELS = {
+  paid:       { proposer: 'Brand', receiver: 'Creator' },
+  barter:     { proposer: 'Brand', receiver: 'Creator' },
+  c2c_paid:   { proposer: 'Proposer', receiver: 'Collaborator' },
+  c2c_collab: { proposer: 'Initiator', receiver: 'Collaborator' },
+} as const;
+
 const PROFESSIONS = {
   'Technology':     { name: 'Technology',     subProfessions: ['Software Engineer','Full Stack Developer','Data Scientist','Product Manager','DevOps Engineer','UX/UI Designer','Tech Entrepreneur','Security Researcher','AI/ML Specialist','Mobile Developer','Blockchain Developer','QA Engineer'] },
   'Entertainment':  { name: 'Entertainment',  subProfessions: ['Actor','Comedian','Musician','Producer','Director','Screenwriter','Animator','Voice Actor','Podcast Host','DJ','Streamer','Stunt Performer'] },
@@ -782,6 +802,21 @@ export default function InstagramDemoPage() {
   const setPaymentSplit = (advance: number, upload: number, approval: number) => {
     if (activeDealKey) updateDeal(activeDealKey, { advancePercent: advance, uploadPercent: upload, approvalPercent: approval });
   };
+
+  // Deal type and workflow-specific accessors
+  const dealType = activeDeal?.dealType ?? 'paid';
+  const setDealType = (t: DealState['dealType']) => {
+    if (activeDealKey) updateDeal(activeDealKey, { dealType: t });
+  };
+  const goodsTrackerStatus = activeDeal?.goodsTrackerStatus ?? 'goods_preparing';
+  const setGoodsTrackerStatus = (s: DealState['goodsTrackerStatus']) => {
+    if (activeDealKey) updateDeal(activeDealKey, { goodsTrackerStatus: s });
+  };
+  const c2cContentStatus = activeDeal?.c2cContentStatus ?? 'content_creating';
+  const setC2cContentStatus = (s: DealState['c2cContentStatus']) => {
+    if (activeDealKey) updateDeal(activeDealKey, { c2cContentStatus: s });
+  };
+
   const offerExpiresLabel = '23h 47m';
 
   // Active deals indicator: count of in-progress deals across all skins
@@ -1057,6 +1092,16 @@ export default function InstagramDemoPage() {
   const [newCampaignRequirements, setNewCampaignRequirements] = useState<string[]>([]);
   const [newCampaignReqInput, setNewCampaignReqInput] = useState('');
   const [newCampaignCreatorCount, setNewCampaignCreatorCount] = useState(1);
+
+  // Campaign POC (Point of Contact) fields
+  const [newCampaignPocName, setNewCampaignPocName] = useState('');
+  const [newCampaignPocHandle, setNewCampaignPocHandle] = useState('');
+  const [newCampaignPocRole, setNewCampaignPocRole] = useState('');
+
+  // Barter goods tracker and international compliance states
+  const [goodsTrackingInput, setGoodsTrackingInput] = useState('');
+  const [intlTaxAcknowledged, setIntlTaxAcknowledged] = useState(false);
+  const [intlCustomsAcknowledged, setIntlCustomsAcknowledged] = useState(false);
 
   // Campaign escrow funding modal (shown after publish, before batch send)
   const [showEscrowFundingModal, setShowEscrowFundingModal] = useState(false);
@@ -2405,9 +2450,13 @@ export default function InstagramDemoPage() {
 
                     {/* Feature 6: Creator Pipeline View (Meta data source: deal states from backend) */}
                     {selectedMarketplaceSkin && creatorMarketplaceTab === 'pipeline' && (() => {
-                      const pipelineDeals = Object.entries(dealStates)
-                        .filter(([k]) => k.startsWith(`${selectedMarketplaceSkin}:`))
-                        .map(([key, deal]) => ({ key, ...deal }));
+                      // Find deals for current creator skin (key format: creatorName|creatorSkin)
+                      const matchingCreator = BRAND_MARKETPLACE_CREATORS.find(c => c.valueSkin === selectedMarketplaceSkin);
+                      const pipelineDeals = matchingCreator
+                        ? Object.entries(dealStates)
+                            .filter(([k]) => k === `${matchingCreator.name}|${selectedMarketplaceSkin}`)
+                            .map(([key, deal]) => ({ key, ...deal }))
+                        : [];
 
                       const columns = {
                         'Negotiating': pipelineDeals.filter(d => ['offer', 'chatroom', 'counter', 'brand_countered'].includes(d.phase)),
@@ -2429,10 +2478,10 @@ export default function InstagramDemoPage() {
                                 ) : (
                                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                     {deals.map((deal, idx) => {
-                                      const oppIdx = parseInt(deal.key.split(':')[1]);
-                                      const opp = activeOpportunities[oppIdx];
+                                      // Key format: creatorName|creatorSkin — find first matching opportunity by skin
+                                      const opp = activeOpportunities.length > 0 ? activeOpportunities[0] : undefined;
                                       return (
-                                        <div key={idx} style={{ background: C.bg, borderRadius: '8px', padding: '10px', border: `1px solid ${C.border}`, cursor: 'pointer', transition: 'all 0.2s' }} onClick={() => { setNegotiatingOpp(oppIdx); }}>
+                                        <div key={idx} style={{ background: C.bg, borderRadius: '8px', padding: '10px', border: `1px solid ${C.border}`, cursor: 'pointer', transition: 'all 0.2s' }} onClick={() => { setNegotiatingOpp(0); }}>
                                           <div style={{ fontSize: '12px', fontWeight: 700, color: C.text, marginBottom: '3px' }}>{opp?.brand || 'Deal'}</div>
                                           <div style={{ fontSize: '10px', color: C.textSecondary, marginBottom: '4px' }}>{opp?.budget}</div>
                                           <div style={{ fontSize: '9px', color: C.textMuted, background: `${C.primary}15`, padding: '2px 6px', borderRadius: '4px', display: 'inline-block' }}>
@@ -2467,8 +2516,10 @@ export default function InstagramDemoPage() {
                           </div>
                         )}
                         {activeOpportunities.filter(opp => (!filterOppsBarterOnly || opp.willingToBarter) && (!creatorCampaignSearch.trim() || opp.brand.toLowerCase().includes(creatorCampaignSearch.trim().toLowerCase()) || (opp.about||'').toLowerCase().includes(creatorCampaignSearch.trim().toLowerCase()) || (opp.budget||'').toLowerCase().includes(creatorCampaignSearch.trim().toLowerCase()))).map((opp, i) => {
-                          const dealKey = `${selectedMarketplaceSkin}:${i}`;
-                          const existingDeal = dealStates[dealKey];
+                          // Deal key format: creatorName|creatorSkin (synced with brand side)
+                          const matchingCreator = BRAND_MARKETPLACE_CREATORS.find(c => c.valueSkin === selectedMarketplaceSkin);
+                          const dealKey = matchingCreator ? `${matchingCreator.name}|${selectedMarketplaceSkin}` : null;
+                          const existingDeal = dealKey ? dealStates[dealKey] : undefined;
                           const hasActiveDeal = existingDeal && existingDeal.phase !== 'brief';
                           const isNegotiating = negotiatingOpp === i || hasActiveDeal;
                           const brandInitial = opp.brand.charAt(0).toUpperCase();
@@ -2510,9 +2561,17 @@ export default function InstagramDemoPage() {
                                 </button>
                                 <button
                                   onClick={() => {
-                                    const key = `${selectedMarketplaceSkin}:${i}`;
+                                    const dealKey = matchingCreator ? `${matchingCreator.name}|${selectedMarketplaceSkin}` : null;
+                                    if (!dealKey) return;
                                     setNegotiatingOpp(i);
-                                    updateDeal(key, { phase: 'chatroom', offerAmount: '', counterAmount: '' });
+                                    updateDeal(dealKey, {
+                                      phase: 'chatroom',
+                                      offerAmount: '',
+                                      counterAmount: '',
+                                      dealType: resolveDealType(opp.compensationType || 'Paid'),
+                                      isInternationalDeal: isInternationalDeal(matchingCreator?.audienceLocation || '', opp.location || ''),
+                                      poc: opp.poc,
+                                    });
                                   }}
                                   style={{ flex: 1, fontSize: '13px', fontWeight: 700, color: '#fff', background: C.primary, border: 'none', padding: '10px', borderRadius: '10px', cursor: 'pointer' }}
                                 >
@@ -3832,6 +3891,19 @@ export default function InstagramDemoPage() {
                             <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>Application deadline</div>
                             <input type="date" value={newCampaignDeadline} onChange={e=>setNewCampaignDeadline(e.target.value)} style={{ width:'100%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', color:C.text, padding:'8px 10px', fontSize:'13px', fontFamily:'inherit', outline:'none', boxSizing:'border-box' as const }} />
                           </div>
+
+                          {/* Point of Contact */}
+                          <div style={{ marginBottom:'16px' }}>
+                            <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'2px' }}>Point of Contact</div>
+                            <div style={{ fontSize:'10px', color:C.textMuted, marginBottom:'8px' }}>The person creators should reference for this campaign. Shown to both parties in the deal room.</div>
+                            <input type="text" value={newCampaignPocName} onChange={e=>setNewCampaignPocName(e.target.value)} placeholder="Full name" style={{ width:'100%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', color:C.text, padding:'8px 10px', fontSize:'12px', fontFamily:'inherit', outline:'none', boxSizing:'border-box' as const, marginBottom:'8px' }} />
+                            <div style={{ position:'relative', marginBottom:'8px' }}>
+                              <span style={{ position:'absolute', left:'10px', top:'50%', transform:'translateY(-50%)', color:C.textMuted, fontSize:'13px' }}>@</span>
+                              <input type="text" value={newCampaignPocHandle} onChange={e=>setNewCampaignPocHandle(e.target.value)} placeholder="instagramhandle" style={{ width:'100%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', color:C.text, padding:'8px 10px 8px 24px', fontSize:'12px', fontFamily:'inherit', outline:'none', boxSizing:'border-box' as const }} />
+                            </div>
+                            <input type="text" value={newCampaignPocRole} onChange={e=>setNewCampaignPocRole(e.target.value)} placeholder="Role / title (e.g. Partnerships Manager)" style={{ width:'100%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', color:C.text, padding:'8px 10px', fontSize:'12px', fontFamily:'inherit', outline:'none', boxSizing:'border-box' as const }} />
+                          </div>
+
                           <button
                             onClick={() => {
                               const missing: string[] = [];
@@ -3842,7 +3914,14 @@ export default function InstagramDemoPage() {
                               if (!newCampaignAudienceTarget.trim()) missing.push('Target audience');
                               if (missing.length > 0) { setPurchaseToast(`Missing: ${missing.join(', ')}`); setTimeout(()=>setPurchaseToast(null),4000); return; }
                               const escrowPool = parseInt(newCampaignBudget||'0') * newCampaignCreatorCount;
-                              const newC: Campaign = { id:Date.now(), brandName:profileName, brandProfession:activeBrandSkin??'', title:newCampaignTitle, description:newCampaignDesc, about:newCampaignAbout, requiredProfessions:[activeBrandSkin ?? ''], minLevel:newCampaignMinLevel, maxLevel:newCampaignMaxLevel, budget:newCampaignBudget, deadline:newCampaignDeadline, location:newCampaignLocation, nonNegotiables:newCampaignNonNeg, deliverables:newCampaignDeliverables, compensationType:newCampaignCompensation, exclusivity:newCampaignExclusivity, usageRights:newCampaignUsageRights, revisionLimit:newCampaignRevisionLimit, audienceTarget:newCampaignAudienceTarget, requirements:newCampaignRequirements, status:'open', applicants:0, creatorCount:newCampaignCreatorCount, escrowFunded:false, escrowPool, escrowAllocated:0 };
+                              const newC: Campaign = {
+                                id:Date.now(), brandName:profileName, brandProfession:activeBrandSkin??'', title:newCampaignTitle, description:newCampaignDesc, about:newCampaignAbout, requiredProfessions:[activeBrandSkin ?? ''], minLevel:newCampaignMinLevel, maxLevel:newCampaignMaxLevel, budget:newCampaignBudget, deadline:newCampaignDeadline, location:newCampaignLocation, nonNegotiables:newCampaignNonNeg, deliverables:newCampaignDeliverables, compensationType:newCampaignCompensation, exclusivity:newCampaignExclusivity, usageRights:newCampaignUsageRights, revisionLimit:newCampaignRevisionLimit, audienceTarget:newCampaignAudienceTarget, requirements:newCampaignRequirements, status:'open', applicants:0, creatorCount:newCampaignCreatorCount, escrowFunded:false, escrowPool, escrowAllocated:0,
+                                poc: newCampaignPocName.trim() ? {
+                                  name: newCampaignPocName.trim(),
+                                  instagramHandle: newCampaignPocHandle.trim().startsWith('@') ? newCampaignPocHandle.trim() : `@${newCampaignPocHandle.trim()}`,
+                                  role: newCampaignPocRole.trim(),
+                                } : undefined,
+                              };
                               persistCampaigns([...campaigns, newC]);
                               firebaseCreateCampaign(newC);
                               setShowCampaignCreator(false);
@@ -3851,7 +3930,7 @@ export default function InstagramDemoPage() {
                               setShowEscrowFundingModal(true);
                               setEscrowFundingInProgress2(false);
                               setBatchSendCreatorIds(new Set());
-                              setNewCampaignTitle(''); setNewCampaignDesc(''); setNewCampaignAbout(''); setNewCampaignBudget(''); setNewCampaignDeadline(''); setNewCampaignProfessions([]); setNewCampaignMinLevel(1); setNewCampaignMaxLevel(5); setNewCampaignLocation(''); setNewCampaignDeliverables(''); setNewCampaignNonNeg([]); setNewCampaignCompensation('Paid'); setNewCampaignExclusivity('None'); setNewCampaignUsageRights('30 days, social only'); setNewCampaignRevisionLimit(2); setNewCampaignAudienceTarget(''); setNewCampaignRequirements([]); setNewCampaignReqInput(''); setNewCampaignCreatorCount(1);
+                              setNewCampaignTitle(''); setNewCampaignDesc(''); setNewCampaignAbout(''); setNewCampaignBudget(''); setNewCampaignDeadline(''); setNewCampaignProfessions([]); setNewCampaignMinLevel(1); setNewCampaignMaxLevel(5); setNewCampaignLocation(''); setNewCampaignDeliverables(''); setNewCampaignNonNeg([]); setNewCampaignCompensation('Paid'); setNewCampaignExclusivity('None'); setNewCampaignUsageRights('30 days, social only'); setNewCampaignRevisionLimit(2); setNewCampaignAudienceTarget(''); setNewCampaignRequirements([]); setNewCampaignReqInput(''); setNewCampaignCreatorCount(1); setNewCampaignPocName(''); setNewCampaignPocHandle(''); setNewCampaignPocRole('');
                             }}
                             style={{ width:'100%', background:C.primary, border:'none', borderRadius:'8px', padding:'11px', color:'#fff', fontWeight:700, fontSize:'14px', cursor:'pointer' }}
                           >

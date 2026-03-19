@@ -43,6 +43,18 @@ export type DealState = {
   // Backend IDs — populated when synced with API
   backendDealRoomId?: number;
   backendLastMessageId?: number;
+  // Deal type differentiation — determines workflow (escrow vs goods vs content tracking)
+  dealType?: 'paid' | 'barter' | 'c2c_paid' | 'c2c_collab';
+  // Barter-only: goods lifecycle and tracking number
+  goodsTrackerStatus?: 'goods_preparing' | 'goods_shipped' | 'goods_delivered' | 'content_due' | 'content_submitted' | 'content_approved';
+  goodsTrackingNumber?: string;
+  // C2C collab (unpaid) only: content lifecycle
+  c2cContentStatus?: 'content_creating' | 'content_submitted' | 'content_approved';
+  // International deal flags and compliance acknowledgments
+  isInternationalDeal?: boolean;
+  customsComplianceAcknowledged?: boolean;
+  // Point of Contact — set at campaign creation, shown to both parties
+  poc?: { name: string; instagramHandle: string; role: string };
 };
 
 export type ChatMessage = {
@@ -115,6 +127,8 @@ export type Campaign = {
   escrowFunded?: boolean;      // brand has deposited total escrow
   escrowPool?: number;         // total amount deposited (budget × creatorCount)
   escrowAllocated?: number;    // amount allocated to accepted deals so far
+  // Point of Contact for this campaign — set at creation, visible in all deal rooms
+  poc?: { name: string; instagramHandle: string; role: string };
 };
 
 // ---- Storage keys ----
@@ -123,7 +137,7 @@ const STORAGE_APPLICATIONS = 'vs_demo_applications';
 const STORAGE_CAMPAIGNS = 'vs_demo_campaigns';
 const BC_NAME = 'vs_demo_sync';
 const STORAGE_VERSION_KEY = 'vs_demo_data_version';
-const CURRENT_DATA_VERSION = '3'; // bump to clear old mock data
+const CURRENT_DATA_VERSION = '4'; // bump to clear old mock data
 
 // One-time purge of stale mock data from previous sessions
 if (typeof window !== 'undefined') {
@@ -332,6 +346,15 @@ export function useDealSync() {
       chatInput: '',
       performanceClause: false,
       advancePercent: 70,
+      uploadPercent: 0,
+      approvalPercent: 0,
+      dealType: undefined,
+      goodsTrackerStatus: undefined,
+      goodsTrackingNumber: undefined,
+      c2cContentStatus: undefined,
+      isInternationalDeal: false,
+      customsComplianceAcknowledged: false,
+      poc: undefined,
     };
   }, [dealStates]);
 
@@ -350,6 +373,15 @@ export function useDealSync() {
         chatInput: '',
         performanceClause: false,
         advancePercent: 70,
+        uploadPercent: 0,
+        approvalPercent: 0,
+        dealType: undefined,
+        goodsTrackerStatus: undefined,
+        goodsTrackingNumber: undefined,
+        c2cContentStatus: undefined,
+        isInternationalDeal: false,
+        customsComplianceAcknowledged: false,
+        poc: undefined,
       };
       return { ...prev, [key]: { ...existing, ...prev[key], ...patch } };
     });
