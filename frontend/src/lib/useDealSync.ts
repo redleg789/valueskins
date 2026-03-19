@@ -28,6 +28,8 @@ export type DealState = {
   chatInput: string;
   performanceClause: boolean;
   advancePercent: number;
+  uploadPercent: number;
+  approvalPercent: number;
   // Backend IDs — populated when synced with API
   backendDealRoomId?: number;
   backendLastMessageId?: number;
@@ -189,7 +191,9 @@ export function useDealSync() {
                 chatMessages: [],
                 chatInput: '',
                 performanceClause: false,
-                advancePercent: 70,
+                advancePercent: 30,
+                uploadPercent: 40,
+                approvalPercent: 30,
                 backendDealRoomId: room.id,
               };
             }

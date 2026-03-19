@@ -649,8 +649,12 @@ export default function InstagramDemoPage() {
   const setChatInput = (v: string) => { if (activeDealKey) updateDeal(activeDealKey, { chatInput: v }); };
   const performanceClause = activeDeal?.performanceClause ?? false;
   const setPerformanceClause = (v: boolean) => { if (activeDealKey) updateDeal(activeDealKey, { performanceClause: v }); };
-  const advancePercent = activeDeal?.advancePercent ?? 70;
-  const setAdvancePercent = (v: number) => { if (activeDealKey) updateDeal(activeDealKey, { advancePercent: v }); };
+  const advancePercent = activeDeal?.advancePercent ?? 30;
+  const uploadPercent = activeDeal?.uploadPercent ?? 40;
+  const approvalPercent = activeDeal?.approvalPercent ?? 30;
+  const setPaymentSplit = (advance: number, upload: number, approval: number) => {
+    if (activeDealKey) updateDeal(activeDealKey, { advancePercent: advance, uploadPercent: upload, approvalPercent: approval });
+  };
   const offerExpiresLabel = '23h 47m';
 
   // Active deals indicator: count of in-progress deals across all skins
@@ -2347,8 +2351,8 @@ export default function InstagramDemoPage() {
                                     const agreedPrice = dealCounterAmount || dealOfferAmount || opp.budget.replace(/[^0-9]/g, '') || '5000';
                                     const totalPrice = parseInt(agreedPrice) || 5000;
                                     const advPct = advancePercent;
-                                    const uploadPct = Math.round((100 - advancePercent) * 0.6);
-                                    const approvalPct = 100 - advPct - uploadPct;
+                                    const uploadPct = uploadPercent;
+                                    const approvalPct = approvalPercent;
                                     const refId = `DR-${activeDealKey ? Math.abs(activeDealKey.split('').reduce((a, c) => a + c.charCodeAt(0), 0) % 9000 + 1000) : '0000'}-${opp.brand.replace(/\s/g, '').slice(0, 3).toUpperCase()}`;
                                     return (
                                       <>
@@ -2508,6 +2512,17 @@ export default function InstagramDemoPage() {
                                             onClick={() => setDealRoomPhase('chatroom')}
                                             style={{ flex: 1, background: 'transparent', border: `1px solid ${C.border}`, padding: '11px', borderRadius: '10px', color: C.textSecondary, fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}
                                           >Back to Chat</button>
+                                          <button
+                                            onClick={() => {
+                                              if (activeDealKey) {
+                                                setDealStates(prev => { const next = {...prev}; delete next[activeDealKey]; return next; });
+                                              }
+                                              setNegotiatingOpp(null);
+                                              setPurchaseToast('Deal rejected');
+                                              setTimeout(() => setPurchaseToast(null), 3000);
+                                            }}
+                                            style={{ flex: 1, background: 'transparent', border: `1px solid rgba(239,68,68,0.3)`, padding: '11px', borderRadius: '10px', color: 'rgba(239,68,68,0.85)', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}
+                                          >Reject</button>
                                         </div>
                                           );
                                         })()}
@@ -2519,8 +2534,8 @@ export default function InstagramDemoPage() {
                                     const agreedPrice = dealCounterAmount || dealOfferAmount || opp.budget.replace(/[^0-9]/g, '') || '5000';
                                     const totalPrice = parseInt(agreedPrice) || 5000;
                                     const advPct = advancePercent;
-                                    const uploadPct = Math.round((100 - advancePercent) * 0.6);
-                                    const approvalPct = 100 - advPct - uploadPct;
+                                    const uploadPct = uploadPercent;
+                                    const approvalPct = approvalPercent;
                                     const refId = `DR-${activeDealKey ? Math.abs(activeDealKey.split('').reduce((a, c) => a + c.charCodeAt(0), 0) % 9000 + 1000) : '0000'}-${opp.brand.replace(/\s/g, '').slice(0, 3).toUpperCase()}`;
                                     const signedAt = new Date().toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
                                     return (
@@ -2672,27 +2687,39 @@ export default function InstagramDemoPage() {
                                           {/* Payment split */}
                                           <div style={{ background: C.bg, borderRadius: '8px', border: `1px solid ${C.border}`, padding: '8px' }}>
                                             <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Payment Plan</div>
-                                            {(() => {
-                                              const uploadPct = Math.round((100 - advancePercent) * 0.6);
-                                              const approvalPct = 100 - advancePercent - uploadPct;
-                                              return (
-                                                <>
-                                                  <div style={{ marginBottom: '6px' }}>
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', marginBottom: '2px' }}>
-                                                      <span style={{ color: C.success, fontWeight: 600 }}>Advance</span>
-                                                      <span style={{ color: C.text, fontWeight: 700 }}>{advancePercent}%</span>
-                                                    </div>
-                                                    <input type="range" min={0} max={100} step={5} value={advancePercent} onChange={e => setAdvancePercent(parseInt(e.target.value))} style={{ width: '100%', height: '4px', accentColor: C.success }} />
-                                                  </div>
-                                                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: C.textMuted, marginBottom: '2px' }}>
-                                                    <span>On upload</span><span style={{ color: C.primary, fontWeight: 600 }}>{uploadPct}%</span>
-                                                  </div>
-                                                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: C.textMuted }}>
-                                                    <span>On approval</span><span style={{ color: C.warning, fontWeight: 600 }}>{approvalPct}%</span>
-                                                  </div>
-                                                </>
-                                              );
-                                            })()}
+                                            {[
+                                              { label: 'Advance', value: advancePercent, color: C.success, key: 'advance' as const },
+                                              { label: 'On upload', value: uploadPercent, color: C.primary, key: 'upload' as const },
+                                              { label: 'On approval', value: approvalPercent, color: C.warning, key: 'approval' as const },
+                                            ].map(s => (
+                                              <div key={s.key} style={{ marginBottom: '6px' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', marginBottom: '2px' }}>
+                                                  <span style={{ color: s.color, fontWeight: 600 }}>{s.label}</span>
+                                                  <span style={{ color: C.text, fontWeight: 700 }}>{s.value}%</span>
+                                                </div>
+                                                <input type="range" min={0} max={100} step={5} value={s.value} onChange={e => {
+                                                  const newVal = parseInt(e.target.value);
+                                                  const others = [advancePercent, uploadPercent, approvalPercent];
+                                                  const idx = s.key === 'advance' ? 0 : s.key === 'upload' ? 1 : 2;
+                                                  const diff = newVal - others[idx];
+                                                  const otherIdxs = [0,1,2].filter(i => i !== idx);
+                                                  const otherTotal = otherIdxs.reduce((sum, i) => sum + others[i], 0);
+                                                  const newOthers = [...others];
+                                                  newOthers[idx] = newVal;
+                                                  if (otherTotal > 0) {
+                                                    otherIdxs.forEach(i => { newOthers[i] = Math.max(0, Math.round(others[i] - diff * (others[i] / otherTotal))); });
+                                                  } else {
+                                                    otherIdxs.forEach((i, j) => { newOthers[i] = j === 0 ? 100 - newVal : 0; });
+                                                  }
+                                                  const total = newOthers.reduce((a, b) => a + b, 0);
+                                                  if (total !== 100 && otherIdxs.length > 0) newOthers[otherIdxs[0]] += 100 - total;
+                                                  setPaymentSplit(newOthers[0], newOthers[1], newOthers[2]);
+                                                }} style={{ width: '100%', height: '4px', accentColor: s.color }} />
+                                              </div>
+                                            ))}
+                                            {advancePercent + uploadPercent + approvalPercent !== 100 && (
+                                              <div style={{ fontSize:'9px', color:'#ef4444', marginTop:'2px' }}>Must total 100%</div>
+                                            )}
                                           </div>
 
                                           {/* Brand submits formal offer */}
@@ -2705,6 +2732,21 @@ export default function InstagramDemoPage() {
                                               Submit Formal Offer
                                             </button>
                                           </div>
+
+                                          {/* Reject brand */}
+                                          <button
+                                            onClick={() => {
+                                              if (activeDealKey) {
+                                                setDealStates(prev => { const next = {...prev}; delete next[activeDealKey]; return next; });
+                                              }
+                                              setNegotiatingOpp(null);
+                                              setPurchaseToast('Deal declined — brand notified');
+                                              setTimeout(() => setPurchaseToast(null), 3000);
+                                            }}
+                                            style={{ width: '100%', background: 'none', border: `1px solid rgba(239,68,68,0.3)`, padding: '7px', borderRadius: '6px', color: 'rgba(239,68,68,0.85)', fontWeight: 600, fontSize: '10px', cursor: 'pointer', marginTop: '4px' }}
+                                          >
+                                            Reject Brand
+                                          </button>
                                         </div>
                                       </div>
                                     </>
@@ -2779,8 +2821,8 @@ export default function InstagramDemoPage() {
                                   {dealRoomPhase === 'softhold' && creatorDealLifecycle === 'deliverables' && (() => {
                                     const agreedPrice = parseInt(dealCounterAmount || dealOfferAmount || '5000') || 5000;
                                     const advPct = advancePercent;
-                                    const uploadPct = Math.round((100 - advancePercent) * 0.6);
-                                    const approvalPct = 100 - advPct - uploadPct;
+                                    const uploadPct = uploadPercent;
+                                    const approvalPct = approvalPercent;
                                     const oppDeliverables = opp.deliverables?.length ? opp.deliverables : [{ format: 'Instagram Reel', count: 1 }];
                                     const deadlineStr = opp.deadline ? new Date(opp.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : null;
                                     const daysLeft = opp.deadline ? Math.ceil((new Date(opp.deadline).getTime() - Date.now()) / 86400000) : null;
