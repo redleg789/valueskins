@@ -2170,16 +2170,17 @@ export default function InstagramDemoPage() {
 
                     {/* Active Deals Banner */}
                     {activeDeals.length > 0 && (
-                      <div style={{ background: C.card, borderRadius: '12px', padding: '12px 16px', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div style={{ background: C.card, borderRadius: '12px', padding: '12px 16px', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '10px', position:'relative' }}>
                         <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: `${C.warning}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                           <svg width="14" height="14" viewBox="0 0 24 24" fill={C.warning} stroke="none"><path d="M12 23c-3.866 0-7-2.686-7-6 0-1.954.951-3.677 2.427-5.173C8.853 10.392 10 8.639 10 6.5c0-.381-.044-.756-.127-1.116A9.86 9.86 0 0 1 12 2a9.86 9.86 0 0 1 2.127 3.384A4.725 4.725 0 0 0 14 6.5c0 2.139 1.147 3.892 2.573 5.327C18.049 13.323 19 15.046 19 17c0 3.314-3.134 6-7 6z"/></svg>
                         </div>
-                        <div>
+                        <div style={{ flex:1 }}>
                           <div style={{ fontSize: '14px', fontWeight: 600, color: C.text }}>{activeDeals.length} Active Deal{activeDeals.length>1?'s':''}</div>
                           <div style={{ fontSize: '12px', color: C.textSecondary }}>
                             {activeDeals.map(([k]) => { const [skin] = k.split(':'); return skin; }).filter((v,i,a)=>a.indexOf(v)===i).join(', ')}
                           </div>
                         </div>
+                        <button onClick={() => { setDealStates({}); setNegotiatingOpp(null); }} style={{ background:'none', border:`1px solid rgba(239,68,68,0.3)`, borderRadius:'6px', padding:'4px 10px', fontSize:'11px', fontWeight:600, color:'#ef4444', cursor:'pointer', flexShrink:0 }}>Clear all</button>
                       </div>
                     )}
 
@@ -4735,8 +4736,11 @@ export default function InstagramDemoPage() {
                       </div>
 
                       {marketplaceTab === 'campaigns' && (<>
-                        <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:'10px' }}>
-                          <button onClick={() => setShowCampaignCreator(true)} style={{ background:C.primary, border:'none', borderRadius:'6px', padding:'6px 12px', fontSize:'12px', fontWeight:700, color:'#fff', cursor:'pointer' }}>+ New Campaign</button>
+                        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'10px' }}>
+                          {campaigns.length > 0 && (
+                            <button onClick={() => { persistCampaigns([]); setSharedApplications([]); setDealStates({}); }} style={{ background:'none', border:`1px solid rgba(239,68,68,0.3)`, borderRadius:'6px', padding:'5px 10px', fontSize:'11px', fontWeight:600, color:'#ef4444', cursor:'pointer' }}>Clear all</button>
+                          )}
+                          <button onClick={() => setShowCampaignCreator(true)} style={{ background:C.primary, border:'none', borderRadius:'6px', padding:'6px 12px', fontSize:'12px', fontWeight:700, color:'#fff', cursor:'pointer', marginLeft:'auto' }}>+ New Campaign</button>
                         </div>
                         {campaigns.length === 0 ? (
                           <div style={{ textAlign:'center', padding:'24px 20px', color:C.textMuted }}>
