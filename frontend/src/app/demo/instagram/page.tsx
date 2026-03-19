@@ -259,6 +259,8 @@ type Opportunity = {
   escrowFunded?: boolean;
   escrowPool?: number;
   creatorCount?: number;
+  // Point of Contact for the campaign
+  poc?: { name: string; instagramHandle: string; role: string };
 };
 
 // Opportunities vary by profession — different brands want different skills
