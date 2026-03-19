@@ -2879,52 +2879,144 @@ export default function InstagramDemoPage() {
                                   })()}
 
                                   {dealRoomPhase === 'accepted' && (() => {
-                                    const agreedPrice = dealCounterAmount || dealOfferAmount || opp.budget.replace(/[^0-9]/g, '') || '5000';
-                                    const totalPrice = parseInt(agreedPrice) || 5000;
-                                    const advPct = advancePercent;
-                                    const uploadPct = uploadPercent;
-                                    const approvalPct = approvalPercent;
-                                    const refId = `DR-${activeDealKey ? Math.abs(activeDealKey.split('').reduce((a, c) => a + c.charCodeAt(0), 0) % 9000 + 1000) : '0000'}-${opp.brand.replace(/\s/g, '').slice(0, 3).toUpperCase()}`;
-                                    const signedAt = new Date().toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
-                                    return (
-                                      <>
-                                        <div style={{ padding: '12px', background: 'rgba(46,125,50,0.08)', borderRadius: '10px', marginBottom: '10px', border: '1px solid rgba(46,125,50,0.2)' }}>
-                                          <div style={{ fontSize: '13px', fontWeight: 700, color: C.success, marginBottom: '4px' }}>Deal accepted</div>
-                                          <div style={{ fontSize: '11px', color: C.textSecondary, marginBottom: '8px' }}>Terms are locked and recorded. Chat remains open for coordination.</div>
-                                          <div style={{ fontSize: '12px', fontWeight: 700, color: C.text, marginBottom: '6px' }}>${totalPrice.toLocaleString()} total</div>
-                                          {[
-                                            { label: 'Advance', pct: advPct },
-                                            { label: 'On upload', pct: uploadPct },
-                                            { label: 'On approval', pct: approvalPct },
-                                          ].map(r => (
-                                            <div key={r.label} style={{ fontSize: '11px', color: C.textSecondary, display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
-                                              <span>{r.label}</span>
-                                              <span style={{ color: C.text, fontWeight: 600 }}>{r.pct}% (${Math.round(totalPrice * r.pct / 100).toLocaleString()})</span>
+                                    // Render based on deal type
+                                    if (dealType === 'barter') {
+                                      // BARTER DEAL — product incoming, no money
+                                      return (
+                                        <>
+                                          {activeDeal?.isInternationalDeal && (
+                                            <div style={{ background: C.warningBg, border: `1px solid ${C.warningBorder}`, borderRadius: '8px', padding: '10px', marginBottom: '10px' }}>
+                                              <div style={{ fontSize: '11px', fontWeight: 700, color: C.warning, marginBottom: '4px' }}>Cross-border deal</div>
+                                              <div style={{ fontSize: '10px', color: C.textSecondary, lineHeight: 1.5 }}>
+                                                This is a cross-border deal. Ensure compliance with your local tax authority. ValueSkins does not provide legal advice.
+                                              </div>
                                             </div>
-                                          ))}
-                                          <div style={{ marginTop: '8px', fontSize: '9px', color: C.primary, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                            <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                                            <span style={{ fontFamily: 'monospace' }}>{refId}</span> · {signedAt}
-                                          </div>
-                                        </div>
-                                        {/* Deadline & Rights summary */}
-                                        <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', padding:'10px', marginBottom:'10px' }}>
-                                          {opp.deadline && (
-                                            <div style={{ fontSize:'11px', color:C.text, marginBottom:'3px' }}>Deadline: <strong>{new Date(opp.deadline).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' })}</strong></div>
                                           )}
-                                          <div style={{ fontSize:'11px', color:C.text, marginBottom:'3px' }}>Usage rights: <strong>{opp.usageRights || `${opp.revisionLimit * 30} days`}</strong></div>
-                                          <div style={{ fontSize:'11px', color:C.text }}>Exclusivity: <strong>{opp.exclusivity || 'None'}</strong></div>
-                                        </div>
-                                        <div style={{ display:'flex', gap:'8px' }}>
-                                          <button onClick={() => { setDealRoomPhase('softhold'); setEscrowFunded(false); setEscrowFundingInProgress(false); setCreatorDealLifecycle('checklist'); }} style={{ flex:2, background: C.primary, border: 'none', padding: '10px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}>
-                                            Begin Work
-                                          </button>
-                                          <button onClick={() => setShowCancelDealModal(true)} style={{ flex:1, background:'none', border:`1px solid rgba(239,68,68,0.3)`, padding:'10px', borderRadius:'8px', color:'#ef4444', fontSize:'12px', cursor:'pointer', fontWeight:500 }}>
-                                            Cancel
-                                          </button>
-                                        </div>
-                                      </>
-                                    );
+                                          <div style={{ padding: '12px', background: 'rgba(76,175,80,0.08)', borderRadius: '10px', marginBottom: '10px', border: '1px solid rgba(76,175,80,0.2)' }}>
+                                            <div style={{ fontSize: '13px', fontWeight: 700, color: C.success, marginBottom: '4px' }}>Deal confirmed — product incoming</div>
+                                            <div style={{ fontSize: '11px', color: C.textSecondary, marginBottom: '8px' }}>Terms are locked and recorded. Chat remains open for coordination.</div>
+                                            <div style={{ fontSize: '12px', fontWeight: 700, color: C.text, marginBottom: '6px' }}>{opp.brand} will send product</div>
+                                            {opp.deadline && (
+                                              <div style={{ fontSize: '11px', color: C.textSecondary, marginBottom: '3px' }}>Deadline: <strong>{new Date(opp.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</strong></div>
+                                            )}
+                                            <div style={{ fontSize: '11px', color: C.textSecondary }}>Exclusivity: <strong>{opp.exclusivity || 'None'}</strong></div>
+                                          </div>
+                                          {/* POC Card */}
+                                          {activeDeal?.poc && (
+                                            <div style={{ background: C.surfaceAlt, border: `1px solid ${C.border}`, borderRadius: '8px', padding: '10px', marginBottom: '10px' }}>
+                                              <div style={{ fontSize: '9px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Point of Contact</div>
+                                              <div style={{ fontSize: '12px', fontWeight: 600, color: C.text }}>{activeDeal.poc.name}</div>
+                                              <div style={{ fontSize: '11px', color: C.primary, marginTop: '2px' }}>{activeDeal.poc.instagramHandle}</div>
+                                              <div style={{ fontSize: '10px', color: C.textSecondary, marginTop: '2px' }}>{activeDeal.poc.role}</div>
+                                            </div>
+                                          )}
+                                          <div style={{ display: 'flex', gap: '8px' }}>
+                                            <button onClick={() => { setDealRoomPhase('softhold'); setGoodsTrackerStatus('goods_preparing'); }} style={{ flex: 2, background: C.primary, border: 'none', padding: '10px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}>
+                                              Begin Work
+                                            </button>
+                                            <button onClick={() => setShowCancelDealModal(true)} style={{ flex: 1, background: 'none', border: `1px solid rgba(239,68,68,0.3)`, padding: '10px', borderRadius: '8px', color: '#ef4444', fontSize: '12px', cursor: 'pointer', fontWeight: 500 }}>
+                                              Cancel
+                                            </button>
+                                          </div>
+                                        </>
+                                      );
+                                    } else if (dealType === 'c2c_collab') {
+                                      // C2C COLLAB — no money, just content
+                                      return (
+                                        <>
+                                          <div style={{ padding: '12px', background: 'rgba(124,58,237,0.08)', borderRadius: '10px', marginBottom: '10px', border: '1px solid rgba(124,58,237,0.2)' }}>
+                                            <div style={{ fontSize: '13px', fontWeight: 700, color: C.accent, marginBottom: '4px' }}>Collaboration confirmed</div>
+                                            <div style={{ fontSize: '11px', color: C.textSecondary, marginBottom: '8px' }}>You're ready to create content together. Terms are locked and recorded.</div>
+                                            <div style={{ fontSize: '12px', fontWeight: 700, color: C.text, marginBottom: '6px' }}>Collaborating with {opp.brand}</div>
+                                            {opp.deadline && (
+                                              <div style={{ fontSize: '11px', color: C.textSecondary }}>Deadline: <strong>{new Date(opp.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</strong></div>
+                                            )}
+                                          </div>
+                                          {/* POC Card */}
+                                          {activeDeal?.poc && (
+                                            <div style={{ background: C.surfaceAlt, border: `1px solid ${C.border}`, borderRadius: '8px', padding: '10px', marginBottom: '10px' }}>
+                                              <div style={{ fontSize: '9px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Point of Contact</div>
+                                              <div style={{ fontSize: '12px', fontWeight: 600, color: C.text }}>{activeDeal.poc.name}</div>
+                                              <div style={{ fontSize: '11px', color: C.primary, marginTop: '2px' }}>{activeDeal.poc.instagramHandle}</div>
+                                              <div style={{ fontSize: '10px', color: C.textSecondary, marginTop: '2px' }}>{activeDeal.poc.role}</div>
+                                            </div>
+                                          )}
+                                          <div style={{ display: 'flex', gap: '8px' }}>
+                                            <button onClick={() => { setDealRoomPhase('softhold'); setC2cContentStatus('content_creating'); }} style={{ flex: 2, background: C.primary, border: 'none', padding: '10px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}>
+                                              Begin Work
+                                            </button>
+                                            <button onClick={() => setShowCancelDealModal(true)} style={{ flex: 1, background: 'none', border: `1px solid rgba(239,68,68,0.3)`, padding: '10px', borderRadius: '8px', color: '#ef4444', fontSize: '12px', cursor: 'pointer', fontWeight: 500 }}>
+                                              Cancel
+                                            </button>
+                                          </div>
+                                        </>
+                                      );
+                                    } else {
+                                      // PAID & C2C_PAID — escrow payment breakdown
+                                      const agreedPrice = dealCounterAmount || dealOfferAmount || opp.budget.replace(/[^0-9]/g, '') || '5000';
+                                      const totalPrice = parseInt(agreedPrice) || 5000;
+                                      const advPct = advancePercent;
+                                      const uploadPct = uploadPercent;
+                                      const approvalPct = approvalPercent;
+                                      const refId = `DR-${activeDealKey ? Math.abs(activeDealKey.split('').reduce((a, c) => a + c.charCodeAt(0), 0) % 9000 + 1000) : '0000'}-${opp.brand.replace(/\s/g, '').slice(0, 3).toUpperCase()}`;
+                                      const signedAt = new Date().toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
+                                      return (
+                                        <>
+                                          {activeDeal?.isInternationalDeal && (
+                                            <div style={{ background: C.warningBg, border: `1px solid ${C.warningBorder}`, borderRadius: '8px', padding: '10px', marginBottom: '10px' }}>
+                                              <div style={{ fontSize: '11px', fontWeight: 700, color: C.warning, marginBottom: '4px' }}>Cross-border deal</div>
+                                              <div style={{ fontSize: '10px', color: C.textSecondary, lineHeight: 1.5 }}>
+                                                This is a cross-border deal. Ensure compliance with your local tax authority. ValueSkins does not provide legal advice.
+                                              </div>
+                                            </div>
+                                          )}
+                                          <div style={{ padding: '12px', background: 'rgba(46,125,50,0.08)', borderRadius: '10px', marginBottom: '10px', border: '1px solid rgba(46,125,50,0.2)' }}>
+                                            <div style={{ fontSize: '13px', fontWeight: 700, color: C.success, marginBottom: '4px' }}>Deal accepted</div>
+                                            <div style={{ fontSize: '11px', color: C.textSecondary, marginBottom: '8px' }}>Terms are locked and recorded. Chat remains open for coordination.</div>
+                                            <div style={{ fontSize: '12px', fontWeight: 700, color: C.text, marginBottom: '6px' }}>${totalPrice.toLocaleString()} total</div>
+                                            {[
+                                              { label: 'Advance', pct: advPct },
+                                              { label: 'On upload', pct: uploadPct },
+                                              { label: 'On approval', pct: approvalPct },
+                                            ].map(r => (
+                                              <div key={r.label} style={{ fontSize: '11px', color: C.textSecondary, display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+                                                <span>{r.label}</span>
+                                                <span style={{ color: C.text, fontWeight: 600 }}>{r.pct}% (${Math.round(totalPrice * r.pct / 100).toLocaleString()})</span>
+                                              </div>
+                                            ))}
+                                            <div style={{ marginTop: '8px', fontSize: '9px', color: C.primary, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                              <span style={{ fontFamily: 'monospace' }}>{refId}</span> · {signedAt}
+                                            </div>
+                                          </div>
+                                          {/* Deadline & Rights summary */}
+                                          <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: '8px', padding: '10px', marginBottom: '10px' }}>
+                                            {opp.deadline && (
+                                              <div style={{ fontSize: '11px', color: C.text, marginBottom: '3px' }}>Deadline: <strong>{new Date(opp.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</strong></div>
+                                            )}
+                                            <div style={{ fontSize: '11px', color: C.text, marginBottom: '3px' }}>Usage rights: <strong>{opp.usageRights || `${opp.revisionLimit * 30} days`}</strong></div>
+                                            <div style={{ fontSize: '11px', color: C.text }}>Exclusivity: <strong>{opp.exclusivity || 'None'}</strong></div>
+                                          </div>
+                                          {/* POC Card */}
+                                          {activeDeal?.poc && (
+                                            <div style={{ background: C.surfaceAlt, border: `1px solid ${C.border}`, borderRadius: '8px', padding: '10px', marginBottom: '10px' }}>
+                                              <div style={{ fontSize: '9px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Point of Contact</div>
+                                              <div style={{ fontSize: '12px', fontWeight: 600, color: C.text }}>{activeDeal.poc.name}</div>
+                                              <div style={{ fontSize: '11px', color: C.primary, marginTop: '2px' }}>{activeDeal.poc.instagramHandle}</div>
+                                              <div style={{ fontSize: '10px', color: C.textSecondary, marginTop: '2px' }}>{activeDeal.poc.role}</div>
+                                            </div>
+                                          )}
+                                          <div style={{ display: 'flex', gap: '8px' }}>
+                                            <button onClick={() => { setDealRoomPhase('softhold'); setEscrowFunded(false); setEscrowFundingInProgress(false); setCreatorDealLifecycle('checklist'); }} style={{ flex: 2, background: C.primary, border: 'none', padding: '10px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}>
+                                              Begin Work
+                                            </button>
+                                            <button onClick={() => setShowCancelDealModal(true)} style={{ flex: 1, background: 'none', border: `1px solid rgba(239,68,68,0.3)`, padding: '10px', borderRadius: '8px', color: '#ef4444', fontSize: '12px', cursor: 'pointer', fontWeight: 500 }}>
+                                              Cancel
+                                            </button>
+                                          </div>
+                                        </>
+                                      );
+                                    }
                                   })()}
 
                                   {dealRoomPhase === 'chatroom' && (
@@ -3180,335 +3272,482 @@ export default function InstagramDemoPage() {
                                   )}
 
                                   {/* Escrow funding gate — brand must fund before creator uploads */}
-                                  {dealRoomPhase === 'softhold' && !escrowFunded && creatorDealLifecycle === 'checklist' && (() => {
-                                    const agreedPrice = parseInt(dealCounterAmount || dealOfferAmount || '5000') || 5000;
-                                    // If brand pre-funded escrow at campaign creation, auto-unlock immediately
-                                    if (opp.escrowFunded) {
-                                      // Auto-advance on next tick to avoid setState-in-render
-                                      setTimeout(() => {
-                                        setEscrowFunded(true);
-                                        setCreatorDealLifecycle('deliverables');
-                                        setPaymentMilestones(prev => prev.advance === 'released' ? prev : { ...prev, advance: 'released' });
-                                      }, 0);
-                                      return (
-                                        <div style={{ textAlign:'center', padding:'16px 0' }}>
-                                          <div style={{ width:'44px', height:'44px', borderRadius:'50%', background:'rgba(0,212,106,0.1)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 12px' }}>
-                                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={C.success} strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                                          </div>
-                                          <div style={{ fontSize:'14px', fontWeight:700, color:C.success, marginBottom:'4px' }}>Escrow Funded</div>
-                                          <div style={{ fontSize:'12px', color:C.textSecondary }}>Brand deposited escrow at campaign launch. Advance released — ready to start.</div>
-                                        </div>
-                                      );
-                                    }
-                                    return (
-                                      <div style={{ textAlign:'center', padding:'16px 0' }}>
-                                        <div style={{ width:'44px', height:'44px', borderRadius:'50%', background:C.surfaceAlt, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 12px' }}>
-                                          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                                        </div>
-                                        <div style={{ fontSize:'14px', fontWeight:700, color:C.text, marginBottom:'4px' }}>Awaiting Escrow</div>
-                                        <div style={{ fontSize:'12px', color:C.textSecondary, marginBottom:'16px', lineHeight:1.5 }}>
-                                          The brand must deposit <strong>${agreedPrice.toLocaleString()}</strong> into escrow before you can begin work. Funds are held securely and released per your payment milestones.
-                                        </div>
-                                        <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:'10px', padding:'12px', marginBottom:'14px' }}>
-                                          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'6px' }}>
-                                            <span style={{ fontSize:'11px', color:C.textMuted }}>Escrow account</span>
-                                            <span style={{ fontSize:'12px', fontWeight:700, color: escrowFundingInProgress ? '#f59e0b' : C.textMuted }}>{escrowFundingInProgress ? 'Funding...' : 'Awaiting deposit'}</span>
-                                          </div>
-                                          <div style={{ width:'100%', height:'6px', background:C.card, borderRadius:'3px', overflow:'hidden' }}>
-                                            <div style={{ width: escrowFundingInProgress ? '60%' : '0%', height:'100%', background: escrowFundingInProgress ? '#f59e0b' : C.border, borderRadius:'3px', transition:'width 1.5s ease' }} />
-                                          </div>
-                                          <div style={{ fontSize:'10px', color:C.textMuted, marginTop:'6px' }}>
-                                            $0 / ${agreedPrice.toLocaleString()} deposited
-                                          </div>
-                                        </div>
-                                        <button onClick={() => {
-                                          setEscrowFundingInProgress(true);
-                                          setTimeout(() => {
-                                            setEscrowFunded(true);
-                                            setCreatorDealLifecycle('deliverables');
-                                            setPaymentMilestones(prev => ({ ...prev, advance: 'released' }));
-                                            setPurchaseToast(`Escrow funded — $${agreedPrice.toLocaleString()} secured. Advance released.`);
-                                            setTimeout(() => setPurchaseToast(null), 4000);
-                                          }, 2000);
-                                        }} disabled={escrowFundingInProgress} style={{ width:'100%', background: escrowFundingInProgress ? C.border : C.primary, border:'none', padding:'10px', borderRadius:'8px', color:'#fff', fontWeight:600, cursor: escrowFundingInProgress ? 'not-allowed' : 'pointer', fontSize:'13px', opacity: escrowFundingInProgress ? 0.6 : 1 }}>
-                                          {escrowFundingInProgress ? 'Processing deposit...' : 'Simulate: Brand funds escrow'}
-                                        </button>
-                                      </div>
-                                    );
-                                  })()}
+                                  {dealRoomPhase === 'softhold' && (() => {
+                                    switch(dealType) {
+                                      // PAID & C2C_PAID: Escrow workflow
+                                      case 'paid':
+                                      case 'c2c_paid': {
+                                        const agreedPrice = parseInt(dealCounterAmount || dealOfferAmount || '5000') || 5000;
+                                        const advPct = advancePercent;
+                                        const uploadPct = uploadPercent;
+                                        const approvalPct = approvalPercent;
 
-                                  {dealRoomPhase === 'softhold' && creatorDealLifecycle === 'deliverables' && (() => {
-                                    const agreedPrice = parseInt(dealCounterAmount || dealOfferAmount || '5000') || 5000;
-                                    const advPct = advancePercent;
-                                    const uploadPct = uploadPercent;
-                                    const approvalPct = approvalPercent;
-                                    const oppDeliverables = opp.deliverables?.length ? opp.deliverables : [{ format: 'Instagram Reel', count: 1 }];
-                                    const deadlineStr = opp.deadline ? new Date(opp.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : null;
-                                    const daysLeft = opp.deadline ? Math.ceil((new Date(opp.deadline).getTime() - Date.now()) / 86400000) : null;
-                                    const allUploaded = oppDeliverables.every((_d: {format:string;count:number}, i: number) => deliverableStatuses[i] === 'uploaded' || deliverableStatuses[i] === 'approved');
-                                    return (
-                                    <>
-                                      <div style={{ fontSize:'11px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.6px', marginBottom:'10px' }}>Upload Deliverables</div>
-
-                                      {/* Deadline countdown */}
-                                      {deadlineStr && (
-                                        <div style={{ background: daysLeft !== null && daysLeft <= 3 ? 'rgba(239,68,68,0.08)' : C.bg, border: `1px solid ${daysLeft !== null && daysLeft <= 3 ? 'rgba(239,68,68,0.3)' : C.border}`, borderRadius:'8px', padding:'10px', marginBottom:'10px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                                          <div>
-                                            <div style={{ fontSize:'10px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.4px' }}>Deadline</div>
-                                            <div style={{ fontSize:'13px', fontWeight:600, color:C.text }}>{deadlineStr}</div>
-                                          </div>
-                                          {daysLeft !== null && (
-                                            <div style={{ fontSize:'12px', fontWeight:700, color: daysLeft <= 3 ? '#ef4444' : daysLeft <= 7 ? '#f59e0b' : C.success }}>
-                                              {daysLeft <= 0 ? 'Overdue' : `${daysLeft}d left`}
-                                            </div>
-                                          )}
-                                        </div>
-                                      )}
-
-                                      {/* Usage rights & exclusivity */}
-                                      <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', padding:'10px', marginBottom:'10px' }}>
-                                        <div style={{ fontSize:'10px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.4px', marginBottom:'6px' }}>Rights & Exclusivity</div>
-                                        <div style={{ fontSize:'11px', color:C.text, marginBottom:'3px' }}>Usage rights: <strong>{opp.usageRights || `${opp.revisionLimit * 30} days`}</strong></div>
-                                        <div style={{ fontSize:'11px', color:C.text, marginBottom:'3px' }}>Exclusivity: <strong>{opp.exclusivity || 'None'}</strong></div>
-                                        <div style={{ fontSize:'11px', color:C.text }}>Revision limit: <strong>{opp.revisionLimit} round{opp.revisionLimit !== 1 ? 's' : ''}</strong></div>
-                                      </div>
-
-                                      {/* Per-deliverable checklist */}
-                                      <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', padding:'10px', marginBottom:'10px' }}>
-                                        <div style={{ fontSize:'10px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.4px', marginBottom:'8px' }}>Deliverables ({oppDeliverables.reduce((a: number, d: {format:string;count:number}) => a + d.count, 0)} items)</div>
-                                        {oppDeliverables.map((d, di) => {
-                                          const status = deliverableStatuses[di] || 'pending';
-                                          const link = deliverableLinks[di] || '';
-                                          const inputVal = deliverableLinkInputs[di] || '';
-                                          const isValidIgUrl = (u: string) => /instagram\.com\/(p|reel|tv)\/[A-Za-z0-9_-]+/.test(u);
-                                          const postId = link.match(/instagram\.com\/(?:p|reel|tv)\/([A-Za-z0-9_-]+)/)?.[1];
-                                          return (
-                                            <div key={di} style={{ borderRadius:'8px', marginBottom:'8px', border:`1px solid ${status === 'approved' ? 'rgba(0,212,106,0.25)' : status === 'uploaded' ? 'rgba(0,149,246,0.25)' : C.border}`, overflow:'hidden' }}>
-                                              {/* Header row */}
-                                              <div style={{ display:'flex', alignItems:'center', gap:'8px', padding:'8px 10px', background: status === 'uploaded' ? 'rgba(0,149,246,0.04)' : status === 'approved' ? 'rgba(0,212,106,0.04)' : 'transparent' }}>
-                                                <div style={{ width:'20px', height:'20px', borderRadius:'5px', background: status === 'approved' ? C.success : status === 'uploaded' ? C.primary : C.border, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                                                  {status !== 'pending' && status !== 'linking' ? <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg> : <span style={{ fontSize:'10px', color:'#fff', fontWeight:700 }}>{di + 1}</span>}
+                                        // Escrow gate (when !escrowFunded && lifecycle==='checklist')
+                                        if (!escrowFunded && creatorDealLifecycle === 'checklist') {
+                                          if (opp.escrowFunded) {
+                                            setTimeout(() => {
+                                              setEscrowFunded(true);
+                                              setCreatorDealLifecycle('deliverables');
+                                              setPaymentMilestones(prev => prev.advance === 'released' ? prev : { ...prev, advance: 'released' });
+                                            }, 0);
+                                            return (
+                                              <div style={{ textAlign:'center', padding:'16px 0' }}>
+                                                <div style={{ width:'44px', height:'44px', borderRadius:'50%', background:'rgba(0,212,106,0.1)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 12px' }}>
+                                                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={C.success} strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                                                 </div>
-                                                <div style={{ flex:1 }}>
-                                                  <div style={{ fontSize:'12px', fontWeight:600, color:C.text }}>{d.count}x {d.format}</div>
-                                                  <div style={{ fontSize:'10px', color: status === 'approved' ? C.success : status === 'uploaded' ? C.primary : C.textMuted }}>
-                                                    {status === 'approved' ? 'Approved by brand' : status === 'uploaded' ? 'Submitted — awaiting review' : status === 'linking' ? 'Enter your Instagram link below' : 'Not yet submitted'}
-                                                  </div>
-                                                </div>
-                                                {status === 'pending' && (
-                                                  <button onClick={() => setDeliverableStatuses(prev => ({ ...prev, [di]: 'linking' }))} style={{ background:C.primary, border:'none', borderRadius:'6px', padding:'4px 10px', color:'#fff', fontSize:'10px', fontWeight:600, cursor:'pointer', flexShrink:0 }}>Submit link</button>
-                                                )}
-                                                {status === 'linking' && (
-                                                  <button onClick={() => setDeliverableStatuses(prev => ({ ...prev, [di]: 'pending' }))} style={{ background:'none', border:`1px solid ${C.border}`, borderRadius:'6px', padding:'3px 8px', color:C.textMuted, fontSize:'10px', cursor:'pointer', flexShrink:0 }}>Cancel</button>
-                                                )}
+                                                <div style={{ fontSize:'14px', fontWeight:700, color:C.success, marginBottom:'4px' }}>Escrow Funded</div>
+                                                <div style={{ fontSize:'12px', color:C.textSecondary }}>Brand deposited escrow at campaign launch. Advance released — ready to start.</div>
                                               </div>
-                                              {/* URL input — shown when linking */}
-                                              {status === 'linking' && (
-                                                <div style={{ padding:'10px', borderTop:`1px solid ${C.border}`, background:C.bg }}>
-                                                  <div style={{ fontSize:'10px', color:C.textMuted, marginBottom:'6px' }}>Paste the link to your published Instagram post or reel</div>
-                                                  <div style={{ display:'flex', gap:'6px' }}>
-                                                    <input
-                                                      type="text"
-                                                      value={inputVal}
-                                                      onChange={e => setDeliverableLinkInputs(prev => ({ ...prev, [di]: e.target.value }))}
-                                                      placeholder="https://www.instagram.com/p/..."
-                                                      style={{ flex:1, background:C.surfaceAlt, border:`1px solid ${isValidIgUrl(inputVal) ? C.success : C.border}`, borderRadius:'6px', color:C.text, padding:'7px 10px', fontSize:'11px', fontFamily:'inherit', outline:'none' }}
-                                                    />
-                                                    <button
-                                                      disabled={!isValidIgUrl(inputVal)}
-                                                      onClick={() => {
-                                                        setDeliverableLinks(prev => ({ ...prev, [di]: inputVal }));
-                                                        setDeliverableStatuses(prev => ({ ...prev, [di]: 'uploaded' }));
-                                                        setDeliverableLinkInputs(prev => ({ ...prev, [di]: '' }));
-                                                      }}
-                                                      style={{ background: isValidIgUrl(inputVal) ? C.success : C.border, border:'none', borderRadius:'6px', padding:'7px 12px', color:'#fff', fontSize:'11px', fontWeight:700, cursor: isValidIgUrl(inputVal) ? 'pointer' : 'not-allowed', opacity: isValidIgUrl(inputVal) ? 1 : 0.5, flexShrink:0 }}
-                                                    >Confirm</button>
-                                                  </div>
-                                                  {inputVal && !isValidIgUrl(inputVal) && (
-                                                    <div style={{ fontSize:'10px', color:'#ef4444', marginTop:'4px' }}>Must be an instagram.com/p/, /reel/, or /tv/ link</div>
-                                                  )}
+                                            );
+                                          }
+                                          return (
+                                            <div style={{ textAlign:'center', padding:'16px 0' }}>
+                                              <div style={{ width:'44px', height:'44px', borderRadius:'50%', background:C.surfaceAlt, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 12px' }}>
+                                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                              </div>
+                                              <div style={{ fontSize:'14px', fontWeight:700, color:C.text, marginBottom:'4px' }}>Awaiting Escrow</div>
+                                              <div style={{ fontSize:'12px', color:C.textSecondary, marginBottom:'16px', lineHeight:1.5 }}>
+                                                The brand must deposit <strong>${agreedPrice.toLocaleString()}</strong> into escrow before you can begin work. Funds are held securely and released per your payment milestones.
+                                              </div>
+                                              <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:'10px', padding:'12px', marginBottom:'14px' }}>
+                                                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'6px' }}>
+                                                  <span style={{ fontSize:'11px', color:C.textMuted }}>Escrow account</span>
+                                                  <span style={{ fontSize:'12px', fontWeight:700, color: escrowFundingInProgress ? '#f59e0b' : C.textMuted }}>{escrowFundingInProgress ? 'Funding...' : 'Awaiting deposit'}</span>
                                                 </div>
-                                              )}
-                                              {/* Preview card — shown after link confirmed */}
-                                              {(status === 'uploaded' || status === 'approved') && link && (
-                                                <div style={{ padding:'10px', borderTop:`1px solid ${C.border}`, background:C.bg, display:'flex', gap:'10px', alignItems:'flex-start' }}>
-                                                  {/* Thumbnail placeholder */}
-                                                  <div style={{ width:52, height:52, borderRadius:'6px', background:C.surfaceAlt, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, overflow:'hidden' }}>
-                                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={C.textMuted} strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 12h6m-3-3v6"/></svg>
-                                                  </div>
-                                                  <div style={{ flex:1, minWidth:0 }}>
-                                                    <div style={{ fontSize:'10px', fontWeight:700, color:C.textMuted, marginBottom:'2px', textTransform:'uppercase', letterSpacing:'0.4px' }}>Instagram {d.format.toLowerCase().includes('reel') ? 'Reel' : 'Post'}</div>
-                                                    <a href={link} target="_blank" rel="noopener noreferrer" style={{ fontSize:'10px', color:C.primary, textDecoration:'none', display:'block', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{postId ? `instagram.com/p/${postId}` : link}</a>
-                                                    <div style={{ fontSize:'9px', color:C.textMuted, marginTop:'3px' }}>Submitted {new Date().toLocaleDateString('en-US', { month:'short', day:'numeric' })}</div>
-                                                  </div>
-                                                  {status === 'approved' && (
-                                                    <div style={{ fontSize:'9px', fontWeight:700, color:C.success, background:'rgba(0,212,106,0.1)', padding:'2px 7px', borderRadius:'6px', flexShrink:0 }}>Approved</div>
-                                                  )}
+                                                <div style={{ width:'100%', height:'6px', background:C.card, borderRadius:'3px', overflow:'hidden' }}>
+                                                  <div style={{ width: escrowFundingInProgress ? '60%' : '0%', height:'100%', background: escrowFundingInProgress ? '#f59e0b' : C.border, borderRadius:'3px', transition:'width 1.5s ease' }} />
                                                 </div>
-                                              )}
+                                                <div style={{ fontSize:'10px', color:C.textMuted, marginTop:'6px' }}>
+                                                  $0 / ${agreedPrice.toLocaleString()} deposited
+                                                </div>
+                                              </div>
+                                              <button onClick={() => {
+                                                setEscrowFundingInProgress(true);
+                                                setTimeout(() => {
+                                                  setEscrowFunded(true);
+                                                  setCreatorDealLifecycle('deliverables');
+                                                  setPaymentMilestones(prev => ({ ...prev, advance: 'released' }));
+                                                  setPurchaseToast(`Escrow funded — $${agreedPrice.toLocaleString()} secured. Advance released.`);
+                                                  setTimeout(() => setPurchaseToast(null), 4000);
+                                                }, 2000);
+                                              }} disabled={escrowFundingInProgress} style={{ width:'100%', background: escrowFundingInProgress ? C.border : C.primary, border:'none', padding:'10px', borderRadius:'8px', color:'#fff', fontWeight:600, cursor: escrowFundingInProgress ? 'not-allowed' : 'pointer', fontSize:'13px', opacity: escrowFundingInProgress ? 0.6 : 1 }}>
+                                                {escrowFundingInProgress ? 'Processing deposit...' : 'Simulate: Brand funds escrow'}
+                                              </button>
                                             </div>
                                           );
-                                        })}
-                                      </div>
+                                        }
 
-                                      {/* Payment milestone tracker */}
-                                      <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', padding:'10px', marginBottom:'10px' }}>
-                                        <div style={{ fontSize:'10px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.4px', marginBottom:'8px' }}>Payment Milestones</div>
-                                        {[
-                                          { key: 'advance' as const, label: 'Advance', pct: advPct, color: C.success },
-                                          { key: 'upload' as const, label: 'On upload', pct: uploadPct, color: C.primary },
-                                          { key: 'approval' as const, label: 'On approval', pct: approvalPct, color: '#f59e0b' },
-                                        ].map(m => (
-                                          <div key={m.key} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'6px 0', borderBottom:`1px solid ${C.border}` }}>
-                                            <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
-                                              <div style={{ width:'8px', height:'8px', borderRadius:'50%', background: paymentMilestones[m.key] === 'released' ? C.success : m.color, opacity: paymentMilestones[m.key] === 'released' ? 1 : 0.4 }} />
-                                              <span style={{ fontSize:'11px', color:C.text, fontWeight:500 }}>{m.label}</span>
-                                            </div>
-                                            <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
-                                              <span style={{ fontSize:'12px', fontWeight:700, color: paymentMilestones[m.key] === 'released' ? C.success : C.text }}>${Math.round(agreedPrice * m.pct / 100).toLocaleString()}</span>
-                                              <span style={{ fontSize:'9px', fontWeight:600, color: paymentMilestones[m.key] === 'released' ? C.success : C.textMuted, textTransform:'uppercase' }}>{paymentMilestones[m.key] === 'released' ? 'Paid' : 'Pending'}</span>
-                                            </div>
-                                          </div>
-                                        ))}
-                                      </div>
-
-                                      <div style={{ background:'rgba(46,125,50,0.06)', border:'1px solid rgba(46,125,50,0.2)', borderRadius:'8px', padding:'10px', marginBottom:'12px', fontSize:'11px', color:C.textSecondary }}>
-                                        Brand payment on-hold: ${agreedPrice.toLocaleString()} — released per milestones above
-                                      </div>
-
-                                      {/* Submit all — only when all deliverables uploaded */}
-                                      {allUploaded && (
-                                        <button onClick={() => {
-                                          const agreedAmt = parseInt(dealCounterAmount || '5000');
-                                          setCreatorDealLifecycle('submitted');
-                                          setPaymentMilestones({ advance: 'released', upload: 'released', approval: 'pending' });
-                                          // Sync to dealStates for real-time broadcast to brand
-                                          if (activeDealKey) {
-                                            updateDeal(activeDealKey, {
-                                              creatorDealLifecycle: 'submitted',
-                                              paymentMilestones: { advance: 'released', upload: 'released', approval: 'pending' },
-                                              deliverableStatuses: deliverableStatuses
-                                            });
-                                            firebaseSendNotification(opp?.brand || 'Brand', 'application', `Deliverables submitted: ${agreedAmt.toLocaleString()} – Advance & upload milestones released. Awaiting approval.`);
-                                          }
-                                          setPurchaseToast(`Submitted for review — $${Math.round(agreedAmt * (advancePercent + uploadPercent) / 100).toLocaleString()} released, $${Math.round(agreedAmt * approvalPercent / 100).toLocaleString()} pending approval`);
-                                          setTimeout(() => setPurchaseToast(null), 4000);
-                                        }} style={{ width:'100%', background:C.primary, border:'none', padding:'10px', borderRadius:'8px', color:'#fff', fontWeight:600, cursor:'pointer', fontSize:'13px', marginBottom:'8px' }}>
-                                          Submit for Review
-                                        </button>
-                                      )}
-
-                                      {/* Cancel deal */}
-                                      <button onClick={() => setShowCancelDealModal(true)} style={{ width:'100%', background:'none', border:`1px solid rgba(239,68,68,0.3)`, padding:'8px', borderRadius:'8px', color:'#ef4444', fontSize:'11px', cursor:'pointer', fontWeight:500 }}>
-                                        Cancel Deal
-                                      </button>
-                                    </>
-                                    );
-                                  })()}
-
-                                  {dealRoomPhase === 'softhold' && creatorDealLifecycle === 'submitted' && (
-                                    <>
-                                      <div style={{ background:'rgba(0,102,204,0.06)', border:`1px solid rgba(0,102,204,0.2)`, borderRadius:'8px', padding:'12px', marginBottom:'12px' }}>
-                                        <div style={{ fontSize:'13px', fontWeight:700, color:C.text, marginBottom:'4px' }}>Deliverables Submitted</div>
-                                        <div style={{ fontSize:'11px', color:C.textSecondary, marginBottom:'8px' }}>Waiting for brand approval — typically within 48h.</div>
-                                        {/* Payment milestone status */}
-                                        <div style={{ fontSize:'10px', color:C.textMuted, marginBottom:'2px' }}>Advance: <span style={{ color:C.success, fontWeight:600 }}>Paid</span></div>
-                                        <div style={{ fontSize:'10px', color:C.textMuted, marginBottom:'2px' }}>Upload milestone: <span style={{ color:C.success, fontWeight:600 }}>Paid</span></div>
-                                        <div style={{ fontSize:'10px', color:C.textMuted }}>Approval milestone: <span style={{ color:'#f59e0b', fontWeight:600 }}>Pending brand approval</span></div>
-                                      </div>
-                                      <button onClick={() => { setCreatorDealLifecycle('approved'); setPaymentMilestones({ advance:'released', upload:'released', approval:'released' }); handleDealComplete(parseInt(dealCounterAmount || '5000'), opp.brand || 'Brand', opp.deliverables?.map((d: {count:number;format:string}) => `${d.count}x ${d.format}`).join(', ') || '1x Instagram Reel', undefined, opp.revisionLimit ? opp.revisionLimit * 30 : 90, opp.exclusivity && opp.exclusivity !== 'None' ? 30 : undefined, opp.exclusivity && opp.exclusivity !== 'None' ? selectedMarketplaceSkin || undefined : undefined); }} style={{ width:'100%', background:'none', border:`1px solid ${C.border}`, padding:'8px', borderRadius:'8px', color:C.textMuted, fontSize:'11px', cursor:'pointer' }}>
-                                        Simulate: Brand approved
-                                      </button>
-                                    </>
-                                  )}
-
-                                  {dealRoomPhase === 'softhold' && creatorDealLifecycle === 'approved' && (
-                                    <>
-                                      <div style={{ textAlign:'center', padding:'12px 0' }}>
-                                        <div style={{ width:'40px', height:'40px', borderRadius:'50%', background:C.surfaceAlt, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 10px' }}>
-                                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={C.textSecondary} strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                                        </div>
-                                        <div style={{ fontSize:'15px', fontWeight:700, color:C.text, marginBottom:'4px' }}>Deal Complete</div>
-                                        <div style={{ fontSize:'12px', color:C.textSecondary, marginBottom:'16px' }}>All deliverables approved. All milestones paid.</div>
-                                        <div style={{ background:'rgba(46,125,50,0.06)', border:'1px solid rgba(46,125,50,0.2)', borderRadius:'8px', padding:'12px', marginBottom:'14px' }}>
-                                          <div style={{ fontSize:'11px', color:C.textMuted, marginBottom:'2px' }}>Total Earnings</div>
-                                          <div style={{ fontSize:'22px', fontWeight:800, color:C.success }}>${parseInt(dealCounterAmount || '5000').toLocaleString()}</div>
-                                          <div style={{ fontSize:'10px', color:C.textMuted, marginTop:'4px' }}>Advance + Upload + Approval milestones</div>
-                                        </div>
-
-                                        {/* Rating section */}
-                                        {!ratingSubmitted ? (
-                                          <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:'10px', padding:'14px', marginBottom:'14px', textAlign:'left' }}>
-                                            <div style={{ fontSize:'11px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.4px', marginBottom:'8px' }}>Rate this brand</div>
-                                            <div style={{ display:'flex', gap:'6px', marginBottom:'10px', justifyContent:'center' }}>
-                                              {[1,2,3,4,5].map(star => (
-                                                <button key={star} onClick={() => setDealRating(star)} style={{ background:'none', border:'none', cursor:'pointer', fontSize:'24px', color: star <= dealRating ? '#f59e0b' : C.border, transition:'color 0.1s', padding:'2px' }}>
-                                                  {star <= dealRating ? '\u2605' : '\u2606'}
+                                        // Deliverables phase (when escrowFunded && lifecycle==='deliverables')
+                                        if (creatorDealLifecycle === 'deliverables') {
+                                          const oppDeliverables = opp.deliverables?.length ? opp.deliverables : [{ format: 'Instagram Reel', count: 1 }];
+                                          const deadlineStr = opp.deadline ? new Date(opp.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : null;
+                                          const daysLeft = opp.deadline ? Math.ceil((new Date(opp.deadline).getTime() - Date.now()) / 86400000) : null;
+                                          const allUploaded = oppDeliverables.every((_d: {format:string;count:number}, i: number) => deliverableStatuses[i] === 'uploaded' || deliverableStatuses[i] === 'approved');
+                                          return (
+                                            <>
+                                              <div style={{ fontSize:'11px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.6px', marginBottom:'10px' }}>Upload Deliverables</div>
+                                              {deadlineStr && (
+                                                <div style={{ background: daysLeft !== null && daysLeft <= 3 ? 'rgba(239,68,68,0.08)' : C.bg, border: `1px solid ${daysLeft !== null && daysLeft <= 3 ? 'rgba(239,68,68,0.3)' : C.border}`, borderRadius:'8px', padding:'10px', marginBottom:'10px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                                                  <div>
+                                                    <div style={{ fontSize:'10px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.4px' }}>Deadline</div>
+                                                    <div style={{ fontSize:'13px', fontWeight:600, color:C.text }}>{deadlineStr}</div>
+                                                  </div>
+                                                  {daysLeft !== null && (
+                                                    <div style={{ fontSize:'12px', fontWeight:700, color: daysLeft <= 3 ? '#ef4444' : daysLeft <= 7 ? '#f59e0b' : C.success }}>
+                                                      {daysLeft <= 0 ? 'Overdue' : `${daysLeft}d left`}
+                                                    </div>
+                                                  )}
+                                                </div>
+                                              )}
+                                              <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', padding:'10px', marginBottom:'10px' }}>
+                                                <div style={{ fontSize:'10px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.4px', marginBottom:'6px' }}>Rights & Exclusivity</div>
+                                                <div style={{ fontSize:'11px', color:C.text, marginBottom:'3px' }}>Usage rights: <strong>{opp.usageRights || `${opp.revisionLimit * 30} days`}</strong></div>
+                                                <div style={{ fontSize:'11px', color:C.text, marginBottom:'3px' }}>Exclusivity: <strong>{opp.exclusivity || 'None'}</strong></div>
+                                                <div style={{ fontSize:'11px', color:C.text }}>Revision limit: <strong>{opp.revisionLimit} round{opp.revisionLimit !== 1 ? 's' : ''}</strong></div>
+                                              </div>
+                                              <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', padding:'10px', marginBottom:'10px' }}>
+                                                <div style={{ fontSize:'10px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.4px', marginBottom:'8px' }}>Deliverables ({oppDeliverables.reduce((a: number, d: {format:string;count:number}) => a + d.count, 0)} items)</div>
+                                                {oppDeliverables.map((d, di) => {
+                                                  const status = deliverableStatuses[di] || 'pending';
+                                                  const link = deliverableLinks[di] || '';
+                                                  const inputVal = deliverableLinkInputs[di] || '';
+                                                  const isValidIgUrl = (u: string) => /instagram\.com\/(p|reel|tv)\/[A-Za-z0-9_-]+/.test(u);
+                                                  const postId = link.match(/instagram\.com\/(?:p|reel|tv)\/([A-Za-z0-9_-]+)/)?.[1];
+                                                  return (
+                                                    <div key={di} style={{ borderRadius:'8px', marginBottom:'8px', border:`1px solid ${status === 'approved' ? 'rgba(0,212,106,0.25)' : status === 'uploaded' ? 'rgba(0,149,246,0.25)' : C.border}`, overflow:'hidden' }}>
+                                                      <div style={{ display:'flex', alignItems:'center', gap:'8px', padding:'8px 10px', background: status === 'uploaded' ? 'rgba(0,149,246,0.04)' : status === 'approved' ? 'rgba(0,212,106,0.04)' : 'transparent' }}>
+                                                        <div style={{ width:'20px', height:'20px', borderRadius:'5px', background: status === 'approved' ? C.success : status === 'uploaded' ? C.primary : C.border, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                                                          {status !== 'pending' && status !== 'linking' ? <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg> : <span style={{ fontSize:'10px', color:'#fff', fontWeight:700 }}>{di + 1}</span>}
+                                                        </div>
+                                                        <div style={{ flex:1 }}>
+                                                          <div style={{ fontSize:'12px', fontWeight:600, color:C.text }}>{d.count}x {d.format}</div>
+                                                          <div style={{ fontSize:'10px', color: status === 'approved' ? C.success : status === 'uploaded' ? C.primary : C.textMuted }}>
+                                                            {status === 'approved' ? 'Approved by brand' : status === 'uploaded' ? 'Submitted — awaiting review' : status === 'linking' ? 'Enter your Instagram link below' : 'Not yet submitted'}
+                                                          </div>
+                                                        </div>
+                                                        {status === 'pending' && (
+                                                          <button onClick={() => setDeliverableStatuses(prev => ({ ...prev, [di]: 'linking' }))} style={{ background:C.primary, border:'none', borderRadius:'6px', padding:'4px 10px', color:'#fff', fontSize:'10px', fontWeight:600, cursor:'pointer', flexShrink:0 }}>Submit link</button>
+                                                        )}
+                                                        {status === 'linking' && (
+                                                          <button onClick={() => setDeliverableStatuses(prev => ({ ...prev, [di]: 'pending' }))} style={{ background:'none', border:`1px solid ${C.border}`, borderRadius:'6px', padding:'3px 8px', color:C.textMuted, fontSize:'10px', cursor:'pointer', flexShrink:0 }}>Cancel</button>
+                                                        )}
+                                                      </div>
+                                                      {status === 'linking' && (
+                                                        <div style={{ padding:'10px', borderTop:`1px solid ${C.border}`, background:C.bg }}>
+                                                          <div style={{ fontSize:'10px', color:C.textMuted, marginBottom:'6px' }}>Paste the link to your published Instagram post or reel</div>
+                                                          <div style={{ display:'flex', gap:'6px' }}>
+                                                            <input
+                                                              type="text"
+                                                              value={inputVal}
+                                                              onChange={e => setDeliverableLinkInputs(prev => ({ ...prev, [di]: e.target.value }))}
+                                                              placeholder="https://www.instagram.com/p/..."
+                                                              style={{ flex:1, background:C.surfaceAlt, border:`1px solid ${isValidIgUrl(inputVal) ? C.success : C.border}`, borderRadius:'6px', color:C.text, padding:'7px 10px', fontSize:'11px', fontFamily:'inherit', outline:'none' }}
+                                                            />
+                                                            <button
+                                                              disabled={!isValidIgUrl(inputVal)}
+                                                              onClick={() => {
+                                                                setDeliverableLinks(prev => ({ ...prev, [di]: inputVal }));
+                                                                setDeliverableStatuses(prev => ({ ...prev, [di]: 'uploaded' }));
+                                                                setDeliverableLinkInputs(prev => ({ ...prev, [di]: '' }));
+                                                              }}
+                                                              style={{ background: isValidIgUrl(inputVal) ? C.success : C.border, border:'none', borderRadius:'6px', padding:'7px 12px', color:'#fff', fontSize:'11px', fontWeight:700, cursor: isValidIgUrl(inputVal) ? 'pointer' : 'not-allowed', opacity: isValidIgUrl(inputVal) ? 1 : 0.5, flexShrink:0 }}
+                                                            >Confirm</button>
+                                                          </div>
+                                                          {inputVal && !isValidIgUrl(inputVal) && (
+                                                            <div style={{ fontSize:'10px', color:'#ef4444', marginTop:'4px' }}>Must be an instagram.com/p/, /reel/, or /tv/ link</div>
+                                                          )}
+                                                        </div>
+                                                      )}
+                                                      {(status === 'uploaded' || status === 'approved') && link && (
+                                                        <div style={{ padding:'10px', borderTop:`1px solid ${C.border}`, background:C.bg, display:'flex', gap:'10px', alignItems:'flex-start' }}>
+                                                          <div style={{ width:52, height:52, borderRadius:'6px', background:C.surfaceAlt, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, overflow:'hidden' }}>
+                                                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={C.textMuted} strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 12h6m-3-3v6"/></svg>
+                                                          </div>
+                                                          <div style={{ flex:1, minWidth:0 }}>
+                                                            <div style={{ fontSize:'10px', fontWeight:700, color:C.textMuted, marginBottom:'2px', textTransform:'uppercase', letterSpacing:'0.4px' }}>Instagram {d.format.toLowerCase().includes('reel') ? 'Reel' : 'Post'}</div>
+                                                            <a href={link} target="_blank" rel="noopener noreferrer" style={{ fontSize:'10px', color:C.primary, textDecoration:'none', display:'block', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{postId ? `instagram.com/p/${postId}` : link}</a>
+                                                            <div style={{ fontSize:'9px', color:C.textMuted, marginTop:'3px' }}>Submitted {new Date().toLocaleDateString('en-US', { month:'short', day:'numeric' })}</div>
+                                                          </div>
+                                                          {status === 'approved' && (
+                                                            <div style={{ fontSize:'9px', fontWeight:700, color:C.success, background:'rgba(0,212,106,0.1)', padding:'2px 7px', borderRadius:'6px', flexShrink:0 }}>Approved</div>
+                                                          )}
+                                                        </div>
+                                                      )}
+                                                    </div>
+                                                  );
+                                                })}
+                                              </div>
+                                              <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', padding:'10px', marginBottom:'10px' }}>
+                                                <div style={{ fontSize:'10px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.4px', marginBottom:'8px' }}>Payment Milestones</div>
+                                                {[
+                                                  { key: 'advance' as const, label: 'Advance', pct: advPct, color: C.success },
+                                                  { key: 'upload' as const, label: 'On upload', pct: uploadPct, color: C.primary },
+                                                  { key: 'approval' as const, label: 'On approval', pct: approvalPct, color: '#f59e0b' },
+                                                ].map(m => (
+                                                  <div key={m.key} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'6px 0', borderBottom:`1px solid ${C.border}` }}>
+                                                    <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
+                                                      <div style={{ width:'8px', height:'8px', borderRadius:'50%', background: paymentMilestones[m.key] === 'released' ? C.success : m.color, opacity: paymentMilestones[m.key] === 'released' ? 1 : 0.4 }} />
+                                                      <span style={{ fontSize:'11px', color:C.text, fontWeight:500 }}>{m.label}</span>
+                                                    </div>
+                                                    <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
+                                                      <span style={{ fontSize:'12px', fontWeight:700, color: paymentMilestones[m.key] === 'released' ? C.success : C.text }}>${Math.round(agreedPrice * m.pct / 100).toLocaleString()}</span>
+                                                      <span style={{ fontSize:'9px', fontWeight:600, color: paymentMilestones[m.key] === 'released' ? C.success : C.textMuted, textTransform:'uppercase' }}>{paymentMilestones[m.key] === 'released' ? 'Paid' : 'Pending'}</span>
+                                                    </div>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                              <div style={{ background:'rgba(46,125,50,0.06)', border:'1px solid rgba(46,125,50,0.2)', borderRadius:'8px', padding:'10px', marginBottom:'12px', fontSize:'11px', color:C.textSecondary }}>
+                                                Brand payment on-hold: ${agreedPrice.toLocaleString()} — released per milestones above
+                                              </div>
+                                              {allUploaded && (
+                                                <button onClick={() => {
+                                                  const agreedAmt = parseInt(dealCounterAmount || '5000');
+                                                  setCreatorDealLifecycle('submitted');
+                                                  setPaymentMilestones({ advance: 'released', upload: 'released', approval: 'pending' });
+                                                  if (activeDealKey) {
+                                                    updateDeal(activeDealKey, {
+                                                      creatorDealLifecycle: 'submitted',
+                                                      paymentMilestones: { advance: 'released', upload: 'released', approval: 'pending' },
+                                                      deliverableStatuses: deliverableStatuses
+                                                    });
+                                                    firebaseSendNotification(opp?.brand || 'Brand', 'application', `Deliverables submitted: ${agreedAmt.toLocaleString()} – Advance & upload milestones released. Awaiting approval.`);
+                                                  }
+                                                  setPurchaseToast(`Submitted for review — $${Math.round(agreedAmt * (advancePercent + uploadPercent) / 100).toLocaleString()} released, $${Math.round(agreedAmt * approvalPercent / 100).toLocaleString()} pending approval`);
+                                                  setTimeout(() => setPurchaseToast(null), 4000);
+                                                }} style={{ width:'100%', background:C.primary, border:'none', padding:'10px', borderRadius:'8px', color:'#fff', fontWeight:600, cursor:'pointer', fontSize:'13px', marginBottom:'8px' }}>
+                                                  Submit for Review
                                                 </button>
-                                              ))}
-                                            </div>
-                                            <textarea value={dealRatingComment} onChange={e => setDealRatingComment(e.target.value)} placeholder="How was working with this brand?" rows={2} style={{ width:'100%', background:C.card, border:`1px solid ${C.border}`, borderRadius:'6px', padding:'8px', fontSize:'12px', color:C.text, resize:'none', boxSizing:'border-box' }} />
-                                            <button onClick={() => { setRatingSubmitted(true); setPurchaseToast('Rating submitted'); setTimeout(() => setPurchaseToast(null), 3000); }} disabled={dealRating === 0} style={{ width:'100%', background: dealRating > 0 ? C.primary : C.border, border:'none', padding:'8px', borderRadius:'6px', color:'#fff', fontWeight:600, fontSize:'12px', cursor: dealRating > 0 ? 'pointer' : 'not-allowed', marginTop:'8px', opacity: dealRating > 0 ? 1 : 0.5 }}>
-                                              Submit Rating
-                                            </button>
-                                          </div>
-                                        ) : (
-                                          <div style={{ background:'rgba(0,102,204,0.06)', border:`1px solid rgba(0,102,204,0.2)`, borderRadius:'8px', padding:'10px', marginBottom:'14px', fontSize:'12px', color:C.textSecondary }}>
-                                            Rating submitted: {dealRating}/5
-                                          </div>
-                                        )}
+                                              )}
+                                              <button onClick={() => setShowCancelDealModal(true)} style={{ width:'100%', background:'none', border:`1px solid rgba(239,68,68,0.3)`, padding:'8px', borderRadius:'8px', color:'#ef4444', fontSize:'11px', cursor:'pointer', fontWeight:500 }}>
+                                                Cancel Deal
+                                              </button>
+                                            </>
+                                          );
+                                        }
 
-                                        {/* Escrow release summary */}
-                                        <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', padding:'10px', marginBottom:'10px', textAlign:'left' }}>
-                                          <div style={{ fontSize:'10px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.4px', marginBottom:'6px' }}>Escrow Release</div>
-                                          {[
-                                            { label:'Advance', status:'Released on deal acceptance' },
-                                            { label:'Upload milestone', status:'Released on content submission' },
-                                            { label:'Approval milestone', status:'Released on brand approval' },
-                                          ].map(m => (
-                                            <div key={m.label} style={{ display:'flex', alignItems:'center', gap:'6px', padding:'3px 0', fontSize:'11px' }}>
-                                              <div style={{ width:'8px', height:'8px', borderRadius:'50%', background:C.success }} />
-                                              <span style={{ color:C.text, flex:1 }}>{m.label}</span>
-                                              <span style={{ color:C.success, fontSize:'10px' }}>{m.status}</span>
-                                            </div>
-                                          ))}
-                                        </div>
+                                        // Submitted phase (when lifecycle==='submitted')
+                                        if (creatorDealLifecycle === 'submitted') {
+                                          return (
+                                            <>
+                                              <div style={{ background:'rgba(0,102,204,0.06)', border:`1px solid rgba(0,102,204,0.2)`, borderRadius:'8px', padding:'12px', marginBottom:'12px' }}>
+                                                <div style={{ fontSize:'13px', fontWeight:700, color:C.text, marginBottom:'4px' }}>Deliverables Submitted</div>
+                                                <div style={{ fontSize:'11px', color:C.textSecondary, marginBottom:'8px' }}>Waiting for brand approval — typically within 48h.</div>
+                                                <div style={{ fontSize:'10px', color:C.textMuted, marginBottom:'2px' }}>Advance: <span style={{ color:C.success, fontWeight:600 }}>Paid</span></div>
+                                                <div style={{ fontSize:'10px', color:C.textMuted, marginBottom:'2px' }}>Upload milestone: <span style={{ color:C.success, fontWeight:600 }}>Paid</span></div>
+                                                <div style={{ fontSize:'10px', color:C.textMuted }}>Approval milestone: <span style={{ color:'#f59e0b', fontWeight:600 }}>Pending brand approval</span></div>
+                                              </div>
+                                              <button onClick={() => { setCreatorDealLifecycle('approved'); setPaymentMilestones({ advance:'released', upload:'released', approval:'released' }); handleDealComplete(parseInt(dealCounterAmount || '5000'), opp.brand || 'Brand', opp.deliverables?.map((d: {count:number;format:string}) => `${d.count}x ${d.format}`).join(', ') || '1x Instagram Reel', undefined, opp.revisionLimit ? opp.revisionLimit * 30 : 90, opp.exclusivity && opp.exclusivity !== 'None' ? 30 : undefined, opp.exclusivity && opp.exclusivity !== 'None' ? selectedMarketplaceSkin || undefined : undefined); }} style={{ width:'100%', background:'none', border:`1px solid ${C.border}`, padding:'8px', borderRadius:'8px', color:C.textMuted, fontSize:'11px', cursor:'pointer' }}>
+                                                Simulate: Brand approved
+                                              </button>
+                                            </>
+                                          );
+                                        }
 
-                                        {/* Usage rights & exclusivity tracker */}
-                                        {opp && (
-                                          <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', padding:'10px', marginBottom:'10px', textAlign:'left' }}>
-                                            <div style={{ fontSize:'10px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.4px', marginBottom:'6px' }}>Active Rights</div>
-                                            <div style={{ fontSize:'11px', color:C.text, marginBottom:'3px' }}>
-                                              Content usage: <strong>{opp.usageRights || `${opp.revisionLimit * 30} days`}</strong>
-                                              <span style={{ color:C.textMuted }}> — expires {new Date(Date.now() + (opp.revisionLimit || 3) * 30 * 86400000).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' })}</span>
-                                            </div>
-                                            {opp.exclusivity && opp.exclusivity !== 'None' && (
-                                              <div style={{ fontSize:'11px', color:C.text }}>
-                                                Exclusivity: <strong>{opp.exclusivity}</strong>
-                                                <span style={{ color:'#f59e0b' }}> — do not accept competing deals</span>
+                                        // Approved phase (when lifecycle==='approved')
+                                        if (creatorDealLifecycle === 'approved') {
+                                          return (
+                                            <>
+                                              <div style={{ textAlign:'center', padding:'12px 0' }}>
+                                                <div style={{ width:'40px', height:'40px', borderRadius:'50%', background:C.surfaceAlt, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 10px' }}>
+                                                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={C.textSecondary} strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                                                </div>
+                                                <div style={{ fontSize:'15px', fontWeight:700, color:C.text, marginBottom:'4px' }}>Deal Complete</div>
+                                                <div style={{ fontSize:'12px', color:C.textSecondary, marginBottom:'16px' }}>All deliverables approved. All milestones paid.</div>
+                                                <div style={{ background:'rgba(46,125,50,0.06)', border:'1px solid rgba(46,125,50,0.2)', borderRadius:'8px', padding:'12px', marginBottom:'14px' }}>
+                                                  <div style={{ fontSize:'11px', color:C.textMuted, marginBottom:'2px' }}>Total Earnings</div>
+                                                  <div style={{ fontSize:'22px', fontWeight:800, color:C.success }}>${parseInt(dealCounterAmount || '5000').toLocaleString()}</div>
+                                                  <div style={{ fontSize:'10px', color:C.textMuted, marginTop:'4px' }}>Advance + Upload + Approval milestones</div>
+                                                </div>
+                                                {!ratingSubmitted ? (
+                                                  <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:'10px', padding:'14px', marginBottom:'14px', textAlign:'left' }}>
+                                                    <div style={{ fontSize:'11px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.4px', marginBottom:'8px' }}>Rate this brand</div>
+                                                    <div style={{ display:'flex', gap:'6px', marginBottom:'10px', justifyContent:'center' }}>
+                                                      {[1,2,3,4,5].map(star => (
+                                                        <button key={star} onClick={() => setDealRating(star)} style={{ background:'none', border:'none', cursor:'pointer', fontSize:'24px', color: star <= dealRating ? '#f59e0b' : C.border, transition:'color 0.1s', padding:'2px' }}>
+                                                          {star <= dealRating ? '\u2605' : '\u2606'}
+                                                        </button>
+                                                      ))}
+                                                    </div>
+                                                    <textarea value={dealRatingComment} onChange={e => setDealRatingComment(e.target.value)} placeholder="How was working with this brand?" rows={2} style={{ width:'100%', background:C.card, border:`1px solid ${C.border}`, borderRadius:'6px', padding:'8px', fontSize:'12px', color:C.text, resize:'none', boxSizing:'border-box' }} />
+                                                    <button onClick={() => { setRatingSubmitted(true); setPurchaseToast('Rating submitted'); setTimeout(() => setPurchaseToast(null), 3000); }} disabled={dealRating === 0} style={{ width:'100%', background: dealRating > 0 ? C.primary : C.border, border:'none', padding:'8px', borderRadius:'6px', color:'#fff', fontWeight:600, fontSize:'12px', cursor: dealRating > 0 ? 'pointer' : 'not-allowed', marginTop:'8px', opacity: dealRating > 0 ? 1 : 0.5 }}>
+                                                      Submit Rating
+                                                    </button>
+                                                  </div>
+                                                ) : (
+                                                  <div style={{ background:'rgba(0,102,204,0.06)', border:`1px solid rgba(0,102,204,0.2)`, borderRadius:'8px', padding:'10px', marginBottom:'14px', fontSize:'12px', color:C.textSecondary }}>
+                                                    Rating submitted: {dealRating}/5
+                                                  </div>
+                                                )}
+                                                <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', padding:'10px', marginBottom:'10px', textAlign:'left' }}>
+                                                  <div style={{ fontSize:'10px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.4px', marginBottom:'6px' }}>Escrow Release</div>
+                                                  {[
+                                                    { label:'Advance', status:'Released on deal acceptance' },
+                                                    { label:'Upload milestone', status:'Released on content submission' },
+                                                    { label:'Approval milestone', status:'Released on brand approval' },
+                                                  ].map(m => (
+                                                    <div key={m.label} style={{ display:'flex', alignItems:'center', gap:'6px', padding:'3px 0', fontSize:'11px' }}>
+                                                      <div style={{ width:'8px', height:'8px', borderRadius:'50%', background:C.success }} />
+                                                      <span style={{ color:C.text, flex:1 }}>{m.label}</span>
+                                                      <span style={{ color:C.success, fontSize:'10px' }}>{m.status}</span>
+                                                    </div>
+                                                  ))}
+                                                </div>
+                                                {opp && (
+                                                  <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', padding:'10px', marginBottom:'10px', textAlign:'left' }}>
+                                                    <div style={{ fontSize:'10px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.4px', marginBottom:'6px' }}>Active Rights</div>
+                                                    <div style={{ fontSize:'11px', color:C.text, marginBottom:'3px' }}>
+                                                      Content usage: <strong>{opp.usageRights || `${opp.revisionLimit * 30} days`}</strong>
+                                                      <span style={{ color:C.textMuted }}> — expires {new Date(Date.now() + (opp.revisionLimit || 3) * 30 * 86400000).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' })}</span>
+                                                    </div>
+                                                    {opp.exclusivity && opp.exclusivity !== 'None' && (
+                                                      <div style={{ fontSize:'11px', color:C.text }}>
+                                                        Exclusivity: <strong>{opp.exclusivity}</strong>
+                                                        <span style={{ color:'#f59e0b' }}> — do not accept competing deals</span>
+                                                      </div>
+                                                    )}
+                                                  </div>
+                                                )}
+                                                {contractSignature && (
+                                                  <div style={{ background:'rgba(0,102,204,0.04)', border:`1px solid rgba(0,102,204,0.15)`, borderRadius:'8px', padding:'8px 10px', marginBottom:'10px', fontSize:'10px', color:C.textMuted, textAlign:'left' }}>
+                                                    Contract signed by <strong style={{ color:C.text, fontStyle:'italic' }}>{contractSignature}</strong> on {new Date().toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' })}
+                                                  </div>
+                                                )}
+                                                <div style={{ display:'flex', gap:'8px' }}>
+                                                  <button onClick={() => { if (activeDealKey) { setDealStates(prev => { const next = {...prev}; delete next[activeDealKey]; return next; }); } setNegotiatingOpp(null); setCreatorDealLifecycle('checklist'); setDealUploadSimulated(false); setDeliverableStatuses({}); setDeliverableLinks({}); setDeliverableLinkInputs({}); setPaymentMilestones({ advance:'pending', upload:'pending', approval:'pending' }); setDealRating(0); setDealRatingComment(''); setRatingSubmitted(false); setContractChecks({}); setContractSignature(''); setEscrowFunded(false); setEscrowFundingInProgress(false); }} style={{ flex:2, background:C.primary, border:'none', padding:'10px', borderRadius:'8px', color:'#fff', fontWeight:600, cursor:'pointer', fontSize:'13px' }}>
+                                                    Withdraw to Bank
+                                                  </button>
+                                                  <button onClick={() => setShowDisputeModal(Date.now())} style={{ flex:1, background:'none', border:`1px solid rgba(239,68,68,0.3)`, padding:'10px', borderRadius:'8px', color:'#ef4444', fontSize:'11px', cursor:'pointer', fontWeight:500 }}>
+                                                    Dispute
+                                                  </button>
+                                                </div>
+                                              </div>
+                                            </>
+                                          );
+                                        }
+                                        return null;
+                                      }
+
+                                      // BARTER: Goods tracking workflow (6 states)
+                                      case 'barter': {
+                                        const status = goodsTrackerStatus;
+                                        const trackingInput = goodsTrackingInput;
+                                        return (
+                                          <>
+                                            <div style={{ fontSize:'11px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.6px', marginBottom:'10px' }}>Goods Tracking</div>
+                                            {status === 'goods_preparing' && (
+                                              <div style={{ background:'rgba(59,130,246,0.06)', border:`1px solid rgba(59,130,246,0.2)`, borderRadius:'8px', padding:'12px', marginBottom:'12px' }}>
+                                                <div style={{ fontSize:'13px', fontWeight:700, color:C.text, marginBottom:'4px' }}>Brand is Preparing Your Product</div>
+                                                <div style={{ fontSize:'11px', color:C.textSecondary }}>Your product is being selected and packaged. You will receive tracking information once it ships.</div>
                                               </div>
                                             )}
-                                          </div>
-                                        )}
+                                            {status === 'goods_shipped' && (
+                                              <div style={{ background:'rgba(34,197,94,0.06)', border:`1px solid rgba(34,197,94,0.2)`, borderRadius:'8px', padding:'12px', marginBottom:'12px' }}>
+                                                <div style={{ fontSize:'13px', fontWeight:700, color:C.text, marginBottom:'4px' }}>Your Product is On The Way</div>
+                                                <div style={{ fontSize:'11px', color:C.textSecondary, marginBottom:'8px' }}>
+                                                  Tracking: <strong>{trackingInput || 'Tracking info shown by brand'}</strong>
+                                                </div>
+                                                <button onClick={() => {
+                                                  setGoodsTrackerStatus('goods_delivered');
+                                                  if (activeDealKey) {
+                                                    updateDeal(activeDealKey, { goodsTrackerStatus: 'goods_delivered' });
+                                                  }
+                                                  setPurchaseToast('Marked as received');
+                                                  setTimeout(() => setPurchaseToast(null), 3000);
+                                                }} style={{ width:'100%', background:C.primary, border:'none', padding:'8px', borderRadius:'6px', color:'#fff', fontWeight:600, cursor:'pointer', fontSize:'11px' }}>
+                                                  Mark as Received
+                                                </button>
+                                              </div>
+                                            )}
+                                            {status === 'goods_delivered' && (
+                                              <div style={{ background:'rgba(34,197,94,0.06)', border:`1px solid rgba(34,197,94,0.2)`, borderRadius:'8px', padding:'12px', marginBottom:'12px' }}>
+                                                <div style={{ fontSize:'13px', fontWeight:700, color:C.text, marginBottom:'4px' }}>Product Received</div>
+                                                <div style={{ fontSize:'11px', color:C.textSecondary, marginBottom:'8px' }}>Great! Now create content featuring this product. You have until the deadline to submit.</div>
+                                                <button onClick={() => {
+                                                  setGoodsTrackerStatus('content_due');
+                                                  if (activeDealKey) {
+                                                    updateDeal(activeDealKey, { goodsTrackerStatus: 'content_due' });
+                                                  }
+                                                  setPurchaseToast('Ready to create content');
+                                                  setTimeout(() => setPurchaseToast(null), 3000);
+                                                }} style={{ width:'100%', background:C.primary, border:'none', padding:'8px', borderRadius:'6px', color:'#fff', fontWeight:600, cursor:'pointer', fontSize:'11px' }}>
+                                                  Start Creating
+                                                </button>
+                                              </div>
+                                            )}
+                                            {status === 'content_due' && (
+                                              <div style={{ background:'rgba(59,130,246,0.06)', border:`1px solid rgba(59,130,246,0.2)`, borderRadius:'8px', padding:'12px', marginBottom:'12px' }}>
+                                                <div style={{ fontSize:'13px', fontWeight:700, color:C.text, marginBottom:'4px' }}>Create Content</div>
+                                                <div style={{ fontSize:'11px', color:C.textSecondary, marginBottom:'8px' }}>Submit a link to your Instagram post or reel featuring the product</div>
+                                                <input
+                                                  type="text"
+                                                  value={deliverableLinkInputs[0] || ''}
+                                                  onChange={e => setDeliverableLinkInputs(prev => ({ ...prev, 0: e.target.value }))}
+                                                  placeholder="https://www.instagram.com/p/..."
+                                                  style={{ width:'100%', background:C.surfaceAlt, border:`1px solid ${/instagram\.com\/(p|reel|tv)\/[A-Za-z0-9_-]+/.test(deliverableLinkInputs[0] || '') ? C.success : C.border}`, borderRadius:'6px', color:C.text, padding:'7px 10px', fontSize:'11px', fontFamily:'inherit', outline:'none', marginBottom:'8px', boxSizing:'border-box' }}
+                                                />
+                                                <button
+                                                  disabled={!/instagram\.com\/(p|reel|tv)\/[A-Za-z0-9_-]+/.test(deliverableLinkInputs[0] || '')}
+                                                  onClick={() => {
+                                                    setDeliverableLinks(prev => ({ ...prev, 0: deliverableLinkInputs[0] }));
+                                                    setGoodsTrackerStatus('content_submitted');
+                                                    setDeliverableLinkInputs(prev => ({ ...prev, 0: '' }));
+                                                    if (activeDealKey) {
+                                                      updateDeal(activeDealKey, { goodsTrackerStatus: 'content_submitted' });
+                                                    }
+                                                    setPurchaseToast('Content submitted for review');
+                                                    setTimeout(() => setPurchaseToast(null), 3000);
+                                                  }}
+                                                  style={{ width:'100%', background: /instagram\.com\/(p|reel|tv)\/[A-Za-z0-9_-]+/.test(deliverableLinkInputs[0] || '') ? C.primary : C.border, border:'none', borderRadius:'6px', padding:'8px', color:'#fff', fontWeight:600, cursor: /instagram\.com\/(p|reel|tv)\/[A-Za-z0-9_-]+/.test(deliverableLinkInputs[0] || '') ? 'pointer' : 'not-allowed', opacity: /instagram\.com\/(p|reel|tv)\/[A-Za-z0-9_-]+/.test(deliverableLinkInputs[0] || '') ? 1 : 0.5, fontSize:'11px' }}
+                                                >
+                                                  Submit Content
+                                                </button>
+                                              </div>
+                                            )}
+                                            {status === 'content_submitted' && (
+                                              <div style={{ background:'rgba(59,130,246,0.06)', border:`1px solid rgba(59,130,246,0.2)`, borderRadius:'8px', padding:'12px', marginBottom:'12px' }}>
+                                                <div style={{ fontSize:'13px', fontWeight:700, color:C.text, marginBottom:'4px' }}>Content Submitted</div>
+                                                <div style={{ fontSize:'11px', color:C.textSecondary }}>Your content is awaiting brand approval. This typically takes 24-48 hours.</div>
+                                              </div>
+                                            )}
+                                            {status === 'content_approved' && (
+                                              <div style={{ textAlign:'center', padding:'12px 0' }}>
+                                                <div style={{ width:'40px', height:'40px', borderRadius:'50%', background:C.surfaceAlt, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 10px' }}>
+                                                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={C.success} strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                                                </div>
+                                                <div style={{ fontSize:'15px', fontWeight:700, color:C.text, marginBottom:'4px' }}>Deal Complete</div>
+                                                <div style={{ fontSize:'12px', color:C.textSecondary, marginBottom:'16px' }}>Brand approved your content. Barter deal finished.</div>
+                                                <div style={{ display:'flex', gap:'8px' }}>
+                                                  <button onClick={() => { if (activeDealKey) { setDealStates(prev => { const next = {...prev}; delete next[activeDealKey]; return next; }); } setNegotiatingOpp(null); }} style={{ flex:1, background:C.primary, border:'none', padding:'10px', borderRadius:'8px', color:'#fff', fontWeight:600, cursor:'pointer', fontSize:'12px' }}>
+                                                    Close
+                                                  </button>
+                                                </div>
+                                              </div>
+                                            )}
+                                          </>
+                                        );
+                                      }
 
-                                        {/* Contract record */}
-                                        {contractSignature && (
-                                          <div style={{ background:'rgba(0,102,204,0.04)', border:`1px solid rgba(0,102,204,0.15)`, borderRadius:'8px', padding:'8px 10px', marginBottom:'10px', fontSize:'10px', color:C.textMuted, textAlign:'left' }}>
-                                            Contract signed by <strong style={{ color:C.text, fontStyle:'italic' }}>{contractSignature}</strong> on {new Date().toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' })}
-                                          </div>
-                                        )}
+                                      // C2C_COLLAB: Content tracking (3 states)
+                                      case 'c2c_collab': {
+                                        const status = c2cContentStatus;
+                                        return (
+                                          <>
+                                            <div style={{ fontSize:'11px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.6px', marginBottom:'10px' }}>Content Collaboration</div>
+                                            {status === 'content_creating' && (
+                                              <div style={{ background:'rgba(59,130,246,0.06)', border:`1px solid rgba(59,130,246,0.2)`, borderRadius:'8px', padding:'12px', marginBottom:'12px' }}>
+                                                <div style={{ fontSize:'13px', fontWeight:700, color:C.text, marginBottom:'4px' }}>In Progress</div>
+                                                <div style={{ fontSize:'11px', color:C.textSecondary, marginBottom:'8px' }}>Submit your content link when ready</div>
+                                                <input
+                                                  type="text"
+                                                  value={deliverableLinkInputs[0] || ''}
+                                                  onChange={e => setDeliverableLinkInputs(prev => ({ ...prev, 0: e.target.value }))}
+                                                  placeholder="https://www.instagram.com/p/..."
+                                                  style={{ width:'100%', background:C.surfaceAlt, border:`1px solid ${/instagram\.com\/(p|reel|tv)\/[A-Za-z0-9_-]+/.test(deliverableLinkInputs[0] || '') ? C.success : C.border}`, borderRadius:'6px', color:C.text, padding:'7px 10px', fontSize:'11px', fontFamily:'inherit', outline:'none', marginBottom:'8px', boxSizing:'border-box' }}
+                                                />
+                                                <button
+                                                  disabled={!/instagram\.com\/(p|reel|tv)\/[A-Za-z0-9_-]+/.test(deliverableLinkInputs[0] || '')}
+                                                  onClick={() => {
+                                                    setDeliverableLinks(prev => ({ ...prev, 0: deliverableLinkInputs[0] }));
+                                                    setC2cContentStatus('content_submitted');
+                                                    setDeliverableLinkInputs(prev => ({ ...prev, 0: '' }));
+                                                    if (activeDealKey) {
+                                                      updateDeal(activeDealKey, { c2cContentStatus: 'content_submitted' });
+                                                    }
+                                                    setPurchaseToast('Content submitted');
+                                                    setTimeout(() => setPurchaseToast(null), 3000);
+                                                  }}
+                                                  style={{ width:'100%', background: /instagram\.com\/(p|reel|tv)\/[A-Za-z0-9_-]+/.test(deliverableLinkInputs[0] || '') ? C.primary : C.border, border:'none', borderRadius:'6px', padding:'8px', color:'#fff', fontWeight:600, cursor: /instagram\.com\/(p|reel|tv)\/[A-Za-z0-9_-]+/.test(deliverableLinkInputs[0] || '') ? 'pointer' : 'not-allowed', opacity: /instagram\.com\/(p|reel|tv)\/[A-Za-z0-9_-]+/.test(deliverableLinkInputs[0] || '') ? 1 : 0.5, fontSize:'11px' }}
+                                                >
+                                                  Submit
+                                                </button>
+                                              </div>
+                                            )}
+                                            {status === 'content_submitted' && (
+                                              <div style={{ background:'rgba(59,130,246,0.06)', border:`1px solid rgba(59,130,246,0.2)`, borderRadius:'8px', padding:'12px', marginBottom:'12px' }}>
+                                                <div style={{ fontSize:'13px', fontWeight:700, color:C.text, marginBottom:'4px' }}>Submitted</div>
+                                                <div style={{ fontSize:'11px', color:C.textSecondary }}>Waiting for collaborator approval</div>
+                                              </div>
+                                            )}
+                                            {status === 'content_approved' && (
+                                              <div style={{ textAlign:'center', padding:'12px 0' }}>
+                                                <div style={{ width:'40px', height:'40px', borderRadius:'50%', background:C.surfaceAlt, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 10px' }}>
+                                                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={C.success} strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                                                </div>
+                                                <div style={{ fontSize:'15px', fontWeight:700, color:C.text, marginBottom:'4px' }}>Collaboration Complete</div>
+                                                <div style={{ fontSize:'12px', color:C.textSecondary, marginBottom:'16px' }}>Collaborator approved. Deal finished.</div>
+                                                <button onClick={() => { if (activeDealKey) { setDealStates(prev => { const next = {...prev}; delete next[activeDealKey]; return next; }); } setNegotiatingOpp(null); }} style={{ width:'100%', background:C.primary, border:'none', padding:'10px', borderRadius:'8px', color:'#fff', fontWeight:600, cursor:'pointer', fontSize:'12px' }}>
+                                                  Close
+                                                </button>
+                                              </div>
+                                            )}
+                                          </>
+                                        );
+                                      }
 
-                                        <div style={{ display:'flex', gap:'8px' }}>
-                                          <button onClick={() => { if (activeDealKey) { setDealStates(prev => { const next = {...prev}; delete next[activeDealKey]; return next; }); } setNegotiatingOpp(null); setCreatorDealLifecycle('checklist'); setDealUploadSimulated(false); setDeliverableStatuses({}); setDeliverableLinks({}); setDeliverableLinkInputs({}); setPaymentMilestones({ advance:'pending', upload:'pending', approval:'pending' }); setDealRating(0); setDealRatingComment(''); setRatingSubmitted(false); setContractChecks({}); setContractSignature(''); setEscrowFunded(false); setEscrowFundingInProgress(false); }} style={{ flex:2, background:C.primary, border:'none', padding:'10px', borderRadius:'8px', color:'#fff', fontWeight:600, cursor:'pointer', fontSize:'13px' }}>
-                                            Withdraw to Bank
-                                          </button>
-                                          <button onClick={() => setShowDisputeModal(Date.now())} style={{ flex:1, background:'none', border:`1px solid rgba(239,68,68,0.3)`, padding:'10px', borderRadius:'8px', color:'#ef4444', fontSize:'11px', cursor:'pointer', fontWeight:500 }}>
-                                            Dispute
-                                          </button>
-                                        </div>
-                                      </div>
-                                    </>
-                                  )}
+                                      default:
+                                        return null;
+                                    }
+                                  })()}
 
                                   {!['offer','counter','brand_considering','brand_countered','brand_rejected','accepted','chatroom','checklist','softhold'].includes(dealRoomPhase) && (
                                     <button onClick={() => setNegotiatingOpp(null)} style={{ width: '100%', background: 'none', border: `1px solid ${C.border}`, padding: '8px', borderRadius: '8px', color: C.textSecondary, cursor: 'pointer', fontSize: '12px' }}>Close</button>
