@@ -966,6 +966,17 @@ export default function InstagramDemoPage() {
   const [deliverableStatuses, setDeliverableStatuses] = useState<Record<number, 'pending'|'linking'|'uploaded'|'approved'>>({});
   const [deliverableLinks, setDeliverableLinks] = useState<Record<number, string>>({});
   const [deliverableLinkInputs, setDeliverableLinkInputs] = useState<Record<number, string>>({});
+  // Feature 1: Direct approach (no campaign)
+  const [directApproach, setDirectApproachRaw] = useState<boolean>(() => typeof window !== 'undefined' ? localStorage.getItem('vs_brand_direct_approach') === 'true' : false);
+  const setDirectApproach = (v: boolean) => { setDirectApproachRaw(v); localStorage.setItem('vs_brand_direct_approach', String(v)); };
+  // Feature 2: Available for deals toggle
+  const [availableForDeals, setAvailableForDeals] = useState(true);
+  // Feature 3: Market rates panel
+  const [showMarketRates, setShowMarketRates] = useState(false);
+  // Feature 6: Creator pipeline view
+  const [creatorMarketplaceTab, setCreatorMarketplaceTab] = useState<'opportunities'|'pipeline'>('opportunities');
+  // Feature 7: Public profile link copied
+  const [profileLinkCopied, setProfileLinkCopied] = useState(false);
   // Deal cancellation
   const [showCancelDealModal, setShowCancelDealModal] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
@@ -2148,7 +2159,26 @@ export default function InstagramDemoPage() {
                       ))}
                     </div>
 
+                    {/* Available for deals toggle + tab selector */}
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'12px', gap:'8px' }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
+                        <span style={{ fontSize:'11px', fontWeight:700, color:C.textMuted }}>Available for deals</span>
+                        <button onClick={() => setAvailableForDeals(!availableForDeals)} style={{ width:36, height:20, borderRadius:20, border:'none', background: availableForDeals ? C.success : C.border, cursor:'pointer', display:'flex', alignItems:'center', padding: availableForDeals ? '0 2px 0 16px' : '0 16px 0 2px', transition:'all 0.2s' }}>
+                          <div style={{ width:16, height:16, borderRadius:'50%', background:'#fff', transition:'all 0.2s' }} />
+                        </button>
+                        {availableForDeals && <span style={{ fontSize:'10px', fontWeight:700, color:C.success, background:'rgba(0,212,106,0.1)', padding:'2px 8px', borderRadius:'12px' }}>Taking deals</span>}
+                      </div>
+                      <div style={{ display:'flex', gap:'6px' }}>
+                        {(['opportunities','pipeline'] as const).map(tab => (
+                          <button key={tab} onClick={() => setCreatorMarketplaceTab(tab)} style={{ padding:'4px 10px', fontSize:'10px', fontWeight:700, borderRadius:'6px', border:`1px solid ${creatorMarketplaceTab === tab ? C.primary : C.border}`, background: creatorMarketplaceTab === tab ? C.primary : 'transparent', color: creatorMarketplaceTab === tab ? '#fff' : C.textSecondary, cursor:'pointer' }}>
+                            {tab === 'opportunities' ? 'Opportunities' : 'My Pipeline'}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
                     {/* Category filter chips — scrollable */}
+                    {creatorMarketplaceTab === 'opportunities' && (
                     <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '12px', scrollbarWidth: 'none' }}>
                       {ownedSkins.map(s => s.profession).map(skin => {
                         const isActive = selectedMarketplaceSkin === skin;
@@ -2168,6 +2198,7 @@ export default function InstagramDemoPage() {
                         );
                       })}
                     </div>
+                    )}
                   </div>
 
                   <div style={{ padding: '0 16px 16px' }}>
@@ -4236,16 +4267,27 @@ export default function InstagramDemoPage() {
                                       Get a brand ValueSkin to contact creators
                                     </div>
                                   )}
-                                  <button
-                                    onClick={() => {
-                                      if (noBrandSkin) { setPurchaseToast('Get a brand ValueSkin first'); setTimeout(() => setPurchaseToast(null), 3000); return; }
-                                      if (!hasMatch) { setPurchaseToast('No shared ValueSkin with this creator'); setTimeout(() => setPurchaseToast(null), 3000); return; }
-                                      setNegotiatingCreator(i); setBrandDealPhase('brief'); setBrandBriefTitle(''); setBrandBriefDeliverables(''); setBrandBudget('4000'); setBrandDealIntent('campaign');
-                                    }}
-                                    style={{ background: hasMatch ? (creator.featured ? C.primary : C.surfaceAlt) : C.surfaceAlt, border: hasMatch && creator.featured ? 'none' : `1px solid ${hasMatch ? C.border : 'rgba(230,81,0,0.3)'}`, padding: '10px 16px', borderRadius: '8px', color: hasMatch ? '#fff' : C.warning, fontWeight: '600', cursor: 'pointer', width: '100%', fontSize: '14px', opacity: hasMatch ? 1 : 0.7 }}
-                                  >
-                                    {noBrandSkin ? 'No ValueSkin' : hasMatch ? 'Send Proposal' : 'No Shared ValueSkin'}
-                                  </button>
+                                  <div style={{ display:'flex', gap:'6px' }}>
+                                    <button
+                                      onClick={() => {
+                                        if (noBrandSkin) { setPurchaseToast('Get a brand ValueSkin first'); setTimeout(() => setPurchaseToast(null), 3000); return; }
+                                        if (!hasMatch) { setPurchaseToast('No shared ValueSkin with this creator'); setTimeout(() => setPurchaseToast(null), 3000); return; }
+                                        setDirectApproach(false); setNegotiatingCreator(i); setBrandDealPhase('brief'); setBrandBriefTitle(''); setBrandBriefDeliverables(''); setBrandBudget('4000'); setBrandDealIntent('campaign');
+                                      }}
+                                      style={{ flex:1, background: hasMatch ? (creator.featured ? C.primary : C.surfaceAlt) : C.surfaceAlt, border: hasMatch && creator.featured ? 'none' : `1px solid ${hasMatch ? C.border : 'rgba(230,81,0,0.3)'}`, padding: '10px 16px', borderRadius: '8px', color: hasMatch ? '#fff' : C.warning, fontWeight: '600', cursor: 'pointer', fontSize: '14px', opacity: hasMatch ? 1 : 0.7 }}
+                                    >
+                                      {noBrandSkin ? 'No ValueSkin' : hasMatch ? 'Send Proposal' : 'No Shared ValueSkin'}
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        if (noBrandSkin) { setPurchaseToast('Get a brand ValueSkin first'); setTimeout(() => setPurchaseToast(null), 3000); return; }
+                                        setDirectApproach(true); setNegotiatingCreator(i); setBrandDealPhase('brief'); setBrandBriefTitle(''); setBrandBriefDeliverables(''); setBrandBudget('4000'); setBrandDealIntent('campaign');
+                                      }}
+                                      style={{ flex:1, background:C.surfaceAlt, border:`1px solid ${C.border}`, padding:'10px 12px', borderRadius:'8px', color:C.textSecondary, fontWeight:'600', cursor:'pointer', fontSize:'13px', opacity: noBrandSkin ? 0.5 : 1 }}
+                                    >
+                                      Direct approach
+                                    </button>
+                                  </div>
                                 </div>
                               );
                             })()
@@ -4256,6 +4298,12 @@ export default function InstagramDemoPage() {
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.textSecondary} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
                                 Back to creators
                               </button>
+                              {/* Direct approach banner */}
+                              {directApproach && (
+                                <div style={{ background:'rgba(0,149,246,0.06)', border:'1px solid rgba(0,149,246,0.2)', borderRadius:'8px', padding:'8px 10px', marginBottom:'10px', fontSize:'11px', color:C.primary }}>
+                                  Direct approach — no campaign required. You are contacting this creator outside a campaign.
+                                </div>
+                              )}
                               {/* Deal Room Header */}
                               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                                 <div>
@@ -4265,7 +4313,7 @@ export default function InstagramDemoPage() {
                                     </svg>
                                     Deal Room
                                   </div>
-                                  {activeBrandSkin && <div style={{ fontSize:'10px', color:C.textMuted, marginTop:'2px' }}>Your identity: {activeBrandSkin}</div>}
+                                  {activeBrandSkin && <div style={{ fontSize:'10px', color:C.textMuted, marginTop:'2px' }}>Your identity: {activeBrandSkin}{brandValueSkins.length > 0 && ' · Verified'}</div>}
                                 </div>
                                 {brandDealPhase === 'pending' && (
                                   <div style={{ fontSize: '10px', color: C.textSecondary, background: C.surfaceAlt, padding: '2px 8px', borderRadius: '10px', fontWeight: 600 }}>
