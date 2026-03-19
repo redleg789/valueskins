@@ -956,6 +956,9 @@ export default function InstagramDemoPage() {
   // Dispute filing
   const [showDisputeModal, setShowDisputeModal] = useState<number|null>(null);
   const [disputeEvidence, setDisputeEvidence] = useState('');
+  // Escrow funding
+  const [escrowFunded, setEscrowFunded] = useState(false);
+  const [escrowFundingInProgress, setEscrowFundingInProgress] = useState(false);
   // Contract agreement (before finalization)
   const [contractChecks, setContractChecks] = useState<Record<string, boolean>>({});
   const [contractSignature, setContractSignature] = useState('');
@@ -2716,11 +2719,51 @@ export default function InstagramDemoPage() {
                                           {item.req && <span style={{ fontSize: '9px', color: C.primary, fontWeight: 700, textTransform: 'uppercase' }}>Required</span>}
                                         </div>
                                       ))}
-                                      <button onClick={() => { setDealRoomPhase('softhold'); setCreatorDealLifecycle('deliverables'); }} style={{ width: '100%', background: C.primary, border: 'none', padding: '10px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px', marginTop: '12px' }}>
+                                      <button onClick={() => { setDealRoomPhase('softhold'); setEscrowFunded(false); setEscrowFundingInProgress(false); }} style={{ width: '100%', background: C.primary, border: 'none', padding: '10px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px', marginTop: '12px' }}>
                                         Confirm &amp; Finalise Deal
                                       </button>
                                     </>
                                   )}
+
+                                  {/* Escrow funding gate — brand must fund before creator uploads */}
+                                  {dealRoomPhase === 'softhold' && !escrowFunded && creatorDealLifecycle === 'checklist' && (() => {
+                                    const agreedPrice = parseInt(dealCounterAmount || dealOfferAmount || '5000') || 5000;
+                                    return (
+                                      <div style={{ textAlign:'center', padding:'16px 0' }}>
+                                        <div style={{ width:'44px', height:'44px', borderRadius:'50%', background:C.surfaceAlt, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 12px' }}>
+                                          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                        </div>
+                                        <div style={{ fontSize:'14px', fontWeight:700, color:C.text, marginBottom:'4px' }}>Escrow Funding Required</div>
+                                        <div style={{ fontSize:'12px', color:C.textSecondary, marginBottom:'16px', lineHeight:1.5 }}>
+                                          The brand must deposit <strong>${agreedPrice.toLocaleString()}</strong> into escrow before you can begin work. Funds are held securely and released per your payment milestones.
+                                        </div>
+                                        <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:'10px', padding:'12px', marginBottom:'14px' }}>
+                                          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'6px' }}>
+                                            <span style={{ fontSize:'11px', color:C.textMuted }}>Escrow account</span>
+                                            <span style={{ fontSize:'12px', fontWeight:700, color: escrowFundingInProgress ? '#f59e0b' : C.textMuted }}>{escrowFundingInProgress ? 'Funding...' : 'Awaiting deposit'}</span>
+                                          </div>
+                                          <div style={{ width:'100%', height:'6px', background:C.card, borderRadius:'3px', overflow:'hidden' }}>
+                                            <div style={{ width: escrowFundingInProgress ? '60%' : '0%', height:'100%', background: escrowFundingInProgress ? '#f59e0b' : C.border, borderRadius:'3px', transition:'width 1.5s ease' }} />
+                                          </div>
+                                          <div style={{ fontSize:'10px', color:C.textMuted, marginTop:'6px' }}>
+                                            $0 / ${agreedPrice.toLocaleString()} deposited
+                                          </div>
+                                        </div>
+                                        <button onClick={() => {
+                                          setEscrowFundingInProgress(true);
+                                          setTimeout(() => {
+                                            setEscrowFunded(true);
+                                            setCreatorDealLifecycle('deliverables');
+                                            setPaymentMilestones(prev => ({ ...prev, advance: 'released' }));
+                                            setPurchaseToast(`Escrow funded — $${agreedPrice.toLocaleString()} secured. Advance released.`);
+                                            setTimeout(() => setPurchaseToast(null), 4000);
+                                          }, 2000);
+                                        }} disabled={escrowFundingInProgress} style={{ width:'100%', background: escrowFundingInProgress ? C.border : C.primary, border:'none', padding:'10px', borderRadius:'8px', color:'#fff', fontWeight:600, cursor: escrowFundingInProgress ? 'not-allowed' : 'pointer', fontSize:'13px', opacity: escrowFundingInProgress ? 0.6 : 1 }}>
+                                          {escrowFundingInProgress ? 'Processing deposit...' : 'Simulate: Brand funds escrow'}
+                                        </button>
+                                      </div>
+                                    );
+                                  })()}
 
                                   {dealRoomPhase === 'softhold' && creatorDealLifecycle === 'deliverables' && (() => {
                                     const agreedPrice = parseInt(dealCounterAmount || dealOfferAmount || '5000') || 5000;
@@ -2913,7 +2956,7 @@ export default function InstagramDemoPage() {
                                         )}
 
                                         <div style={{ display:'flex', gap:'8px' }}>
-                                          <button onClick={() => { if (activeDealKey) { setDealStates(prev => { const next = {...prev}; delete next[activeDealKey]; return next; }); } setNegotiatingOpp(null); setCreatorDealLifecycle('checklist'); setDealUploadSimulated(false); setDeliverableStatuses({}); setPaymentMilestones({ advance:'pending', upload:'pending', approval:'pending' }); setDealRating(0); setDealRatingComment(''); setRatingSubmitted(false); setContractChecks({}); setContractSignature(''); }} style={{ flex:2, background:C.primary, border:'none', padding:'10px', borderRadius:'8px', color:'#fff', fontWeight:600, cursor:'pointer', fontSize:'13px' }}>
+                                          <button onClick={() => { if (activeDealKey) { setDealStates(prev => { const next = {...prev}; delete next[activeDealKey]; return next; }); } setNegotiatingOpp(null); setCreatorDealLifecycle('checklist'); setDealUploadSimulated(false); setDeliverableStatuses({}); setPaymentMilestones({ advance:'pending', upload:'pending', approval:'pending' }); setDealRating(0); setDealRatingComment(''); setRatingSubmitted(false); setContractChecks({}); setContractSignature(''); setEscrowFunded(false); setEscrowFundingInProgress(false); }} style={{ flex:2, background:C.primary, border:'none', padding:'10px', borderRadius:'8px', color:'#fff', fontWeight:600, cursor:'pointer', fontSize:'13px' }}>
                                             Withdraw to Bank
                                           </button>
                                           <button onClick={() => setShowDisputeModal(Date.now())} style={{ flex:1, background:'none', border:`1px solid rgba(239,68,68,0.3)`, padding:'10px', borderRadius:'8px', color:'#ef4444', fontSize:'11px', cursor:'pointer', fontWeight:500 }}>
