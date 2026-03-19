@@ -14,7 +14,9 @@ import { api } from './api';
 
 // ---- Types matching the demo page's DealState ----
 
-export type DealRoomPhase = 'brief' | 'offer' | 'counter' | 'brand_considering' | 'brand_countered' | 'brand_rejected' | 'chatroom' | 'formal_offer' | 'checklist' | 'accepted' | 'softhold';
+export type DealRoomPhase = 'brief' | 'offer' | 'pending' | 'counter' | 'brand_considering' | 'brand_countered' | 'brand_rejected' | 'brand_reviewing' | 'last_offer' | 'rejected' | 'chatroom' | 'formal_offer' | 'checklist' | 'accepted' | 'softhold';
+
+export type PaymentMilestoneStatus = 'pending' | 'released';
 
 export type DealState = {
   phase: DealRoomPhase;
@@ -30,6 +32,10 @@ export type DealState = {
   advancePercent: number;
   uploadPercent: number;
   approvalPercent: number;
+  // Payment milestone tracking — synced real-time
+  paymentMilestones?: Record<'advance' | 'upload' | 'approval', PaymentMilestoneStatus>;
+  creatorDealLifecycle?: 'checklist' | 'deliverables' | 'submitted' | 'approved'; // Creator side
+  deliverableStatuses?: Record<number, 'pending' | 'linking' | 'uploaded' | 'approved'>; // Per-deliverable status
   // Brand-side state — persisted so role-switching preserves progress
   brandPhase?: string;          // BrandDealPhase
   brandApprovalPhase?: string;  // BrandApprovalPhase

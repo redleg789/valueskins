@@ -598,22 +598,72 @@ export default function InstagramDemoPage() {
     }
   }, [firebaseState.deals, setDealStates]);
 
-  // Sync Firebase messages back to local deal state
+  // Sync Firebase messages back to local deal state (using new key format: creatorName|creatorSkin)
   useEffect(() => {
-    if (firebaseState.messages && selectedMarketplaceSkin && negotiatingOpp !== null) {
-      const key = `${selectedMarketplaceSkin}:${negotiatingOpp}`;
-      const fbMessages = firebaseState.messages[key] || [];
-      if (fbMessages.length > 0) {
-        setDealStates(prev => ({
-          ...prev,
-          [key]: {
-            ...prev[key],
-            chatMessages: fbMessages,
-          },
-        }));
+    if (!firebaseState.messages) return;
+    // Recompute deal key here to avoid block-scoping issues with later declarations
+    let dealKey: string | null = null;
+    if (marketplaceRole === 'creator' && selectedMarketplaceSkin && negotiatingOpp !== null) {
+      const matchingCreator = BRAND_MARKETPLACE_CREATORS.find(c => c.valueSkin === selectedMarketplaceSkin);
+      if (matchingCreator) {
+        dealKey = `${matchingCreator.name}|${selectedMarketplaceSkin}`;
+      }
+    } else if (marketplaceRole === 'brand' && negotiatingCreator !== null) {
+      const creator = BRAND_MARKETPLACE_CREATORS[negotiatingCreator];
+      if (creator) {
+        dealKey = `${creator.name}|${creator.valueSkin}`;
       }
     }
-  }, [firebaseState.messages, selectedMarketplaceSkin, negotiatingOpp, setDealStates]);
+
+    if (!dealKey) return;
+    const fbMessages = firebaseState.messages[dealKey] || [];
+    if (fbMessages.length > 0) {
+      setDealStates(prev => ({
+        ...prev,
+        [dealKey]: {
+          ...prev[dealKey],
+          chatMessages: fbMessages as ChatMessage[],
+        },
+      }));
+    }
+  }, [firebaseState.messages, selectedMarketplaceSkin, negotiatingOpp, marketplaceRole, negotiatingCreator, setDealStates]);
+
+  // Sync payment milestones + creator deal lifecycle from dealStates to local UI state (real-time)
+  useEffect(() => {
+    // Compute deal key inline to avoid block-scoping issues
+    let dealKey: string | null = null;
+    if (marketplaceRole === 'creator' && selectedMarketplaceSkin && negotiatingOpp !== null) {
+      const matchingCreator = BRAND_MARKETPLACE_CREATORS.find(c => c.valueSkin === selectedMarketplaceSkin);
+      if (matchingCreator) {
+        dealKey = `${matchingCreator.name}|${selectedMarketplaceSkin}`;
+      }
+    } else if (marketplaceRole === 'brand' && negotiatingCreator !== null) {
+      const creator = BRAND_MARKETPLACE_CREATORS[negotiatingCreator];
+      if (creator) {
+        dealKey = `${creator.name}|${creator.valueSkin}`;
+      }
+    }
+
+    if (!dealKey) return;
+    const deal = dealStates[dealKey];
+    if (!deal) return;
+    // Payment milestones: sync from dealStates to local state so UI updates in real-time
+    if (deal.paymentMilestones) {
+      setPaymentMilestones(deal.paymentMilestones);
+    }
+    // Creator deal lifecycle: sync from dealStates
+    if (deal.creatorDealLifecycle) {
+      setCreatorDealLifecycle(deal.creatorDealLifecycle as CreatorDealLifecycle);
+    }
+    // Deliverable statuses: sync from dealStates
+    if (deal.deliverableStatuses) {
+      setDeliverableStatuses(deal.deliverableStatuses);
+    }
+    // Brand approval phase: sync from dealStates
+    if (deal.brandApprovalPhase) {
+      setBrandApprovalPhase(deal.brandApprovalPhase as BrandApprovalPhase);
+    }
+  }, [marketplaceRole, selectedMarketplaceSkin, negotiatingOpp, negotiatingCreator, dealStates]);
 
   const updateDeal = useCallback((key: string, updates: Partial<DealState>) => {
     localUpdateDeal(key, updates);
@@ -621,8 +671,19 @@ export default function InstagramDemoPage() {
   }, [localUpdateDeal, firebaseUpdateDeal]);
   const dealsLoaded = dealSync.loaded;
 
-  // Active deal key derived from current skin + opp
-  const activeDealKey = selectedMarketplaceSkin && negotiatingOpp !== null ? `${selectedMarketplaceSkin}:${negotiatingOpp}` : null;
+  // Active deal key — STABLE across creator/brand for two-device sync
+  // In demo: creator always has a counterpart in BRAND_MARKETPLACE_CREATORS (matched by skin)
+  // Use: creatorName|creatorSkin to enable cross-party deal lookup
+  let activeDealKey: string | null = null;
+  if (marketplaceRole === 'creator' && selectedMarketplaceSkin && negotiatingOpp !== null) {
+    // Find the creator in BRAND_MARKETPLACE_CREATORS that matches this creator's skin
+    // In the demo, we're simulating this creator interacting with opportunities
+    const matchingCreator = BRAND_MARKETPLACE_CREATORS.find(c => c.valueSkin === selectedMarketplaceSkin);
+    if (matchingCreator) {
+      activeDealKey = `${matchingCreator.name}|${selectedMarketplaceSkin}`;
+    }
+  }
+
   const activeDeal = activeDealKey ? getOrCreateDeal(activeDealKey) : null;
 
   // Convenience accessors for the active deal (backward compat with existing render code)
@@ -635,10 +696,14 @@ export default function InstagramDemoPage() {
       const phaseNames: Record<DealRoomPhase, string> = {
         brief: 'Deal initiated',
         offer: 'Brand sent offer',
+        pending: 'Offer pending',
         counter: 'Creator countered',
         brand_considering: 'Brand reviewing',
         brand_countered: 'Brand countered',
         brand_rejected: 'Brand rejected',
+        brand_reviewing: 'Brand reviewing',
+        last_offer: 'Last offer',
+        rejected: 'Rejected',
         chatroom: 'In negotiation',
         formal_offer: 'Formal offer sent',
         checklist: 'Terms checklist',
@@ -750,13 +815,25 @@ export default function InstagramDemoPage() {
   const [brandCampaignDesc, setBrandCampaignDesc] = useState('Looking for authentic content creators to showcase our product');
   const [brandCampaignType, setBrandCampaignType] = useState('Product Review');
 
-  // Brand-side deal room state — persisted in localStorage so role-switching preserves it
-  type BrandDealPhase = 'brief' | 'offer' | 'pending' | 'counter' | 'brand_reviewing' | 'last_offer' | 'rejected' | 'accepted' | 'softhold';
-  const [brandDealPhase, setBrandDealPhaseRaw] = useState<BrandDealPhase>(() => {
-    if (typeof window === 'undefined') return 'brief';
-    return (localStorage.getItem('vs_brand_deal_phase') as BrandDealPhase) || 'brief';
-  });
-  const setBrandDealPhase = (p: BrandDealPhase) => { setBrandDealPhaseRaw(p); localStorage.setItem('vs_brand_deal_phase', p); };
+  // Brand-side deal room state — uses dealStates for real-time sync (was: localStorage-only)
+  // Key format MUST match creator side: creatorName|creatorSkin
+  const getBrandDealKey = useCallback(() => {
+    if (negotiatingCreator === null) return null;
+    const creator = BRAND_MARKETPLACE_CREATORS[negotiatingCreator];
+    if (!creator) return null;
+    // Same format as creator: creatorName|creatorSkin — enables two-device sync
+    return `${creator.name}|${creator.valueSkin}`;
+  }, [negotiatingCreator]);
+
+  const brandDealKey = getBrandDealKey();
+  const brandDeal = brandDealKey ? getOrCreateDeal(brandDealKey) : null;
+
+  // Use dealStates phase, fallback to 'brief' if no deal yet
+  const brandDealPhase = (brandDeal?.phase as any) || 'brief';
+  const setBrandDealPhase = (p: DealRoomPhase) => {
+    if (!brandDealKey) return;
+    updateDeal(brandDealKey, { phase: p });
+  };
   const [brandDealIntent, setBrandDealIntent] = useState<'explore' | 'campaign' | 'long-term'>('campaign');
   const [brandBriefTitle, setBrandBriefTitle] = useState('');
   const [brandBriefDeliverables, setBrandBriefDeliverables] = useState('');
@@ -3240,7 +3317,22 @@ export default function InstagramDemoPage() {
 
                                       {/* Submit all — only when all deliverables uploaded */}
                                       {allUploaded && (
-                                        <button onClick={() => { setCreatorDealLifecycle('submitted'); setPaymentMilestones(prev => ({ ...prev, advance: 'released', upload: 'released' })); }} style={{ width:'100%', background:C.primary, border:'none', padding:'10px', borderRadius:'8px', color:'#fff', fontWeight:600, cursor:'pointer', fontSize:'13px', marginBottom:'8px' }}>
+                                        <button onClick={() => {
+                                          const agreedAmt = parseInt(dealCounterAmount || '5000');
+                                          setCreatorDealLifecycle('submitted');
+                                          setPaymentMilestones({ advance: 'released', upload: 'released', approval: 'pending' });
+                                          // Sync to dealStates for real-time broadcast to brand
+                                          if (activeDealKey) {
+                                            updateDeal(activeDealKey, {
+                                              creatorDealLifecycle: 'submitted',
+                                              paymentMilestones: { advance: 'released', upload: 'released', approval: 'pending' },
+                                              deliverableStatuses: deliverableStatuses
+                                            });
+                                            firebaseSendNotification(opp?.brand || 'Brand', 'application', `Deliverables submitted: ${agreedAmt.toLocaleString()} – Advance & upload milestones released. Awaiting approval.`);
+                                          }
+                                          setPurchaseToast(`Submitted for review — $${Math.round(agreedAmt * (advancePercent + uploadPercent) / 100).toLocaleString()} released, $${Math.round(agreedAmt * approvalPercent / 100).toLocaleString()} pending approval`);
+                                          setTimeout(() => setPurchaseToast(null), 4000);
+                                        }} style={{ width:'100%', background:C.primary, border:'none', padding:'10px', borderRadius:'8px', color:'#fff', fontWeight:600, cursor:'pointer', fontSize:'13px', marginBottom:'8px' }}>
                                           Submit for Review
                                         </button>
                                       )}
@@ -4936,13 +5028,34 @@ export default function InstagramDemoPage() {
                                       </div>
                                       <div style={{ display:'flex', gap:'8px' }}>
                                         <button
-                                          onClick={() => { setBrandApprovalPhase('approved'); setPurchaseToast('Deliverable approved — payment released'); setTimeout(() => setPurchaseToast(null), 3000); }}
+                                          onClick={() => {
+                                            const agreedAmt = parseInt(simulatedCounterAmount || '5000');
+                                            const approvalAmt = Math.round(agreedAmt * 0.3);
+                                            setBrandApprovalPhase('approved');
+                                            // Sync approval through dealStates for creator to see real-time
+                                            if (brandDealKey) {
+                                              updateDeal(brandDealKey, {
+                                                brandApprovalPhase: 'approved',
+                                                paymentMilestones: { advance: 'released', upload: 'released', approval: 'released' },
+                                                creatorDealLifecycle: 'approved'
+                                              });
+                                              firebaseSendNotification('Creator', 'application', `Deliverables approved! Final payment released: $${approvalAmt.toLocaleString()}`);
+                                            }
+                                            setPurchaseToast(`Deliverable approved — $${approvalAmt.toLocaleString()} approval payment released to creator`);
+                                            setTimeout(() => setPurchaseToast(null), 3500);
+                                          }}
                                           style={{ flex:1, background:C.success, border:'none', padding:'9px', borderRadius:'8px', color:'#fff', fontWeight:600, cursor:'pointer', fontSize:'13px' }}
                                         >
                                           Approve
                                         </button>
                                         <button
-                                          onClick={() => { setPurchaseToast('Revision requested — creator notified'); setTimeout(() => setPurchaseToast(null), 3000); }}
+                                          onClick={() => {
+                                            if (brandDealKey) {
+                                              firebaseSendNotification('Creator', 'application', `Brand requested revision — please update your deliverables`);
+                                            }
+                                            setPurchaseToast('Revision requested — creator notified');
+                                            setTimeout(() => setPurchaseToast(null), 3000);
+                                          }}
                                           style={{ flex:1, background:'none', border:`1px solid ${C.border}`, padding:'9px', borderRadius:'8px', color:C.textSecondary, fontWeight:600, cursor:'pointer', fontSize:'13px' }}
                                         >
                                           Request Revision
