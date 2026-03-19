@@ -53,6 +53,8 @@ export type DealState = {
   // International deal flags and compliance acknowledgments
   isInternationalDeal?: boolean;
   customsComplianceAcknowledged?: boolean;
+  // Escrow state — synced between brand (funder) and creator (receiver)
+  escrowFunded?: boolean;
   // Point of Contact — set at campaign creation, shown to both parties
   poc?: { name: string; instagramHandle: string; role: string };
 };

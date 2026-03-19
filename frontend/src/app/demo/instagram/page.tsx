@@ -1131,18 +1131,28 @@ export default function InstagramDemoPage() {
   // Gap 4: deal lifecycle
   type CreatorDealLifecycle = 'checklist'|'deliverables'|'submitted'|'approved';
   type BrandApprovalPhase = 'accepted'|'funding'|'funded'|'reviewing'|'approved';
-  const [creatorDealLifecycle, setCreatorDealLifecycle] = useState<CreatorDealLifecycle>('checklist');
-  const [brandApprovalPhase, setBrandApprovalPhaseRaw] = useState<BrandApprovalPhase>(() => {
-    if (typeof window === 'undefined') return 'accepted';
-    return (localStorage.getItem('vs_brand_approval_phase') as BrandApprovalPhase) || 'accepted';
-  });
-  const setBrandApprovalPhase = (p: BrandApprovalPhase) => { setBrandApprovalPhaseRaw(p); localStorage.setItem('vs_brand_approval_phase', p); };
+  // Read from shared deal state for real-time cross-role sync
+  const creatorDealLifecycle: CreatorDealLifecycle = (activeDeal?.creatorDealLifecycle as CreatorDealLifecycle) || 'checklist';
+  const setCreatorDealLifecycle = (lc: CreatorDealLifecycle) => { if (activeDealKey) updateDeal(activeDealKey, { creatorDealLifecycle: lc }); };
+  const brandApprovalPhase: BrandApprovalPhase = (brandDeal?.brandApprovalPhase as BrandApprovalPhase) || 'accepted';
+  const setBrandApprovalPhase = (p: BrandApprovalPhase) => { if (brandDealKey) updateDeal(brandDealKey, { brandApprovalPhase: p }); };
   const [dealUploadSimulated, setDealUploadSimulated] = useState(false);
   type CompletedDeal = { id:number; brand:string; amount:number; completedAt:string; deliverable:string; usageRightsDays?:number; exclusivityDays?:number; exclusivitySkin?:string; disputed?:boolean; disputeReason?:string; disputeStatus?:'filed'|'under_review'|'resolved'; contractSignedAt?:string; };
   const [completedDeals, setCompletedDeals] = useState<CompletedDeal[]>([]);
   // Deliverable checklist tracking (per-deliverable status + Instagram links)
-  const [deliverableStatuses, setDeliverableStatuses] = useState<Record<number, 'pending'|'linking'|'uploaded'|'approved'>>({});
-  const [deliverableLinks, setDeliverableLinks] = useState<Record<number, string>>({});
+  // Deliverable statuses + links — synced from shared deal state for brand to see creator submissions
+  const deliverableStatuses: Record<number, 'pending'|'linking'|'uploaded'|'approved'> = (activeDeal?.deliverableStatuses as Record<number, 'pending'|'linking'|'uploaded'|'approved'>) || {};
+  const setDeliverableStatuses = (v: Record<number, 'pending'|'linking'|'uploaded'|'approved'> | ((prev: Record<number, 'pending'|'linking'|'uploaded'|'approved'>) => Record<number, 'pending'|'linking'|'uploaded'|'approved'>)) => {
+    if (!activeDealKey) return;
+    const newVal = typeof v === 'function' ? v(deliverableStatuses) : v;
+    updateDeal(activeDealKey, { deliverableStatuses: newVal });
+  };
+  const deliverableLinks: Record<number, string> = (activeDeal?.deliverableLinks as Record<number, string>) || {};
+  const setDeliverableLinks = (v: Record<number, string> | ((prev: Record<number, string>) => Record<number, string>)) => {
+    if (!activeDealKey) return;
+    const newVal = typeof v === 'function' ? v(deliverableLinks) : v;
+    updateDeal(activeDealKey, { deliverableLinks: newVal });
+  };
   const [deliverableLinkInputs, setDeliverableLinkInputs] = useState<Record<number, string>>({});
   // Feature 1: Direct approach (no campaign)
   const [directApproach, setDirectApproachRaw] = useState<boolean>(() => typeof window !== 'undefined' ? localStorage.getItem('vs_brand_direct_approach') === 'true' : false);
@@ -1168,14 +1178,20 @@ export default function InstagramDemoPage() {
   const [brandDealRating, setBrandDealRating] = useState(0);
   const [brandRatingComment, setBrandRatingComment] = useState('');
   const [brandRatingSubmitted, setBrandRatingSubmitted] = useState(false);
-  // Payment milestone tracking
+  // Payment milestone tracking — synced from shared deal state for real-time cross-role visibility
   type MilestoneStatus = 'pending'|'released';
-  const [paymentMilestones, setPaymentMilestones] = useState<Record<string, MilestoneStatus>>({ advance: 'pending', upload: 'pending', approval: 'pending' });
+  const paymentMilestones: Record<string, MilestoneStatus> = (activeDeal?.paymentMilestones as Record<string, MilestoneStatus>) || { advance: 'pending', upload: 'pending', approval: 'pending' };
+  const setPaymentMilestones = (v: Record<string, MilestoneStatus> | ((prev: Record<string, MilestoneStatus>) => Record<string, MilestoneStatus>)) => {
+    if (!activeDealKey) return;
+    const newVal = typeof v === 'function' ? v(paymentMilestones) : v;
+    updateDeal(activeDealKey, { paymentMilestones: newVal as any });
+  };
   // Dispute filing
   const [showDisputeModal, setShowDisputeModal] = useState<number|null>(null);
   const [disputeEvidence, setDisputeEvidence] = useState('');
-  // Escrow funding
-  const [escrowFunded, setEscrowFunded] = useState(false);
+  // Escrow funding — synced from shared deal state
+  const escrowFunded = activeDeal?.escrowFunded ?? false;
+  const setEscrowFunded = (v: boolean) => { if (activeDealKey) updateDeal(activeDealKey, { escrowFunded: v }); };
   const [escrowFundingInProgress, setEscrowFundingInProgress] = useState(false);
   // Contract agreement (before finalization)
   const [contractChecks, setContractChecks] = useState<Record<string, boolean>>({});
@@ -3496,9 +3512,9 @@ export default function InstagramDemoPage() {
                                                 <div style={{ fontSize:'10px', color:C.textMuted, marginBottom:'2px' }}>Upload milestone: <span style={{ color:C.success, fontWeight:600 }}>Paid</span></div>
                                                 <div style={{ fontSize:'10px', color:C.textMuted }}>Approval milestone: <span style={{ color:'#f59e0b', fontWeight:600 }}>Pending brand approval</span></div>
                                               </div>
-                                              <button onClick={() => { setCreatorDealLifecycle('approved'); setPaymentMilestones({ advance:'released', upload:'released', approval:'released' }); handleDealComplete(parseInt(dealCounterAmount || '5000'), opp.brand || 'Brand', opp.deliverables?.map((d: {count:number;format:string}) => `${d.count}x ${d.format}`).join(', ') || '1x Instagram Reel', undefined, opp.revisionLimit ? opp.revisionLimit * 30 : 90, opp.exclusivity && opp.exclusivity !== 'None' ? 30 : undefined, opp.exclusivity && opp.exclusivity !== 'None' ? selectedMarketplaceSkin || undefined : undefined); }} style={{ width:'100%', background:'none', border:`1px solid ${C.border}`, padding:'8px', borderRadius:'8px', color:C.textMuted, fontSize:'11px', cursor:'pointer' }}>
-                                                Simulate: Brand approved
-                                              </button>
+                                              <div style={{ textAlign:'center', padding:'8px', fontSize:'11px', color:C.textMuted }}>
+                                                Brand will review and approve from their deal room
+                                              </div>
                                             </>
                                           );
                                         }
@@ -3748,6 +3764,33 @@ export default function InstagramDemoPage() {
                                         return null;
                                     }
                                   })()}
+
+                                  {/* POC Contact Card — visible at all deal phases when POC exists */}
+                                  {activeDeal?.poc && ['chatroom','checklist','accepted','softhold'].includes(dealRoomPhase) && (
+                                    <div style={{ background: C.surfaceAlt, border: `1px solid ${C.border}`, borderRadius: '8px', padding: '10px', marginTop: '12px' }}>
+                                      <div style={{ fontSize: '9px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Point of Contact</div>
+                                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                        <div>
+                                          <div style={{ fontSize: '12px', fontWeight: 600, color: C.text }}>{activeDeal.poc.name}</div>
+                                          <div style={{ fontSize: '11px', color: C.primary, marginTop: '1px' }}>{activeDeal.poc.instagramHandle}</div>
+                                          {activeDeal.poc.role && <div style={{ fontSize: '10px', color: C.textSecondary, marginTop: '1px' }}>{activeDeal.poc.role}</div>}
+                                        </div>
+                                        <button
+                                          onClick={() => {
+                                            const pocHandle = activeDeal.poc?.instagramHandle?.replace('@', '') || '';
+                                            if (pocHandle) {
+                                              window.open(`https://instagram.com/${pocHandle}`, '_blank');
+                                            }
+                                            setPurchaseToast(`Opening ${activeDeal.poc?.name || 'POC'} on Instagram`);
+                                            setTimeout(() => setPurchaseToast(null), 2000);
+                                          }}
+                                          style={{ background: C.primary, border: 'none', borderRadius: '6px', padding: '5px 12px', color: '#fff', fontSize: '10px', fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}
+                                        >
+                                          Message
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
 
                                   {!['offer','counter','brand_considering','brand_countered','brand_rejected','accepted','chatroom','checklist','softhold'].includes(dealRoomPhase) && (
                                     <button onClick={() => setNegotiatingOpp(null)} style={{ width: '100%', background: 'none', border: `1px solid ${C.border}`, padding: '8px', borderRadius: '8px', color: C.textSecondary, cursor: 'pointer', fontSize: '12px' }}>Close</button>
@@ -5374,6 +5417,15 @@ export default function InstagramDemoPage() {
                                         <button
                                           onClick={() => {
                                             setBrandApprovalPhase('funded');
+                                            // Sync escrow funded to shared deal state so creator sees it in real-time
+                                            if (brandDealKey) {
+                                              updateDeal(brandDealKey, {
+                                                escrowFunded: true,
+                                                brandApprovalPhase: 'funded',
+                                                creatorDealLifecycle: 'deliverables',
+                                                paymentMilestones: { advance: 'released', upload: 'pending', approval: 'pending' },
+                                              });
+                                            }
                                             setPurchaseToast('Escrow funded — creator notified to begin work');
                                             setTimeout(() => setPurchaseToast(null), 3000);
                                             setTimeout(() => setBrandApprovalPhase('reviewing'), 2000);
@@ -5429,20 +5481,41 @@ export default function InstagramDemoPage() {
                                     </div>
                                   )}
                                   {brandApprovalPhase === 'reviewing' && (() => {
+                                    // Read deliverable data from the shared deal state (brandDeal) so brand sees what creator submitted
+                                    const bdLinks = (brandDeal?.deliverableLinks || {}) as Record<number, string>;
+                                    const bdStatuses = (brandDeal?.deliverableStatuses || {}) as Record<number, string>;
+                                    const bdLifecycle = brandDeal?.creatorDealLifecycle;
+
                                     if (dealType === 'paid' || dealType === 'c2c_paid') {
+                                      const hasSubmissions = Object.keys(bdLinks).length > 0;
                                       return (
                                         <div style={{ marginTop:'12px' }}>
                                           <div style={{ fontSize:'11px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'10px' }}>Review Creator Deliverables</div>
-                                          <div style={{ background:C.bg, borderRadius:'8px', padding:'12px', border:`1px solid ${C.border}`, marginBottom:'10px' }}>
-                                            <div style={{ fontSize:'12px', fontWeight:600, color:C.text, marginBottom:'4px' }}>Deliverable: 1x Instagram Reel</div>
-                                            <div style={{ fontSize:'11px', color:C.textSecondary, marginBottom:'8px' }}>Submitted 2 hours ago</div>
-                                            <div style={{ display:'flex', gap:'6px' }}>
-                                              <button style={{ flex:1, background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:'6px', padding:'5px', fontSize:'11px', color:C.text, cursor:'pointer' }}>View File</button>
-                                              <button style={{ flex:1, background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:'6px', padding:'5px', fontSize:'11px', color:C.text, cursor:'pointer' }}>Download</button>
+                                          {bdLifecycle === 'submitted' || hasSubmissions ? (
+                                            <>
+                                              {Object.entries(bdLinks).map(([idx, link]) => (
+                                                <div key={idx} style={{ background:C.bg, borderRadius:'8px', padding:'12px', border:`1px solid ${C.border}`, marginBottom:'8px' }}>
+                                                  <div style={{ fontSize:'12px', fontWeight:600, color:C.text, marginBottom:'4px' }}>Deliverable #{parseInt(idx) + 1}</div>
+                                                  <div style={{ fontSize:'10px', color: bdStatuses[parseInt(idx)] === 'approved' ? C.success : C.primary, marginBottom:'4px' }}>
+                                                    {bdStatuses[parseInt(idx)] === 'approved' ? 'Approved' : 'Submitted — awaiting your review'}
+                                                  </div>
+                                                  <a href={link} target="_blank" rel="noopener noreferrer" style={{ fontSize:'10px', color:C.primary, textDecoration:'none', display:'block', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{link}</a>
+                                                </div>
+                                              ))}
+                                              {Object.keys(bdLinks).length === 0 && (
+                                                <div style={{ background:C.bg, borderRadius:'8px', padding:'12px', border:`1px solid ${C.border}`, marginBottom:'10px', fontSize:'11px', color:C.textSecondary }}>
+                                                  Creator submitted deliverables — review pending
+                                                </div>
+                                              )}
+                                            </>
+                                          ) : (
+                                            <div style={{ background:'rgba(245,158,11,0.06)', border:`1px solid rgba(245,158,11,0.2)`, borderRadius:'8px', padding:'12px', marginBottom:'10px' }}>
+                                              <div style={{ fontSize:'11px', color:'#f59e0b' }}>Creator has not yet submitted deliverables</div>
                                             </div>
-                                          </div>
+                                          )}
                                           <div style={{ display:'flex', gap:'8px' }}>
                                             <button
+                                              disabled={bdLifecycle !== 'submitted'}
                                               onClick={() => {
                                                 const agreedAmt = parseInt(simulatedCounterAmount || '5000');
                                                 const approvalAmt = Math.round(agreedAmt * 0.3);
@@ -5458,7 +5531,7 @@ export default function InstagramDemoPage() {
                                                 setPurchaseToast(`Deliverable approved — $${approvalAmt.toLocaleString()} approval payment released to creator`);
                                                 setTimeout(() => setPurchaseToast(null), 3500);
                                               }}
-                                              style={{ flex:1, background:C.success, border:'none', padding:'9px', borderRadius:'8px', color:'#fff', fontWeight:600, cursor:'pointer', fontSize:'13px' }}
+                                              style={{ flex:1, background: bdLifecycle === 'submitted' ? C.success : C.border, border:'none', padding:'9px', borderRadius:'8px', color:'#fff', fontWeight:600, cursor: bdLifecycle === 'submitted' ? 'pointer' : 'not-allowed', fontSize:'13px', opacity: bdLifecycle === 'submitted' ? 1 : 0.5 }}
                                             >
                                               Approve
                                             </button>
@@ -5478,7 +5551,7 @@ export default function InstagramDemoPage() {
                                         </div>
                                       );
                                     } else if (dealType === 'barter' || dealType === 'c2c_collab') {
-                                      const contentLink = deliverableLinks[0] || '';
+                                      const contentLink = bdLinks[0] || '';
                                       return (
                                         <div style={{ marginTop:'12px' }}>
                                           <div style={{ fontSize:'11px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'10px' }}>Review Content</div>
@@ -5553,6 +5626,32 @@ export default function InstagramDemoPage() {
                                         </div>
                                       )}
                                       <button onClick={() => { setNegotiatingCreator(null); setBrandDealPhase('brief'); setBrandApprovalPhase('accepted'); setBrandDealRating(0); setBrandRatingComment(''); setBrandRatingSubmitted(false); }} style={{ width:'100%', background:C.primary, border:'none', padding:'8px', borderRadius:'8px', color:'#fff', fontWeight:600, fontSize:'12px', cursor:'pointer' }}>Done</button>
+                                    </div>
+                                  )}
+                                  {/* POC Contact Card — brand side, visible at all brand deal phases */}
+                                  {brandDeal?.poc && (
+                                    <div style={{ background: C.surfaceAlt, border: `1px solid ${C.border}`, borderRadius: '8px', padding: '10px', marginTop: '12px' }}>
+                                      <div style={{ fontSize: '9px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Point of Contact</div>
+                                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                        <div>
+                                          <div style={{ fontSize: '12px', fontWeight: 600, color: C.text }}>{brandDeal.poc.name}</div>
+                                          <div style={{ fontSize: '11px', color: C.primary, marginTop: '1px' }}>{brandDeal.poc.instagramHandle}</div>
+                                          {brandDeal.poc.role && <div style={{ fontSize: '10px', color: C.textSecondary, marginTop: '1px' }}>{brandDeal.poc.role}</div>}
+                                        </div>
+                                        <button
+                                          onClick={() => {
+                                            const pocHandle = brandDeal.poc?.instagramHandle?.replace('@', '') || '';
+                                            if (pocHandle) {
+                                              window.open(`https://instagram.com/${pocHandle}`, '_blank');
+                                            }
+                                            setPurchaseToast(`Opening ${brandDeal.poc?.name || 'POC'} on Instagram`);
+                                            setTimeout(() => setPurchaseToast(null), 2000);
+                                          }}
+                                          style={{ background: C.primary, border: 'none', borderRadius: '6px', padding: '5px 12px', color: '#fff', fontSize: '10px', fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}
+                                        >
+                                          Message
+                                        </button>
+                                      </div>
                                     </div>
                                   )}
                                 </>
