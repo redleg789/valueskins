@@ -2,6 +2,111 @@ Use approaches that use the least amount of tokens without compromising the qual
 
 ---
 
+## ValueSkins Scope — What It IS and IS NOT
+
+### What ValueSkins IS (Full-Fledged Middleman for Creators ↔ Brands)
+**Core feature: Connect creators with brand deals**, replacing the need for talent agencies. ValueSkins is NOT event management, payment processor, or complex multi-party system.
+
+#### 16 Must-Have Features (Implementation Summary)
+
+**Authentication & Identity**
+1. **Real Instagram OAuth** — Connect creator/brand Instagram accounts to verify identity and fetch followers/engagement metrics from Instagram Graph API
+   - Implementation: Backend OAuth flow with Instagram, store `instagram_id`, `followers`, `engagement_pct`, `audience_demographics` on user table
+   - Frontend: Instagram login button on onboarding, JWT issued after OAuth success
+
+2. **Email verification** — Confirm user owns email for password reset and notifications
+   - Implementation: Send OTP to email, store `email_verified` boolean, require before deal finalization
+   - Frontend: Modal after signup with OTP input
+
+**Skin System & Discovery**
+3. **Creator ValueSkins (up to 3 slots)** — Profession/Passion/Hobby slots for categorization
+   - Already implemented ✓
+
+4. **Brand ValueSkins (up to 3 skins)** — Brands purchase skins to target specific creator niches
+   - Already implemented ✓
+
+5. **Creator marketplace with skin filtering** — Search creators by owned skins
+   - Implementation: Backend API `GET /creators?skin=Software+Engineer&level=3&followers_min=10000` with pagination, index on (skin, level, followers)
+   - Frontend: Creator grid with filters, lazy-load images
+
+**Campaign & Deal Management**
+6. **Brand campaign creation** — Create campaigns targeting specific skins with deliverables, budget, deadline, non-negotiables
+   - Already implemented (Firebase) ✓
+
+7. **Campaign browsing (creator side)** — Marketplace showing live campaigns matched to creator's skins
+   - Already implemented ✓
+
+8. **Formal offer/counter-offer flow** — Structured negotiation (not chat)
+   - Implementation: Offer table with `offer_id`, `creator_id`, `brand_id`, `campaign_id`, `status` (pending/countered/accepted/declined), `terms_json` (deliverables, budget, timeline)
+   - Backend: POST `/offers` creates offer, PUT `/offers/{id}/counter` with new terms, both sync to Firebase
+   - Frontend: Offer modal showing side-by-side brand offer vs creator counter, clear accept/decline buttons
+
+9. **Deal room chat with persistent messages** — Real-time chat during negotiation
+   - Implementation: Messages table with `message_id`, `deal_id`, `sender_id`, `text`, `created_at`; Firebase onValue listener syncs messages in real-time
+   - Already partially implemented ✓
+
+10. **Payment split visibility (advance / after upload / after approval)** — Creators see money breakdown
+    - Already implemented (UI sliders) ✓ — Backend: Store splits in offer_terms as JSON `{advance: 30, after_upload: 40, after_approval: 30}`
+
+**Creator Profile & Verification**
+11. **Creator reputation/trust scoring** — Based on completed deals, on-time delivery, ratings from brands
+    - Implementation: Reputation table with `creator_id`, `completion_rate` (completed_deals / total_deals), `avg_rating` (1-5 stars from brands), `response_time_hours_avg`
+    - Formula: Trust Score = (0.4 × completion_rate) + (0.4 × avg_rating/5) + (0.2 × (1 - min(response_time/48, 1)))
+    - Frontend: Show badge on creator profile, visible to brands in discovery
+
+12. **Creator media kit generation** — PDF showing stats, audience, portfolio
+    - Implementation: Backend endpoint `GET /creators/{id}/media-kit` returns JSON with stats, Frontend renders to PDF using `html2pdf` library
+    - Include: follower count, engagement rate, audience demographics, top posts, previous brand deals (with permission)
+
+**Brand Tools**
+13. **Brand discovery (reverse marketplace)** — Creators can search brands, see their campaigns
+    - Implementation: Brand table with `brand_id`, `name`, `website`, `industry`, `verified`; API `GET /brands?name=Nike&industry=sportswear`
+    - Frontend: Brand grid showing recent campaigns, creator follower base needed
+
+14. **Batch campaign sending** — Send one campaign brief to 50+ creators at once
+    - Implementation: `POST /campaigns/{id}/send-to-creators` with creator IDs array, creates individual `application` record per creator, sends notification
+    - Notification: Firebase `sendNotification(creator_id, "New campaign from Nike matching your skin", campaign_id)`
+
+**Legal & Compliance**
+15. **NDA/contract generation** — Pre-filled agreements with deal terms
+    - Implementation: Backend generates contract from offer_terms using template (Jinja2 or similar), stores signed PDF in S3, `deal.contract_signed_at` timestamp
+    - Frontend: "Sign contract" button opens PDF, integrates DocuSign API for e-signature (or simple checkbox for MVP)
+
+16. **Deal history & dispute resolution** — Archive completed deals, handle disagreements
+    - Implementation: Completed deals table with `deal_id`, `creator_id`, `brand_id`, `status` (completed/disputed), `dispute_reason`, `resolution`, `resolved_by_admin`
+    - Frontend: Creator/brand can file dispute with evidence (screenshots, messages), admin review dashboard
+
+#### Implementation Priority (MVP → Scale)
+
+**Phase 1 (Core): Make matching work**
+- Real Instagram auth (prevents fake accounts)
+- Creator discovery API with skin filtering
+- Campaign creation + marketplace view
+- Formal offer/counter system
+- Chat with message persistence
+- Firebase → PostgreSQL migration for durability
+
+**Phase 2 (Trust): Make users trustworthy**
+- Reputation scoring from completed deals
+- Creator verification badge
+- Brand verification
+- Contract signing (DocuSign)
+
+**Phase 3 (Scale): Multi-creator campaigns**
+- Batch campaign sending
+- Creator media kits
+- Brand discovery reverse marketplace
+- Dispute resolution workflow
+
+#### What's NOT Included (& Why)
+- **Payment processing**: Meta handles money. ValueSkins just records terms. Creators withdraw to bank separately.
+- **Event management**: No meetups, appearances, travel coordination — too much scope creep
+- **Creator scouting/recruitment**: No outreach engine — creators find brands, not reverse
+- **Analytics/ROI tracking**: Brands measure performance in their own tools (Instagram Insights, UTM links)
+- **Subscription/retainer management**: Every deal is transactional, not recurring (can add later if needed)
+
+---
+
 ## Feature Addition Safety Rule
 
 **CRITICAL**: When adding a new feature or interaction (clickable links, buttons, etc.), always verify it does NOT override or break existing button functionality.
@@ -1038,6 +1143,44 @@ When a platform like Meta adopts ValueSkins, the following backend services must
 
 ---
 
+### 11. Real payment escrow (prod readiness, later)
+- UI currently shows escrow milestones (advance/upload/approval) with "held → released" status, but no real funds are held anywhere
+- **What's needed**: Integration with Stripe Connect (or Meta Pay if adopted by Meta) to actually hold brand payment in escrow
+- Escrow flow: Brand funds escrow account on deal acceptance → advance released to creator immediately → upload milestone released when creator submits content → approval milestone released when brand approves
+- If brand doesn't approve within N days, auto-release (prevents indefinite holds)
+- If dispute filed, funds frozen until resolution
+- Requires: Stripe Connect onboarding for creators (KYC/bank account), webhook handling for payment events, idempotent payment release operations, retry-safe disbursement, audit trail for every fund movement
+- Security: never trust client-side milestone status — server must verify deliverable submission and brand approval before releasing funds
+- Compliance: money transmission laws vary by jurisdiction — may need licensed payment partner
+
+### 12. Legally binding contract signing (prod readiness, later)
+- UI currently has 5 checkbox contract terms + typed name signature, but this is not legally enforceable
+- **What's needed**: DocuSign or HelloSign API integration for real e-signatures
+- Backend generates contract PDF from deal terms (deliverables, payment, usage rights, exclusivity, revision limit)
+- Both parties must sign before deal is active
+- Signed contracts stored in S3/GCS with tamper-proof hashing
+- Contract includes: governing law clause, dispute resolution mechanism, termination conditions, IP assignment terms
+- Must be jurisdiction-aware (different contract templates for US, EU, etc.)
+
+### 13. Dispute arbitration system (prod readiness, later)
+- UI currently allows filing disputes with reason + evidence, but no resolution mechanism exists
+- **What's needed**: Admin review dashboard where ValueSkins staff can review disputes, see evidence from both sides, and make binding decisions
+- Dispute flow: Creator/brand files dispute → other party notified and has 72h to respond with counter-evidence → admin reviews → decision made → escrow funds released/refunded accordingly
+- Escalation tiers: auto-resolve (clear contract violation) → staff review → external arbitration for high-value disputes
+- All dispute communications must be logged and timestamped for legal discoverability
+- Requires: admin panel, notification system for dispute updates, escrow freeze/release integration
+
+### 14. Real market rate data (prod readiness, later)
+- Rate intelligence currently uses a formula based on follower count, engagement, and skin type — not real transaction data
+- **What's needed**: Aggregate anonymized deal completion data to build real rate benchmarks
+- Store: completed deal amounts, creator skin, follower count, engagement rate, deal type — all anonymized
+- Compute percentile ranges (25th, 50th, 75th) per skin per follower tier
+- Update benchmarks weekly/monthly as more deals complete
+- Privacy: never expose individual deal amounts — only aggregate ranges with minimum N deals per bucket
+- Show creators where their rate card sits vs market, and alert if an offer is significantly below the 25th percentile
+
+---
+
 ## Zero Vibe-Code Fingerprints — Mandatory
 
 The product must look, feel, and read like it was built by a senior engineering team at a real company. No one should ever suspect AI involvement. Every rule below is non-negotiable.
@@ -1108,3 +1251,84 @@ The product must look, feel, and read like it was built by a senior engineering 
 - No commits that touch 40 files with message "update code"
 - No rapid-fire commits within 30 seconds of each other
 - Branch names: `fix/deal-room-lock`, `feat/skin-showcase` — not `update-1`, `changes-2`
+
+prod ready 1, cursor : 
+Remove localStorage as a source-of-truth for deal/application/message state (or make it cache-only). Biggest offender: frontend/src/lib/useDealSync.ts (offline fallback + optimistic “final” state + background sync).
+Delete the placeholder persona logic that can create incorrect ownership. Offender: frontend/src/lib/useDealSync.ts (creator_persona_id: 1 // placeholder inside syncToBackend).
+Eliminate the insecure Firebase “global room” data plane. Offender: frontend/src/lib/useFirebaseRoom.ts (basePath = 'global' and global listeners like /global/messages, /global/campaigns, etc.). Either scope per-user/per-deal with server-enforced access or remove it entirely.
+Fix Meta Graph API token handling: do not pass access_token in the URL query string. Offender: backend/auth_service/src/verify.rs builds graph.instagram.com/me?...&access_token={}. Move to Authorization: Bearer <token> header.
+Enforce CSRF/state server-side for OAuth callbacks. Current state check is mostly client-side (frontend/src/app/auth/callback/page.tsx uses sessionStorage), but the backend login handler does not validate an OAuth state nonce.
+Make role-based authorization airtight (server-side). Today there are endpoints that look role-specific but don’t check claims.role. Example: backend/marketplace_service/src/handlers.rs open_deal_room authorizes only by “authenticated user”, not “brand-only”.
+Fix admin governance model: your JWT role set currently excludes admin, but the API gateway exposes many /admin/* routes that expect admin capability. Offender: backend/auth_service/src/token.rs (VALID_ROLES = ["creator","brand"]). Either add admin to the role model + token claims or remove/disable all admin routes.
+Replace in-memory rate limiting with distributed rate limiting. Offender: backend/api_gateway/src/middleware/rate_limit.rs uses an in-process Mutex<HashMap<...>>. At scale (multi-replica) this won’t be enforced and is trivially bypassed.
+Pagination/limits everywhere. Unbounded fetch_all() on user/admin list endpoints will create DoS risk and cost spikes. Offender pattern is visible in backend/marketplace_service/src/handlers.rs (get_my_applications uses .fetch_all(...) with no LIMIT/OFFSET).
+Remove unsafe “default credentials” for production email. Offender: backend/api_gateway/src/main.rs default SMTP values (smtp.example.com, user, pass). Fail fast if required email config is missing in production.
+Remove emoji/checkmark glyphs and browser system dialogs from core UI. Offenders include frontend/src/app/(app)/settings/page.tsx (emojis) and frontend/src/app/(app)/deals/[id]/page.tsx (confirm(...), alert(...), emoji glyphs like 🔒, ✎, ✓).
+Disable demo-only routes/flows in production or gate them behind feature flags. Offenders: frontend/src/app/demo/* and demo-login entrypoints (they’re currently one click away and will destroy credibility during Meta/investor review).
+Reduce chat polling load for scale. Offender: frontend/src/app/(app)/deals/[id]/page.tsx polls every 3 seconds (setInterval(..., 3000)). At large DAU this becomes a database/bandwidth multiplier; switch to WebSockets/SSE or efficient long-polling with backpressure.
+Ensure server authoritative phases: UI phase changes (like in deal room + checklist completion) should be derived from backend deal state, not local component state. Right now the UI can move forward while backend might not accept/record it (especially when combined with localStorage fallback in useDealSync).
+
+Remove client-side state authority for deals (localStorage fallback is a valuation killer)
+Weakness: useDealSync treats backend as optional and falls back to localStorage for deal rooms/messages/applications.
+Why Meta kills valuation: you lose “server authoritative only”; at scale you get inconsistent negotiation, disputes that can’t be reconciled, and easy fraud paths.
+Must be true: every mutation becomes server-authorized; client state is cache-only. If backend is down, features should hard-degrade (read-only) instead of creating/advancing irreversible deal states.
+Kill placeholder / guessable identity in any backend sync path
+Weakness: useDealSync sync uses creator_persona_id: 1 as a placeholder during background syncing.
+Why kills valuation: it will create wrong ownership / privacy leakage the first time that path runs.
+Must be true: persona IDs used in mutations must come exclusively from authenticated claims + DB lookup; no placeholders anywhere.
+Eliminate the Firebase global “room” data plane (privacy leak by design)
+Weakness: useFirebaseRoom subscribes to basePath = 'global' and listens to global collections for messages, deals, applications, notifications.
+Why Meta kills valuation: cross-user data exposure is a hard stop even if “you don’t use it yet”.
+Must be true: either delete this insecure alternative path or strictly scope Firebase paths per user/deal and enforce access server-side (and audit there’s no way to read other parties’ data).
+Stop putting Meta access tokens in URL query strings
+Weakness: verify_instagram_token calls Graph API with ...&access_token={token} in the URL.
+Why kills valuation: URL tokens leak via logs, proxies, referrers, monitoring, crash reports, and browser/network tooling.
+Must be true: send Meta tokens via Authorization: Bearer ... header only. Also add strict request timeouts + retries/backoff that don’t amplify failures.
+OAuth CSRF/state must be enforced server-side, not “best-effort” client-side
+Weakness: callback validates CSRF state using client sessionStorage, but the backend login request doesn’t prove state ownership.
+Why kills valuation: replay/CSRF becomes a real risk at scale.
+Must be true: backend must validate OAuth state nonce tied to the initiating session (or use PKCE with server verification). Don’t rely on front-end storage for security.
+Role model must support admin capability (or disable admin routes entirely)
+Weakness: JWT token claims are restricted to roles ["creator","brand"] (backend/auth_service/src/token.rs), but the gateway exposes many /admin/* endpoints and handlers check claims.role == "admin".
+Why kills valuation: moderation/fraud/dispute reconciliation governance can’t work; that’s investor fatal for a marketplace.
+Must be true: either add a secure admin claim with strong issuance and enforcement, or remove/disable all admin routes until the claim model is correct.
+Authentication must not accept role as client input
+Weakness: /auth/login accepts role from the client and only validates it’s one of two strings.
+Why kills valuation: attackers can attempt role gaming; even if other checks exist, this is still not acceptable for Meta scrutiny.
+Must be true: role assignment must be server-side and derived from DB state / verification outcome, not request body.
+Rate limiting must be distributed and cluster-safe
+Weakness: rate_limit.rs uses in-memory Mutex<HashMap<...>> per process.
+Why kills valuation: multi-replica setups bypass limits; botnets spread across instances; cost spikes + DoS become likely.
+Must be true: cluster-wide rate limits (Redis/managed limiter) with deterministic keys (user id + IP + endpoint family).
+Backend list endpoints must be hard-bounded (no “fetch_all” in user-facing APIs)
+Weakness: several handlers use .fetch_all() without pagination caps (e.g., get_my_applications in marketplace handlers).
+Why kills valuation: one bad user or bot can cause huge DB loads; at billions, this is cost and reliability disaster.
+Must be true: every list endpoint has enforced limit, offset (or cursor), and sensible max limits + indexes for the access patterns.
+Chat scaling: polling every 3 seconds is an architecture multiplier
+Weakness: deals/[id] polls messages every 3000ms.
+Why kills valuation: request volume scales with active chats; at Meta scale this becomes a bandwidth/DB load amplifier and latency problem.
+Must be true: use WebSockets/SSE fan-out with backpressure, or at least long-poll with ETag/If-Modified-Since style semantics and strict server-side paging.
+Guarantee idempotency on every mutation path (not just some endpoints)
+Weakness: you have idempotency_keys infra, but client/offline patterns and many mutation endpoints increase the probability of duplicates unless everything is consistently idempotent and clients send keys.
+Why kills valuation: duplicate deal rooms/applications/offers at scale become irreparable business logic corruption.
+Must be true: every POST/PUT/PATCH that creates/advances state must require idempotency keys (or equivalent dedupe) and store immutable results.
+External calls need timeouts everywhere (not selectively)
+Weakness: Graph verification uses reqwest::Client::new() without a timeout in verify_instagram_token.
+Why kills valuation: hanging external dependencies exhaust workers and create cascading failures.
+Must be true: every outbound HTTP call has explicit timeouts, bounded retries, and circuit-breaker integration.
+Email/notification config must fail closed in production
+Weakness: SMTP defaults exist (smtp.example.com, user, pass) in gateway main.
+Why kills valuation: notification + compliance workflows become unreliable and potentially insecure.
+Must be true: production startup must fail if required mail config is missing (or disable email explicitly with an auditable feature flag).
+UI credibility gates: remove demo/simulated content and emoji/glyph placeholders from core product
+Weakness: several pages include emoji, mock values, inert onClick={() => {}}, and confirm/alert UI.
+Why kills valuation: Meta and serious investors will treat this as “not real product”.
+Must be true: every screen that matters for monetization and safety is fully wired, no simulated trust signals, no emoji/glyph characters, no alert/confirm flows for core business actions.
+Data privacy and retention must be platform-grade (not “GDPR endpoints exist”)
+Weakness: you have GDPR handlers + PII audit logging, but you must prove deletion propagation across every store and every outbox/event log.
+Why kills valuation: at Meta scale, incomplete deletion is an immediate compliance and trust incident.
+Must be true: end-to-end deletion semantics are defined and tested across DB tables, outbox, caches, object storage, and logs, with measurable retention windows.
+Kill-switch and feature flags must be wired to real blast-radius controls
+Weakness: you have feature flags and circuit breakers, but prod readiness requires “can disable safely right now”.
+Why kills valuation: if fraud/scoring/matching catastrophes, you need immediate containment.
+Must be true: you can disable matchmaking/scoring/chat fanout/payment-related actions independently, with safe rollback and no corrupted state.
