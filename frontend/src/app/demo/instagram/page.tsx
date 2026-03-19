@@ -1873,10 +1873,14 @@ export default function InstagramDemoPage() {
                           <span style={{ fontSize:'14px', fontWeight:800, color:C.success }}>${deal.amount.toLocaleString()}</span>
                         </div>
                         <div style={{ fontSize:'11px', color:C.textSecondary, marginBottom:'4px' }}>{deal.deliverable}</div>
-                        <div style={{ display:'flex', justifyContent:'space-between' }}>
+                        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'8px' }}>
                           <span style={{ fontSize:'10px', color:C.textMuted }}>Completed {deal.completedAt}</span>
                           <span style={{ fontSize:'10px', fontWeight:700, color:C.success, background:C.surfaceAlt, padding:'2px 8px', borderRadius:'6px' }}>Approved</span>
                         </div>
+                        {/* Feature 5: Request repeat deal button */}
+                        <button onClick={() => { setPurchaseToast(`Reach out to ${deal.brand} about a repeat deal`); setTimeout(() => setPurchaseToast(null), 3000); }} style={{ width:'100%', fontSize:'11px', fontWeight:700, padding:'8px 10px', background:`${C.primary}15`, border:`1px solid ${C.primary}30`, borderRadius:'8px', color:C.primary, cursor:'pointer' }}>
+                          Request Repeat Deal
+                        </button>
                       </div>
                     ))
                   )}
@@ -2238,6 +2242,88 @@ export default function InstagramDemoPage() {
                         </div>
                       </div>
                     )}
+
+                    {/* Feature 3: Market rate intelligence panel (Meta data source: Instagram Ads Manager historical rates for creator category) */}
+                    {selectedMarketplaceSkin && creatorMarketplaceTab === 'opportunities' && (() => {
+                      const rate = getMarketRate(selectedMarketplaceSkin);
+                      return (
+                        <div style={{ background: `${C.primary}06`, border: `1px solid ${C.primary}20`, borderRadius: '10px', padding: '12px 14px', marginBottom: '14px' }}>
+                          <details style={{ cursor: 'pointer' }}>
+                            <summary style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: 700, color: C.textSecondary, textTransform: 'uppercase', userSelect: 'none' }}>
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                              Market Rate Intelligence
+                            </summary>
+                            <div style={{ marginTop: '10px', fontSize: '11px', color: C.textSecondary, lineHeight: 1.6 }}>
+                              <div style={{ marginBottom: '6px' }}><strong style={{ color: C.text }}>Typical rates for {selectedMarketplaceSkin}:</strong></div>
+                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '6px' }}>
+                                <div style={{ background: C.card, padding: '6px 8px', borderRadius: '6px', border: `1px solid ${C.border}` }}>
+                                  <div style={{ fontSize: '10px', color: C.textMuted }}>25th percentile</div>
+                                  <div style={{ fontSize: '13px', fontWeight: 700, color: C.text }}>${rate.low.toLocaleString()}</div>
+                                </div>
+                                <div style={{ background: C.card, padding: '6px 8px', borderRadius: '6px', border: `1px solid ${C.border}` }}>
+                                  <div style={{ fontSize: '10px', color: C.textMuted }}>75th percentile</div>
+                                  <div style={{ fontSize: '13px', fontWeight: 700, color: C.text }}>${rate.high.toLocaleString()}</div>
+                                </div>
+                              </div>
+                              <div style={{ fontSize: '10px', color: C.textMuted }}>Mock data: {(Math.random() * 200 + 50).toFixed(0)} deals. Meta will replace with aggregated completion data.</div>
+                            </div>
+                          </details>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Feature 6: Creator Pipeline View (Meta data source: deal states from backend) */}
+                    {selectedMarketplaceSkin && creatorMarketplaceTab === 'pipeline' && (() => {
+                      const pipelineDeals = Object.entries(dealStates)
+                        .filter(([k]) => k.startsWith(`${selectedMarketplaceSkin}:`))
+                        .map(([key, deal]) => ({ key, ...deal }));
+
+                      const columns = {
+                        'Negotiating': pipelineDeals.filter(d => ['offer', 'chatroom', 'counter', 'brand_countered'].includes(d.phase)),
+                        'Accepted': pipelineDeals.filter(d => d.phase === 'accepted'),
+                        'In Progress': pipelineDeals.filter(d => ['checklist', 'softhold'].includes(d.phase)),
+                      };
+
+                      return (
+                        <div style={{ marginBottom: '20px' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+                            {Object.entries(columns).map(([colName, deals]) => (
+                              <div key={colName} style={{ background: C.card, borderRadius: '12px', padding: '14px', border: `1px solid ${C.border}` }}>
+                                <div style={{ fontSize: '11px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  {colName}
+                                  <span style={{ background: C.surfaceAlt, padding: '2px 7px', borderRadius: '10px', fontSize: '10px', color: C.textSecondary }}>{deals.length}</span>
+                                </div>
+                                {deals.length === 0 ? (
+                                  <div style={{ fontSize: '11px', color: C.textMuted, textAlign: 'center', padding: '20px 0' }}>No deals</div>
+                                ) : (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                    {deals.map((deal, idx) => {
+                                      const oppIdx = parseInt(deal.key.split(':')[1]);
+                                      const opp = activeOpportunities[oppIdx];
+                                      return (
+                                        <div key={idx} style={{ background: C.bg, borderRadius: '8px', padding: '10px', border: `1px solid ${C.border}`, cursor: 'pointer', transition: 'all 0.2s' }} onClick={() => { setNegotiatingOpp(oppIdx); }}>
+                                          <div style={{ fontSize: '12px', fontWeight: 700, color: C.text, marginBottom: '3px' }}>{opp?.brand || 'Deal'}</div>
+                                          <div style={{ fontSize: '10px', color: C.textSecondary, marginBottom: '4px' }}>{opp?.budget}</div>
+                                          <div style={{ fontSize: '9px', color: C.textMuted, background: `${C.primary}15`, padding: '2px 6px', borderRadius: '4px', display: 'inline-block' }}>
+                                            {deal.phase === 'offer' ? 'Initial offer' : deal.phase === 'chatroom' ? 'In chat' : deal.phase === 'counter' ? 'Countered' : deal.phase === 'accepted' ? 'Deal locked' : 'Active'}
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                          {pipelineDeals.length === 0 && (
+                            <div style={{ textAlign: 'center', padding: '40px 20px', color: C.textMuted }}>
+                              <div style={{ fontSize: '14px', marginBottom: '4px' }}>No active deals</div>
+                              <div style={{ fontSize: '12px' }}>Switch to Opportunities to find new brands to work with.</div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
 
                     {/* Opportunities for selected skin */}
                     {creatorMarketplaceMode === 'brand' && selectedMarketplaceSkin && (
@@ -2774,6 +2860,11 @@ export default function InstagramDemoPage() {
                                             <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Your Counter</div>
                                             <div style={{ fontSize: '10px', color: C.textSecondary, marginBottom: '4px' }}>
                                               Brand offer: <strong style={{ color: C.text }}>${parseInt(dealOfferAmount || opp.budget.replace(/[^0-9]/g, '') || '0').toLocaleString()}</strong>
+                                            </div>
+                                            {/* Feature 4: Counter-offer intelligence suggestion */}
+                                            <div style={{ fontSize: '10px', color: C.success, marginBottom: '6px', padding: '4px 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.success} strokeWidth="2"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+                                              Suggested: ${Math.round(parseInt(dealOfferAmount || opp.budget.replace(/[^0-9]/g, '') || '0') * 1.25 / 50) * 50}.00 (25% above)
                                             </div>
                                             <input
                                               type="number"
@@ -3812,6 +3903,16 @@ export default function InstagramDemoPage() {
                             <div style={{ fontSize:'11px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', marginBottom:'8px' }}>ValueSkin</div>
                             <div style={{ fontSize:'13px', fontWeight:700, color:C.text, background:C.card, padding:'10px 12px', borderRadius:'8px', border:`1px solid ${C.border}` }}>{selectedProfileCreator.valueSkin}</div>
                           </div>
+                          {/* Feature 7: Public Profile Link */}
+                          <div style={{ marginBottom:'16px' }}>
+                            <div style={{ fontSize:'11px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', marginBottom:'8px' }}>Share Profile</div>
+                            <div style={{ display:'flex', gap:'8px', alignItems:'center' }}>
+                              <div style={{ flex:1, fontSize:'12px', color:C.primary, background:C.card, padding:'10px 12px', borderRadius:'8px', border:`1px solid ${C.border}`, fontFamily:'monospace', wordBreak:'break-all' }}>valueskins.com/@{selectedProfileCreator.handle.replace('@','')}</div>
+                              <button onClick={() => { navigator.clipboard.writeText(`valueskins.com/@${selectedProfileCreator.handle.replace('@','')}`); setProfileLinkCopied(true); setTimeout(() => setProfileLinkCopied(false), 2000); }} style={{ padding:'10px 12px', background:profileLinkCopied ? C.success : C.primary, border:'none', borderRadius:'8px', color:'#fff', fontWeight:700, fontSize:'12px', cursor:'pointer', transition:'all 0.2s', flexShrink:0 }}>
+                                {profileLinkCopied ? 'Copied' : 'Copy'}
+                              </button>
+                            </div>
+                          </div>
                           <div style={{ marginBottom:'16px' }}>
                             <div style={{ fontSize:'11px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', marginBottom:'8px' }}>Audience</div>
                             <div style={{ display:'flex', gap:'6px', flexWrap:'wrap' }}>
@@ -4134,7 +4235,8 @@ export default function InstagramDemoPage() {
                               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <a href={`https://instagram.com/${creator.handle.replace('@', '')}`} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontSize: '12px', color: C.primary, textDecoration: 'none', cursor: 'pointer' }} onMouseEnter={e => { e.currentTarget.style.textDecoration = 'underline'; }} onMouseLeave={e => { e.currentTarget.style.textDecoration = 'none'; }}>{creator.handle}</a>
                                 <span style={{ fontSize: '11px', color: C.textSecondary }}>·</span>
-                                <span style={{ fontSize: '11px', color: C.textSecondary }}>4.8★ from {(creator.name.charCodeAt(0) % 15) + 5} deals</span>
+                                {/* Feature 10: Creator performance history visible to brands */}
+                                <span title={`${creator.dealCompletionRate}% on-time completion · Responds in ≤${creator.responseTimeHrs}h`} style={{ fontSize: '11px', color: C.textSecondary, cursor: 'help' }}>4.8★ from {(creator.name.charCodeAt(0) % 15) + 5} deals · {creator.dealCompletionRate}% complete</span>
                                 <button onClick={() => { setSelectedProfileCreator(creator); setShowCreatorProfileModal(true); }} style={{ marginLeft: 'auto', fontSize: '10px', fontWeight: 600, color: C.primary, background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>View Profile</button>
                               </div>
                             </div>
