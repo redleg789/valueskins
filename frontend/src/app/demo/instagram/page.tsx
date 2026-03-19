@@ -2579,8 +2579,8 @@ export default function InstagramDemoPage() {
                                           <div style={{ fontSize:'11px', color:C.text }}>Exclusivity: <strong>{opp.exclusivity || 'None'}</strong></div>
                                         </div>
                                         <div style={{ display:'flex', gap:'8px' }}>
-                                          <button onClick={() => setDealRoomPhase('chatroom')} style={{ flex:2, background: C.primary, border: 'none', padding: '10px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}>
-                                            Open Chat
+                                          <button onClick={() => { setDealRoomPhase('softhold'); setEscrowFunded(false); setEscrowFundingInProgress(false); setCreatorDealLifecycle('checklist'); }} style={{ flex:2, background: C.primary, border: 'none', padding: '10px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}>
+                                            Begin Work
                                           </button>
                                           <button onClick={() => setShowCancelDealModal(true)} style={{ flex:1, background:'none', border:`1px solid rgba(239,68,68,0.3)`, padding:'10px', borderRadius:'8px', color:'#ef4444', fontSize:'12px', cursor:'pointer', fontWeight:500 }}>
                                             Cancel
