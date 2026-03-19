@@ -108,6 +108,19 @@ const STORAGE_DEALS = 'vs_demo_deal_states';
 const STORAGE_APPLICATIONS = 'vs_demo_applications';
 const STORAGE_CAMPAIGNS = 'vs_demo_campaigns';
 const BC_NAME = 'vs_demo_sync';
+const STORAGE_VERSION_KEY = 'vs_demo_data_version';
+const CURRENT_DATA_VERSION = '2'; // bump to clear old mock data
+
+// One-time purge of stale mock data from previous sessions
+if (typeof window !== 'undefined') {
+  const storedVersion = localStorage.getItem(STORAGE_VERSION_KEY);
+  if (storedVersion !== CURRENT_DATA_VERSION) {
+    localStorage.removeItem(STORAGE_DEALS);
+    localStorage.removeItem(STORAGE_APPLICATIONS);
+    localStorage.removeItem(STORAGE_CAMPAIGNS);
+    localStorage.setItem(STORAGE_VERSION_KEY, CURRENT_DATA_VERSION);
+  }
+}
 
 // ---- Backend connectivity check ----
 let backendOnline: boolean | null = null;
