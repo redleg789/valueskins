@@ -879,8 +879,10 @@ export default function InstagramDemoPage() {
   const [brandOfferNonNegotiable, setBrandOfferNonNegotiable] = useState(false);
   const [brandCounterAmount, setBrandCounterAmount] = useState('');
   const [brandSoftHoldHours, setBrandSoftHoldHours] = useState<24 | 48 | 72>(48);
-  // Simulated: creator countered at this amount after brand sent offer
-  const [simulatedCounterAmount] = useState('4800');
+  // Read the creator's counter amount from shared deal state (set by creator's counter-offer handler)
+  const brandDealCounterAmount = brandDeal?.counterAmount || '';
+  // Agreed amount = latest counter or original offer
+  const agreedDealAmount = brandDealCounterAmount || brandDeal?.offerAmount || brandBudget || '5000';
 
   // Messages state (DMs + Communities)
   const [messagesTab, setMessagesTab] = useState<'dms' | 'communities' | 'create'>('dms');
@@ -2700,6 +2702,44 @@ export default function InstagramDemoPage() {
                                     </span>
                                   </div>
 
+                                  {/* Creator sees brand's offer — respond with accept or counter */}
+                                  {dealRoomPhase === 'pending' && (
+                                    <>
+                                      <div style={{ background: 'rgba(0,149,246,0.06)', borderRadius: '8px', padding: '12px', marginBottom: '12px', border: `1px solid rgba(0,149,246,0.2)` }}>
+                                        <div style={{ fontSize: '11px', fontWeight: 700, color: C.primary, marginBottom: '6px' }}>Brand Offer Received</div>
+                                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '4px' }}>
+                                          <span style={{ fontSize: '22px', fontWeight: 800, color: C.text }}>${parseInt(dealOfferAmount || '0').toLocaleString()}</span>
+                                          <span style={{ fontSize: '12px', color: C.textMuted }}>/post</span>
+                                        </div>
+                                        {activeDeal?.briefTitle && <div style={{ fontSize: '11px', color: C.textSecondary, marginTop: '4px' }}>Campaign: {activeDeal.briefTitle}</div>}
+                                      </div>
+                                      <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                                        <button
+                                          onClick={() => {
+                                            if (activeDealKey) {
+                                              const now = new Date();
+                                              const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: false });
+                                              const acceptMsg = { id: Date.now(), sender: 'creator' as const, text: `Creator accepted offer: $${parseInt(dealOfferAmount || '0').toLocaleString()}/post`, time: timeStr, isoTime: now.toISOString(), seen: false };
+                                              const existingMsgs = activeDeal?.chatMessages || [];
+                                              updateDeal(activeDealKey, { phase: 'accepted', chatMessages: [...(existingMsgs as any[]), acceptMsg] });
+                                            }
+                                            setPurchaseToast('Offer accepted');
+                                            setTimeout(() => setPurchaseToast(null), 2000);
+                                          }}
+                                          style={{ flex: 1, background: C.success, border: 'none', padding: '9px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '12px' }}
+                                        >
+                                          Accept ${parseInt(dealOfferAmount || '0').toLocaleString()}
+                                        </button>
+                                        <button
+                                          onClick={() => setDealRoomPhase('chatroom')}
+                                          style={{ flex: 1, background: C.primary, border: 'none', padding: '9px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '12px' }}
+                                        >
+                                          Counter
+                                        </button>
+                                      </div>
+                                    </>
+                                  )}
+
                                   {dealRoomPhase === 'formal_offer' && (() => {
                                     const agreedPrice = dealCounterAmount || dealOfferAmount || opp.budget.replace(/[^0-9]/g, '') || '5000';
                                     const totalPrice = parseInt(agreedPrice) || 5000;
@@ -3183,11 +3223,11 @@ export default function InstagramDemoPage() {
                                                 const counterMsg = { id: Date.now(), sender: 'creator' as const, text: `Counter-offer: $${creatorAsk.toLocaleString()} (brand offered $${brandOffer.toLocaleString()})`, time: timeStr, isoTime: now.toISOString(), seen: false };
                                                 setChatMessages(prev => [...prev, counterMsg]);
                                                 firebaseAddMessage(activeDealKey ?? '', counterMsg);
-                                                // Real-time notification: brand sees counter immediately
+                                                // Set phase to 'counter' so brand sees the counter-offer in their deal room
+                                                setDealRoomPhase('counter' as DealRoomPhase);
                                                 firebaseSendNotification(opp?.brand || 'Brand', 'message', `Creator countered: $${creatorAsk.toLocaleString()} (you offered $${brandOffer.toLocaleString()})`);
                                                 setPurchaseToast(`Counter sent: $${creatorAsk.toLocaleString()}`);
                                                 setTimeout(() => setPurchaseToast(null), 2000);
-                                                if (activeDealKey) simulateBrandResponse(creatorAsk, brandOffer, activeDealKey);
                                               }}
                                               style={{ width: '100%', background: dealCounterAmount && parseInt(dealCounterAmount) > 0 ? C.primary : C.border, border: 'none', padding: '6px', borderRadius: '6px', color: '#fff', fontWeight: 600, fontSize: '11px', cursor: dealCounterAmount && parseInt(dealCounterAmount) > 0 ? 'pointer' : 'not-allowed', opacity: dealCounterAmount && parseInt(dealCounterAmount) > 0 ? 1 : 0.5 }}
                                             >Send Counter</button>
@@ -3259,6 +3299,69 @@ export default function InstagramDemoPage() {
                                         </div>
                                       </div>
                                     </>
+                                  )}
+
+                                  {/* Creator sees brand's last offer — accept or walk away */}
+                                  {dealRoomPhase === 'last_offer' && (
+                                    <>
+                                      <div style={{ background: 'rgba(230,81,0,0.06)', borderRadius: '8px', padding: '12px', marginBottom: '12px', border: `1px solid rgba(230,81,0,0.2)` }}>
+                                        <div style={{ fontSize: '11px', fontWeight: 700, color: C.warning, marginBottom: '6px' }}>Final Offer from Brand</div>
+                                        <div style={{ fontSize: '22px', fontWeight: 800, color: C.text, marginBottom: '4px' }}>${parseInt(dealOfferAmount || '0').toLocaleString()}<span style={{ fontSize: '12px', color: C.textMuted, fontWeight: 400 }}>/post</span></div>
+                                        <div style={{ fontSize: '11px', color: C.textSecondary, lineHeight: 1.4 }}>The brand has indicated this is their final offer. You can accept or decline.</div>
+                                      </div>
+                                      <div style={{ display: 'flex', gap: '8px' }}>
+                                        <button
+                                          onClick={() => {
+                                            if (activeDealKey) {
+                                              const now = new Date();
+                                              const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: false });
+                                              const acceptMsg = { id: Date.now(), sender: 'creator' as const, text: `Creator accepted final offer: $${parseInt(dealOfferAmount || '0').toLocaleString()}/post`, time: timeStr, isoTime: now.toISOString(), seen: false };
+                                              const existingMsgs = activeDeal?.chatMessages || [];
+                                              updateDeal(activeDealKey, { phase: 'accepted', offerAmount: dealOfferAmount, chatMessages: [...(existingMsgs as any[]), acceptMsg] });
+                                            }
+                                            setPurchaseToast('Deal accepted');
+                                            setTimeout(() => setPurchaseToast(null), 2000);
+                                          }}
+                                          style={{ flex: 1, background: C.success, border: 'none', padding: '9px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '12px' }}
+                                        >
+                                          Accept ${parseInt(dealOfferAmount || '0').toLocaleString()}
+                                        </button>
+                                        <button
+                                          onClick={() => {
+                                            if (activeDealKey) {
+                                              const now = new Date();
+                                              const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: false });
+                                              const declineMsg = { id: Date.now(), sender: 'creator' as const, text: 'Creator declined the final offer.', time: timeStr, isoTime: now.toISOString(), seen: false };
+                                              const existingMsgs = activeDeal?.chatMessages || [];
+                                              updateDeal(activeDealKey, { phase: 'rejected', chatMessages: [...(existingMsgs as any[]), declineMsg] });
+                                            }
+                                            setNegotiatingOpp(null);
+                                            setPurchaseToast('Deal declined');
+                                            setTimeout(() => setPurchaseToast(null), 2000);
+                                          }}
+                                          style={{ flex: 1, background: 'none', border: `1px solid rgba(239,68,68,0.4)`, padding: '9px', borderRadius: '8px', color: 'rgba(239,68,68,0.85)', fontWeight: 600, cursor: 'pointer', fontSize: '12px' }}
+                                        >
+                                          Decline
+                                        </button>
+                                      </div>
+                                    </>
+                                  )}
+
+                                  {/* Creator sees brand withdrawal */}
+                                  {dealRoomPhase === 'rejected' && (
+                                    <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                                      <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(239,68,68,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px' }}>
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(239,68,68,0.7)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                      </div>
+                                      <div style={{ fontSize: '14px', fontWeight: 700, color: C.text, marginBottom: '4px' }}>Deal Ended</div>
+                                      <div style={{ fontSize: '12px', color: C.textSecondary, marginBottom: '16px' }}>The other party has withdrawn from this deal.</div>
+                                      <button
+                                        onClick={() => setNegotiatingOpp(null)}
+                                        style={{ background: C.primary, border: 'none', padding: '8px 20px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '12px' }}
+                                      >
+                                        Back to Marketplace
+                                      </button>
+                                    </div>
                                   )}
 
                                   {dealRoomPhase === 'checklist' && (
@@ -5114,7 +5217,22 @@ export default function InstagramDemoPage() {
 
                                   <div style={{ display: 'flex', gap: '8px' }}>
                                     <button
-                                      onClick={() => setBrandDealPhase('pending')}
+                                      onClick={() => {
+                                        // Write offer amount + brief to shared deal state so creator sees it
+                                        if (brandDealKey) {
+                                          const now = new Date();
+                                          const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: false });
+                                          const offerMsg = { id: Date.now(), sender: 'brand' as const, text: `Brand offer: $${parseInt(brandBudget).toLocaleString()}/post for ${brandBriefTitle}`, time: timeStr, isoTime: now.toISOString(), seen: false };
+                                          const existingMsgs = brandDeal?.chatMessages || [];
+                                          updateDeal(brandDealKey, {
+                                            phase: 'pending',
+                                            offerAmount: brandBudget,
+                                            briefTitle: brandBriefTitle,
+                                            chatMessages: [...existingMsgs, offerMsg],
+                                          });
+                                        }
+                                        setBrandDealPhase('pending');
+                                      }}
                                       style={{ flex: 1, background: C.warning, border: 'none', padding: '9px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}
                                     >
                                       Send Offer
@@ -5163,13 +5281,9 @@ export default function InstagramDemoPage() {
                                     </button>
                                   </div>
 
-                                  {/* Simulate creator counter-offer */}
-                                  <button
-                                    onClick={() => setBrandDealPhase('counter')}
-                                    style={{ width: '100%', background: 'none', border: `1px solid ${C.border}`, padding: '8px', borderRadius: '8px', color: C.textMuted, fontSize: '11px', cursor: 'pointer' }}
-                                  >
-                                    Simulate: Creator countered → See counter-offer
-                                  </button>
+                                  <div style={{ textAlign:'center', padding:'8px', fontSize:'11px', color:C.textMuted }}>
+                                    Creator will respond from their deal room
+                                  </div>
                                 </>
                               )}
 
@@ -5190,12 +5304,6 @@ export default function InstagramDemoPage() {
                                       No payment required · Expires automatically
                                     </div>
                                   </div>
-                                  <button
-                                    onClick={() => setBrandDealPhase('counter')}
-                                    style={{ width: '100%', background: 'none', border: `1px solid ${C.border}`, padding: '8px', borderRadius: '8px', color: C.textMuted, fontSize: '11px', cursor: 'pointer', marginTop: '8px' }}
-                                  >
-                                    Simulate: Creator countered → See counter-offer
-                                  </button>
                                 </>
                               )}
 
@@ -5205,20 +5313,36 @@ export default function InstagramDemoPage() {
                                   <div style={{ background: 'rgba(230,81,0,0.06)', borderRadius: '8px', padding: '10px 12px', marginBottom: '12px', border: `1px solid rgba(230,81,0,0.2)` }}>
                                     <div style={{ fontSize: '11px', fontWeight: 700, color: C.textSecondary, marginBottom: '6px' }}>Counter-Offer Received</div>
                                     <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '4px' }}>
-                                      <span style={{ fontSize: '22px', fontWeight: 800, color: C.text }}>${simulatedCounterAmount}</span>
+                                      <span style={{ fontSize: '22px', fontWeight: 800, color: C.text }}>${agreedDealAmount}</span>
                                       <span style={{ fontSize: '12px', color: C.textMuted }}>/post</span>
                                     </div>
                                     <div style={{ fontSize: '11px', color: C.textSecondary }}>
-                                      Your offer was ${brandBudget} · difference: +${(parseInt(simulatedCounterAmount) - parseInt(brandBudget)).toLocaleString()}
+                                      Your offer was ${brandBudget} · difference: +${(parseInt(agreedDealAmount) - parseInt(brandBudget)).toLocaleString()}
                                     </div>
                                   </div>
                                   <div style={{ fontSize: '11px', color: C.textMuted, marginBottom: '10px', lineHeight: 1.4 }}>Review the counter-offer and choose a response. The creator will be notified once you act.</div>
                                   <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
                                     <button
-                                      onClick={() => { setBrandDealPhase('accepted'); setBrandApprovalPhase('accepted'); setPurchaseToast('Deal accepted — review deliverables when creator uploads'); setTimeout(() => setPurchaseToast(null), 3000); }}
+                                      onClick={() => {
+                                        const now = new Date();
+                                        const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: false });
+                                        const acceptMsg = { id: Date.now(), sender: 'brand' as const, text: `Deal accepted at $${parseInt(agreedDealAmount).toLocaleString()}/post`, time: timeStr, isoTime: now.toISOString(), seen: false };
+                                        const existingMsgs = brandDeal?.chatMessages || [];
+                                        if (brandDealKey) {
+                                          updateDeal(brandDealKey, {
+                                            phase: 'accepted',
+                                            offerAmount: agreedDealAmount,
+                                            brandApprovalPhase: 'accepted',
+                                            chatMessages: [...existingMsgs, acceptMsg],
+                                          });
+                                        }
+                                        setBrandApprovalPhase('accepted');
+                                        setPurchaseToast('Deal accepted — review deliverables when creator uploads');
+                                        setTimeout(() => setPurchaseToast(null), 3000);
+                                      }}
                                       style={{ flex: 1, background: C.success, border: 'none', padding: '9px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '12px' }}
                                     >
-                                      Accept ${simulatedCounterAmount}
+                                      Accept ${agreedDealAmount}
                                     </button>
                                     <button
                                       onClick={() => { setBrandCounterAmount(brandBudget); setBrandDealPhase('brand_reviewing'); }}
@@ -5229,13 +5353,30 @@ export default function InstagramDemoPage() {
                                   </div>
                                   <div style={{ display: 'flex', gap: '8px' }}>
                                     <button
-                                      onClick={() => setBrandDealPhase('last_offer')}
+                                      onClick={() => {
+                                        if (brandDealKey) {
+                                          const now = new Date();
+                                          const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: false });
+                                          const lastOfferMsg = { id: Date.now(), sender: 'brand' as const, text: `Final offer: $${parseInt(brandBudget).toLocaleString()}/post — take it or leave it`, time: timeStr, isoTime: now.toISOString(), seen: false };
+                                          const existingMsgs = brandDeal?.chatMessages || [];
+                                          updateDeal(brandDealKey, { phase: 'last_offer', chatMessages: [...existingMsgs, lastOfferMsg] });
+                                        }
+                                      }}
                                       style={{ flex: 1, background: 'none', border: `1px solid ${C.warning}`, padding: '8px', borderRadius: '8px', color: C.warning, fontWeight: 600, cursor: 'pointer', fontSize: '11px' }}
                                     >
                                       This is our last offer
                                     </button>
                                     <button
-                                      onClick={() => { setNegotiatingCreator(null); setBrandDealPhase('brief'); setBrandBriefTitle(''); setBrandBriefDeliverables(''); setBrandBriefAbout(''); setBrandBriefCampaignDesc(''); }}
+                                      onClick={() => {
+                                        if (brandDealKey) {
+                                          const now = new Date();
+                                          const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: false });
+                                          const rejectMsg = { id: Date.now(), sender: 'brand' as const, text: 'Brand has withdrawn from this deal.', time: timeStr, isoTime: now.toISOString(), seen: false };
+                                          const existingMsgs = brandDeal?.chatMessages || [];
+                                          updateDeal(brandDealKey, { phase: 'rejected', chatMessages: [...existingMsgs, rejectMsg] });
+                                        }
+                                        setNegotiatingCreator(null); setBrandBriefTitle(''); setBrandBriefDeliverables(''); setBrandBriefAbout(''); setBrandBriefCampaignDesc('');
+                                      }}
                                       style={{ flex: 1, background: 'none', border: `1px solid rgba(239,68,68,0.4)`, padding: '8px', borderRadius: '8px', color: 'rgba(239,68,68,0.85)', fontWeight: 600, cursor: 'pointer', fontSize: '11px' }}
                                     >
                                       Reject creator
@@ -5262,7 +5403,23 @@ export default function InstagramDemoPage() {
                                   </div>
                                   <div style={{ display: 'flex', gap: '8px' }}>
                                     <button
-                                      onClick={() => { if (brandCounterAmount) { setBrandBudget(brandCounterAmount); setBrandCounterAmount(''); setBrandDealPhase('pending'); } }}
+                                      onClick={() => {
+                                        if (brandCounterAmount && brandDealKey) {
+                                          const now = new Date();
+                                          const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: false });
+                                          const counterMsg = { id: Date.now(), sender: 'brand' as const, text: `Brand counter-offer: $${parseInt(brandCounterAmount).toLocaleString()}/post`, time: timeStr, isoTime: now.toISOString(), seen: false };
+                                          const existingMsgs = brandDeal?.chatMessages || [];
+                                          updateDeal(brandDealKey, {
+                                            phase: 'pending',
+                                            offerAmount: brandCounterAmount,
+                                            counterAmount: '',
+                                            brandResponseAmount: brandCounterAmount,
+                                            chatMessages: [...existingMsgs, counterMsg],
+                                          });
+                                          setBrandBudget(brandCounterAmount);
+                                          setBrandCounterAmount('');
+                                        }
+                                      }}
                                       style={{ flex: 1, background: brandCounterAmount ? C.primary : C.border, border: 'none', padding: '9px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: brandCounterAmount ? 'pointer' : 'not-allowed', fontSize: '13px' }}
                                     >
                                       Send Counter
@@ -5300,7 +5457,7 @@ export default function InstagramDemoPage() {
                                     </div>
                                     <div style={{ fontSize: '14px', fontWeight: 700, color: C.text, marginBottom: '4px' }}>Deal Accepted!</div>
                                     <div style={{ fontSize: '12px', color: C.textSecondary, marginBottom: '16px' }}>
-                                      ${simulatedCounterAmount}/post · {brandCampaignType}
+                                      ${agreedDealAmount}/post · {brandCampaignType}
                                     </div>
                                   </div>
 
@@ -5319,7 +5476,7 @@ export default function InstagramDemoPage() {
                                             <div style={{ fontSize: '10px', color: C.textMuted }}>{s.status}</div>
                                           </div>
                                           <div style={{ fontSize: '12px', fontWeight: 700, color: C.text }}>
-                                            ${Math.round(parseInt(simulatedCounterAmount) * parseFloat(s.pct) / 100).toLocaleString()}
+                                            ${Math.round(parseInt(agreedDealAmount) * parseFloat(s.pct) / 100).toLocaleString()}
                                           </div>
                                         </div>
                                       ))}
@@ -5390,7 +5547,7 @@ export default function InstagramDemoPage() {
                                     }
                                   })()}
                                   {(dealType === 'paid' || dealType === 'c2c_paid') && brandApprovalPhase === 'funding' && (() => {
-                                    const totalAmount = parseInt(simulatedCounterAmount) || 5000;
+                                    const totalAmount = parseInt(agreedDealAmount) || 5000;
                                     return (
                                       <div style={{ marginTop:'12px' }}>
                                         <div style={{ fontSize:'11px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'10px' }}>Fund Escrow Account</div>
@@ -5517,7 +5674,7 @@ export default function InstagramDemoPage() {
                                             <button
                                               disabled={bdLifecycle !== 'submitted'}
                                               onClick={() => {
-                                                const agreedAmt = parseInt(simulatedCounterAmount || '5000');
+                                                const agreedAmt = parseInt(agreedDealAmount || '5000');
                                                 const approvalAmt = Math.round(agreedAmt * 0.3);
                                                 setBrandApprovalPhase('approved');
                                                 if (brandDealKey) {
@@ -5603,7 +5760,7 @@ export default function InstagramDemoPage() {
                                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.textSecondary} strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
                                       </div>
                                       <div style={{ fontSize:'14px', fontWeight:700, color:C.text, marginBottom:'4px' }}>Deal Complete</div>
-                                      <div style={{ fontSize:'12px', color:C.textSecondary, marginBottom:'12px' }}>Payment released: ${parseInt(simulatedCounterAmount).toLocaleString()}</div>
+                                      <div style={{ fontSize:'12px', color:C.textSecondary, marginBottom:'12px' }}>Payment released: ${parseInt(agreedDealAmount).toLocaleString()}</div>
                                       {/* Brand rating for creator */}
                                       {!brandRatingSubmitted ? (
                                         <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:'10px', padding:'14px', marginBottom:'12px', textAlign:'left' }}>
@@ -5628,6 +5785,31 @@ export default function InstagramDemoPage() {
                                       <button onClick={() => { setNegotiatingCreator(null); setBrandDealPhase('brief'); setBrandApprovalPhase('accepted'); setBrandDealRating(0); setBrandRatingComment(''); setBrandRatingSubmitted(false); }} style={{ width:'100%', background:C.primary, border:'none', padding:'8px', borderRadius:'8px', color:'#fff', fontWeight:600, fontSize:'12px', cursor:'pointer' }}>Done</button>
                                     </div>
                                   )}
+                                  {/* Deal Room Chat — brand side, shows all messages from shared state */}
+                                  {(() => {
+                                    const brandChatMsgs = (brandDeal?.chatMessages || []) as Array<{id: number; sender: string; text: string; time: string; isoTime?: string; seen?: boolean}>;
+                                    if (brandChatMsgs.length === 0) return null;
+                                    return (
+                                      <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: '8px', padding: '10px', marginTop: '12px' }}>
+                                        <div style={{ fontSize: '9px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={C.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                                          Deal Messages
+                                          <span style={{ fontSize: '9px', color: C.textMuted, fontWeight: 400 }}>{brandChatMsgs.length} documented</span>
+                                        </div>
+                                        <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                                          {brandChatMsgs.map((msg, mi) => (
+                                            <div key={msg.id || mi} style={{ display: 'flex', flexDirection: 'column', alignItems: msg.sender === 'brand' ? 'flex-end' : 'flex-start', marginBottom: '6px' }}>
+                                              <div style={{ maxWidth: '85%', background: msg.sender === 'brand' ? 'rgba(0,149,246,0.08)' : C.surfaceAlt, borderRadius: '8px', padding: '6px 10px' }}>
+                                                <div style={{ fontSize: '10px', fontWeight: 600, color: msg.sender === 'brand' ? C.primary : C.text, marginBottom: '2px' }}>{msg.sender === 'brand' ? 'You' : 'Creator'}</div>
+                                                <div style={{ fontSize: '11px', color: C.text, lineHeight: 1.4 }}>{msg.text}</div>
+                                              </div>
+                                              <div style={{ fontSize: '9px', color: C.textMuted, marginTop: '2px' }}>{msg.time}</div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    );
+                                  })()}
                                   {/* POC Contact Card — brand side, visible at all brand deal phases */}
                                   {brandDeal?.poc && (
                                     <div style={{ background: C.surfaceAlt, border: `1px solid ${C.border}`, borderRadius: '8px', padding: '10px', marginTop: '12px' }}>

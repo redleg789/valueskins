@@ -293,6 +293,7 @@ export function useDealSync() {
   useEffect(() => {
     if (!loaded) return;
     saveToStorage(STORAGE_DEALS, dealStates);
+    broadcastSync();
   }, [dealStates, loaded]);
 
   // Persist applications to localStorage on change
@@ -315,12 +316,14 @@ export function useDealSync() {
     try {
       bc = new BroadcastChannel(BC_NAME);
       bc.onmessage = () => {
+        setDealStates(loadFromStorage(STORAGE_DEALS, {}));
         setApplications(loadFromStorage(STORAGE_APPLICATIONS, []));
         setCampaigns(loadFromStorage(STORAGE_CAMPAIGNS, []));
       };
     } catch { /* unsupported */ }
 
     const onStorage = (e: StorageEvent) => {
+      if (e.key === STORAGE_DEALS) setDealStates(loadFromStorage(STORAGE_DEALS, {}));
       if (e.key === STORAGE_APPLICATIONS) setApplications(loadFromStorage(STORAGE_APPLICATIONS, []));
       if (e.key === STORAGE_CAMPAIGNS) setCampaigns(loadFromStorage(STORAGE_CAMPAIGNS, []));
     };
