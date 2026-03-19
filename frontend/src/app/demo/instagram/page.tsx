@@ -889,6 +889,7 @@ export default function InstagramDemoPage() {
   // No seeded campaigns or applications — only real data from Firebase
 
   const [marketplaceTab, setMarketplaceTab] = useState<'creators' | 'campaigns' | 'applications' | 'sent'>('creators');
+  const [hiddenSentDealIds, setHiddenSentDealIds] = useState<Set<number>>(new Set());
   const [showCampaignCreator, setShowCampaignCreator] = useState(false);
   const [newCampaignTitle, setNewCampaignTitle] = useState('');
   const [newCampaignDesc, setNewCampaignDesc] = useState('');
@@ -3372,7 +3373,7 @@ export default function InstagramDemoPage() {
                     {showBatchSendModal && lastCreatedCampaignId && (
                       <div style={{ position:'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.75)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:9999 }}>
                         <div style={{ background:C.surface, borderRadius:'16px', padding:'24px', maxWidth:'480px', width:'95vw', maxHeight:'90vh', overflowY:'auto', border:`1px solid ${C.border}`, position:'relative' }}>
-                          <button onClick={() => { setShowBatchSendModal(false); setLastCreatedCampaignId(null); setBatchSendCreatorIds(new Set()); }} style={{ position:'absolute', top:'16px', right:'16px', background:'none', border:'none', color:C.textMuted, fontSize:'22px', cursor:'pointer', lineHeight:1 }}>x</button>
+                          {/* No close button — must select at least one creator */}
                           <div style={{ fontSize:'16px', fontWeight:700, color:C.text, marginBottom:'4px' }}>Send Campaign to Creators</div>
                           <div style={{ fontSize:'12px', color:C.textSecondary, marginBottom:'16px' }}>Select creators to invite to "{campaigns.find(c => c.id === lastCreatedCampaignId)?.title || 'Campaign'}"</div>
                           <div style={{ maxHeight:'400px', overflowY:'auto', marginBottom:'16px', border:`1px solid ${C.border}`, borderRadius:'8px', background:C.bg }}>
@@ -3381,7 +3382,7 @@ export default function InstagramDemoPage() {
                                 <input type="checkbox" checked={batchSendCreatorIds.has(idx)} onChange={() => {}} style={{ cursor:'pointer', width:'18px', height:'18px', accentColor:C.primary }} />
                                 <div style={{ flex:1 }}>
                                   <div style={{ fontSize:'13px', fontWeight:600, color:C.text }}>{creator.name}</div>
-                                  <div style={{ fontSize:'11px', color:C.textSecondary }}>{creator.valueSkin} · {creator.followers} followers</div>
+                                  <div style={{ fontSize:'11px', color:C.textSecondary }}>L{creator.followers.includes('M') ? 5 : parseFloat(creator.followers) >= 500 ? 4 : parseFloat(creator.followers) >= 100 ? 3 : 2} · {creator.followers} followers</div>
                                 </div>
                               </div>
                             ))}
@@ -3391,8 +3392,8 @@ export default function InstagramDemoPage() {
                             <div style={{ fontSize:'11px', color:C.textSecondary }}>Each will receive a notification about your campaign</div>
                           </div>
                           <div style={{ display:'flex', gap:'8px' }}>
-                            <button onClick={() => { setShowBatchSendModal(false); setLastCreatedCampaignId(null); setBatchSendCreatorIds(new Set()); }} style={{ flex:1, background:'none', border:`1px solid ${C.border}`, borderRadius:'8px', padding:'11px', color:C.text, fontWeight:700, fontSize:'13px', cursor:'pointer' }}>Skip</button>
-                            <button onClick={() => { batchSendCreatorIds.forEach(idx => { const creator = BRAND_MARKETPLACE_CREATORS[idx]; const app: SharedApplication = { id:Date.now() + idx, campaignId:lastCreatedCampaignId ?? 0, campaignTitle:campaigns.find(c => c.id === lastCreatedCampaignId)?.title || 'Campaign', creatorProfession:creator.valueSkin || '', creatorHandle:creator.handle || '', creatorName:creator.name, status:'pending', appliedAt:new Date().toISOString() }; firebaseCreateApplication(app); firebaseSendNotification(creator.handle || '', 'campaign', `${profileName} invited you to: ${campaigns.find(c => c.id === lastCreatedCampaignId)?.title || 'Campaign'}`); }); setPurchaseToast(`Campaign sent to ${batchSendCreatorIds.size} creator${batchSendCreatorIds.size !== 1 ? 's' : ''}`); setTimeout(() => setPurchaseToast(null), 3000); setShowBatchSendModal(false); setLastCreatedCampaignId(null); setBatchSendCreatorIds(new Set()); }} style={{ flex:1, background:batchSendCreatorIds.size > 0 ? C.primary : C.border, border:'none', borderRadius:'8px', padding:'11px', color:'#fff', fontWeight:700, fontSize:'13px', cursor: batchSendCreatorIds.size > 0 ? 'pointer' : 'not-allowed', opacity: batchSendCreatorIds.size > 0 ? 1 : 0.5 }}>Send to {batchSendCreatorIds.size} Creator{batchSendCreatorIds.size !== 1 ? 's' : ''}</button>
+                            <button onClick={() => { setShowBatchSendModal(false); setLastCreatedCampaignId(null); setBatchSendCreatorIds(new Set()); }} style={{ flex:1, background:'none', border:`1px solid ${C.border}`, borderRadius:'8px', padding:'11px', color:C.text, fontWeight:700, fontSize:'13px', cursor:'pointer' }}>Cancel</button>
+                            <button onClick={() => { batchSendCreatorIds.forEach(idx => { const creator = BRAND_MARKETPLACE_CREATORS[idx]; const app: SharedApplication = { id:Date.now() + idx, campaignId:lastCreatedCampaignId ?? 0, campaignTitle:campaigns.find(c => c.id === lastCreatedCampaignId)?.title || 'Campaign', creatorProfession:creator.valueSkin || '', creatorHandle:creator.handle || '', creatorName:creator.name, status:'invited' as SharedApplication['status'], appliedAt:new Date().toISOString() }; firebaseCreateApplication(app); firebaseSendNotification(creator.handle || '', 'campaign', `${profileName} invited you to: ${campaigns.find(c => c.id === lastCreatedCampaignId)?.title || 'Campaign'}`); }); setPurchaseToast(`Campaign sent to ${batchSendCreatorIds.size} creator${batchSendCreatorIds.size !== 1 ? 's' : ''}`); setTimeout(() => setPurchaseToast(null), 3000); setShowBatchSendModal(false); setLastCreatedCampaignId(null); setBatchSendCreatorIds(new Set()); }} style={{ flex:1, background:batchSendCreatorIds.size > 0 ? C.primary : C.border, border:'none', borderRadius:'8px', padding:'11px', color:'#fff', fontWeight:700, fontSize:'13px', cursor: batchSendCreatorIds.size > 0 ? 'pointer' : 'not-allowed', opacity: batchSendCreatorIds.size > 0 ? 1 : 0.5 }}>Send to {batchSendCreatorIds.size} Creator{batchSendCreatorIds.size !== 1 ? 's' : ''}</button>
                           </div>
                         </div>
                       </div>
@@ -4557,7 +4558,7 @@ export default function InstagramDemoPage() {
                             <div style={{ fontSize:'13px', marginBottom:'4px' }}>No active campaigns</div>
                             <div style={{ fontSize:'11px' }}>Create a campaign to start tracking deals.</div>
                           </div>
-                        ) : campaigns.filter(c => c.status === 'open').map((c, i) => {
+                        ) : campaigns.filter(c => c.status === 'open' && !hiddenSentDealIds.has(c.id)).map((c, i) => {
                           const matchingApps = sharedApplications.filter(a => a.campaignId === c.id);
                           const activeDealsForCampaign = Object.entries(dealStates).filter(([key]) => key.includes(c.title));
                           const getPhaseLabel = (phase: string) => {
@@ -4619,8 +4620,11 @@ export default function InstagramDemoPage() {
                                   </div>
                                 )}
                               </div>
-                              <div style={{ display:'flex', gap:'5px', flexWrap:'wrap' }}>
-                                {c.requiredProfessions.map(p => <span key={p} style={{ fontSize:'10px', fontWeight:600, color:C.primary, background:`${C.primary}12`, padding:'2px 7px', borderRadius:'6px' }}>{p}</span>)}
+                              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                                <div style={{ display:'flex', gap:'5px', flexWrap:'wrap' }}>
+                                  {c.requiredProfessions.map(p => <span key={p} style={{ fontSize:'10px', fontWeight:600, color:C.primary, background:`${C.primary}12`, padding:'2px 7px', borderRadius:'6px' }}>{p}</span>)}
+                                </div>
+                                <button onClick={(e) => { e.stopPropagation(); setHiddenSentDealIds(prev => new Set([...prev, c.id])); }} style={{ background:'none', border:'none', color:C.textMuted, fontSize:'16px', cursor:'pointer', padding:'2px 6px', opacity:0.6 }} title="Remove from dashboard">x</button>
                               </div>
                             </div>
                           );
@@ -4631,17 +4635,17 @@ export default function InstagramDemoPage() {
                     {/* Applications Received */}
                     <div style={{ marginTop:'16px' }}>
                       <div style={{ fontSize:'15px', fontWeight:700, color:C.text, marginBottom:'14px' }}>Applicants</div>
-                      {sharedApplications.length === 0 ? (
+                      {sharedApplications.filter(a => a.status !== 'invited').length === 0 ? (
                         <div style={{ textAlign:'center', padding:'24px 20px', color:C.textMuted }}>
-                          <div style={{ fontSize:'13px', marginBottom:'4px' }}>No applications yet</div>
-                          <div style={{ fontSize:'11px' }}>Creators will appear here once they accept deals or apply to campaigns.</div>
+                          <div style={{ fontSize:'13px', marginBottom:'4px' }}>No proposals yet</div>
+                          <div style={{ fontSize:'11px' }}>Creators will appear here once they enter negotiations or apply to campaigns.</div>
                         </div>
-                      ) : sharedApplications.map((app,i) => {
+                      ) : sharedApplications.filter(a => a.status !== 'invited').map((app,i) => {
                         const camp = campaigns.find(c=>c.id===app.campaignId);
                         const displayName = app.creatorName || app.creatorHandle;
                         const igUrl = app.creatorInstagramUrl || `https://instagram.com/${app.creatorHandle.replace('@', '')}`;
                         return (
-                          <div key={i} style={{ display:'flex', alignItems:'center', gap:'12px', padding:'14px 0', borderBottom: i < sharedApplications.length - 1 ? `1px solid ${C.border}` : 'none' }}>
+                          <div key={i} style={{ display:'flex', alignItems:'center', gap:'12px', padding:'14px 0', borderBottom: i < sharedApplications.filter(a => a.status !== 'invited').length - 1 ? `1px solid ${C.border}` : 'none' }}>
                             {/* Avatar */}
                             <a href={igUrl} target="_blank" rel="noopener noreferrer" style={{ flexShrink:0 }}>
                               <img
@@ -4667,14 +4671,17 @@ export default function InstagramDemoPage() {
                               </div>
                             </div>
                             {/* Action */}
-                            {app.status === 'pending' ? (
-                              <div style={{ display:'flex', gap:'6px', flexShrink:0 }}>
-                                <button onClick={() => { persistApplications(sharedApplications.map(a=>a.id===app.id?{...a,status:'accepted' as const}:a)); setPurchaseToast('Accepted'); setTimeout(()=>setPurchaseToast(null),3000); }} style={{ background:C.primary, border:'none', borderRadius:'8px', padding:'8px 14px', fontSize:'12px', fontWeight:600, color:'#fff', cursor:'pointer' }}>Accept</button>
-                                <button onClick={() => { persistApplications(sharedApplications.map(a=>a.id===app.id?{...a,status:'rejected' as const}:a)); setPurchaseToast('Declined'); setTimeout(()=>setPurchaseToast(null),3000); }} style={{ background:'transparent', border:`1px solid ${C.border}`, borderRadius:'8px', padding:'8px 14px', fontSize:'12px', fontWeight:600, color:C.textSecondary, cursor:'pointer' }}>Decline</button>
-                              </div>
-                            ) : (
-                              <span style={{ fontSize:'11px', fontWeight:600, color:app.status==='accepted'?C.success:C.textMuted, textTransform:'uppercase', flexShrink:0 }}>{app.status}</span>
-                            )}
+                            <div style={{ flexShrink:0, textAlign:'right' }}>
+                              {app.creatorRate && <div style={{ fontSize:'13px', fontWeight:700, color:C.text, marginBottom:'4px' }}>{app.creatorRate}</div>}
+                              {app.status === 'pending' ? (
+                                <div style={{ display:'flex', gap:'6px' }}>
+                                  <button onClick={() => { persistApplications(sharedApplications.map(a=>a.id===app.id?{...a,status:'accepted' as const}:a)); setPurchaseToast('Accepted'); setTimeout(()=>setPurchaseToast(null),3000); }} style={{ background:C.primary, border:'none', borderRadius:'8px', padding:'8px 14px', fontSize:'12px', fontWeight:600, color:'#fff', cursor:'pointer' }}>Accept</button>
+                                  <button onClick={() => { persistApplications(sharedApplications.map(a=>a.id===app.id?{...a,status:'rejected' as const}:a)); setPurchaseToast('Declined'); setTimeout(()=>setPurchaseToast(null),3000); }} style={{ background:'transparent', border:`1px solid ${C.border}`, borderRadius:'8px', padding:'8px 14px', fontSize:'12px', fontWeight:600, color:C.textSecondary, cursor:'pointer' }}>Decline</button>
+                                </div>
+                              ) : (
+                                <span style={{ fontSize:'11px', fontWeight:600, color:app.status==='accepted'?C.success:C.textMuted, textTransform:'uppercase' }}>{app.status}</span>
+                              )}
+                            </div>
                           </div>
                         );
                       })}

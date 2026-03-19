@@ -59,7 +59,7 @@ export type SharedApplication = {
   campaignTitle: string;
   creatorProfession: string;
   creatorHandle: string;
-  status: 'pending' | 'accepted' | 'rejected';
+  status: 'pending' | 'accepted' | 'rejected' | 'invited';
   appliedAt: string;
   // Creator insights — visible to brand when reviewing application
   creatorName?: string;
