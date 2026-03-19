@@ -30,6 +30,10 @@ export type DealState = {
   advancePercent: number;
   uploadPercent: number;
   approvalPercent: number;
+  // Brand-side state — persisted so role-switching preserves progress
+  brandPhase?: string;          // BrandDealPhase
+  brandApprovalPhase?: string;  // BrandApprovalPhase
+  deliverableLinks?: Record<number, string>; // Instagram URLs per deliverable index
   // Backend IDs — populated when synced with API
   backendDealRoomId?: number;
   backendLastMessageId?: number;

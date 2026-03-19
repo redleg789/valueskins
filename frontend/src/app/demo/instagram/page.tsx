@@ -571,7 +571,12 @@ export default function InstagramDemoPage() {
 
   // Negotiation state — tracks which opportunity/creator has opened negotiation
   const [negotiatingOpp, setNegotiatingOpp] = useState<number | null>(null);
-  const [negotiatingCreator, setNegotiatingCreator] = useState<number | null>(null);
+  const [negotiatingCreator, setNegotiatingCreatorRaw] = useState<number | null>(() => {
+    if (typeof window === 'undefined') return null;
+    const v = localStorage.getItem('vs_brand_negotiating_creator');
+    return v !== null ? parseInt(v) : null;
+  });
+  const setNegotiatingCreator = (v: number | null) => { setNegotiatingCreatorRaw(v); if (v === null) localStorage.removeItem('vs_brand_negotiating_creator'); else localStorage.setItem('vs_brand_negotiating_creator', String(v)); };
 
   // Deal sync hook — bridges localStorage with backend API
   const dealSync = useDealSync();
@@ -691,9 +696,13 @@ export default function InstagramDemoPage() {
   const [brandCampaignDesc, setBrandCampaignDesc] = useState('Looking for authentic content creators to showcase our product');
   const [brandCampaignType, setBrandCampaignType] = useState('Product Review');
 
-  // Brand-side deal room state
+  // Brand-side deal room state — persisted in localStorage so role-switching preserves it
   type BrandDealPhase = 'brief' | 'offer' | 'pending' | 'counter' | 'brand_reviewing' | 'last_offer' | 'rejected' | 'accepted' | 'softhold';
-  const [brandDealPhase, setBrandDealPhase] = useState<BrandDealPhase>('brief');
+  const [brandDealPhase, setBrandDealPhaseRaw] = useState<BrandDealPhase>(() => {
+    if (typeof window === 'undefined') return 'brief';
+    return (localStorage.getItem('vs_brand_deal_phase') as BrandDealPhase) || 'brief';
+  });
+  const setBrandDealPhase = (p: BrandDealPhase) => { setBrandDealPhaseRaw(p); localStorage.setItem('vs_brand_deal_phase', p); };
   const [brandDealIntent, setBrandDealIntent] = useState<'explore' | 'campaign' | 'long-term'>('campaign');
   const [brandBriefTitle, setBrandBriefTitle] = useState('');
   const [brandBriefDeliverables, setBrandBriefDeliverables] = useState('');
@@ -945,12 +954,18 @@ export default function InstagramDemoPage() {
   type CreatorDealLifecycle = 'checklist'|'deliverables'|'submitted'|'approved';
   type BrandApprovalPhase = 'accepted'|'funding'|'funded'|'reviewing'|'approved';
   const [creatorDealLifecycle, setCreatorDealLifecycle] = useState<CreatorDealLifecycle>('checklist');
-  const [brandApprovalPhase, setBrandApprovalPhase] = useState<BrandApprovalPhase>('accepted');
+  const [brandApprovalPhase, setBrandApprovalPhaseRaw] = useState<BrandApprovalPhase>(() => {
+    if (typeof window === 'undefined') return 'accepted';
+    return (localStorage.getItem('vs_brand_approval_phase') as BrandApprovalPhase) || 'accepted';
+  });
+  const setBrandApprovalPhase = (p: BrandApprovalPhase) => { setBrandApprovalPhaseRaw(p); localStorage.setItem('vs_brand_approval_phase', p); };
   const [dealUploadSimulated, setDealUploadSimulated] = useState(false);
   type CompletedDeal = { id:number; brand:string; amount:number; completedAt:string; deliverable:string; usageRightsDays?:number; exclusivityDays?:number; exclusivitySkin?:string; disputed?:boolean; disputeReason?:string; disputeStatus?:'filed'|'under_review'|'resolved'; contractSignedAt?:string; };
   const [completedDeals, setCompletedDeals] = useState<CompletedDeal[]>([]);
-  // Deliverable checklist tracking (per-deliverable status)
-  const [deliverableStatuses, setDeliverableStatuses] = useState<Record<number, 'pending'|'uploaded'|'approved'>>({});
+  // Deliverable checklist tracking (per-deliverable status + Instagram links)
+  const [deliverableStatuses, setDeliverableStatuses] = useState<Record<number, 'pending'|'linking'|'uploaded'|'approved'>>({});
+  const [deliverableLinks, setDeliverableLinks] = useState<Record<number, string>>({});
+  const [deliverableLinkInputs, setDeliverableLinkInputs] = useState<Record<number, string>>({});
   // Deal cancellation
   const [showCancelDealModal, setShowCancelDealModal] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
@@ -2690,6 +2705,21 @@ export default function InstagramDemoPage() {
 
                                         {/* Sidebar: checklist + payment */}
                                         <div style={{ width: '160px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                          {/* Campaign brief */}
+                                          <div style={{ background: C.bg, borderRadius: '8px', border: `1px solid ${C.border}`, padding: '8px' }}>
+                                            <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Campaign Brief</div>
+                                            <div style={{ fontSize: '11px', fontWeight: 700, color: C.text, marginBottom: '3px', lineHeight: 1.3 }}>{opp.type || opp.brand}</div>
+                                            <div style={{ fontSize: '10px', color: C.textSecondary, marginBottom: '5px', lineHeight: 1.4 }}>{opp.about ? opp.about.slice(0, 80) + (opp.about.length > 80 ? '…' : '') : ''}</div>
+                                            {opp.deliverables?.length > 0 && (
+                                              <div style={{ fontSize: '10px', color: C.textMuted, marginBottom: '3px' }}>
+                                                {opp.deliverables.map((d: {count:number;format:string}) => `${d.count}x ${d.format}`).join(', ')}
+                                              </div>
+                                            )}
+                                            <div style={{ display:'flex', justifyContent:'space-between', marginTop:'4px' }}>
+                                              <span style={{ fontSize:'10px', color:C.success, fontWeight:700 }}>{opp.budget}</span>
+                                              {opp.deadline && <span style={{ fontSize:'9px', color:C.textMuted }}>{new Date(opp.deadline).toLocaleDateString('en-US',{month:'short',day:'numeric'})}</span>}
+                                            </div>
+                                          </div>
                                           {/* Checklist */}
                                           <div style={{ background: C.bg, borderRadius: '8px', border: `1px solid ${C.border}`, padding: '8px' }}>
                                             <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Checklist</div>
@@ -2930,17 +2960,73 @@ export default function InstagramDemoPage() {
                                         <div style={{ fontSize:'10px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.4px', marginBottom:'8px' }}>Deliverables ({oppDeliverables.reduce((a: number, d: {format:string;count:number}) => a + d.count, 0)} items)</div>
                                         {oppDeliverables.map((d, di) => {
                                           const status = deliverableStatuses[di] || 'pending';
+                                          const link = deliverableLinks[di] || '';
+                                          const inputVal = deliverableLinkInputs[di] || '';
+                                          const isValidIgUrl = (u: string) => /instagram\.com\/(p|reel|tv)\/[A-Za-z0-9_-]+/.test(u);
+                                          const postId = link.match(/instagram\.com\/(?:p|reel|tv)\/([A-Za-z0-9_-]+)/)?.[1];
                                           return (
-                                            <div key={di} style={{ display:'flex', alignItems:'center', gap:'8px', padding:'8px', background: status === 'uploaded' ? 'rgba(0,102,204,0.05)' : status === 'approved' ? 'rgba(46,125,50,0.05)' : 'transparent', borderRadius:'6px', marginBottom:'4px', border:`1px solid ${status === 'approved' ? 'rgba(46,125,50,0.2)' : status === 'uploaded' ? 'rgba(0,102,204,0.2)' : C.border}` }}>
-                                              <div style={{ width:'20px', height:'20px', borderRadius:'5px', background: status === 'approved' ? C.success : status === 'uploaded' ? C.primary : C.border, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                                                {status !== 'pending' ? <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg> : <span style={{ fontSize:'10px', color:'#fff', fontWeight:700 }}>{di + 1}</span>}
+                                            <div key={di} style={{ borderRadius:'8px', marginBottom:'8px', border:`1px solid ${status === 'approved' ? 'rgba(0,212,106,0.25)' : status === 'uploaded' ? 'rgba(0,149,246,0.25)' : C.border}`, overflow:'hidden' }}>
+                                              {/* Header row */}
+                                              <div style={{ display:'flex', alignItems:'center', gap:'8px', padding:'8px 10px', background: status === 'uploaded' ? 'rgba(0,149,246,0.04)' : status === 'approved' ? 'rgba(0,212,106,0.04)' : 'transparent' }}>
+                                                <div style={{ width:'20px', height:'20px', borderRadius:'5px', background: status === 'approved' ? C.success : status === 'uploaded' ? C.primary : C.border, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                                                  {status !== 'pending' && status !== 'linking' ? <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg> : <span style={{ fontSize:'10px', color:'#fff', fontWeight:700 }}>{di + 1}</span>}
+                                                </div>
+                                                <div style={{ flex:1 }}>
+                                                  <div style={{ fontSize:'12px', fontWeight:600, color:C.text }}>{d.count}x {d.format}</div>
+                                                  <div style={{ fontSize:'10px', color: status === 'approved' ? C.success : status === 'uploaded' ? C.primary : C.textMuted }}>
+                                                    {status === 'approved' ? 'Approved by brand' : status === 'uploaded' ? 'Submitted — awaiting review' : status === 'linking' ? 'Enter your Instagram link below' : 'Not yet submitted'}
+                                                  </div>
+                                                </div>
+                                                {status === 'pending' && (
+                                                  <button onClick={() => setDeliverableStatuses(prev => ({ ...prev, [di]: 'linking' }))} style={{ background:C.primary, border:'none', borderRadius:'6px', padding:'4px 10px', color:'#fff', fontSize:'10px', fontWeight:600, cursor:'pointer', flexShrink:0 }}>Submit link</button>
+                                                )}
+                                                {status === 'linking' && (
+                                                  <button onClick={() => setDeliverableStatuses(prev => ({ ...prev, [di]: 'pending' }))} style={{ background:'none', border:`1px solid ${C.border}`, borderRadius:'6px', padding:'3px 8px', color:C.textMuted, fontSize:'10px', cursor:'pointer', flexShrink:0 }}>Cancel</button>
+                                                )}
                                               </div>
-                                              <div style={{ flex:1 }}>
-                                                <div style={{ fontSize:'12px', fontWeight:600, color:C.text }}>{d.count}x {d.format}</div>
-                                                <div style={{ fontSize:'10px', color:C.textMuted }}>{status === 'approved' ? 'Approved' : status === 'uploaded' ? 'Submitted — awaiting review' : 'Not uploaded'}</div>
-                                              </div>
-                                              {status === 'pending' && (
-                                                <button onClick={() => setDeliverableStatuses(prev => ({ ...prev, [di]: 'uploaded' }))} style={{ background:C.primary, border:'none', borderRadius:'6px', padding:'4px 10px', color:'#fff', fontSize:'10px', fontWeight:600, cursor:'pointer' }}>Upload</button>
+                                              {/* URL input — shown when linking */}
+                                              {status === 'linking' && (
+                                                <div style={{ padding:'10px', borderTop:`1px solid ${C.border}`, background:C.bg }}>
+                                                  <div style={{ fontSize:'10px', color:C.textMuted, marginBottom:'6px' }}>Paste the link to your published Instagram post or reel</div>
+                                                  <div style={{ display:'flex', gap:'6px' }}>
+                                                    <input
+                                                      type="text"
+                                                      value={inputVal}
+                                                      onChange={e => setDeliverableLinkInputs(prev => ({ ...prev, [di]: e.target.value }))}
+                                                      placeholder="https://www.instagram.com/p/..."
+                                                      style={{ flex:1, background:C.surfaceAlt, border:`1px solid ${isValidIgUrl(inputVal) ? C.success : C.border}`, borderRadius:'6px', color:C.text, padding:'7px 10px', fontSize:'11px', fontFamily:'inherit', outline:'none' }}
+                                                    />
+                                                    <button
+                                                      disabled={!isValidIgUrl(inputVal)}
+                                                      onClick={() => {
+                                                        setDeliverableLinks(prev => ({ ...prev, [di]: inputVal }));
+                                                        setDeliverableStatuses(prev => ({ ...prev, [di]: 'uploaded' }));
+                                                        setDeliverableLinkInputs(prev => ({ ...prev, [di]: '' }));
+                                                      }}
+                                                      style={{ background: isValidIgUrl(inputVal) ? C.success : C.border, border:'none', borderRadius:'6px', padding:'7px 12px', color:'#fff', fontSize:'11px', fontWeight:700, cursor: isValidIgUrl(inputVal) ? 'pointer' : 'not-allowed', opacity: isValidIgUrl(inputVal) ? 1 : 0.5, flexShrink:0 }}
+                                                    >Confirm</button>
+                                                  </div>
+                                                  {inputVal && !isValidIgUrl(inputVal) && (
+                                                    <div style={{ fontSize:'10px', color:'#ef4444', marginTop:'4px' }}>Must be an instagram.com/p/, /reel/, or /tv/ link</div>
+                                                  )}
+                                                </div>
+                                              )}
+                                              {/* Preview card — shown after link confirmed */}
+                                              {(status === 'uploaded' || status === 'approved') && link && (
+                                                <div style={{ padding:'10px', borderTop:`1px solid ${C.border}`, background:C.bg, display:'flex', gap:'10px', alignItems:'flex-start' }}>
+                                                  {/* Thumbnail placeholder */}
+                                                  <div style={{ width:52, height:52, borderRadius:'6px', background:C.surfaceAlt, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, overflow:'hidden' }}>
+                                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={C.textMuted} strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 12h6m-3-3v6"/></svg>
+                                                  </div>
+                                                  <div style={{ flex:1, minWidth:0 }}>
+                                                    <div style={{ fontSize:'10px', fontWeight:700, color:C.textMuted, marginBottom:'2px', textTransform:'uppercase', letterSpacing:'0.4px' }}>Instagram {d.format.toLowerCase().includes('reel') ? 'Reel' : 'Post'}</div>
+                                                    <a href={link} target="_blank" rel="noopener noreferrer" style={{ fontSize:'10px', color:C.primary, textDecoration:'none', display:'block', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{postId ? `instagram.com/p/${postId}` : link}</a>
+                                                    <div style={{ fontSize:'9px', color:C.textMuted, marginTop:'3px' }}>Submitted {new Date().toLocaleDateString('en-US', { month:'short', day:'numeric' })}</div>
+                                                  </div>
+                                                  {status === 'approved' && (
+                                                    <div style={{ fontSize:'9px', fontWeight:700, color:C.success, background:'rgba(0,212,106,0.1)', padding:'2px 7px', borderRadius:'6px', flexShrink:0 }}>Approved</div>
+                                                  )}
+                                                </div>
                                               )}
                                             </div>
                                           );
@@ -3080,7 +3166,7 @@ export default function InstagramDemoPage() {
                                         )}
 
                                         <div style={{ display:'flex', gap:'8px' }}>
-                                          <button onClick={() => { if (activeDealKey) { setDealStates(prev => { const next = {...prev}; delete next[activeDealKey]; return next; }); } setNegotiatingOpp(null); setCreatorDealLifecycle('checklist'); setDealUploadSimulated(false); setDeliverableStatuses({}); setPaymentMilestones({ advance:'pending', upload:'pending', approval:'pending' }); setDealRating(0); setDealRatingComment(''); setRatingSubmitted(false); setContractChecks({}); setContractSignature(''); setEscrowFunded(false); setEscrowFundingInProgress(false); }} style={{ flex:2, background:C.primary, border:'none', padding:'10px', borderRadius:'8px', color:'#fff', fontWeight:600, cursor:'pointer', fontSize:'13px' }}>
+                                          <button onClick={() => { if (activeDealKey) { setDealStates(prev => { const next = {...prev}; delete next[activeDealKey]; return next; }); } setNegotiatingOpp(null); setCreatorDealLifecycle('checklist'); setDealUploadSimulated(false); setDeliverableStatuses({}); setDeliverableLinks({}); setDeliverableLinkInputs({}); setPaymentMilestones({ advance:'pending', upload:'pending', approval:'pending' }); setDealRating(0); setDealRatingComment(''); setRatingSubmitted(false); setContractChecks({}); setContractSignature(''); setEscrowFunded(false); setEscrowFundingInProgress(false); }} style={{ flex:2, background:C.primary, border:'none', padding:'10px', borderRadius:'8px', color:'#fff', fontWeight:600, cursor:'pointer', fontSize:'13px' }}>
                                             Withdraw to Bank
                                           </button>
                                           <button onClick={() => setShowDisputeModal(Date.now())} style={{ flex:1, background:'none', border:`1px solid rgba(239,68,68,0.3)`, padding:'10px', borderRadius:'8px', color:'#ef4444', fontSize:'11px', cursor:'pointer', fontWeight:500 }}>
@@ -3634,7 +3720,7 @@ export default function InstagramDemoPage() {
                           ))}
                           <div style={{ display:'flex', gap:'8px', marginTop:'14px' }}>
                             <button onClick={() => { setShowCancelDealModal(false); setCancelReason(''); }} style={{ flex:1, background:'none', border:`1px solid ${C.border}`, borderRadius:'8px', padding:'10px', color:C.text, fontWeight:600, fontSize:'13px', cursor:'pointer' }}>Keep Deal</button>
-                            <button onClick={() => { if (activeDealKey) { setDealStates(prev => { const next = {...prev}; delete next[activeDealKey]; return next; }); } setNegotiatingOpp(null); setCreatorDealLifecycle('checklist'); setDealUploadSimulated(false); setDeliverableStatuses({}); setPaymentMilestones({ advance:'pending', upload:'pending', approval:'pending' }); setShowCancelDealModal(false); setCancelReason(''); setPurchaseToast('Deal cancelled'); setTimeout(() => setPurchaseToast(null), 3000); }} disabled={!cancelReason} style={{ flex:1, background: cancelReason ? '#ef4444' : C.border, border:'none', borderRadius:'8px', padding:'10px', color:'#fff', fontWeight:600, fontSize:'13px', cursor: cancelReason ? 'pointer' : 'not-allowed', opacity: cancelReason ? 1 : 0.5 }}>Cancel Deal</button>
+                            <button onClick={() => { if (activeDealKey) { setDealStates(prev => { const next = {...prev}; delete next[activeDealKey]; return next; }); } setNegotiatingOpp(null); setCreatorDealLifecycle('checklist'); setDealUploadSimulated(false); setDeliverableStatuses({}); setDeliverableLinks({}); setDeliverableLinkInputs({}); setPaymentMilestones({ advance:'pending', upload:'pending', approval:'pending' }); setShowCancelDealModal(false); setCancelReason(''); setPurchaseToast('Deal cancelled'); setTimeout(() => setPurchaseToast(null), 3000); }} disabled={!cancelReason} style={{ flex:1, background: cancelReason ? '#ef4444' : C.border, border:'none', borderRadius:'8px', padding:'10px', color:'#fff', fontWeight:600, fontSize:'13px', cursor: cancelReason ? 'pointer' : 'not-allowed', opacity: cancelReason ? 1 : 0.5 }}>Cancel Deal</button>
                           </div>
                         </div>
                       </div>
