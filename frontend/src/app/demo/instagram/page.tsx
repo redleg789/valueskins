@@ -2480,10 +2480,18 @@ export default function InstagramDemoPage() {
                                         </div>
 
                                         {(() => {
-                                          const allChecked = ['deliverables','payment','usage','exclusivity','revisions'].every(k => contractChecks[k]);
+                                          const checkedCount = ['deliverables','payment','usage','exclusivity','revisions'].filter(k => contractChecks[k]).length;
+                                          const allChecked = checkedCount === 5;
                                           const signed = contractSignature.trim().length >= 2;
                                           const canAccept = allChecked && signed;
                                           return (
+                                        <>
+                                        {!canAccept && (
+                                          <div style={{ fontSize:'10px', color:C.textMuted, marginBottom:'6px' }}>
+                                            {!allChecked && <span>{checkedCount}/5 terms checked. </span>}
+                                            {!signed && <span>Sign your name to continue.</span>}
+                                          </div>
+                                        )}
                                         <div style={{ display: 'flex', gap: '8px' }}>
                                           <button
                                             disabled={!canAccept}
@@ -2524,6 +2532,7 @@ export default function InstagramDemoPage() {
                                             style={{ flex: 1, background: 'transparent', border: `1px solid rgba(239,68,68,0.3)`, padding: '11px', borderRadius: '10px', color: 'rgba(239,68,68,0.85)', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}
                                           >Reject</button>
                                         </div>
+                                        </>
                                           );
                                         })()}
                                       </>
@@ -2682,6 +2691,35 @@ export default function InstagramDemoPage() {
                                                 {item}
                                               </div>
                                             ))}
+                                          </div>
+
+                                          {/* Counter-offer */}
+                                          <div style={{ background: C.bg, borderRadius: '8px', border: `1px solid ${C.border}`, padding: '8px' }}>
+                                            <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Your Counter</div>
+                                            <div style={{ fontSize: '10px', color: C.textSecondary, marginBottom: '4px' }}>
+                                              Brand offer: <strong style={{ color: C.text }}>${parseInt(dealOfferAmount || opp.budget.replace(/[^0-9]/g, '') || '0').toLocaleString()}</strong>
+                                            </div>
+                                            <input
+                                              type="number"
+                                              value={dealCounterAmount}
+                                              onChange={e => setDealCounterAmount(e.target.value)}
+                                              placeholder="Your ask ($)"
+                                              style={{ width: '100%', background: C.card, border: `1px solid ${C.border}`, borderRadius: '6px', padding: '6px 8px', fontSize: '12px', color: C.text, boxSizing: 'border-box', marginBottom: '4px' }}
+                                            />
+                                            <button
+                                              disabled={!dealCounterAmount || parseInt(dealCounterAmount) <= 0}
+                                              onClick={() => {
+                                                const brandOffer = parseInt(dealOfferAmount || opp.budget.replace(/[^0-9]/g, '') || '0');
+                                                const creatorAsk = parseInt(dealCounterAmount);
+                                                const now = new Date();
+                                                const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: false });
+                                                const counterMsg = { id: Date.now(), sender: 'creator' as const, text: `Counter-offer: $${creatorAsk.toLocaleString()} (brand offered $${brandOffer.toLocaleString()})`, time: timeStr, isoTime: now.toISOString(), seen: false };
+                                                setChatMessages(prev => [...prev, counterMsg]);
+                                                firebaseAddMessage(activeDealKey ?? '', counterMsg);
+                                                if (activeDealKey) simulateBrandResponse(creatorAsk, brandOffer, activeDealKey);
+                                              }}
+                                              style={{ width: '100%', background: dealCounterAmount && parseInt(dealCounterAmount) > 0 ? C.primary : C.border, border: 'none', padding: '6px', borderRadius: '6px', color: '#fff', fontWeight: 600, fontSize: '11px', cursor: dealCounterAmount && parseInt(dealCounterAmount) > 0 ? 'pointer' : 'not-allowed', opacity: dealCounterAmount && parseInt(dealCounterAmount) > 0 ? 1 : 0.5 }}
+                                            >Send Counter</button>
                                           </div>
 
                                           {/* Payment split */}
