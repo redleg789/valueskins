@@ -236,6 +236,9 @@ type Opportunity = {
   compensationType: string;
   location: string;
   audienceTarget: string;
+  escrowFunded?: boolean;
+  escrowPool?: number;
+  creatorCount?: number;
 };
 
 // Opportunities vary by profession — different brands want different skills
@@ -913,6 +916,12 @@ export default function InstagramDemoPage() {
   const [newCampaignAudienceTarget, setNewCampaignAudienceTarget] = useState('');
   const [newCampaignRequirements, setNewCampaignRequirements] = useState<string[]>([]);
   const [newCampaignReqInput, setNewCampaignReqInput] = useState('');
+  const [newCampaignCreatorCount, setNewCampaignCreatorCount] = useState(1);
+
+  // Campaign escrow funding modal (shown after publish, before batch send)
+  const [showEscrowFundingModal, setShowEscrowFundingModal] = useState(false);
+  const [escrowFundingInProgress2, setEscrowFundingInProgress2] = useState(false);
+  const [pendingCampaignForEscrow, setPendingCampaignForEscrow] = useState<Campaign | null>(null);
 
   // Feature 4: Batch campaign sending
   const [showBatchSendModal, setShowBatchSendModal] = useState(false);
@@ -1175,6 +1184,9 @@ export default function InstagramDemoPage() {
       compensationType: c.compensationType || 'Paid',
       location: c.location || 'Remote',
       audienceTarget: c.audienceTarget || '',
+      escrowFunded: c.escrowFunded || false,
+      escrowPool: c.escrowPool || 0,
+      creatorCount: c.creatorCount || 1,
     }));
   const activeOpportunities = selectedMarketplaceSkin
     ? campaignOpportunities.slice().sort((a, b) => parseInt(b.match) - parseInt(a.match))
@@ -2821,12 +2833,30 @@ export default function InstagramDemoPage() {
                                   {/* Escrow funding gate — brand must fund before creator uploads */}
                                   {dealRoomPhase === 'softhold' && !escrowFunded && creatorDealLifecycle === 'checklist' && (() => {
                                     const agreedPrice = parseInt(dealCounterAmount || dealOfferAmount || '5000') || 5000;
+                                    // If brand pre-funded escrow at campaign creation, auto-unlock immediately
+                                    if (opp.escrowFunded) {
+                                      // Auto-advance on next tick to avoid setState-in-render
+                                      setTimeout(() => {
+                                        setEscrowFunded(true);
+                                        setCreatorDealLifecycle('deliverables');
+                                        setPaymentMilestones(prev => prev.advance === 'released' ? prev : { ...prev, advance: 'released' });
+                                      }, 0);
+                                      return (
+                                        <div style={{ textAlign:'center', padding:'16px 0' }}>
+                                          <div style={{ width:'44px', height:'44px', borderRadius:'50%', background:'rgba(0,212,106,0.1)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 12px' }}>
+                                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={C.success} strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                          </div>
+                                          <div style={{ fontSize:'14px', fontWeight:700, color:C.success, marginBottom:'4px' }}>Escrow Funded</div>
+                                          <div style={{ fontSize:'12px', color:C.textSecondary }}>Brand deposited escrow at campaign launch. Advance released — ready to start.</div>
+                                        </div>
+                                      );
+                                    }
                                     return (
                                       <div style={{ textAlign:'center', padding:'16px 0' }}>
                                         <div style={{ width:'44px', height:'44px', borderRadius:'50%', background:C.surfaceAlt, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 12px' }}>
                                           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                                         </div>
-                                        <div style={{ fontSize:'14px', fontWeight:700, color:C.text, marginBottom:'4px' }}>Escrow Funding Required</div>
+                                        <div style={{ fontSize:'14px', fontWeight:700, color:C.text, marginBottom:'4px' }}>Awaiting Escrow</div>
                                         <div style={{ fontSize:'12px', color:C.textSecondary, marginBottom:'16px', lineHeight:1.5 }}>
                                           The brand must deposit <strong>${agreedPrice.toLocaleString()}</strong> into escrow before you can begin work. Funds are held securely and released per your payment milestones.
                                         </div>
@@ -3332,9 +3362,28 @@ export default function InstagramDemoPage() {
                           </div>
                           <div style={{ display:'flex', gap:'10px', marginBottom:'12px' }}>
                             <div style={{ flex:1 }}>
-                              <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>Budget ($) *</div>
+                              <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>Budget per creator ($) *</div>
                               <input type="text" value={newCampaignBudget} onChange={e=>setNewCampaignBudget(e.target.value.replace(/[^0-9]/g,''))} placeholder="5000" style={{ width:'100%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', color:C.text, padding:'8px 10px', fontSize:'13px', fontFamily:'inherit', outline:'none', boxSizing:'border-box' as const }} />
                             </div>
+                            <div style={{ flex:1 }}>
+                              <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>Creators to hire *</div>
+                              <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
+                                <button onClick={()=>setNewCampaignCreatorCount(c=>Math.max(1,c-1))} style={{ width:32, height:32, borderRadius:'6px', background:C.bg, border:`1px solid ${C.border}`, color:C.text, fontSize:'16px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>−</button>
+                                <div style={{ flex:1, background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', color:C.text, padding:'8px 10px', fontSize:'13px', fontWeight:700, textAlign:'center' }}>{newCampaignCreatorCount}</div>
+                                <button onClick={()=>setNewCampaignCreatorCount(c=>Math.min(50,c+1))} style={{ width:32, height:32, borderRadius:'6px', background:C.bg, border:`1px solid ${C.border}`, color:C.text, fontSize:'16px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>+</button>
+                              </div>
+                            </div>
+                          </div>
+                          {newCampaignBudget && (
+                            <div style={{ background:'rgba(0,212,106,0.06)', border:'1px solid rgba(0,212,106,0.2)', borderRadius:'8px', padding:'10px 12px', marginBottom:'12px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                              <div>
+                                <div style={{ fontSize:'10px', color:C.textMuted, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.4px' }}>Total escrow required</div>
+                                <div style={{ fontSize:'11px', color:C.textSecondary, marginTop:'2px' }}>${parseInt(newCampaignBudget||'0').toLocaleString()} × {newCampaignCreatorCount} creator{newCampaignCreatorCount!==1?'s':''}</div>
+                              </div>
+                              <div style={{ fontSize:'20px', fontWeight:800, color:C.success }}>${(parseInt(newCampaignBudget||'0')*newCampaignCreatorCount).toLocaleString()}</div>
+                            </div>
+                          )}
+                          <div style={{ display:'flex', gap:'10px', marginBottom:'12px' }}>
                             <div style={{ flex:1 }}>
                               <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>Location</div>
                               <input type="text" value={newCampaignLocation} onChange={e=>setNewCampaignLocation(e.target.value)} placeholder="USA / Remote / Global" style={{ width:'100%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', color:C.text, padding:'8px 10px', fontSize:'13px', fontFamily:'inherit', outline:'none', boxSizing:'border-box' as const }} />
@@ -3433,20 +3482,109 @@ export default function InstagramDemoPage() {
                               if (!newCampaignBudget) missing.push('Budget');
                               if (!newCampaignAudienceTarget.trim()) missing.push('Target audience');
                               if (missing.length > 0) { setPurchaseToast(`Missing: ${missing.join(', ')}`); setTimeout(()=>setPurchaseToast(null),4000); return; }
-                              const newC: Campaign = { id:Date.now(), brandName:profileName, brandProfession:activeBrandSkin??'', title:newCampaignTitle, description:newCampaignDesc, about:newCampaignAbout, requiredProfessions:[activeBrandSkin ?? ''], minLevel:newCampaignMinLevel, maxLevel:newCampaignMaxLevel, budget:newCampaignBudget, deadline:newCampaignDeadline, location:newCampaignLocation, nonNegotiables:newCampaignNonNeg, deliverables:newCampaignDeliverables, compensationType:newCampaignCompensation, exclusivity:newCampaignExclusivity, usageRights:newCampaignUsageRights, revisionLimit:newCampaignRevisionLimit, audienceTarget:newCampaignAudienceTarget, requirements:newCampaignRequirements, status:'open', applicants:0 };
+                              const escrowPool = parseInt(newCampaignBudget||'0') * newCampaignCreatorCount;
+                              const newC: Campaign = { id:Date.now(), brandName:profileName, brandProfession:activeBrandSkin??'', title:newCampaignTitle, description:newCampaignDesc, about:newCampaignAbout, requiredProfessions:[activeBrandSkin ?? ''], minLevel:newCampaignMinLevel, maxLevel:newCampaignMaxLevel, budget:newCampaignBudget, deadline:newCampaignDeadline, location:newCampaignLocation, nonNegotiables:newCampaignNonNeg, deliverables:newCampaignDeliverables, compensationType:newCampaignCompensation, exclusivity:newCampaignExclusivity, usageRights:newCampaignUsageRights, revisionLimit:newCampaignRevisionLimit, audienceTarget:newCampaignAudienceTarget, requirements:newCampaignRequirements, status:'open', applicants:0, creatorCount:newCampaignCreatorCount, escrowFunded:false, escrowPool, escrowAllocated:0 };
                               persistCampaigns([...campaigns, newC]);
                               firebaseCreateCampaign(newC);
                               setShowCampaignCreator(false);
                               setLastCreatedCampaignId(newC.id);
-                              setShowBatchSendModal(true);
+                              setPendingCampaignForEscrow(newC);
+                              setShowEscrowFundingModal(true);
+                              setEscrowFundingInProgress2(false);
                               setBatchSendCreatorIds(new Set());
-                              setNewCampaignTitle(''); setNewCampaignDesc(''); setNewCampaignAbout(''); setNewCampaignBudget(''); setNewCampaignDeadline(''); setNewCampaignProfessions([]); setNewCampaignMinLevel(1); setNewCampaignMaxLevel(5); setNewCampaignLocation(''); setNewCampaignDeliverables(''); setNewCampaignNonNeg([]); setNewCampaignCompensation('Paid'); setNewCampaignExclusivity('None'); setNewCampaignUsageRights('30 days, social only'); setNewCampaignRevisionLimit(2); setNewCampaignAudienceTarget(''); setNewCampaignRequirements([]); setNewCampaignReqInput('');
-                              setPurchaseToast('Campaign published'); setTimeout(()=>setPurchaseToast(null),2000);
+                              setNewCampaignTitle(''); setNewCampaignDesc(''); setNewCampaignAbout(''); setNewCampaignBudget(''); setNewCampaignDeadline(''); setNewCampaignProfessions([]); setNewCampaignMinLevel(1); setNewCampaignMaxLevel(5); setNewCampaignLocation(''); setNewCampaignDeliverables(''); setNewCampaignNonNeg([]); setNewCampaignCompensation('Paid'); setNewCampaignExclusivity('None'); setNewCampaignUsageRights('30 days, social only'); setNewCampaignRevisionLimit(2); setNewCampaignAudienceTarget(''); setNewCampaignRequirements([]); setNewCampaignReqInput(''); setNewCampaignCreatorCount(1);
                             }}
                             style={{ width:'100%', background:C.primary, border:'none', borderRadius:'8px', padding:'11px', color:'#fff', fontWeight:700, fontSize:'14px', cursor:'pointer' }}
                           >
                             Publish Campaign
                           </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Escrow Funding Modal — shown after campaign publish, before batch send */}
+                    {showEscrowFundingModal && pendingCampaignForEscrow && (
+                      <div style={{ position:'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.85)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:10000 }}>
+                        <div style={{ background:C.surface, borderRadius:'16px', padding:'28px', maxWidth:'440px', width:'95vw', border:`1px solid ${C.border}` }}>
+                          <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'6px' }}>
+                            <div style={{ width:36, height:36, borderRadius:'50%', background:C.surfaceAlt, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                            </div>
+                            <div style={{ fontSize:'16px', fontWeight:700, color:C.text }}>Fund Escrow</div>
+                          </div>
+                          <div style={{ fontSize:'12px', color:C.textSecondary, marginBottom:'20px', lineHeight:1.5 }}>
+                            Deposit funds upfront to cover all creators in this campaign. Funds are held securely and released per each creator's agreed payment milestones. Unused funds are returned if fewer creators are hired.
+                          </div>
+
+                          {/* Campaign summary */}
+                          <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:'10px', padding:'14px', marginBottom:'14px' }}>
+                            <div style={{ fontSize:'12px', fontWeight:700, color:C.text, marginBottom:'10px' }}>{pendingCampaignForEscrow.title}</div>
+                            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px' }}>
+                              {[
+                                { label:'Per creator', value:`$${parseInt(pendingCampaignForEscrow.budget||'0').toLocaleString()}` },
+                                { label:'Creators hiring', value:`${pendingCampaignForEscrow.creatorCount || 1}` },
+                              ].map(row => (
+                                <div key={row.label} style={{ background:C.surfaceAlt, borderRadius:'6px', padding:'8px 10px' }}>
+                                  <div style={{ fontSize:'10px', color:C.textMuted, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.4px', marginBottom:'3px' }}>{row.label}</div>
+                                  <div style={{ fontSize:'14px', fontWeight:700, color:C.text }}>{row.value}</div>
+                                </div>
+                              ))}
+                            </div>
+                            <div style={{ marginTop:'10px', padding:'10px', background:'rgba(0,212,106,0.06)', border:'1px solid rgba(0,212,106,0.2)', borderRadius:'8px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                              <span style={{ fontSize:'12px', color:C.textSecondary, fontWeight:600 }}>Total escrow deposit</span>
+                              <span style={{ fontSize:'20px', fontWeight:800, color:C.success }}>${(pendingCampaignForEscrow.escrowPool||0).toLocaleString()}</span>
+                            </div>
+                          </div>
+
+                          {/* Payment milestone breakdown */}
+                          <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', padding:'12px', marginBottom:'16px' }}>
+                            <div style={{ fontSize:'10px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.4px', marginBottom:'8px' }}>How funds are released per creator</div>
+                            {[
+                              { label:'Advance (on deal acceptance)', pct:30 },
+                              { label:'On content upload', pct:40 },
+                              { label:'On brand approval', pct:30 },
+                            ].map(m => (
+                              <div key={m.label} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'5px 0', borderBottom:`1px solid ${C.border}` }}>
+                                <span style={{ fontSize:'11px', color:C.textSecondary }}>{m.label}</span>
+                                <span style={{ fontSize:'11px', fontWeight:700, color:C.text }}>{m.pct}%</span>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Escrow progress bar */}
+                          {escrowFundingInProgress2 && (
+                            <div style={{ marginBottom:'14px' }}>
+                              <div style={{ display:'flex', justifyContent:'space-between', fontSize:'11px', color:C.textMuted, marginBottom:'6px' }}>
+                                <span>Processing deposit...</span>
+                                <span style={{ color:'#f59e0b', fontWeight:600 }}>Verifying</span>
+                              </div>
+                              <div style={{ width:'100%', height:'6px', background:C.card, borderRadius:'3px', overflow:'hidden' }}>
+                                <div style={{ width:'70%', height:'100%', background:'#f59e0b', borderRadius:'3px', transition:'width 1.5s ease' }} />
+                              </div>
+                            </div>
+                          )}
+
+                          <button
+                            disabled={escrowFundingInProgress2}
+                            onClick={() => {
+                              setEscrowFundingInProgress2(true);
+                              setTimeout(() => {
+                                // Mark campaign as escrow-funded
+                                persistCampaigns(campaigns.map(c => c.id === pendingCampaignForEscrow.id ? { ...c, escrowFunded: true } : c));
+                                setEscrowFundingInProgress2(false);
+                                setShowEscrowFundingModal(false);
+                                setShowBatchSendModal(true);
+                                setPurchaseToast(`Escrow funded — $${(pendingCampaignForEscrow.escrowPool||0).toLocaleString()} secured`);
+                                setTimeout(() => setPurchaseToast(null), 4000);
+                              }, 2000);
+                            }}
+                            style={{ width:'100%', background: escrowFundingInProgress2 ? C.border : C.primary, border:'none', borderRadius:'10px', padding:'13px', color:'#fff', fontWeight:700, fontSize:'14px', cursor: escrowFundingInProgress2 ? 'not-allowed' : 'pointer', opacity: escrowFundingInProgress2 ? 0.6 : 1, marginBottom:'8px' }}
+                          >
+                            {escrowFundingInProgress2 ? 'Processing...' : `Deposit $${(pendingCampaignForEscrow.escrowPool||0).toLocaleString()} into Escrow`}
+                          </button>
+                          <div style={{ fontSize:'10px', color:C.textMuted, textAlign:'center', lineHeight:1.5 }}>
+                            Funds are non-transferable until released per milestone. Unused funds return within 5 business days.
+                          </div>
                         </div>
                       </div>
                     )}
@@ -4624,6 +4762,17 @@ export default function InstagramDemoPage() {
                             {c.nonNegotiables && c.nonNegotiables.length > 0 && (
                               <div style={{ display:'flex', gap:'5px', flexWrap:'wrap', marginBottom:'8px' }}>
                                 {c.nonNegotiables.map(n=><span key={n} style={{ fontSize:'10px', color:C.textMuted, background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.2)', padding:'2px 7px', borderRadius:'6px' }}>{n}</span>)}
+                              </div>
+                            )}
+                            {(c.creatorCount || c.escrowPool) && (
+                              <div style={{ display:'flex', gap:'8px', marginBottom:'6px', flexWrap:'wrap' }}>
+                                {c.creatorCount && <span style={{ fontSize:'10px', color:C.textSecondary, background:C.surfaceAlt, padding:'2px 8px', borderRadius:'6px' }}>Hiring {c.creatorCount} creator{c.creatorCount!==1?'s':''}</span>}
+                                {c.escrowPool && (
+                                  <span style={{ fontSize:'10px', fontWeight:700, color: c.escrowFunded ? C.success : C.warning, background: c.escrowFunded ? 'rgba(0,212,106,0.08)' : 'rgba(255,171,0,0.08)', border: `1px solid ${c.escrowFunded ? 'rgba(0,212,106,0.25)' : 'rgba(255,171,0,0.25)'}`, padding:'2px 8px', borderRadius:'6px', display:'flex', alignItems:'center', gap:'4px' }}>
+                                    <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                    {c.escrowFunded ? `$${c.escrowPool.toLocaleString()} in escrow` : `$${c.escrowPool.toLocaleString()} escrow pending`}
+                                  </span>
+                                )}
                               </div>
                             )}
                             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
