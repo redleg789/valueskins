@@ -101,6 +101,10 @@ export type Campaign = {
   requirements?: string[];
   status: 'open' | 'closed' | 'expired';
   applicants: number;
+  creatorCount?: number;       // how many creators brand intends to hire
+  escrowFunded?: boolean;      // brand has deposited total escrow
+  escrowPool?: number;         // total amount deposited (budget × creatorCount)
+  escrowAllocated?: number;    // amount allocated to accepted deals so far
 };
 
 // ---- Storage keys ----
