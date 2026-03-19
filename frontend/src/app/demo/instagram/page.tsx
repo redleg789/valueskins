@@ -3918,6 +3918,8 @@ export default function InstagramDemoPage() {
                                           chatInput: '',
                                           performanceClause: false,
                                           advancePercent: 50,
+                                          dealType: collabPaid ? 'c2c_paid' : 'c2c_collab',
+                                          c2cContentStatus: collabPaid ? undefined : 'content_creating',
                                         };
                                         setDealStates(prev => ({ ...prev, [c2cKey]: { ...getOrCreateDeal(c2cKey), ...c2cDeal } }));
                                         setCollabSentNames(p => [...p, creator.name]);
