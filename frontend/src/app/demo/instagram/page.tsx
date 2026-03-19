@@ -929,7 +929,7 @@ export default function InstagramDemoPage() {
   const myApplications = sharedApplications;
   // Gap 4: deal lifecycle
   type CreatorDealLifecycle = 'checklist'|'deliverables'|'submitted'|'approved';
-  type BrandApprovalPhase = 'accepted'|'reviewing'|'approved';
+  type BrandApprovalPhase = 'accepted'|'funding'|'funded'|'reviewing'|'approved';
   const [creatorDealLifecycle, setCreatorDealLifecycle] = useState<CreatorDealLifecycle>('checklist');
   const [brandApprovalPhase, setBrandApprovalPhase] = useState<BrandApprovalPhase>('accepted');
   const [dealUploadSimulated, setDealUploadSimulated] = useState(false);
@@ -962,6 +962,7 @@ export default function InstagramDemoPage() {
   // Contract agreement (before finalization)
   const [contractChecks, setContractChecks] = useState<Record<string, boolean>>({});
   const [contractSignature, setContractSignature] = useState('');
+  const [signatureJurisdiction, setSignatureJurisdiction] = useState('US');
   // Exclusivity tracking (active exclusivities from completed deals)
   const activeExclusivities = completedDeals.filter(d => {
     if (!d.exclusivityDays || !d.exclusivitySkin) return false;
@@ -2375,6 +2376,16 @@ export default function InstagramDemoPage() {
                                                 <div style={{ fontSize:'11px', fontWeight:600, color: isBelow ? '#ef4444' : isAbove ? C.success : C.primary, marginTop:'2px' }}>
                                                   {isBelow ? 'This offer is below market rate' : isAbove ? 'This offer is above market rate' : 'This offer is within market range'}
                                                 </div>
+                                                <details style={{ marginTop:'6px' }}>
+                                                  <summary style={{ fontSize:'10px', color:C.primary, cursor:'pointer', fontWeight:600 }}>How is this calculated?</summary>
+                                                  <div style={{ marginTop:'6px', fontSize:'10px', color:C.textSecondary, lineHeight:1.6 }}>
+                                                    <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'2px' }}><span>Follower tier ({(metrics.followers/1000).toFixed(0)}K)</span><span style={{ color:C.text, fontWeight:600 }}>Base: ${(metrics.followers/1000 < 10 ? 200 : metrics.followers/1000 < 50 ? 800 : metrics.followers/1000 < 200 ? 2500 : metrics.followers/1000 < 1000 ? 8000 : 25000).toLocaleString()}</span></div>
+                                                    <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'2px' }}><span>Engagement ({metrics.engagement.toFixed(1)}%)</span><span style={{ color:C.text, fontWeight:600 }}>x{metrics.engagement > 5 ? '1.4' : metrics.engagement > 3 ? '1.15' : '1.0'}</span></div>
+                                                    <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'2px' }}><span>Skin premium ({selectedMarketplaceSkin || 'Standard'})</span><span style={{ color:C.text, fontWeight:600 }}>x{['Software Engineer','Doctor','Lawyer','Investment Banker','CEO'].includes(selectedMarketplaceSkin||'') ? '1.5' : ['Actor','Musician','Professional Athlete'].includes(selectedMarketplaceSkin||'') ? '1.3' : '1.0'}</span></div>
+                                                    <div style={{ borderTop:`1px solid ${C.border}`, paddingTop:'3px', marginTop:'3px', display:'flex', justifyContent:'space-between', fontWeight:700, color:C.text }}><span>Mid-range</span><span>${rate.mid.toLocaleString()}</span></div>
+                                                    <div style={{ display:'flex', justifyContent:'space-between' }}><span>Range (60% — 150%)</span><span>${rate.low.toLocaleString()} — ${rate.high.toLocaleString()}</span></div>
+                                                  </div>
+                                                </details>
                                               </div>
                                             );
                                           })()}
@@ -2441,6 +2452,23 @@ export default function InstagramDemoPage() {
                                             </label>
                                           ))}
                                           <div style={{ marginTop:'10px' }}>
+                                            <div style={{ fontSize:'10px', color:C.textMuted, marginBottom:'4px' }}>Signature jurisdiction</div>
+                                            <select value={signatureJurisdiction} onChange={e => setSignatureJurisdiction(e.target.value)} style={{ width:'100%', background:C.card, border:`1px solid ${C.border}`, borderRadius:'6px', padding:'7px 8px', fontSize:'11px', color:C.text, boxSizing:'border-box', marginBottom:'8px', cursor:'pointer' }}>
+                                              {[
+                                                { code:'US', label:'United States (E-SIGN Act)' },
+                                                { code:'EU', label:'European Union (eIDAS)' },
+                                                { code:'UK', label:'United Kingdom (ECA 2000)' },
+                                                { code:'IN', label:'India (IT Act 2000)' },
+                                                { code:'CA', label:'Canada (PIPEDA)' },
+                                                { code:'AU', label:'Australia (ETA 1999)' },
+                                                { code:'BR', label:'Brazil (MP 2200-2)' },
+                                                { code:'JP', label:'Japan (ESIGN Law)' },
+                                                { code:'KR', label:'South Korea (DSEA)' },
+                                                { code:'SG', label:'Singapore (ETA)' },
+                                                { code:'AE', label:'UAE (Federal Law No. 1)' },
+                                                { code:'OTHER', label:'Other jurisdiction' },
+                                              ].map(j => <option key={j.code} value={j.code}>{j.label}</option>)}
+                                            </select>
                                             <div style={{ fontSize:'10px', color:C.textMuted, marginBottom:'4px' }}>Type your full name to sign</div>
                                             <input value={contractSignature} onChange={e => setContractSignature(e.target.value)} placeholder={profileName || 'Your Name'} style={{ width:'100%', background:C.card, border:`1px solid ${C.border}`, borderRadius:'6px', padding:'8px', fontSize:'12px', color:C.text, boxSizing:'border-box', fontStyle:'italic' }} />
                                           </div>
@@ -2548,20 +2576,22 @@ export default function InstagramDemoPage() {
                                             </div>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'rgba(211,47,47,0.08)', border: '1px solid rgba(211,47,47,0.2)', borderRadius: '5px', padding: '2px 6px' }}>
                                               <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#d32f2f', animation: 'pulse 1.4s ease-in-out infinite' }} />
-                                              <span style={{ fontSize: '9px', color: '#d32f2f', fontWeight: 700, letterSpacing: '0.4px' }}>RECORDING</span>
-                                              <span style={{ fontSize: '9px', color: C.textMuted, fontWeight: 400 }}>{chatMessages.length} events</span>
+                                              <span style={{ fontSize: '9px', color: '#d32f2f', fontWeight: 700, letterSpacing: '0.4px' }}>AUDIT LOG</span>
+                                              <span style={{ fontSize: '9px', color: C.textMuted, fontWeight: 400 }}>{chatMessages.length} documented</span>
                                             </div>
                                           </div>
                                           {/* Messages */}
                                           <div style={{ flex: 1, overflowY: 'auto', padding: '8px', display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '220px' }}>
-                                            {chatMessages.map((msg, mi) => (
-                                              <div key={msg.id} style={{ display: 'flex', justifyContent: msg.sender === 'me' ? 'flex-end' : 'flex-start' }}>
+                                            {chatMessages.map((msg, mi) => {
+                                              const isMe = msg.sender === 'me' || msg.sender === marketplaceRole;
+                                              return (
+                                              <div key={msg.id} style={{ display: 'flex', justifyContent: isMe ? 'flex-end' : 'flex-start' }}>
                                                 <div style={{
                                                   maxWidth: '80%',
                                                   padding: '6px 10px',
-                                                  borderRadius: msg.sender === 'me' ? '10px 10px 2px 10px' : '10px 10px 10px 2px',
-                                                  background: msg.sender === 'me' ? C.primary : C.surfaceAlt,
-                                                  color: msg.sender === 'me' ? '#fff' : C.text,
+                                                  borderRadius: isMe ? '10px 10px 2px 10px' : '10px 10px 10px 2px',
+                                                  background: isMe ? C.primary : C.surfaceAlt,
+                                                  color: isMe ? '#fff' : C.text,
                                                   fontSize: '12px',
                                                   lineHeight: 1.4,
                                                 }}>
@@ -2591,7 +2621,8 @@ export default function InstagramDemoPage() {
                                                   </div>
                                                 </div>
                                               </div>
-                                            ))}
+                                            );
+                                            })}
                                           </div>
                                           {/* Input */}
                                           <form onSubmit={(e) => {
@@ -2605,27 +2636,6 @@ export default function InstagramDemoPage() {
                                             setChatMessages(prev => [...prev, newMsg]);
                                             firebaseAddMessage(activeDealKey ?? '', newMsg);
                                             setChatInput('');
-                                            // Simulate other party reading + replying
-                                            setTimeout(() => {
-                                              const seenAt = new Date().toISOString();
-                                              // Mark sender's messages as seen
-                                              setChatMessages(prev => prev.map(m => m.sender === msgSender && !m.seen ? { ...m, seen: true, seenAt } : m));
-                                              setTimeout(() => {
-                                                const replies = [
-                                                  'Sounds good! Let me check with my team.',
-                                                  'Great point. We can work with that.',
-                                                  'Agreed. Let\'s finalize the terms.',
-                                                  'Perfect, I\'ll update the brief.',
-                                                  'That works for us. Ready to proceed?',
-                                                ];
-                                                const replyTime = new Date();
-                                                const replyTimeStr = replyTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: false });
-                                                const replySender: 'brand' | 'creator' = (marketplaceRole as 'brand' | 'creator') === 'brand' ? 'creator' : 'brand';
-                                                const replyMsg = { id: Date.now(), sender: replySender, text: replies[Math.floor(Math.random() * replies.length)], time: replyTimeStr, isoTime: replyTime.toISOString(), seen: false };
-                                                setChatMessages(prev => [...prev, replyMsg]);
-                                                firebaseAddMessage(activeDealKey ?? '', replyMsg);
-                                              }, 800);
-                                            }, 1200);
                                           }} style={{ display: 'flex', gap: '4px', padding: '6px', borderTop: `1px solid ${C.border}` }}>
                                             <input
                                               type="text"
@@ -3367,7 +3377,7 @@ export default function InstagramDemoPage() {
                           <div style={{ fontSize:'12px', color:C.textSecondary, marginBottom:'16px' }}>Select creators to invite to "{campaigns.find(c => c.id === lastCreatedCampaignId)?.title || 'Campaign'}"</div>
                           <div style={{ maxHeight:'400px', overflowY:'auto', marginBottom:'16px', border:`1px solid ${C.border}`, borderRadius:'8px', background:C.bg }}>
                             {BRAND_MARKETPLACE_CREATORS.map((creator, idx) => (
-                              <div key={creator.name} style={{ padding:'12px 12px', borderBottom: idx < BRAND_MARKETPLACE_CREATORS.length - 1 ? `1px solid ${C.border}` : 'none', display:'flex', gap:'10px', alignItems:'center', cursor:'pointer' }} onClick={() => { setBatchSendCreatorIds(prev => { const newSet = new Set(prev); if (newSet.has(idx)) newSet.delete(idx); else newSet.add(idx); return newSet; }); }}>
+                              <div key={creator.name} style={{ padding:'12px 12px', borderBottom: idx < BRAND_MARKETPLACE_CREATORS.length - 1 ? `1px solid ${C.border}` : 'none', display:'flex', gap:'10px', alignItems:'center', cursor:'pointer', background: batchSendCreatorIds.has(idx) ? `${C.primary}10` : 'transparent', borderLeft: batchSendCreatorIds.has(idx) ? `3px solid ${C.primary}` : '3px solid transparent', transition:'background 0.15s, border-color 0.15s' }} onClick={() => { setBatchSendCreatorIds(prev => { const newSet = new Set(prev); if (newSet.has(idx)) newSet.delete(idx); else newSet.add(idx); return newSet; }); }}>
                                 <input type="checkbox" checked={batchSendCreatorIds.has(idx)} onChange={() => {}} style={{ cursor:'pointer', width:'18px', height:'18px', accentColor:C.primary }} />
                                 <div style={{ flex:1 }}>
                                   <div style={{ fontSize:'13px', fontWeight:600, color:C.text }}>{creator.name}</div>
@@ -3447,7 +3457,7 @@ export default function InstagramDemoPage() {
                             <div style={{ flex:1 }}>
                               <div style={{ fontSize:'16px', fontWeight:700, color:C.text, marginBottom:'4px' }}>{selectedProfileCreator.name}</div>
                               <a href={`https://instagram.com/${selectedProfileCreator.handle.replace('@', '')}`} target="_blank" rel="noopener noreferrer" style={{ fontSize:'12px', color:C.primary, textDecoration:'none' }}>{selectedProfileCreator.handle}</a>
-                              <div style={{ fontSize:'11px', color:C.textSecondary, marginTop:'4px' }}>4.8★ rating from {Math.floor(Math.random() * 15) + 5} deals</div>
+                              <div style={{ fontSize:'11px', color:C.textSecondary, marginTop:'4px' }}>4.8★ rating from {(selectedProfileCreator.name.charCodeAt(0) % 15) + 5} deals</div>
                             </div>
                           </div>
                           <div style={{ marginBottom:'16px', padding:'10px 12px', background:C.card, borderRadius:'10px', border:`1px solid ${C.border}` }}>
@@ -3785,7 +3795,7 @@ export default function InstagramDemoPage() {
                               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <a href={`https://instagram.com/${creator.handle.replace('@', '')}`} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontSize: '12px', color: C.primary, textDecoration: 'none', cursor: 'pointer' }} onMouseEnter={e => { e.currentTarget.style.textDecoration = 'underline'; }} onMouseLeave={e => { e.currentTarget.style.textDecoration = 'none'; }}>{creator.handle}</a>
                                 <span style={{ fontSize: '11px', color: C.textSecondary }}>·</span>
-                                <span style={{ fontSize: '11px', color: C.textSecondary }}>4.8★ from {Math.floor(Math.random() * 15) + 5} deals</span>
+                                <span style={{ fontSize: '11px', color: C.textSecondary }}>4.8★ from {(creator.name.charCodeAt(0) % 15) + 5} deals</span>
                                 <button onClick={() => { setSelectedProfileCreator(creator); setShowCreatorProfileModal(true); }} style={{ marginLeft: 'auto', fontSize: '10px', fontWeight: 600, color: C.primary, background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>View Profile</button>
                               </div>
                             </div>
@@ -4325,9 +4335,9 @@ export default function InstagramDemoPage() {
                                   <div style={{ marginBottom: '12px' }}>
                                     <div style={{ fontSize: '11px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>Escrow Stages</div>
                                     {[
-                                      { stage: 'Advance', pct: '30%', status: 'Pending payment' },
-                                      { stage: 'Milestone', pct: '40%', status: 'On content delivery' },
-                                      { stage: 'Completion', pct: '30%', status: 'On approval' },
+                                      { stage: 'Advance', pct: '30%', status: brandApprovalPhase === 'accepted' ? 'Awaiting escrow deposit' : 'Funded — held in escrow' },
+                                      { stage: 'Milestone', pct: '40%', status: 'Released on content delivery' },
+                                      { stage: 'Completion', pct: '30%', status: 'Released on your approval' },
                                     ].map((s, si) => (
                                       <div key={si} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 10px', background: C.bg, borderRadius: '6px', marginBottom: '4px', border: `1px solid ${C.border}` }}>
                                         <div>
@@ -4343,11 +4353,59 @@ export default function InstagramDemoPage() {
 
                                   {brandApprovalPhase === 'accepted' && (
                                     <button
-                                      onClick={() => setBrandApprovalPhase('reviewing')}
-                                      style={{ width: '100%', background: C.success, border: 'none', padding: '9px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}
+                                      onClick={() => setBrandApprovalPhase('funding')}
+                                      style={{ width: '100%', background: C.primary, border: 'none', padding: '9px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}
                                     >
-                                      Proceed to Escrow — Review Deliverables
+                                      Fund Escrow to Begin
                                     </button>
+                                  )}
+                                  {brandApprovalPhase === 'funding' && (() => {
+                                    const totalAmount = parseInt(simulatedCounterAmount) || 5000;
+                                    return (
+                                      <div style={{ marginTop:'12px' }}>
+                                        <div style={{ fontSize:'11px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'10px' }}>Fund Escrow Account</div>
+                                        <div style={{ background:C.bg, borderRadius:'10px', padding:'14px', border:`1px solid ${C.border}`, marginBottom:'12px' }}>
+                                          <div style={{ fontSize:'12px', color:C.textSecondary, marginBottom:'10px', lineHeight:1.5 }}>
+                                            Deposit <strong style={{ color:C.text }}>${totalAmount.toLocaleString()}</strong> into the ValueSkins escrow. Funds are held securely and released to the creator per the agreed milestones.
+                                          </div>
+                                          <div style={{ display:'flex', justifyContent:'space-between', fontSize:'11px', marginBottom:'4px' }}>
+                                            <span style={{ color:C.textMuted }}>Advance (30%)</span>
+                                            <span style={{ color:C.text, fontWeight:600 }}>${Math.round(totalAmount * 0.3).toLocaleString()} — released immediately</span>
+                                          </div>
+                                          <div style={{ display:'flex', justifyContent:'space-between', fontSize:'11px', marginBottom:'4px' }}>
+                                            <span style={{ color:C.textMuted }}>Milestone (40%)</span>
+                                            <span style={{ color:C.text, fontWeight:600 }}>${Math.round(totalAmount * 0.4).toLocaleString()} — on content delivery</span>
+                                          </div>
+                                          <div style={{ display:'flex', justifyContent:'space-between', fontSize:'11px' }}>
+                                            <span style={{ color:C.textMuted }}>Completion (30%)</span>
+                                            <span style={{ color:C.text, fontWeight:600 }}>${Math.round(totalAmount * 0.3).toLocaleString()} — on your approval</span>
+                                          </div>
+                                        </div>
+                                        <div style={{ background:'rgba(0,102,204,0.06)', border:'1px solid rgba(0,102,204,0.15)', borderRadius:'8px', padding:'10px', marginBottom:'12px', fontSize:'11px', color:C.textSecondary, lineHeight:1.5 }}>
+                                          Funds are protected by ValueSkins escrow. You can dispute and recover funds if the creator fails to deliver.
+                                        </div>
+                                        <button
+                                          onClick={() => {
+                                            setBrandApprovalPhase('funded');
+                                            setPurchaseToast('Escrow funded — creator notified to begin work');
+                                            setTimeout(() => setPurchaseToast(null), 3000);
+                                            setTimeout(() => setBrandApprovalPhase('reviewing'), 2000);
+                                          }}
+                                          style={{ width:'100%', background:C.success, border:'none', padding:'10px', borderRadius:'8px', color:'#fff', fontWeight:700, cursor:'pointer', fontSize:'13px' }}
+                                        >
+                                          Deposit ${totalAmount.toLocaleString()} into Escrow
+                                        </button>
+                                      </div>
+                                    );
+                                  })()}
+                                  {brandApprovalPhase === 'funded' && (
+                                    <div style={{ textAlign:'center', padding:'16px 0' }}>
+                                      <div style={{ width:'44px', height:'44px', borderRadius:'50%', background:'rgba(46,125,50,0.1)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 10px' }}>
+                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={C.success} strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                                      </div>
+                                      <div style={{ fontSize:'14px', fontWeight:700, color:C.success }}>Escrow Funded</div>
+                                      <div style={{ fontSize:'12px', color:C.textSecondary, marginTop:'4px' }}>Creator has been notified to begin work</div>
+                                    </div>
                                   )}
                                   {brandApprovalPhase === 'reviewing' && (
                                     <div style={{ marginTop:'12px' }}>
