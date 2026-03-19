@@ -583,6 +583,38 @@ export default function InstagramDemoPage() {
   // Firebase sync — all users share one global namespace
   const { state: firebaseState, syncing: firebaseSyncing, createCampaign: firebaseCreateCampaign, updateDeal: firebaseUpdateDeal, addMessage: firebaseAddMessage, sendNotification: firebaseSendNotification, createApplication: firebaseCreateApplication } = useFirebaseRoom(null, null, '');
   const { dealStates, setDealStates, getOrCreateDeal, updateDeal: localUpdateDeal } = dealSync;
+
+  // CRITICAL FIX: Sync Firebase state back to local state for real-time multi-device updates
+  useEffect(() => {
+    if (firebaseState.deals && Object.keys(firebaseState.deals).length > 0) {
+      setDealStates(prev => {
+        const updated = { ...prev };
+        for (const [key, fbDeal] of Object.entries(firebaseState.deals)) {
+          // Merge Firebase state with local state, Firebase takes precedence
+          updated[key] = { ...prev[key], ...fbDeal };
+        }
+        return updated;
+      });
+    }
+  }, [firebaseState.deals, setDealStates]);
+
+  // Sync Firebase messages back to local deal state
+  useEffect(() => {
+    if (firebaseState.messages && selectedMarketplaceSkin && negotiatingOpp !== null) {
+      const key = `${selectedMarketplaceSkin}:${negotiatingOpp}`;
+      const fbMessages = firebaseState.messages[key] || [];
+      if (fbMessages.length > 0) {
+        setDealStates(prev => ({
+          ...prev,
+          [key]: {
+            ...prev[key],
+            chatMessages: fbMessages,
+          },
+        }));
+      }
+    }
+  }, [firebaseState.messages, selectedMarketplaceSkin, negotiatingOpp, setDealStates]);
+
   const updateDeal = useCallback((key: string, updates: Partial<DealState>) => {
     localUpdateDeal(key, updates);
     firebaseUpdateDeal(key, updates);
