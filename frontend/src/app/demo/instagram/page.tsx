@@ -595,7 +595,29 @@ export default function InstagramDemoPage() {
 
   // Convenience accessors for the active deal (backward compat with existing render code)
   const dealRoomPhase = activeDeal?.phase ?? 'brief';
-  const setDealRoomPhase = (p: DealRoomPhase) => { if (activeDealKey) updateDeal(activeDealKey, { phase: p }); };
+  const setDealRoomPhase = (p: DealRoomPhase) => {
+    if (activeDealKey) {
+      updateDeal(activeDealKey, { phase: p });
+      // Real-time notification: broadcast phase change to other device/user
+      const opp = activeOpportunities[negotiatingOpp ?? 0];
+      const phaseNames: Record<DealRoomPhase, string> = {
+        brief: 'Deal initiated',
+        offer: 'Brand sent offer',
+        counter: 'Creator countered',
+        brand_considering: 'Brand reviewing',
+        brand_countered: 'Brand countered',
+        brand_rejected: 'Brand rejected',
+        chatroom: 'In negotiation',
+        formal_offer: 'Formal offer sent',
+        checklist: 'Terms checklist',
+        accepted: 'Deal accepted',
+        softhold: 'Escrow hold',
+      };
+      firebaseSendNotification(opp?.brand || 'Brand', 'application', `${phaseNames[p]} · ${opp?.brand} & you are now at: ${phaseNames[p]}`);
+      setPurchaseToast(`Deal moved to: ${phaseNames[p]}`);
+      setTimeout(() => setPurchaseToast(null), 2500);
+    }
+  };
   const dealIntent = activeDeal?.intent ?? 'campaign';
   const setDealIntent = (i: 'explore' | 'campaign' | 'long-term') => { if (activeDealKey) updateDeal(activeDealKey, { intent: i }); };
   const dealBriefFilled = activeDeal?.briefFilled ?? false;
@@ -2883,6 +2905,10 @@ export default function InstagramDemoPage() {
                                                 const counterMsg = { id: Date.now(), sender: 'creator' as const, text: `Counter-offer: $${creatorAsk.toLocaleString()} (brand offered $${brandOffer.toLocaleString()})`, time: timeStr, isoTime: now.toISOString(), seen: false };
                                                 setChatMessages(prev => [...prev, counterMsg]);
                                                 firebaseAddMessage(activeDealKey ?? '', counterMsg);
+                                                // Real-time notification: brand sees counter immediately
+                                                firebaseSendNotification(opp?.brand || 'Brand', 'message', `Creator countered: $${creatorAsk.toLocaleString()} (you offered $${brandOffer.toLocaleString()})`);
+                                                setPurchaseToast(`Counter sent: $${creatorAsk.toLocaleString()}`);
+                                                setTimeout(() => setPurchaseToast(null), 2000);
                                                 if (activeDealKey) simulateBrandResponse(creatorAsk, brandOffer, activeDealKey);
                                               }}
                                               style={{ width: '100%', background: dealCounterAmount && parseInt(dealCounterAmount) > 0 ? C.primary : C.border, border: 'none', padding: '6px', borderRadius: '6px', color: '#fff', fontWeight: 600, fontSize: '11px', cursor: dealCounterAmount && parseInt(dealCounterAmount) > 0 ? 'pointer' : 'not-allowed', opacity: dealCounterAmount && parseInt(dealCounterAmount) > 0 ? 1 : 0.5 }}

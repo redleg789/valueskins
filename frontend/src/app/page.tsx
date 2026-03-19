@@ -25,6 +25,12 @@ export default function HomePage() {
       color: 'linear-gradient(135deg, #ff0000 0%, #ff6b00 100%)',
       path: '/demo/youtube',
     },
+    {
+      name: 'TikTok',
+      description: 'Short-Form Video Platform',
+      color: 'linear-gradient(135deg, #000000 0%, #25f4ee 50%, #fe2c55 100%)',
+      path: '/demo/tiktok',
+    },
   ];
 
   return (
