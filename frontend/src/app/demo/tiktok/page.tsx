@@ -1809,7 +1809,7 @@ export default function TikTokDemoPage() {
           </Link>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             <NavItem label="Home" active={false} onClick={() => {}} />
-            <NavItem label="Explore" active={activeView === 'explore'} onClick={() => setActiveView('explore')} />
+            <NavItem label="Discover" active={activeView === 'explore'} onClick={() => setActiveView('explore')} />
             <NavItem label="Messages" active={activeView === 'messages'} onClick={() => { setActiveCommunity(null); setActiveDmId(null); setActiveView('messages'); }} />
             <NavItem label="Notifications" active={activeView === 'notifications'} badgeCount={notifications.filter(n => !n.read).length} onClick={() => { setNotifications(prev => prev.map(n => ({ ...n, read: true }))); setActiveView('notifications'); }} />
             <NavItem label="Create" active={false} onClick={() => { setActiveView('profile'); }} />
@@ -1826,7 +1826,7 @@ export default function TikTokDemoPage() {
 
       {/* Main Content */}
       <div style={{ flex: 1, display: 'flex', justifyContent: 'center', overflowX: 'hidden', paddingBottom: isMobile ? '60px' : 0 }}>
-        <div style={{ width: '100%', maxWidth: '680px', borderLeft: isMobile ? 'none' : `1px solid ${C.border}`, borderRight: isMobile ? 'none' : `1px solid ${C.border}`, background: C.surface, overflowX: 'hidden' }}>
+        <div style={{ width: '100%', maxWidth: isMobile ? '390px' : '680px', borderLeft: isMobile ? 'none' : `1px solid ${C.border}`, borderRight: isMobile ? 'none' : `1px solid ${C.border}`, background: C.surface, overflowX: 'hidden', minHeight: '100vh' }}>
 
           {/* ── PROFILE VIEW ──────────────────────────────────── */}
           {activeView === 'profile' && (
@@ -1836,13 +1836,27 @@ export default function TikTokDemoPage() {
                 height: '52px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 position: 'sticky', top: 0, background: C.surface, zIndex: 10, padding: '0 16px', borderBottom: `1px solid ${C.border}`,
               }}>
-                <span style={{ fontSize: '20px', fontWeight: 700, color: C.text }}>@saketh_eth</span>
-                <button
-                  onClick={() => setShowAvatarSettings(!showAvatarSettings)}
-                  style={{ background: C.surfaceAlt, border: `1px solid ${C.border}`, borderRadius: '999px', padding: '6px 12px', fontSize: '12px', color: C.textSecondary, cursor: 'pointer', fontWeight: 600 }}
-                >
-                  Settings
-                </button>
+                {isMobile ? (
+                  <>
+                    <button onClick={() => setActiveView('messages')} style={{ background: 'none', border: 'none', color: C.text, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="10" cy="9" r="3.5"/><path d="M3 19a7 7 0 0 1 14 0"/><path d="M17.5 7.5h4m-2-2v4"/></svg>
+                    </button>
+                    <span style={{ fontSize: '24px', fontWeight: 700, color: C.text }}>Jacob West</span>
+                    <button onClick={() => setShowAvatarSettings(!showAvatarSettings)} style={{ background: 'none', border: 'none', color: C.text, cursor: 'pointer', padding: 0, fontSize: '20px', lineHeight: 1 }}>
+                      ...
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <span style={{ fontSize: '20px', fontWeight: 700, color: C.text }}>@saketh_eth</span>
+                    <button
+                      onClick={() => setShowAvatarSettings(!showAvatarSettings)}
+                      style={{ background: C.surfaceAlt, border: `1px solid ${C.border}`, borderRadius: '999px', padding: '6px 12px', fontSize: '12px', color: C.textSecondary, cursor: 'pointer', fontWeight: 600 }}
+                    >
+                      Settings
+                    </button>
+                  </>
+                )}
               </div>
 
               {/* Avatar Settings */}
@@ -6238,8 +6252,12 @@ export default function TikTokDemoPage() {
               {activeCommunity === null && activeDmId === null ? (
                 <>
                   {/* Header */}
-                  <div style={{ height: '52px', display: 'flex', alignItems: 'center', paddingLeft: '16px', paddingRight: '16px', position: 'sticky', top: 0, background: C.bg, zIndex: 10 }}>
-                    <span style={{ fontSize: '22px', fontWeight: 700, color: C.text }}>Messages</span>
+                  <div style={{ height: '52px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: '16px', paddingRight: '16px', position: 'sticky', top: 0, background: C.surface, borderBottom: `1px solid ${C.border}`, zIndex: 10 }}>
+                    <button onClick={() => setActiveView('profile')} style={{ background: 'none', border: 'none', color: C.text, cursor: 'pointer', padding: 0, display: 'flex' }}>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6" /></svg>
+                    </button>
+                    <span style={{ fontSize: '30px', fontWeight: 700, color: C.text, lineHeight: 1 }}>Direct messages</span>
+                    <button onClick={() => setMessagesTab('create')} style={{ background: 'none', border: 'none', color: C.text, cursor: 'pointer', padding: 0, fontSize: '28px', lineHeight: 1 }}>+</button>
                   </div>
 
                   {/* Filter tabs — DMs | Communities */}
@@ -7321,11 +7339,11 @@ export default function TikTokDemoPage() {
           {/* ── NOTIFICATIONS VIEW ────────────────────────────── */}
           {activeView === 'notifications' && (
             <>
-              <div style={{ height: '52px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: '16px', paddingRight: '16px', position: 'sticky', top: 0, background: C.bg, zIndex: 10 }}>
-                <span style={{ fontSize: '22px', fontWeight: 700, color: C.text }}>Notifications</span>
-                {notifications.length > 0 && (
-                  <button onClick={() => { setNotifications([]); setPurchaseToast('Notifications cleared'); setTimeout(() => setPurchaseToast(null), 2000); }} style={{ background: 'none', border: 'none', fontSize: '12px', color: C.primary, cursor: 'pointer', fontWeight: 600 }}>Clear all</button>
-                )}
+              <div style={{ height: '52px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: '16px', paddingRight: '16px', position: 'sticky', top: 0, background: C.surface, borderBottom: `1px solid ${C.border}`, zIndex: 10 }}>
+                <span style={{ fontSize: '30px', fontWeight: 700, color: C.text, margin: '0 auto' }}>All activity <span style={{ fontSize: '16px' }}>▼</span></span>
+                <button onClick={() => { setActiveView('messages'); }} style={{ position: 'absolute', right: '16px', background: 'none', border: 'none', color: C.text, cursor: 'pointer', padding: 0, display: 'flex' }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 2 11 13" /><path d="m22 2-7 20-4-9-9-4Z" /></svg>
+                </button>
               </div>
               {!hasAnySkin ? (
                 <div style={{ textAlign: 'center', padding: '60px 20px', color: C.textMuted }}>
@@ -7581,12 +7599,12 @@ export default function TikTokDemoPage() {
           {/* ── SETTINGS VIEW ────────────────────────────────── */}
           {activeView === 'settings' && (
             <>
-              <div style={{ height: '60px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: '20px', paddingRight: '20px', fontWeight: 'bold', fontSize: '16px', background: C.surface }}>
-                <div>
-                  Settings
-                  <span style={{ fontSize: '11px', fontWeight: 600, color: C.textSecondary, marginLeft: '10px' }}>ValueSkins preferences</span>
-                </div>
-                <span style={{ fontSize: '11px', fontWeight: 600, color: C.success }}>Auto-saved</span>
+              <div style={{ height: '52px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: '16px', paddingRight: '16px', fontWeight: 'bold', background: C.surface }}>
+                <button onClick={() => setActiveView('profile')} style={{ background: 'none', border: 'none', color: C.text, cursor: 'pointer', padding: 0, display: 'flex' }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6" /></svg>
+                </button>
+                <span style={{ fontSize: '30px', color: C.text }}>Privacy and settings</span>
+                <span style={{ width: '20px' }} />
               </div>
               <div style={{ padding: '20px' }}>
 
@@ -8607,15 +8625,15 @@ export default function TikTokDemoPage() {
       {isMobile && (
         <div style={{
           position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 200,
-          background: C.surface, borderTop: `1px solid ${C.border}`, boxShadow: '0 -6px 20px rgba(0,0,0,0.06)',
+          background: C.surface, borderTop: `1px solid ${C.border}`,
           display: 'flex', alignItems: 'stretch',
         }}>
           {([
             { label: 'Home', view: 'profile' as const, icon: 'home' },
-            { label: 'Market', view: 'mim' as const, icon: 'market' },
+            { label: 'Discover', view: 'mim' as const, icon: 'market' },
             { label: '+', view: 'store' as const, icon: 'plus' },
             { label: 'Inbox', view: 'messages' as const, icon: 'inbox' },
-            { label: 'Me', view: 'settings' as const, icon: 'me' },
+            { label: 'Me', view: 'profile' as const, icon: 'me' },
           ]).map(({ label, view, icon }) => (
             <button
               key={view}
@@ -8627,14 +8645,14 @@ export default function TikTokDemoPage() {
               style={{
                 flex: 1, minHeight: '44px', background: 'none', border: 'none',
                 color: activeView === view ? C.text : C.textMuted,
-                fontSize: view === 'store' ? '18px' : '10px', fontWeight: activeView === view ? 700 : 500,
+                fontSize: '10px', fontWeight: activeView === view ? 700 : 500,
                 cursor: 'pointer', display: 'flex', flexDirection: 'column',
                 alignItems: 'center', justifyContent: 'center', gap: '2px',
                 padding: '6px 2px',
               }}
             >
-              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: view === 'store' ? '30px' : '20px', height: view === 'store' ? '22px' : '20px', borderRadius: view === 'store' ? '8px' : 0, background: view === 'store' ? C.text : 'transparent', color: view === 'store' ? '#fff' : (activeView === view ? C.text : C.textMuted), fontSize: view === 'store' ? '18px' : '13px', fontWeight: 700 }}>
-                {icon === 'plus' ? '+' : icon === 'home' ? '⌂' : icon === 'market' ? '◫' : icon === 'inbox' ? '✉' : '◉'}
+              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: view === 'store' ? '34px' : '20px', height: view === 'store' ? '24px' : '20px', borderRadius: view === 'store' ? '7px' : 0, background: view === 'store' ? '#111' : 'transparent', color: view === 'store' ? '#fff' : (activeView === view ? C.text : C.textMuted), boxShadow: view === 'store' ? '2px 0 0 #25F4EE, -2px 0 0 #FE2C55' : 'none' }}>
+                <MobileTabIcon icon={icon as 'home' | 'market' | 'plus' | 'inbox' | 'me'} active={activeView === view} />
               </span>
               {label}
             </button>
@@ -8649,7 +8667,7 @@ function NavItem({ label, active, onClick, badgeCount }: { label: string; active
   const iconStroke = active ? C.text : C.textSecondary;
   const icon = (() => {
     if (label === 'Home') return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={iconStroke} strokeWidth="2"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>;
-    if (label === 'Explore') return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={iconStroke} strokeWidth="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>;
+    if (label === 'Discover' || label === 'Explore') return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={iconStroke} strokeWidth="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>;
     if (label === 'Messages') return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={iconStroke} strokeWidth="2"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></svg>;
     if (label === 'Notifications') return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={iconStroke} strokeWidth="2"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 7-3 7h18s-3 0-3-7"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>;
     if (label === 'Create') return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={iconStroke} strokeWidth="2.4"><path d="M12 5v14M5 12h14"/></svg>;
@@ -8675,6 +8693,15 @@ function NavItem({ label, active, onClick, badgeCount }: { label: string; active
       )}
     </button>
   );
+}
+
+function MobileTabIcon({ icon, active }: { icon: 'home' | 'market' | 'plus' | 'inbox' | 'me'; active: boolean }) {
+  const stroke = active ? '#161823' : '#8A8B91';
+  if (icon === 'plus') return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5"><path d="M12 5v14M5 12h14" /></svg>;
+  if (icon === 'home') return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="2"><path d="M3 10.5L12 3l9 7.5" /><path d="M5 9.5V21h14V9.5" /></svg>;
+  if (icon === 'market') return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="2"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>;
+  if (icon === 'inbox') return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="2"><path d="M3 6h18v12H3z" /><path d="M3 14h5l2 3h4l2-3h5" /></svg>;
+  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="2"><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></svg>;
 }
 
 function SkinManagementModal({ slot, onClose, valueSkins, hiddenSkins, onHide, onUnhide, onDelete }: { slot: ValueSkinSlot; onClose: () => void; valueSkins: ValueSkinMap; hiddenSkins: Set<ValueSkinSlot>; onHide: (slot: ValueSkinSlot) => void; onUnhide: (slot: ValueSkinSlot) => void; onDelete: (slot: ValueSkinSlot) => void }) {
