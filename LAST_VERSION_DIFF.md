@@ -1,7 +1,7 @@
 # Last Version Diff
 
 Comparison:
-- Previous version: `6d84296`
+- Previous version: `42dd996`
 - Current version: `TBD (next commit)`
 
 ## What changed
@@ -25,6 +25,10 @@ Comparison:
   - Safer error responses (no internal details leaked).
   - `Cache-Control: no-store` on proxied responses.
 - Removed deprecated Next middleware file to avoid legacy convention warnings.
+- API gateway startup/security hardening:
+  - Enforces strong `JWT_SECRET` policy at boot (min length + non-default values).
+  - Applies stricter per-IP limiter specifically on `/auth/*` endpoints.
+  - Replaced deprecated governor API usage (`per_second`) with `seconds_per_request`.
 
 ## Files changed in current version
 - `backend/api_gateway/src/handlers/auth.rs`
@@ -32,3 +36,4 @@ Comparison:
 - `backend/marketplace_service/src/handlers.rs`
 - `frontend/src/app/api/backend/[...path]/route.ts`
 - `frontend/src/middleware.ts` (deleted)
+- `backend/api_gateway/src/main.rs`

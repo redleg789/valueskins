@@ -40,6 +40,14 @@ use crate::middleware::auth::JwtAuth;
 use crate::middleware::rate_limit::{TieredRateLimiter, TierLimits};
 use crate::middleware::maintenance::MaintenanceGuard;
 
+fn validate_jwt_secret(secret: &str) {
+    let weak_values = ["changeme", "secret", "default", "valueskins", "jwt_secret"];
+    if secret.len() < 32 || weak_values.iter().any(|w| secret.eq_ignore_ascii_case(w)) {
+        tracing::error!("JWT_SECRET failed security policy (min length 32, non-default)");
+        std::process::exit(1);
+    }
+}
+
 async fn health_check() -> impl Responder {
     HttpResponse::Ok().json(serde_json::json!({ "status": "ok", "service": "Valueskins API" }))
 }
@@ -76,6 +84,7 @@ async fn main() -> std::io::Result<()> {
 
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     let jwt_secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set — refusing to start with default secret");
+    validate_jwt_secret(&jwt_secret);
     let allowed_origins = env::var("ALLOWED_ORIGINS")
         .unwrap_or_else(|_| {
             tracing::warn!("ALLOWED_ORIGINS not set — defaulting to production origins only (no localhost)");
@@ -135,8 +144,15 @@ async fn main() -> std::io::Result<()> {
 
     // Rate limiter: 60 requests per minute per IP
     let governor_conf = GovernorConfigBuilder::default()
-        .per_second(1)
+        .seconds_per_request(1)
         .burst_size(60)
+        .finish()
+        .unwrap();
+
+    // Stricter limiter for public auth endpoints to reduce brute-force/abuse.
+    let auth_governor_conf = GovernorConfigBuilder::default()
+        .seconds_per_request(10)
+        .burst_size(3)
         .finish()
         .unwrap();
 
@@ -259,6 +275,7 @@ async fn main() -> std::io::Result<()> {
 
             .service(
                 web::scope("/auth")
+                    .wrap(Governor::new(&auth_governor_conf))
                     .route("/login", web::post().to(handlers::auth::login))
                     .route("/refresh", web::post().to(handlers::auth::refresh_token))
                     .route("/logout", web::post().to(handlers::auth::logout))
