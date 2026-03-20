@@ -26,28 +26,28 @@ function getStickerForProfession(profession: string): string | undefined {
 
 const C = {
   primary: '#FE2C55',
-  bg: '#F8F8F8',
-  surface: '#FFFFFF',
-  surfaceAlt: '#F1F1F2',
-  card: '#FFFFFF',
-  text: '#161823',
-  textSecondary: '#4B5563',
-  textMuted: '#8A8B91',
-  border: '#E5E7EB',
-  borderLight: '#D1D5DB',
+  bg: '#121212',
+  surface: '#1E1E1E',
+  surfaceAlt: '#2A2A2A',
+  card: '#1A1A1A',
+  text: '#E8E8E8',
+  textSecondary: '#A0A0A0',
+  textMuted: '#6B6B6B',
+  border: '#2E2E2E',
+  borderLight: '#3A3A3A',
   // Semantic — use these instead of random hex colors
   success: '#10B981',
-  successBg: 'rgba(0,212,106,0.08)',
-  successBorder: 'rgba(0,212,106,0.25)',
+  successBg: 'rgba(16,185,129,0.12)',
+  successBorder: 'rgba(16,185,129,0.30)',
   warning: '#F59E0B',
-  warningBg: 'rgba(255,171,0,0.08)',
-  warningBorder: 'rgba(255,171,0,0.25)',
+  warningBg: 'rgba(245,158,11,0.12)',
+  warningBorder: 'rgba(245,158,11,0.30)',
   danger: '#EF4444',
-  dangerBg: 'rgba(237,73,86,0.08)',
-  dangerBorder: 'rgba(237,73,86,0.25)',
+  dangerBg: 'rgba(239,68,68,0.12)',
+  dangerBorder: 'rgba(239,68,68,0.30)',
   accent: '#25F4EE',
-  accentBg: 'rgba(37,244,238,0.12)',
-  accentBorder: 'rgba(37,244,238,0.30)',
+  accentBg: 'rgba(37,244,238,0.15)',
+  accentBorder: 'rgba(37,244,238,0.35)',
 };
 
 // ---- Deal type helpers ----
@@ -1753,7 +1753,7 @@ export default function TikTokDemoPage() {
       {/* Level-Up Modal */}
       {showLevelUpModal && (
         <div style={{ position:'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.6)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:99999 }}>
-          <div style={{ background:'#FFFFFF', borderRadius:'20px', padding:'40px 28px 28px', maxWidth:'340px', width:'90vw', textAlign:'center' }}>
+          <div style={{ background:C.card, borderRadius:'20px', padding:'40px 28px 28px', maxWidth:'340px', width:'90vw', textAlign:'center' }}>
             {/* Level badge */}
             <div style={{ width:'72px', height:'72px', borderRadius:'50%', background:`linear-gradient(135deg, ${C.primary}, #7C3AED)`, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 20px' }}>
               <span style={{ fontSize:'28px', fontWeight:800, color:'#fff' }}>{levelUpTo}</span>
