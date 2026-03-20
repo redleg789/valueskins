@@ -6093,7 +6093,10 @@ export default function InstagramDemoPage() {
                                   <button
                                     onClick={() => {
                                       const creatorIdx = BRAND_MARKETPLACE_CREATORS.findIndex(c => c.name === creatorName && c.valueSkin === creatorSkin);
-                                      if (creatorIdx !== -1) { setNegotiatingCreator(creatorIdx); }
+                                      if (creatorIdx !== -1) {
+                                        setNegotiatingCreator(creatorIdx);
+                                        setMarketplaceTab('creators');
+                                      }
                                     }}
                                     style={{ background:C.primary, border:'none', borderRadius:'6px', padding:'5px 12px', color:'#fff', fontSize:'10px', fontWeight:600, cursor:'pointer' }}
                                   >Enter Deal Room</button>
