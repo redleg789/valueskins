@@ -41,6 +41,10 @@ export type DealState = {
   scriptStatus?: 'draft' | 'submitted' | 'pending_revision' | 'approved';
   scriptFeedback?: string;
   scriptApprovedAt?: string;
+  scriptMode?: 'non_negotiable' | 'discussion' | 'creator_freedom';
+  brandScriptText?: string;
+  creatorScriptApproved?: boolean;
+  brandScriptApproved?: boolean;
   // Webhook simulation logs (MVP)
   publishEvents?: Array<{ id: number; type: 'video_published' | 'milestone_released'; message: string; at: string }>;
   deliverableStatuses?: Record<number, 'pending' | 'linking' | 'uploaded' | 'approved'>; // Per-deliverable status
