@@ -5,6 +5,13 @@ on:
     branches: [main, develop]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      run_load_tests:
+        description: 'Run k6 load/abuse tests'
+        required: false
+        type: boolean
+        default: false
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -125,8 +132,74 @@ jobs:
       - working-directory: frontend
         run: |
           npm ci
-          npm test -- --passWithNoTests
+          npm run test --if-present -- --passWithNoTests
           npm run build
+
+  load-tests:
+    name: Load & Abuse Tests (k6)
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.run_load_tests == 'true'
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: valueskins_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgres://test:test@localhost:5432/valueskins_test
+      JWT_SECRET: test-secret-minimum-32-characters-long
+      API_KEY_HMAC_SALT: test-salt-minimum-32-characters-long-here
+      VERIFICATION_HMAC_SECRET: test-verification-secret-32-chars
+      PLATFORM_SIGNING_KEY_ED25519: "test-test-test-test-test-test-test-test"
+      ALLOWED_ORIGINS: "http://localhost:3000"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: backend
+      - name: Install k6
+        run: |
+          sudo gpg -k
+          sudo apt-get update
+          sudo apt-get install -y gnupg ca-certificates
+          curl -fsSL https://dl.k6.io/key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/k6-archive-keyring.gpg
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install -y k6
+      - name: Run migrations
+        working-directory: backend
+        run: |
+          cargo install sqlx-cli --no-default-features --features postgres
+          sqlx database setup
+      - name: Build API gateway
+        working-directory: backend
+        run: cargo build -p api_gateway --release
+      - name: Start API gateway
+        run: |
+          backend/target/release/api_gateway > /tmp/api_gateway.log 2>&1 &
+          echo $! > /tmp/api_gateway.pid
+          sleep 8
+      - name: Run k6 suites
+        run: |
+          chmod +x backend/load-tests/run-all.sh
+          BASE_URL=http://localhost:8080 ./backend/load-tests/run-all.sh
+      - name: Dump logs on failure
+        if: failure()
+        run: |
+          cat /tmp/api_gateway.log || true
+      - name: Stop API gateway
+        if: always()
+        run: |
+          kill "$(cat /tmp/api_gateway.pid)" || true
 
   # ── Contract Tests ─────────────────────────────────────────────────
   test-contracts:
