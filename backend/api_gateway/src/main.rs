@@ -3,7 +3,7 @@ mod middleware;
 
 use actix_cors::Cors;
 use actix_governor::{Governor, GovernorConfigBuilder};
-use actix_web::{web, App, HttpServer, HttpResponse, Responder};
+use actix_web::{web, App, HttpServer, HttpResponse, Responder, error::JsonPayloadError};
 use dotenv::dotenv;
 use shared::db::get_db_pool;
 use shared::logging;
@@ -272,6 +272,25 @@ async fn main() -> std::io::Result<()> {
             .wrap(crate::middleware::security_headers::security_headers())
             .wrap(crate::middleware::request_timeout::RequestTimeout::new(Duration::from_secs(30)))
             .wrap(logging::middleware::RequestLogger::new("api-gateway"))
+            // Guardrail: reject oversized JSON payloads early to protect memory.
+            .app_data(web::JsonConfig::default().limit(262_144).error_handler(|err, _req| {
+                let status = match err {
+                    JsonPayloadError::Overflow { .. } => actix_web::http::StatusCode::PAYLOAD_TOO_LARGE,
+                    _ => actix_web::http::StatusCode::BAD_REQUEST,
+                };
+                actix_web::error::InternalError::from_response(
+                    err,
+                    HttpResponse::build(status).json(serde_json::json!({
+                        "error": if status == actix_web::http::StatusCode::PAYLOAD_TOO_LARGE {
+                            "Payload too large"
+                        } else {
+                            "Invalid JSON payload"
+                        }
+                    })),
+                )
+                .into()
+            }))
+            .app_data(web::PayloadConfig::new(1_048_576))
             .app_data(pool_data.clone())
             .app_data(token_data.clone())
             .app_data(social_data.clone())

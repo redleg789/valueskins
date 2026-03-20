@@ -8,12 +8,15 @@ use crate::service::{MarketplaceService, ServiceError};
 use shared::idempotency::IdempotencyService;
 
 fn idempotency_key(req: &HttpRequest) -> Option<String> {
-    req.headers()
+    let key = req.headers()
         .get("Idempotency-Key")
         .and_then(|h| h.to_str().ok())
         .map(str::trim)
         .filter(|v| !v.is_empty())
-        .map(ToOwned::to_owned)
+        .filter(|v| v.len() <= 128)
+        .filter(|v| v.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '.'))
+        .map(ToOwned::to_owned);
+    key
 }
 
 /// GET /marketplace/opportunities
