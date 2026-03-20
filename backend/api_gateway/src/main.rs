@@ -40,11 +40,32 @@ use crate::middleware::auth::JwtAuth;
 use crate::middleware::rate_limit::{TieredRateLimiter, TierLimits};
 use crate::middleware::maintenance::MaintenanceGuard;
 
-fn validate_jwt_secret(secret: &str) {
+fn is_strong_jwt_secret(secret: &str) -> bool {
     let weak_values = ["changeme", "secret", "default", "valueskins", "jwt_secret"];
-    if secret.len() < 32 || weak_values.iter().any(|w| secret.eq_ignore_ascii_case(w)) {
+    !(secret.len() < 32 || weak_values.iter().any(|w| secret.eq_ignore_ascii_case(w)))
+}
+
+fn validate_jwt_secret(secret: &str) {
+    if !is_strong_jwt_secret(secret) {
         tracing::error!("JWT_SECRET failed security policy (min length 32, non-default)");
         std::process::exit(1);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::is_strong_jwt_secret;
+
+    #[test]
+    fn weak_secrets_are_rejected() {
+        assert!(!is_strong_jwt_secret("secret"));
+        assert!(!is_strong_jwt_secret("changeme"));
+        assert!(!is_strong_jwt_secret("short"));
+    }
+
+    #[test]
+    fn strong_secrets_are_accepted() {
+        assert!(is_strong_jwt_secret("strong-production-jwt-secret-0123456789"));
     }
 }
 

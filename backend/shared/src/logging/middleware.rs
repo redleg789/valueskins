@@ -29,7 +29,7 @@ use super::pii;
 /// Decouples logging from auth_service to avoid circular dependencies.
 ///
 /// Auth middleware should do:
-/// ```rust
+/// ```ignore
 /// req.extensions_mut().insert(LogUserId(claims.sub.clone()));
 /// ```
 #[derive(Clone, Debug)]
@@ -39,7 +39,7 @@ pub struct LogUserId(pub String);
 /// Downstream handlers extract this to include in their own log calls.
 ///
 /// Usage in any handler:
-/// ```rust
+/// ```ignore
 /// fn my_handler(req: HttpRequest) -> impl Responder {
 ///     let corr_id = req.extensions().get::<CorrelationId>()
 ///         .map(|c| c.0.as_str()).unwrap_or("-");

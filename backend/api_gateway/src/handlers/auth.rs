@@ -34,6 +34,25 @@ fn redirect_uri_allowed(redirect_uri: &str) -> bool {
         .any(|entry| entry == redirect_uri)
 }
 
+#[cfg(test)]
+mod tests {
+    use super::redirect_uri_allowed;
+
+    #[test]
+    fn redirect_allowlist_defaults_allow_known_urls() {
+        std::env::remove_var("OAUTH_REDIRECT_ALLOWLIST");
+        assert!(redirect_uri_allowed("http://localhost:3000/auth/callback"));
+        assert!(redirect_uri_allowed("https://valueskins.io/auth/callback"));
+    }
+
+    #[test]
+    fn redirect_allowlist_rejects_unknown_urls() {
+        std::env::remove_var("OAUTH_REDIRECT_ALLOWLIST");
+        assert!(!redirect_uri_allowed("https://evil.example.com/callback"));
+        assert!(!redirect_uri_allowed("http://localhost:3000/other"));
+    }
+}
+
 #[derive(Deserialize)]
 pub struct LoginRequest {
     /// Instagram access token (direct token flow, kept for backward compatibility)

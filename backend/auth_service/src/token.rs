@@ -122,3 +122,68 @@ impl TokenManager {
         Ok(token_data.claims)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::{Duration as ChronoDuration, Utc};
+    use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
+
+    fn test_manager() -> TokenManager {
+        TokenManager::new("test-secret-at-least-32-characters-long")
+    }
+
+    #[test]
+    fn rejects_invalid_role_on_create() {
+        let tm = test_manager();
+        let res = tm.create_token(1, "ig_1", "admin", None);
+        assert!(matches!(res, Err(AuthError::TokenCreationError)));
+    }
+
+    #[test]
+    fn rejects_invalid_tier_on_create() {
+        let tm = test_manager();
+        let res = tm.create_token_with_tier(1, "ig_1", "creator", None, Some("godmode".to_string()));
+        assert!(matches!(res, Err(AuthError::TokenCreationError)));
+    }
+
+    #[test]
+    fn rejects_tampered_role_even_with_valid_signature() {
+        let secret = "test-secret-at-least-32-characters-long";
+        let now = Utc::now().timestamp() as usize;
+        let claims = Claims {
+            sub: "42".to_string(),
+            ig_user_id: "ig_42".to_string(),
+            role: "admin".to_string(),
+            persona_id: Some(7),
+            tier: Some("pro".to_string()),
+            iat: now,
+            exp: (Utc::now() + ChronoDuration::hours(1)).timestamp() as usize,
+        };
+        let token = encode(&Header::new(Algorithm::HS256), &claims, &EncodingKey::from_secret(secret.as_bytes()))
+            .expect("token creation must succeed");
+        let tm = TokenManager::new(secret);
+        let res = tm.validate_token(&token);
+        assert!(matches!(res, Err(AuthError::InvalidToken)));
+    }
+
+    #[test]
+    fn rejects_tampered_tier_even_with_valid_signature() {
+        let secret = "test-secret-at-least-32-characters-long";
+        let now = Utc::now().timestamp() as usize;
+        let claims = Claims {
+            sub: "42".to_string(),
+            ig_user_id: "ig_42".to_string(),
+            role: "creator".to_string(),
+            persona_id: None,
+            tier: Some("ultra".to_string()),
+            iat: now,
+            exp: (Utc::now() + ChronoDuration::hours(1)).timestamp() as usize,
+        };
+        let token = encode(&Header::new(Algorithm::HS256), &claims, &EncodingKey::from_secret(secret.as_bytes()))
+            .expect("token creation must succeed");
+        let tm = TokenManager::new(secret);
+        let res = tm.validate_token(&token);
+        assert!(matches!(res, Err(AuthError::InvalidToken)));
+    }
+}
