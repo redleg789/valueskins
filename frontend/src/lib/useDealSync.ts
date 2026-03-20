@@ -34,7 +34,15 @@ export type DealState = {
   approvalPercent: number;
   // Payment milestone tracking — synced real-time
   paymentMilestones?: Record<'advance' | 'upload' | 'approval', PaymentMilestoneStatus>;
-  creatorDealLifecycle?: 'checklist' | 'deliverables' | 'submitted' | 'approved'; // Creator side
+  creatorDealLifecycle?: 'checklist' | 'scripting' | 'deliverables' | 'submitted' | 'approved'; // Creator side
+  // Script workflow (MVP): creator submits script draft, brand approves/revises before deliverables
+  scriptDraft?: string;
+  scriptVersion?: number;
+  scriptStatus?: 'draft' | 'submitted' | 'pending_revision' | 'approved';
+  scriptFeedback?: string;
+  scriptApprovedAt?: string;
+  // Webhook simulation logs (MVP)
+  publishEvents?: Array<{ id: number; type: 'video_published' | 'milestone_released'; message: string; at: string }>;
   deliverableStatuses?: Record<number, 'pending' | 'linking' | 'uploaded' | 'approved'>; // Per-deliverable status
   // Brand-side state — persisted so role-switching preserves progress
   brandPhase?: string;          // BrandDealPhase

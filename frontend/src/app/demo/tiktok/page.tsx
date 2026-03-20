@@ -95,144 +95,144 @@ const PROFESSIONS = {
 
 const BRAND_MARKETPLACE_CREATORS = [
   {
-    name: 'Alex Rivera', handle: '@alex_codes', valueSkin: 'Software Engineer',
-    followers: '890K', engagement: '7.2%', rate: '$4,500', matchScore: '96%',
+    name: 'DanceWithJess', handle: '@dancewithjess', valueSkin: 'Entertainer',
+    followers: '4.2M', engagement: '12.8%', rate: '$8,500', matchScore: '96%',
     featured: true, willingToBarter: true,
-    timezone: 'UTC-5 (EST)', responseTimeHrs: 4, minDealUsd: 2000,
-    audienceAgeRange: '25-34', audienceLocation: 'USA', audienceLang: 'English',
-    dealTypes: ['Paid', 'Equity', 'Barter'], openToDeals: true,
-    ndaOk: true, usageRightsOk: true,
-    dealCompletionRate: 97, incomeTier: '50k+', isFirstDeal: false,
-    rateCard: { reel: '$4,500', story: '$1,200', post: '$2,800' },
-    exclusivitySlotFree: true, revisionLimit: 2, usageRightsDays: 90,
-    availableFrom: 'Now', contractMode: 'both',
-    portfolio: ['TechFlow collab — 2.1M views', 'CloudBase integration — 890K views'],
-  },
-  {
-    name: 'Priya Sharma', handle: '@priya_designs', valueSkin: 'UX/UI Designer',
-    followers: '1.2M', engagement: '5.8%', rate: '$6,000', matchScore: '91%',
-    featured: false, willingToBarter: false,
-    timezone: 'UTC+5:30 (IST)', responseTimeHrs: 12, minDealUsd: 4000,
-    audienceAgeRange: '18-24', audienceLocation: 'India', audienceLang: 'English',
-    dealTypes: ['Paid', 'Revenue Share'], openToDeals: true,
-    ndaOk: true, usageRightsOk: false,
-    dealCompletionRate: 91, incomeTier: '100k+', isFirstDeal: false,
-    rateCard: { reel: '$6,000', story: '$1,800', post: '$4,000' },
-    exclusivitySlotFree: false, revisionLimit: 3, usageRightsDays: 60,
-    availableFrom: 'Mar 15', contractMode: 'long-term',
-    portfolio: ['Figma design showcase — 3.4M views', 'Framer landing page — 1.2M views'],
-  },
-  {
-    name: 'Marcus Chen', handle: '@marcus_fitness', valueSkin: 'Fitness Coach',
-    followers: '650K', engagement: '8.1%', rate: '$3,200', matchScore: '84%',
-    featured: false, willingToBarter: true,
-    timezone: 'UTC-8 (PST)', responseTimeHrs: 24, minDealUsd: 500,
-    audienceAgeRange: '18-24', audienceLocation: 'USA', audienceLang: 'English',
-    dealTypes: ['Paid', 'Gifted Product', 'Barter', 'Ambassador'], openToDeals: true,
-    ndaOk: false, usageRightsOk: true,
-    dealCompletionRate: 88, incomeTier: '10k+', isFirstDeal: false,
-    rateCard: { reel: '$3,200', story: '$800', post: '$1,800' },
-    exclusivitySlotFree: true, revisionLimit: 2, usageRightsDays: 30,
-    availableFrom: 'Now', contractMode: 'one-off',
-    portfolio: ['Nike Training series — 4.1M views', 'MyProtein review — 980K views'],
-  },
-  {
-    name: 'Sarah Kim', handle: '@sarah_data', valueSkin: 'Data Scientist',
-    followers: '420K', engagement: '6.5%', rate: '$5,200', matchScore: '92%',
-    featured: true, willingToBarter: false,
-    timezone: 'UTC-8 (PST)', responseTimeHrs: 8, minDealUsd: 3000,
-    audienceAgeRange: '25-34', audienceLocation: 'USA', audienceLang: 'English',
-    dealTypes: ['Paid', 'Equity'], openToDeals: true,
-    ndaOk: true, usageRightsOk: true,
-    dealCompletionRate: 95, incomeTier: '50k+', isFirstDeal: false,
-    rateCard: { reel: '$5,200', story: '$1,500', post: '$3,400' },
-    exclusivitySlotFree: true, revisionLimit: 2, usageRightsDays: 60,
-    availableFrom: 'Now', contractMode: 'both',
-    portfolio: ['DataStack AI tutorial — 1.8M views', 'Kaggle walkthrough — 920K views'],
-  },
-  {
-    name: 'Jordan Blake', handle: '@jordan_devops', valueSkin: 'DevOps Engineer',
-    followers: '310K', engagement: '9.1%', rate: '$3,800', matchScore: '87%',
-    featured: false, willingToBarter: true,
-    timezone: 'UTC+0 (GMT)', responseTimeHrs: 6, minDealUsd: 1500,
-    audienceAgeRange: '25-34', audienceLocation: 'UK', audienceLang: 'English',
+    timezone: 'UTC-5 (EST)', responseTimeHrs: 4, minDealUsd: 3000,
+    audienceAgeRange: '18-24', audienceLocation: 'United States', audienceLang: 'English',
     dealTypes: ['Paid', 'Barter', 'Ambassador'], openToDeals: true,
     ndaOk: true, usageRightsOk: true,
-    dealCompletionRate: 93, incomeTier: '10k+', isFirstDeal: false,
-    rateCard: { reel: '$3,800', story: '$900', post: '$2,200' },
-    exclusivitySlotFree: true, revisionLimit: 2, usageRightsDays: 45,
-    availableFrom: 'Now', contractMode: 'one-off',
-    portfolio: ['Kubernetes deep dive — 1.4M views', 'CI/CD pipeline build — 670K views'],
+    dealCompletionRate: 97, incomeTier: '100k+', isFirstDeal: false,
+    rateCard: { video: '$8,500', live: '$3,200', duet: '$4,500' },
+    exclusivitySlotFree: true, revisionLimit: 2, usageRightsDays: 90,
+    availableFrom: 'Now', contractMode: 'both',
+    portfolio: ['Shein dance challenge — 8.1M views, 1.2M shares', 'Gymshark OOTD series — 5.4M FYP impressions'],
   },
   {
-    name: 'Elena Rodriguez', handle: '@elena_chef', valueSkin: 'Chef',
-    followers: '780K', engagement: '7.8%', rate: '$4,000', matchScore: '89%',
+    name: 'ChefTok_Marco', handle: '@cheftok_marco', valueSkin: 'Chef',
+    followers: '2.8M', engagement: '9.4%', rate: '$6,000', matchScore: '91%',
     featured: false, willingToBarter: true,
-    timezone: 'UTC-6 (CST)', responseTimeHrs: 12, minDealUsd: 2000,
-    audienceAgeRange: '25-34', audienceLocation: 'USA', audienceLang: 'English',
+    timezone: 'UTC-6 (CST)', responseTimeHrs: 8, minDealUsd: 2000,
+    audienceAgeRange: '18-34', audienceLocation: 'United States', audienceLang: 'English',
     dealTypes: ['Paid', 'Gifted Product', 'Barter'], openToDeals: true,
     ndaOk: false, usageRightsOk: true,
-    dealCompletionRate: 96, incomeTier: '50k+', isFirstDeal: false,
-    rateCard: { reel: '$4,000', story: '$1,000', post: '$2,500' },
+    dealCompletionRate: 94, incomeTier: '50k+', isFirstDeal: false,
+    rateCard: { video: '$6,000', live: '$2,500', duet: '$3,200' },
     exclusivitySlotFree: true, revisionLimit: 2, usageRightsDays: 60,
     availableFrom: 'Now', contractMode: 'both',
-    portfolio: ['HelloFresh chef upgrade — 2.3M views', 'Street food series — 1.1M views'],
+    portfolio: ['Chipotle recipe hack — 11.2M views, 890K saves', 'HelloFresh 60-sec meals — 6.7M FYP impressions'],
   },
   {
-    name: 'Raj Patel', handle: '@raj_product', valueSkin: 'Product Manager',
-    followers: '560K', engagement: '5.4%', rate: '$5,500', matchScore: '88%',
-    featured: false, willingToBarter: false,
-    timezone: 'UTC+5:30 (IST)', responseTimeHrs: 16, minDealUsd: 3500,
-    audienceAgeRange: '25-34', audienceLocation: 'India', audienceLang: 'English',
+    name: 'SkincareByAri', handle: '@skincarebyari', valueSkin: 'Beauty Creator',
+    followers: '5.6M', engagement: '14.2%', rate: '$12,000', matchScore: '94%',
+    featured: true, willingToBarter: false,
+    timezone: 'UTC-8 (PST)', responseTimeHrs: 6, minDealUsd: 5000,
+    audienceAgeRange: '18-24', audienceLocation: 'United States', audienceLang: 'English',
     dealTypes: ['Paid', 'Revenue Share'], openToDeals: true,
     ndaOk: true, usageRightsOk: true,
-    dealCompletionRate: 94, incomeTier: '100k+', isFirstDeal: false,
-    rateCard: { reel: '$5,500', story: '$1,600', post: '$3,600' },
+    dealCompletionRate: 98, incomeTier: '100k+', isFirstDeal: false,
+    rateCard: { video: '$12,000', live: '$5,000', duet: '$6,500' },
     exclusivitySlotFree: false, revisionLimit: 3, usageRightsDays: 90,
-    availableFrom: 'Apr 1', contractMode: 'long-term',
-    portfolio: ['Product teardown series — 2.7M views', 'Roadmap workshop — 1.5M views'],
+    availableFrom: 'Now', contractMode: 'long-term',
+    portfolio: ['CeraVe routine — 18.3M views, 2.1M saves', 'Elf Cosmetics Stitch series — 9.8M FYP impressions'],
   },
   {
-    name: 'Lena Okafor', handle: '@lena_security', valueSkin: 'Security Researcher',
-    followers: '270K', engagement: '10.2%', rate: '$4,800', matchScore: '82%',
-    featured: false, willingToBarter: false,
-    timezone: 'UTC+1 (CET)', responseTimeHrs: 8, minDealUsd: 3000,
-    audienceAgeRange: '25-34', audienceLocation: 'Germany', audienceLang: 'English',
-    dealTypes: ['Paid'], openToDeals: true,
-    ndaOk: true, usageRightsOk: false,
-    dealCompletionRate: 99, incomeTier: '50k+', isFirstDeal: false,
-    rateCard: { reel: '$4,800', story: '$1,400', post: '$3,200' },
-    exclusivitySlotFree: true, revisionLimit: 1, usageRightsDays: 30,
-    availableFrom: 'Now', contractMode: 'one-off',
-    portfolio: ['Bug bounty writeup — 890K views', 'OWASP Top 10 explained — 1.6M views'],
-  },
-  {
-    name: 'Tommy Nguyen', handle: '@tommy_ai', valueSkin: 'AI/ML Specialist',
-    followers: '1.5M', engagement: '6.9%', rate: '$7,500', matchScore: '95%',
+    name: 'ComedyKingDave', handle: '@comedykingdave', valueSkin: 'Comedian',
+    followers: '7.1M', engagement: '16.5%', rate: '$15,000', matchScore: '92%',
     featured: true, willingToBarter: false,
-    timezone: 'UTC-5 (EST)', responseTimeHrs: 4, minDealUsd: 5000,
-    audienceAgeRange: '25-34', audienceLocation: 'USA', audienceLang: 'English',
+    timezone: 'UTC-5 (EST)', responseTimeHrs: 12, minDealUsd: 8000,
+    audienceAgeRange: '18-34', audienceLocation: 'United States', audienceLang: 'English',
     dealTypes: ['Paid', 'Equity'], openToDeals: true,
     ndaOk: true, usageRightsOk: true,
-    dealCompletionRate: 98, incomeTier: '100k+', isFirstDeal: false,
-    rateCard: { reel: '$7,500', story: '$2,200', post: '$5,000' },
+    dealCompletionRate: 95, incomeTier: '100k+', isFirstDeal: false,
+    rateCard: { video: '$15,000', live: '$6,000', duet: '$8,000' },
     exclusivitySlotFree: false, revisionLimit: 2, usageRightsDays: 120,
     availableFrom: 'Now', contractMode: 'both',
-    portfolio: ['GPT fine-tuning tutorial — 5.2M views', 'RAG pipeline build — 3.1M views'],
+    portfolio: ['Crocs comedy skit — 22.4M views, 3.8M shares', 'Chipotle trending audio — 14.1M FYP impressions'],
   },
   {
-    name: 'Mia Johnson', handle: '@mia_yoga', valueSkin: 'Yoga Instructor',
-    followers: '920K', engagement: '8.7%', rate: '$3,500', matchScore: '86%',
+    name: 'DIY_CraftQueen', handle: '@diy_craftqueen', valueSkin: 'DIY Creator',
+    followers: '1.9M', engagement: '11.3%', rate: '$5,500', matchScore: '87%',
     featured: false, willingToBarter: true,
-    timezone: 'UTC-7 (MST)', responseTimeHrs: 6, minDealUsd: 1000,
-    audienceAgeRange: '18-24', audienceLocation: 'USA', audienceLang: 'English',
+    timezone: 'UTC+0 (GMT)', responseTimeHrs: 6, minDealUsd: 1500,
+    audienceAgeRange: '25-34', audienceLocation: 'United Kingdom', audienceLang: 'English',
     dealTypes: ['Paid', 'Gifted Product', 'Barter', 'Ambassador'], openToDeals: true,
+    ndaOk: true, usageRightsOk: true,
+    dealCompletionRate: 93, incomeTier: '50k+', isFirstDeal: false,
+    rateCard: { video: '$5,500', live: '$2,000', duet: '$3,000' },
+    exclusivitySlotFree: true, revisionLimit: 2, usageRightsDays: 45,
+    availableFrom: 'Now', contractMode: 'one-off',
+    portfolio: ['Shein home decor haul — 4.8M views, 620K saves', 'Dollar Tree hacks — 3.2M FYP impressions'],
+  },
+  {
+    name: 'FitCheck_Jordan', handle: '@fitcheck_jordan', valueSkin: 'Fashion Creator',
+    followers: '3.4M', engagement: '10.7%', rate: '$7,200', matchScore: '89%',
+    featured: false, willingToBarter: true,
+    timezone: 'UTC-8 (PST)', responseTimeHrs: 4, minDealUsd: 3000,
+    audienceAgeRange: '18-24', audienceLocation: 'United States', audienceLang: 'English',
+    dealTypes: ['Paid', 'Gifted Product', 'Ambassador'], openToDeals: true,
     ndaOk: false, usageRightsOk: true,
-    dealCompletionRate: 92, incomeTier: '50k+', isFirstDeal: false,
-    rateCard: { reel: '$3,500', story: '$900', post: '$2,000' },
+    dealCompletionRate: 91, incomeTier: '50k+', isFirstDeal: false,
+    rateCard: { video: '$7,200', live: '$2,800', duet: '$4,000' },
     exclusivitySlotFree: true, revisionLimit: 2, usageRightsDays: 60,
     availableFrom: 'Now', contractMode: 'one-off',
-    portfolio: ['Morning flow series — 3.8M views', 'Lululemon partnership — 1.9M views'],
+    portfolio: ['Gymshark fit check — 6.9M views, 1.1M shares', 'Crocs styling challenge — 4.5M FYP impressions'],
+  },
+  {
+    name: 'BookTokSophie', handle: '@booktoksophie', valueSkin: 'Book Reviewer',
+    followers: '1.3M', engagement: '13.6%', rate: '$4,800', matchScore: '88%',
+    featured: false, willingToBarter: false,
+    timezone: 'UTC+0 (GMT)', responseTimeHrs: 16, minDealUsd: 2000,
+    audienceAgeRange: '18-34', audienceLocation: 'United Kingdom', audienceLang: 'English',
+    dealTypes: ['Paid', 'Revenue Share'], openToDeals: true,
+    ndaOk: true, usageRightsOk: true,
+    dealCompletionRate: 96, incomeTier: '50k+', isFirstDeal: false,
+    rateCard: { video: '$4,800', live: '$1,800', duet: '$2,600' },
+    exclusivitySlotFree: false, revisionLimit: 3, usageRightsDays: 90,
+    availableFrom: 'Apr 1', contractMode: 'long-term',
+    portfolio: ['Barnes & Noble haul — 5.1M views, 780K saves', 'Kindle Unlimited review — 3.4M FYP impressions'],
+  },
+  {
+    name: 'CleanTok_Lisa', handle: '@cleantok_lisa', valueSkin: 'Lifestyle Creator',
+    followers: '2.1M', engagement: '15.1%', rate: '$5,000', matchScore: '85%',
+    featured: false, willingToBarter: true,
+    timezone: 'UTC+8 (PHT)', responseTimeHrs: 8, minDealUsd: 1500,
+    audienceAgeRange: '25-34', audienceLocation: 'Philippines', audienceLang: 'English',
+    dealTypes: ['Paid', 'Gifted Product', 'Barter'], openToDeals: true,
+    ndaOk: false, usageRightsOk: true,
+    dealCompletionRate: 92, incomeTier: '10k+', isFirstDeal: false,
+    rateCard: { video: '$5,000', live: '$1,900', duet: '$2,800' },
+    exclusivitySlotFree: true, revisionLimit: 2, usageRightsDays: 30,
+    availableFrom: 'Now', contractMode: 'one-off',
+    portfolio: ['Stanley cup cleaning routine — 7.3M views, 1.5M saves', 'Mrs. Meyers review — 4.9M FYP impressions'],
+  },
+  {
+    name: 'GymBro_Carlos', handle: '@gymbro_carlos', valueSkin: 'Fitness Coach',
+    followers: '6.2M', engagement: '11.9%', rate: '$10,000', matchScore: '95%',
+    featured: true, willingToBarter: false,
+    timezone: 'UTC-3 (BRT)', responseTimeHrs: 4, minDealUsd: 5000,
+    audienceAgeRange: '18-24', audienceLocation: 'Brazil', audienceLang: 'Portuguese',
+    dealTypes: ['Paid', 'Ambassador'], openToDeals: true,
+    ndaOk: true, usageRightsOk: true,
+    dealCompletionRate: 99, incomeTier: '100k+', isFirstDeal: false,
+    rateCard: { video: '$10,000', live: '$4,000', duet: '$5,500' },
+    exclusivitySlotFree: false, revisionLimit: 2, usageRightsDays: 120,
+    availableFrom: 'Now', contractMode: 'both',
+    portfolio: ['Gymshark transformation — 15.6M views, 2.8M shares', 'MyProtein Stitch series — 9.2M FYP impressions'],
+  },
+  {
+    name: 'MakeupByRina', handle: '@makeupbyrina', valueSkin: 'Beauty Creator',
+    followers: '3.8M', engagement: '17.4%', rate: '$9,500', matchScore: '86%',
+    featured: false, willingToBarter: true,
+    timezone: 'UTC-6 (CST)', responseTimeHrs: 6, minDealUsd: 2000,
+    audienceAgeRange: '18-24', audienceLocation: 'Mexico', audienceLang: 'Spanish',
+    dealTypes: ['Paid', 'Gifted Product', 'Barter', 'Ambassador'], openToDeals: true,
+    ndaOk: false, usageRightsOk: true,
+    dealCompletionRate: 90, incomeTier: '50k+', isFirstDeal: false,
+    rateCard: { video: '$9,500', live: '$3,500', duet: '$5,000' },
+    exclusivitySlotFree: true, revisionLimit: 2, usageRightsDays: 60,
+    availableFrom: 'Now', contractMode: 'one-off',
+    portfolio: ['Fenty Beauty GRWM — 12.8M views, 1.9M saves', 'Elf Cosmetics duet challenge — 7.4M FYP impressions'],
   },
 ];
 
@@ -831,6 +831,23 @@ export default function TikTokDemoPage() {
   };
 
   const offerExpiresLabel = '23h 47m';
+  const simulatePublishWebhook = (dealKey: string, deliverableIndex: number, link: string) => {
+    const nowIso = new Date().toISOString();
+    const currentDeal = getOrCreateDeal(dealKey);
+    const nextStatuses = { ...(currentDeal.deliverableStatuses || {}), [deliverableIndex]: 'uploaded' as const };
+    const nextLinks = { ...(currentDeal.deliverableLinks || {}), [deliverableIndex]: link };
+    const nextEvents = [
+      ...(currentDeal.publishEvents || []),
+      { id: Date.now(), type: 'video_published' as const, message: `Webhook: deliverable #${deliverableIndex + 1} published`, at: nowIso },
+      { id: Date.now() + 1, type: 'milestone_released' as const, message: 'Webhook: upload milestone released', at: nowIso },
+    ];
+    updateDeal(dealKey, {
+      deliverableStatuses: nextStatuses,
+      deliverableLinks: nextLinks,
+      paymentMilestones: { ...(currentDeal.paymentMilestones || { advance: 'released', upload: 'pending', approval: 'pending' }), upload: 'released' } as any,
+      publishEvents: nextEvents,
+    });
+  };
 
   // Active deals indicator: count of in-progress deals across all skins
   const activeDeals = Object.entries(dealStates).filter(([, d]) => d.phase !== 'brief');
@@ -1144,8 +1161,8 @@ export default function TikTokDemoPage() {
   // Keep legacy myApplications wired to sharedApplications for creator view
   const myApplications = sharedApplications;
   // Gap 4: deal lifecycle
-  type CreatorDealLifecycle = 'checklist'|'deliverables'|'submitted'|'approved';
-  type BrandApprovalPhase = 'accepted'|'funding'|'funded'|'reviewing'|'approved';
+  type CreatorDealLifecycle = 'checklist'|'scripting'|'deliverables'|'submitted'|'approved';
+  type BrandApprovalPhase = 'accepted'|'funding'|'funded'|'script_review'|'reviewing'|'approved';
   // Read from shared deal state for real-time cross-role sync
   const creatorDealLifecycle: CreatorDealLifecycle = (activeDeal?.creatorDealLifecycle as CreatorDealLifecycle) || 'checklist';
   const setCreatorDealLifecycle = (lc: CreatorDealLifecycle) => { if (activeDealKey) updateDeal(activeDealKey, { creatorDealLifecycle: lc }); };
@@ -1169,6 +1186,17 @@ export default function TikTokDemoPage() {
     updateDeal(activeDealKey, { deliverableLinks: newVal });
   };
   const [deliverableLinkInputs, setDeliverableLinkInputs] = useState<Record<number, string>>({});
+  // Script workflow state — persisted on shared deal so both sides see updates in real-time
+  const scriptDraft = activeDeal?.scriptDraft ?? '';
+  const setScriptDraft = (v: string) => { if (activeDealKey) updateDeal(activeDealKey, { scriptDraft: v }); };
+  const scriptVersion = activeDeal?.scriptVersion ?? 0;
+  const scriptStatus = (activeDeal?.scriptStatus as 'draft' | 'submitted' | 'pending_revision' | 'approved' | undefined) ?? 'draft';
+  const scriptFeedback = activeDeal?.scriptFeedback ?? '';
+  const publishEvents = activeDeal?.publishEvents ?? [];
+  const appendPublishEvent = (event: { id: number; type: 'video_published' | 'milestone_released'; message: string; at: string }) => {
+    if (!activeDealKey) return;
+    updateDeal(activeDealKey, { publishEvents: [...publishEvents, event] });
+  };
   // Feature 1: Direct approach (no campaign)
   const [directApproach, setDirectApproachRaw] = useState<boolean>(() => typeof window !== 'undefined' ? localStorage.getItem('vs_brand_direct_approach') === 'true' : false);
   const setDirectApproach = (v: boolean) => { setDirectApproachRaw(v); localStorage.setItem('vs_brand_direct_approach', String(v)); };
@@ -3467,10 +3495,10 @@ export default function TikTokDemoPage() {
                                         if (!escrowFunded && creatorDealLifecycle === 'checklist') {
                                           // Check if brand has funded escrow via shared deal state
                                           if (activeDeal?.escrowFunded) {
-                                            // Brand funded — auto-advance creator to deliverables phase
+                                            // Brand funded — auto-advance creator to scripting phase first
                                             setTimeout(() => {
                                               setEscrowFunded(true);
-                                              setCreatorDealLifecycle('deliverables');
+                                              setCreatorDealLifecycle('scripting');
                                             }, 0);
                                             const advanceAmt = Math.round(agreedPrice * 0.3);
                                             return (
@@ -3482,7 +3510,7 @@ export default function TikTokDemoPage() {
                                                 <div style={{ fontSize:'12px', color:C.textSecondary, marginBottom:'8px' }}>Brand deposited ${agreedPrice.toLocaleString()} into escrow.</div>
                                                 <div style={{ background:'rgba(46,125,50,0.06)', border:'1px solid rgba(46,125,50,0.2)', borderRadius:'8px', padding:'10px', marginBottom:'8px' }}>
                                                   <div style={{ fontSize:'13px', fontWeight:700, color:C.success }}>Advance paid: ${advanceAmt.toLocaleString()}</div>
-                                                  <div style={{ fontSize:'11px', color:C.textSecondary, marginTop:'2px' }}>30% advance deposited to your account. Begin deliverables to unlock remaining milestones.</div>
+                                                  <div style={{ fontSize:'11px', color:C.textSecondary, marginTop:'2px' }}>30% advance deposited to your account. Submit script for approval to begin deliverables.</div>
                                                 </div>
                                               </div>
                                             );
@@ -3509,6 +3537,64 @@ export default function TikTokDemoPage() {
                                                 </div>
                                               </div>
                                             </div>
+                                          );
+                                        }
+
+                                        // Scripting phase (creator draft -> brand approve/revise)
+                                        if (creatorDealLifecycle === 'scripting') {
+                                          const canSubmitScript = scriptDraft.trim().length >= 20;
+                                          return (
+                                            <>
+                                              <div style={{ fontSize:'11px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.6px', marginBottom:'10px' }}>Script Approval</div>
+                                              <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', padding:'10px', marginBottom:'10px' }}>
+                                                <div style={{ fontSize:'10px', color:C.textMuted, marginBottom:'6px' }}>Version {Math.max(1, scriptVersion || 1)} · Status: <strong style={{ color: scriptStatus === 'approved' ? C.success : scriptStatus === 'submitted' ? C.primary : '#f59e0b' }}>{scriptStatus.replace('_', ' ')}</strong></div>
+                                                <textarea
+                                                  value={scriptDraft}
+                                                  onChange={e => setScriptDraft(e.target.value)}
+                                                  placeholder="Write a short script/caption outline for brand approval..."
+                                                  rows={6}
+                                                  disabled={scriptStatus === 'submitted' || scriptStatus === 'approved'}
+                                                  style={{ width:'100%', background:C.surface, border:`1px solid ${C.border}`, borderRadius:'6px', color:C.text, padding:'8px', fontSize:'12px', fontFamily:'inherit', resize:'vertical', boxSizing:'border-box' }}
+                                                />
+                                                {scriptFeedback && (
+                                                  <div style={{ marginTop:'8px', padding:'8px', borderRadius:'6px', background:'rgba(245,158,11,0.08)', border:'1px solid rgba(245,158,11,0.25)', fontSize:'11px', color:C.textSecondary }}>
+                                                    Brand feedback: {scriptFeedback}
+                                                  </div>
+                                                )}
+                                              </div>
+                                              {scriptStatus !== 'approved' && (
+                                                <button
+                                                  disabled={!canSubmitScript || scriptStatus === 'submitted'}
+                                                  onClick={() => {
+                                                    if (!activeDealKey) return;
+                                                    updateDeal(activeDealKey, {
+                                                      scriptDraft,
+                                                      scriptVersion: (scriptVersion || 0) + 1,
+                                                      scriptStatus: 'submitted',
+                                                      scriptFeedback: '',
+                                                      brandApprovalPhase: 'script_review',
+                                                    });
+                                                    firebaseSendNotification(opp?.brand || 'Brand', 'application', 'Script submitted for approval.');
+                                                    setPurchaseToast('Script submitted for brand review');
+                                                    setTimeout(() => setPurchaseToast(null), 2500);
+                                                  }}
+                                                  style={{ width:'100%', background: canSubmitScript && scriptStatus !== 'submitted' ? C.primary : C.border, border:'none', padding:'10px', borderRadius:'8px', color:'#fff', fontWeight:600, cursor: canSubmitScript && scriptStatus !== 'submitted' ? 'pointer' : 'not-allowed', fontSize:'13px', opacity: canSubmitScript && scriptStatus !== 'submitted' ? 1 : 0.5 }}
+                                                >
+                                                  {scriptStatus === 'submitted' ? 'Awaiting brand review' : 'Submit Script'}
+                                                </button>
+                                              )}
+                                              {scriptStatus === 'approved' && (
+                                                <button
+                                                  onClick={() => {
+                                                    setCreatorDealLifecycle('deliverables');
+                                                    if (activeDealKey) updateDeal(activeDealKey, { creatorDealLifecycle: 'deliverables', brandApprovalPhase: 'reviewing' });
+                                                  }}
+                                                  style={{ width:'100%', background:C.success, border:'none', padding:'10px', borderRadius:'8px', color:'#fff', fontWeight:600, cursor:'pointer', fontSize:'13px' }}
+                                                >
+                                                  Start Deliverables
+                                                </button>
+                                              )}
+                                            </>
                                           );
                                         }
 
@@ -3583,6 +3669,7 @@ export default function TikTokDemoPage() {
                                                               onClick={() => {
                                                                 setDeliverableLinks(prev => ({ ...prev, [di]: inputVal }));
                                                                 setDeliverableStatuses(prev => ({ ...prev, [di]: 'uploaded' }));
+                                                                if (activeDealKey) simulatePublishWebhook(activeDealKey, di, inputVal);
                                                                 setDeliverableLinkInputs(prev => ({ ...prev, [di]: '' }));
                                                               }}
                                                               style={{ background: isValidIgUrl(inputVal) ? C.success : C.border, border:'none', borderRadius:'6px', padding:'7px 12px', color:'#fff', fontSize:'11px', fontWeight:700, cursor: isValidIgUrl(inputVal) ? 'pointer' : 'not-allowed', opacity: isValidIgUrl(inputVal) ? 1 : 0.5, flexShrink:0 }}
@@ -3671,6 +3758,14 @@ export default function TikTokDemoPage() {
                                                 <div style={{ fontSize:'10px', color:C.textMuted, marginBottom:'2px' }}>Upload milestone: <span style={{ color:C.success, fontWeight:600 }}>Paid</span></div>
                                                 <div style={{ fontSize:'10px', color:C.textMuted }}>Approval milestone: <span style={{ color:'#f59e0b', fontWeight:600 }}>Pending brand approval</span></div>
                                               </div>
+                                              {publishEvents.length > 0 && (
+                                                <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', padding:'10px', marginBottom:'10px' }}>
+                                                  <div style={{ fontSize:'10px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.4px', marginBottom:'6px' }}>Automation events</div>
+                                                  {publishEvents.slice(-3).map((ev: any) => (
+                                                    <div key={ev.id} style={{ fontSize:'11px', color:C.textSecondary, marginBottom:'4px' }}>{ev.message}</div>
+                                                  ))}
+                                                </div>
+                                              )}
                                               <div style={{ textAlign:'center', padding:'8px', fontSize:'11px', color:C.textMuted }}>
                                                 Brand will review and approve from their deal room
                                               </div>
@@ -5678,7 +5773,8 @@ export default function TikTokDemoPage() {
                                               updateDeal(brandDealKey, {
                                                 escrowFunded: true,
                                                 brandApprovalPhase: 'funded',
-                                                creatorDealLifecycle: 'deliverables',
+                                                creatorDealLifecycle: 'scripting',
+                                                scriptStatus: 'draft',
                                                 paymentMilestones: { advance: 'released', upload: 'pending', approval: 'pending' },
                                                 chatMessages: [...existingMsgs, advanceMsg],
                                               });
@@ -5687,7 +5783,7 @@ export default function TikTokDemoPage() {
                                             firebaseSendNotification(creator.name, 'application', `Advance paid: $${advanceToCreator.toLocaleString()} has been deposited to your account (30% of $${creatorPayout.toLocaleString()} deal)`);
                                             setPurchaseToast(`Escrow funded — $${advanceToCreator.toLocaleString()} advance paid to ${creator.name}`);
                                             setTimeout(() => setPurchaseToast(null), 4000);
-                                            setTimeout(() => setBrandApprovalPhase('reviewing'), 2000);
+                                            setTimeout(() => setBrandApprovalPhase('script_review'), 1200);
                                           }}
                                           style={{ width:'100%', background:C.success, border:'none', padding:'10px', borderRadius:'8px', color:'#fff', fontWeight:700, cursor:'pointer', fontSize:'13px' }}
                                         >
@@ -5702,7 +5798,60 @@ export default function TikTokDemoPage() {
                                         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={C.success} strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
                                       </div>
                                       <div style={{ fontSize:'14px', fontWeight:700, color:C.success }}>Escrow Funded</div>
-                                      <div style={{ fontSize:'12px', color:C.textSecondary, marginTop:'4px' }}>Creator has been notified to begin work</div>
+                                      <div style={{ fontSize:'12px', color:C.textSecondary, marginTop:'4px' }}>Creator has been notified to submit script draft</div>
+                                    </div>
+                                  )}
+                                  {(dealType === 'paid' || dealType === 'c2c_paid') && brandApprovalPhase === 'script_review' && (
+                                    <div style={{ marginTop:'12px' }}>
+                                      <div style={{ fontSize:'11px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'10px' }}>Review Script</div>
+                                      {brandDeal?.scriptDraft ? (
+                                        <div style={{ background:C.bg, borderRadius:'8px', padding:'12px', border:`1px solid ${C.border}`, marginBottom:'8px' }}>
+                                          <div style={{ fontSize:'10px', color:C.textMuted, marginBottom:'6px' }}>Version {brandDeal.scriptVersion || 1}</div>
+                                          <div style={{ fontSize:'12px', color:C.text, whiteSpace:'pre-wrap', lineHeight:1.5 }}>{brandDeal.scriptDraft}</div>
+                                        </div>
+                                      ) : (
+                                        <div style={{ background:'rgba(245,158,11,0.06)', border:`1px solid rgba(245,158,11,0.2)`, borderRadius:'8px', padding:'12px', marginBottom:'10px' }}>
+                                          <div style={{ fontSize:'11px', color:'#f59e0b' }}>Waiting for creator to submit script draft</div>
+                                        </div>
+                                      )}
+                                      <div style={{ display:'flex', gap:'8px', marginBottom:'8px' }}>
+                                        <button
+                                          disabled={!brandDeal?.scriptDraft}
+                                          onClick={() => {
+                                            if (!brandDealKey) return;
+                                            updateDeal(brandDealKey, {
+                                              scriptStatus: 'approved',
+                                              scriptApprovedAt: new Date().toISOString(),
+                                              creatorDealLifecycle: 'deliverables',
+                                              brandApprovalPhase: 'reviewing',
+                                            });
+                                            firebaseSendNotification('Creator', 'application', 'Script approved. You can now upload deliverables.');
+                                            setPurchaseToast('Script approved');
+                                            setTimeout(() => setPurchaseToast(null), 2500);
+                                          }}
+                                          style={{ flex:1, background: brandDeal?.scriptDraft ? C.success : C.border, border:'none', padding:'9px', borderRadius:'8px', color:'#fff', fontWeight:600, cursor: brandDeal?.scriptDraft ? 'pointer' : 'not-allowed', fontSize:'13px', opacity: brandDeal?.scriptDraft ? 1 : 0.5 }}
+                                        >
+                                          Approve Script
+                                        </button>
+                                        <button
+                                          disabled={!brandDeal?.scriptDraft}
+                                          onClick={() => {
+                                            if (!brandDealKey) return;
+                                            updateDeal(brandDealKey, {
+                                              scriptStatus: 'pending_revision',
+                                              scriptFeedback: 'Please tighten hook and include pricing CTA in first 5 seconds.',
+                                              creatorDealLifecycle: 'scripting',
+                                              brandApprovalPhase: 'script_review',
+                                            });
+                                            firebaseSendNotification('Creator', 'application', 'Script revision requested by brand.');
+                                            setPurchaseToast('Revision requested');
+                                            setTimeout(() => setPurchaseToast(null), 2500);
+                                          }}
+                                          style={{ flex:1, background:'none', border:`1px solid ${C.border}`, padding:'9px', borderRadius:'8px', color:C.textSecondary, fontWeight:600, cursor: brandDeal?.scriptDraft ? 'pointer' : 'not-allowed', fontSize:'13px', opacity: brandDeal?.scriptDraft ? 1 : 0.5 }}
+                                        >
+                                          Request Revision
+                                        </button>
+                                      </div>
                                     </div>
                                   )}
                                   {dealType === 'barter' && brandApprovalPhase === 'funding' && (
