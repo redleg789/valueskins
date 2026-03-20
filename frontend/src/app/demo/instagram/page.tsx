@@ -3223,8 +3223,16 @@ export default function InstagramDemoPage() {
                                                 const counterMsg = { id: Date.now(), sender: 'creator' as const, text: `Counter-offer: $${creatorAsk.toLocaleString()} (brand offered $${brandOffer.toLocaleString()})`, time: timeStr, isoTime: now.toISOString(), seen: false };
                                                 setChatMessages(prev => [...prev, counterMsg]);
                                                 firebaseAddMessage(activeDealKey ?? '', counterMsg);
-                                                // Set phase to 'counter' so brand sees the counter-offer in their deal room
-                                                setDealRoomPhase('counter' as DealRoomPhase);
+                                                // Write counter amount + phase + chat messages to shared deal state
+                                                // so brand sees the update in real-time under Sent Deals
+                                                if (activeDealKey) {
+                                                  const existingMsgs = activeDeal?.chatMessages || [];
+                                                  updateDeal(activeDealKey, {
+                                                    phase: 'counter' as DealRoomPhase,
+                                                    counterAmount: String(creatorAsk),
+                                                    chatMessages: [...existingMsgs, counterMsg],
+                                                  });
+                                                }
                                                 firebaseSendNotification(opp?.brand || 'Brand', 'message', `Creator countered: $${creatorAsk.toLocaleString()} (you offered $${brandOffer.toLocaleString()})`);
                                                 setPurchaseToast(`Counter sent: $${creatorAsk.toLocaleString()}`);
                                                 setTimeout(() => setPurchaseToast(null), 2000);
@@ -5937,82 +5945,100 @@ export default function InstagramDemoPage() {
                       </>)}
 
                       {marketplaceTab === 'sent' && (<>
-                        {campaigns.filter(c => c.status === 'open').length === 0 ? (
-                          <div style={{ textAlign:'center', padding:'24px 20px', color:C.textMuted }}>
-                            <div style={{ fontSize:'13px', marginBottom:'4px' }}>No active campaigns</div>
-                            <div style={{ fontSize:'11px' }}>Create a campaign to start tracking deals.</div>
-                          </div>
-                        ) : campaigns.filter(c => c.status === 'open' && !hiddenSentDealIds.has(c.id)).map((c, i) => {
-                          const matchingApps = sharedApplications.filter(a => a.campaignId === c.id);
-                          const activeDealsForCampaign = Object.entries(dealStates).filter(([key]) => key.includes(c.title));
+                        {(() => {
+                          // Show ALL deals from dealStates — these are the real-time deal entries
+                          const allDeals = Object.entries(dealStates).filter(([, deal]) => deal.phase !== 'brief');
                           const getPhaseLabel = (phase: string) => {
                             switch (phase) {
+                              case 'offer': return 'Offer sent';
+                              case 'pending': return 'Waiting for response';
+                              case 'counter': return 'Creator countered';
+                              case 'brand_considering': return 'Reviewing counter';
+                              case 'brand_countered': return 'You countered back';
+                              case 'brand_reviewing': return 'Reviewing deliverables';
+                              case 'last_offer': return 'Final offer sent';
+                              case 'rejected': return 'Deal declined';
                               case 'chatroom': return 'In negotiation';
                               case 'formal_offer': return 'Formal offer sent';
                               case 'accepted': return 'Deal accepted';
                               case 'checklist': return 'Checklist phase';
                               case 'softhold': return 'Deliverables in progress';
-                              default: return phase;
+                              default: return phase.replace(/_/g, ' ');
                             }
                           };
                           const getPhaseColor = (phase: string) => {
                             switch (phase) {
+                              case 'counter': return C.warning;
+                              case 'pending': return C.textSecondary;
+                              case 'offer': return C.primary;
+                              case 'brand_countered': case 'last_offer': return C.warning;
+                              case 'accepted': case 'checklist': case 'softhold': return C.success;
+                              case 'rejected': case 'brand_rejected': return '#ef4444';
                               case 'chatroom': return C.warning;
                               case 'formal_offer': return C.primary;
-                              case 'accepted': return C.success;
-                              case 'checklist': return C.accent;
-                              case 'softhold': return '#22d3ee';
                               default: return C.textMuted;
                             }
                           };
-                          return (
-                            <div key={i} style={{ background:C.card, borderRadius:'12px', padding:'14px', marginBottom:'10px', border:`1px solid ${C.border}` }}>
-                              <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'6px' }}>
-                                <span style={{ fontSize:'13px', fontWeight:700, color:C.text }}>{c.title}</span>
-                                <span style={{ fontSize:'12px', fontWeight:700, color:C.success }}>${parseInt(c.budget||'0').toLocaleString()}</span>
+                          if (allDeals.length === 0) {
+                            return (
+                              <div style={{ textAlign:'center', padding:'24px 20px', color:C.textMuted }}>
+                                <div style={{ fontSize:'13px', marginBottom:'4px' }}>No active deals</div>
+                                <div style={{ fontSize:'11px' }}>Send an offer to a creator to start tracking deals.</div>
                               </div>
-                              {c.brandName && <div style={{ fontSize:'11px', color:C.textSecondary, marginBottom:'8px' }}>by {c.brandName}</div>}
-                              {/* Status timeline */}
-                              <div style={{ borderLeft:`2px solid ${C.border}`, paddingLeft:'12px', marginBottom:'8px' }}>
-                                <div style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'6px' }}>
-                                  <div style={{ width:8, height:8, borderRadius:'50%', background:C.success, marginLeft:'-16px' }} />
-                                  <span style={{ fontSize:'11px', color:C.success, fontWeight:600 }}>Campaign sent</span>
-                                  <span style={{ fontSize:'10px', color:C.textMuted }}>{c.deadline ? new Date(c.deadline).toLocaleDateString() : ''}</span>
+                            );
+                          }
+                          return allDeals.map(([key, deal]) => {
+                            const [creatorName, creatorSkin] = key.split('|');
+                            const lastMsg = deal.chatMessages?.[deal.chatMessages.length - 1];
+                            return (
+                              <div key={key} style={{ background:C.card, borderRadius:'12px', padding:'14px', marginBottom:'10px', border:`1px solid ${C.border}`, cursor:'pointer' }}
+                                onClick={() => {
+                                  // Open brand deal room for this creator
+                                  const creatorIdx = BRAND_MARKETPLACE_CREATORS.findIndex(c => c.name === creatorName && c.valueSkin === creatorSkin);
+                                  if (creatorIdx !== -1) { setNegotiatingCreator(creatorIdx); }
+                                }}
+                              >
+                                <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'6px' }}>
+                                  <span style={{ fontSize:'13px', fontWeight:700, color:C.text }}>{creatorName}</span>
+                                  <span style={{ fontSize:'12px', fontWeight:700, color:C.success }}>{deal.offerAmount ? `$${parseInt(deal.offerAmount).toLocaleString()}` : ''}</span>
                                 </div>
-                                {matchingApps.length > 0 && (
-                                  <div style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'6px' }}>
-                                    <div style={{ width:8, height:8, borderRadius:'50%', background:C.primary, marginLeft:'-16px' }} />
-                                    <span style={{ fontSize:'11px', color:C.primary, fontWeight:600 }}>Seen by {matchingApps.length} creator{matchingApps.length !== 1 ? 's' : ''}</span>
-                                  </div>
-                                )}
-                                {matchingApps.filter(a => a.status === 'accepted').length > 0 && (
+                                <div style={{ fontSize:'11px', color:C.textSecondary, marginBottom:'8px' }}>{creatorSkin}{deal.briefTitle ? ` · ${deal.briefTitle}` : ''}</div>
+                                {/* Deal status timeline */}
+                                <div style={{ borderLeft:`2px solid ${C.border}`, paddingLeft:'12px', marginBottom:'8px' }}>
                                   <div style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'6px' }}>
                                     <div style={{ width:8, height:8, borderRadius:'50%', background:C.success, marginLeft:'-16px' }} />
-                                    <span style={{ fontSize:'11px', color:C.success, fontWeight:600 }}>{matchingApps.filter(a => a.status === 'accepted').length} accepted</span>
+                                    <span style={{ fontSize:'11px', color:C.success, fontWeight:600 }}>Offer sent · ${deal.offerAmount ? parseInt(deal.offerAmount).toLocaleString() : '—'}</span>
                                   </div>
-                                )}
-                                {activeDealsForCampaign.map(([key, deal]) => (
-                                  <div key={key} style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'6px' }}>
+                                  {deal.counterAmount && (
+                                    <div style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'6px' }}>
+                                      <div style={{ width:8, height:8, borderRadius:'50%', background:C.warning, marginLeft:'-16px' }} />
+                                      <span style={{ fontSize:'11px', color:C.warning, fontWeight:600 }}>Creator countered · ${parseInt(deal.counterAmount).toLocaleString()}</span>
+                                    </div>
+                                  )}
+                                  {deal.brandResponseAmount && (
+                                    <div style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'6px' }}>
+                                      <div style={{ width:8, height:8, borderRadius:'50%', background:C.primary, marginLeft:'-16px' }} />
+                                      <span style={{ fontSize:'11px', color:C.primary, fontWeight:600 }}>You countered · ${parseInt(deal.brandResponseAmount).toLocaleString()}</span>
+                                    </div>
+                                  )}
+                                  <div style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'6px' }}>
                                     <div style={{ width:8, height:8, borderRadius:'50%', background:getPhaseColor(deal.phase), marginLeft:'-16px' }} />
                                     <span style={{ fontSize:'11px', color:getPhaseColor(deal.phase), fontWeight:600 }}>{getPhaseLabel(deal.phase)}</span>
                                   </div>
-                                ))}
-                                {matchingApps.length === 0 && activeDealsForCampaign.length === 0 && (
-                                  <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
-                                    <div style={{ width:8, height:8, borderRadius:'50%', background:C.textMuted, marginLeft:'-16px', opacity:0.5 }} />
-                                    <span style={{ fontSize:'11px', color:C.textMuted }}>Waiting for creators...</span>
+                                </div>
+                                {lastMsg && (
+                                  <div style={{ fontSize:'10px', color:C.textMuted, padding:'6px 8px', background:C.surfaceAlt, borderRadius:'6px', marginBottom:'6px' }}>
+                                    <span style={{ fontWeight:600 }}>{lastMsg.sender === 'brand' ? 'You' : creatorName}:</span> {lastMsg.text.length > 80 ? lastMsg.text.slice(0, 80) + '...' : lastMsg.text}
                                   </div>
                                 )}
-                              </div>
-                              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                                 <div style={{ display:'flex', gap:'5px', flexWrap:'wrap' }}>
-                                  {c.requiredProfessions.map(p => <span key={p} style={{ fontSize:'10px', fontWeight:600, color:C.primary, background:`${C.primary}12`, padding:'2px 7px', borderRadius:'6px' }}>{p}</span>)}
+                                  <span style={{ fontSize:'10px', fontWeight:600, color:C.primary, background:`${C.primary}12`, padding:'2px 7px', borderRadius:'6px' }}>{creatorSkin}</span>
+                                  {deal.dealType && <span style={{ fontSize:'10px', fontWeight:600, color:C.textMuted, background:C.surfaceAlt, padding:'2px 7px', borderRadius:'6px' }}>{deal.dealType}</span>}
                                 </div>
-                                <button onClick={(e) => { e.stopPropagation(); setHiddenSentDealIds(prev => new Set([...prev, c.id])); }} style={{ background:'none', border:'none', color:C.textMuted, fontSize:'16px', cursor:'pointer', padding:'2px 6px', opacity:0.6 }} title="Remove from dashboard">x</button>
                               </div>
-                            </div>
-                          );
-                        })}
+                            );
+                          });
+                        })()}
                       </>)}
                     </div>
 

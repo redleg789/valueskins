@@ -57,6 +57,9 @@ export type DealState = {
   escrowFunded?: boolean;
   // Point of Contact — set at campaign creation, shown to both parties
   poc?: { name: string; instagramHandle: string; role: string };
+  // Campaign linkage — connects deal to its originating campaign for Sent Deals tracking
+  campaignId?: number;
+  campaignTitle?: string;
 };
 
 export type ChatMessage = {
