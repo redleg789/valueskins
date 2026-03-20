@@ -5,6 +5,16 @@ use sqlx::PgPool;
 use log::{info, error};
 use crate::models::*;
 use crate::service::{MarketplaceService, ServiceError};
+use shared::idempotency::IdempotencyService;
+
+fn idempotency_key(req: &HttpRequest) -> Option<String> {
+    req.headers()
+        .get("Idempotency-Key")
+        .and_then(|h| h.to_str().ok())
+        .map(str::trim)
+        .filter(|v| !v.is_empty())
+        .map(ToOwned::to_owned)
+}
 
 /// GET /marketplace/opportunities
 pub async fn list_opportunities(
@@ -57,10 +67,20 @@ pub async fn get_opportunity(
 /// POST /marketplace/opportunities (Brands only)
 pub async fn create_opportunity(
     pool: web::Data<PgPool>,
+    idempotency: web::Data<IdempotencyService>,
     body: web::Json<CreateOpportunityRequest>,
     req: HttpRequest,
 ) -> impl Responder {
     let service = MarketplaceService::new(pool.get_ref().clone());
+    let endpoint = "/marketplace/opportunities";
+    let key = match idempotency_key(&req) {
+        Some(v) => v,
+        None => {
+            return HttpResponse::BadRequest().json(serde_json::json!({
+                "error": "Idempotency-Key header is required"
+            }))
+        }
+    };
 
     let (brand_id, brand_user_id) = match get_brand_info(&req, pool.get_ref()).await {
         Some(b) => b,
@@ -69,12 +89,20 @@ pub async fn create_opportunity(
         })),
     };
 
+    if let Ok(Some(cached)) = idempotency.check(&key, endpoint).await {
+        return HttpResponse::Ok().json(cached);
+    }
+
     match service.create_opportunity(brand_id, brand_user_id, body.into_inner()).await {
         Ok(id) => {
             info!("Created opportunity {}", id);
-            HttpResponse::Created().json(serde_json::json!({
+            let response_body = serde_json::json!({
                 "opportunity_id": id
-            }))
+            });
+            let _ = idempotency
+                .store(&key, endpoint, brand_user_id, 201, &response_body)
+                .await;
+            HttpResponse::Created().json(response_body)
         }
         Err(ServiceError::BarterViolation(reason)) => {
             HttpResponse::BadRequest().json(serde_json::json!({
@@ -92,15 +120,29 @@ pub async fn create_opportunity(
 /// POST /marketplace/applications
 pub async fn apply_to_opportunity(
     pool: web::Data<PgPool>,
+    idempotency: web::Data<IdempotencyService>,
     body: web::Json<ApplyRequest>,
     req: HttpRequest,
 ) -> impl Responder {
     let service = MarketplaceService::new(pool.get_ref().clone());
+    let endpoint = "/marketplace/applications";
+    let key = match idempotency_key(&req) {
+        Some(v) => v,
+        None => {
+            return HttpResponse::BadRequest().json(serde_json::json!({
+                "error": "Idempotency-Key header is required"
+            }))
+        }
+    };
 
     let (user_id, persona_id) = match get_user_info(&req) {
         Some(info) => info,
         None => return HttpResponse::Unauthorized().finish(),
     };
+
+    if let Ok(Some(cached)) = idempotency.check(&key, endpoint).await {
+        return HttpResponse::Ok().json(cached);
+    }
 
     match service.apply(persona_id.unwrap_or(body.persona_id), user_id, body.into_inner()).await {
         Ok(id) => {
@@ -116,9 +158,13 @@ pub async fn apply_to_opportunity(
             .execute(pool.get_ref())
             .await.ok();
 
-            HttpResponse::Created().json(serde_json::json!({
+            let response_body = serde_json::json!({
                 "application_id": id
-            }))
+            });
+            let _ = idempotency
+                .store(&key, endpoint, user_id, 201, &response_body)
+                .await;
+            HttpResponse::Created().json(response_body)
         }
         Err(ServiceError::NotFound) => {
             HttpResponse::NotFound().json(serde_json::json!({
@@ -248,15 +294,30 @@ pub async fn get_opportunity_applications(
 /// POST /brands/applications/accept
 pub async fn accept_application(
     pool: web::Data<PgPool>,
+    idempotency: web::Data<IdempotencyService>,
     body: web::Json<AcceptApplicationRequest>,
     req: HttpRequest,
 ) -> impl Responder {
+    let endpoint = "/brands/applications/accept";
+    let key = match idempotency_key(&req) {
+        Some(v) => v,
+        None => {
+            return HttpResponse::BadRequest().json(serde_json::json!({
+                "error": "Idempotency-Key header is required"
+            }))
+        }
+    };
+
     let (_brand_id, brand_user_id) = match get_brand_info(&req, pool.get_ref()).await {
         Some(b) => b,
         None => return HttpResponse::Unauthorized().json(serde_json::json!({
             "error": "Brand authentication required"
         })),
     };
+
+    if let Ok(Some(cached)) = idempotency.check(&key, endpoint).await {
+        return HttpResponse::Ok().json(cached);
+    }
 
     // Verify this opportunity belongs to this brand
     let opp_brand: Option<i64> = sqlx::query_scalar(
@@ -278,9 +339,13 @@ pub async fn accept_application(
     match service.accept_application(body.opportunity_id, body.persona_id).await {
         Ok(()) => {
             info!("Accepted application for opportunity {}", body.opportunity_id);
-            HttpResponse::Ok().json(serde_json::json!({
+            let response_body = serde_json::json!({
                 "success": true
-            }))
+            });
+            let _ = idempotency
+                .store(&key, endpoint, brand_user_id, 200, &response_body)
+                .await;
+            HttpResponse::Ok().json(response_body)
         }
         Err(e) => {
             error!("Failed to accept application: {:?}", e);
@@ -292,15 +357,30 @@ pub async fn accept_application(
 /// POST /brands/deals/complete
 pub async fn complete_deal(
     pool: web::Data<PgPool>,
+    idempotency: web::Data<IdempotencyService>,
     body: web::Json<CompleteDealRequest>,
     req: HttpRequest,
 ) -> impl Responder {
+    let endpoint = "/brands/deals/complete";
+    let key = match idempotency_key(&req) {
+        Some(v) => v,
+        None => {
+            return HttpResponse::BadRequest().json(serde_json::json!({
+                "error": "Idempotency-Key header is required"
+            }))
+        }
+    };
+
     let (_brand_id, brand_user_id) = match get_brand_info(&req, pool.get_ref()).await {
         Some(b) => b,
         None => return HttpResponse::Unauthorized().json(serde_json::json!({
             "error": "Brand authentication required"
         })),
     };
+
+    if let Ok(Some(cached)) = idempotency.check(&key, endpoint).await {
+        return HttpResponse::Ok().json(cached);
+    }
 
     // Verify ownership
     let opp_brand: Option<i64> = sqlx::query_scalar(
@@ -322,9 +402,13 @@ pub async fn complete_deal(
     match service.complete_deal(body.opportunity_id).await {
         Ok(()) => {
             info!("Completed deal for opportunity {}", body.opportunity_id);
-            HttpResponse::Ok().json(serde_json::json!({
+            let response_body = serde_json::json!({
                 "success": true
-            }))
+            });
+            let _ = idempotency
+                .store(&key, endpoint, brand_user_id, 200, &response_body)
+                .await;
+            HttpResponse::Ok().json(response_body)
         }
         Err(ServiceError::InvalidStatus) => {
             HttpResponse::BadRequest().json(serde_json::json!({

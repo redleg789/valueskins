@@ -1,8 +1,9 @@
-use actix_web::{web, HttpResponse, Responder, HttpRequest, HttpMessage};
+use actix_web::{web, HttpMessage, HttpRequest, HttpResponse, Responder};
 use social_service::models::CreatePostRequest;
 use social_service::service::SocialService;
 use sqlx::PgPool;
 use tracing::error;
+use auth_service::token::Claims;
 
 pub async fn create_post(
     req: web::Json<CreatePostRequest>,
@@ -10,9 +11,16 @@ pub async fn create_post(
     http_req: HttpRequest,
     pool: web::Data<PgPool>,
 ) -> impl Responder {
-    // Extract user_id from JWT token stored in request extensions by auth middleware
-    let user_id = match http_req.extensions().get::<i64>() {
-        Some(&id) => id,
+    // Extract user_id from JWT claims injected by auth middleware
+    let user_id = match http_req.extensions().get::<Claims>() {
+        Some(claims) => match claims.sub.parse::<i64>() {
+            Ok(id) => id,
+            Err(_) => {
+                return HttpResponse::Unauthorized().json(serde_json::json!({
+                    "error": "Invalid authentication token"
+                }));
+            }
+        },
         None => {
             return HttpResponse::Unauthorized().json(serde_json::json!({
                 "error": "Missing or invalid JWT token"

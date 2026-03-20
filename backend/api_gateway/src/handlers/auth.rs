@@ -23,6 +23,17 @@ fn is_production() -> bool {
     std::env::var("APP_ENV").map(|v| v == "production").unwrap_or(false)
 }
 
+fn redirect_uri_allowed(redirect_uri: &str) -> bool {
+    // Default-safe allowlist for production and local development callback.
+    let allowlist = std::env::var("OAUTH_REDIRECT_ALLOWLIST")
+        .unwrap_or_else(|_| "http://localhost:3000/auth/callback,https://valueskins.io/auth/callback,https://www.valueskins.io/auth/callback".to_string());
+    allowlist
+        .split(',')
+        .map(str::trim)
+        .filter(|entry| !entry.is_empty())
+        .any(|entry| entry == redirect_uri)
+}
+
 #[derive(Deserialize)]
 pub struct LoginRequest {
     /// Instagram access token (direct token flow, kept for backward compatibility)
@@ -132,6 +143,28 @@ pub async fn login(
         }));
     }
 
+    if req.code.is_some() && req.access_token.is_some() {
+        return HttpResponse::BadRequest().json(serde_json::json!({
+            "error": "Provide either 'code' or 'access_token', not both"
+        }));
+    }
+
+    if let Some(code) = req.code.as_ref() {
+        if code.trim().is_empty() || code.len() > 4096 {
+            return HttpResponse::BadRequest().json(serde_json::json!({
+                "error": "Invalid OAuth code"
+            }));
+        }
+    }
+
+    if let Some(token) = req.access_token.as_ref() {
+        if token.trim().is_empty() || token.len() > 8192 {
+            return HttpResponse::BadRequest().json(serde_json::json!({
+                "error": "Invalid Instagram access token"
+            }));
+        }
+    }
+
     // Resolve the Instagram access token from either the code or direct token
     let access_token: String = if let Some(ref code) = req.code {
         let redirect_uri = match &req.redirect_uri {
@@ -143,10 +176,12 @@ pub async fn login(
             }
         };
 
-        // Validate redirect_uri format (basic check to prevent open redirect abuse)
-        if !redirect_uri.starts_with("https://") && !redirect_uri.starts_with("http://localhost") {
+        // Validate redirect_uri format and enforce strict allowlist.
+        if (!redirect_uri.starts_with("https://") && !redirect_uri.starts_with("http://localhost"))
+            || !redirect_uri_allowed(&redirect_uri)
+        {
             return HttpResponse::BadRequest().json(serde_json::json!({
-                "error": "redirect_uri must use HTTPS (or http://localhost for development)"
+                "error": "redirect_uri is not allowed"
             }));
         }
 
