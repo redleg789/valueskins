@@ -269,6 +269,8 @@ type Opportunity = {
   creatorCount?: number;
   // Point of Contact for the campaign
   poc?: { name: string; instagramHandle: string; role: string };
+  scriptMode?: 'non_negotiable' | 'discussion' | 'creator_freedom';
+  scriptText?: string;
 };
 
 // Opportunities vary by profession — different brands want different skills
@@ -1126,6 +1128,8 @@ export default function TikTokDemoPage() {
   const [newCampaignRequirements, setNewCampaignRequirements] = useState<string[]>([]);
   const [newCampaignReqInput, setNewCampaignReqInput] = useState('');
   const [newCampaignCreatorCount, setNewCampaignCreatorCount] = useState(1);
+  const [newCampaignScriptMode, setNewCampaignScriptMode] = useState<'non_negotiable' | 'discussion' | 'creator_freedom' | ''>('');
+  const [newCampaignScriptText, setNewCampaignScriptText] = useState('');
 
   // Campaign POC (Point of Contact) fields
   const [newCampaignPocName, setNewCampaignPocName] = useState('');
@@ -1169,6 +1173,8 @@ export default function TikTokDemoPage() {
   const brandApprovalPhase: BrandApprovalPhase = (brandDeal?.brandApprovalPhase as BrandApprovalPhase) || 'accepted';
   const setBrandApprovalPhase = (p: BrandApprovalPhase) => { if (brandDealKey) updateDeal(brandDealKey, { brandApprovalPhase: p }); };
   const [dealUploadSimulated, setDealUploadSimulated] = useState(false);
+  const [showScriptEditorCreator, setShowScriptEditorCreator] = useState(false);
+  const [showScriptEditorBrand, setShowScriptEditorBrand] = useState(false);
   type CompletedDeal = { id:number; brand:string; amount:number; completedAt:string; deliverable:string; usageRightsDays?:number; exclusivityDays?:number; exclusivitySkin?:string; disputed?:boolean; disputeReason?:string; disputeStatus?:'filed'|'under_review'|'resolved'; contractSignedAt?:string; };
   const [completedDeals, setCompletedDeals] = useState<CompletedDeal[]>([]);
   // Deliverable checklist tracking (per-deliverable status + TikTok links)
@@ -1457,6 +1463,9 @@ export default function TikTokDemoPage() {
       escrowFunded: c.escrowFunded || false,
       escrowPool: c.escrowPool || 0,
       creatorCount: c.creatorCount || 1,
+      poc: c.poc,
+      scriptMode: c.scriptMode,
+      scriptText: c.scriptText,
     }));
   const activeOpportunities = selectedMarketplaceSkin
     ? campaignOpportunities.slice().sort((a, b) => parseInt(b.match) - parseInt(a.match))
@@ -1755,6 +1764,17 @@ export default function TikTokDemoPage() {
                   <span style={{ color: C.textSecondary }}>Match</span>
                   <span style={{ color: C.primary, fontWeight: 700 }}>{askModalOpp.match}</span>
                 </div>
+                {askModalOpp.scriptMode && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', padding: '6px 0' }}>
+                    <span style={{ color: C.textSecondary }}>Scripting</span>
+                    <span style={{ color: C.text, fontWeight: 600 }}>{askModalOpp.scriptMode === 'non_negotiable' ? 'Non-negotiable' : askModalOpp.scriptMode === 'discussion' ? 'Discussion' : 'Creator freedom'}</span>
+                  </div>
+                )}
+                {askModalOpp.scriptMode === 'non_negotiable' && askModalOpp.scriptText && (
+                  <div style={{ marginTop:'6px', padding:'8px', borderRadius:'8px', background:'rgba(239,68,68,0.06)', border:'1px solid rgba(239,68,68,0.2)', fontSize:'11px', color:C.textSecondary, whiteSpace:'pre-wrap', lineHeight:1.4 }}>
+                    {askModalOpp.scriptText}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -2666,12 +2686,18 @@ export default function TikTokDemoPage() {
                                     if (!dealKey) return;
                                     setNegotiatingOpp(i);
                                     updateDeal(dealKey, {
-                                      phase: 'chatroom',
-                                      offerAmount: '',
+                                      phase: opp.scriptMode === 'non_negotiable' ? 'formal_offer' : 'chatroom',
+                                      offerAmount: (opp.budget || '').replace(/[^0-9]/g, ''),
                                       counterAmount: '',
                                       dealType: resolveDealType(opp.compensationType || 'Paid'),
                                       isInternationalDeal: isInternationalDeal(matchingCreator?.audienceLocation || '', opp.location || ''),
                                       poc: opp.poc,
+                                      scriptMode: opp.scriptMode,
+                                      brandScriptText: opp.scriptText || '',
+                                      scriptDraft: opp.scriptText || '',
+                                      scriptVersion: opp.scriptText ? 1 : 0,
+                                      creatorScriptApproved: opp.scriptMode === 'non_negotiable',
+                                      brandScriptApproved: opp.scriptMode === 'non_negotiable',
                                     });
                                   }}
                                   style={{ flex: 1, fontSize: '13px', fontWeight: 700, color: '#fff', background: C.primary, border: 'none', padding: '10px', borderRadius: '10px', cursor: 'pointer' }}
@@ -3168,6 +3194,12 @@ export default function TikTokDemoPage() {
                                             )}
                                             <div style={{ fontSize: '11px', color: C.text, marginBottom: '3px' }}>Usage rights: <strong>{opp.usageRights || `${opp.revisionLimit * 30} days`}</strong></div>
                                             <div style={{ fontSize: '11px', color: C.text }}>Exclusivity: <strong>{opp.exclusivity || 'None'}</strong></div>
+                                            {scriptMode && (
+                                              <div style={{ fontSize:'11px', color:C.text, marginTop:'3px' }}>Scripting: <strong>{scriptMode === 'non_negotiable' ? 'Non-negotiable' : scriptMode === 'discussion' ? 'Discussion' : 'Creator freedom'}</strong></div>
+                                            )}
+                                            {scriptMode === 'non_negotiable' && brandScriptText && (
+                                              <div style={{ marginTop:'6px', padding:'6px', borderRadius:'6px', background:'rgba(239,68,68,0.06)', border:'1px solid rgba(239,68,68,0.2)', fontSize:'10px', color:C.textSecondary, whiteSpace:'pre-wrap', lineHeight:1.4 }}>{brandScriptText}</div>
+                                            )}
                                           </div>
                                           {/* POC Card */}
                                           {activeDeal?.poc && (
@@ -3298,6 +3330,42 @@ export default function TikTokDemoPage() {
                                               {opp.deadline && <span style={{ fontSize:'9px', color:C.textMuted }}>{new Date(opp.deadline).toLocaleDateString('en-US',{month:'short',day:'numeric'})}</span>}
                                             </div>
                                           </div>
+                                          {/* Script editor */}
+                                          <div style={{ background: C.bg, borderRadius: '8px', border: `1px solid ${C.border}`, padding: '8px' }}>
+                                            <button onClick={() => setShowScriptEditorCreator(v => !v)} style={{ width:'100%', background:'none', border:`1px solid ${C.border}`, borderRadius:'6px', padding:'5px 6px', fontSize:'10px', fontWeight:700, color:C.text, cursor:'pointer', marginBottom:'6px' }}>
+                                              Script {showScriptEditorCreator ? '▲' : '▼'}
+                                            </button>
+                                            {showScriptEditorCreator && (
+                                              <>
+                                                <div style={{ fontSize:'9px', color:C.textMuted, marginBottom:'4px' }}>{scriptMode === 'non_negotiable' ? 'Non-negotiable' : scriptMode === 'discussion' ? 'Discussion' : 'Creator freedom'}</div>
+                                                <textarea
+                                                  value={scriptDraft}
+                                                  onChange={(e) => {
+                                                    if (scriptMode === 'non_negotiable') return;
+                                                    if (!activeDealKey) return;
+                                                    updateDeal(activeDealKey, { scriptDraft: e.target.value, scriptStatus: 'draft', creatorScriptApproved: false, brandScriptApproved: false, scriptVersion: (scriptVersion || 0) + 1 });
+                                                  }}
+                                                  rows={4}
+                                                  readOnly={scriptMode === 'non_negotiable'}
+                                                  placeholder="Draft script..."
+                                                  style={{ width:'100%', background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:'6px', padding:'6px', fontSize:'10px', color:C.text, fontFamily:'inherit', resize:'none', boxSizing:'border-box', marginBottom:'6px' }}
+                                                />
+                                                {scriptMode !== 'non_negotiable' && (
+                                                  <button
+                                                    onClick={() => {
+                                                      if (!activeDealKey) return;
+                                                      updateDeal(activeDealKey, { creatorScriptApproved: true, scriptStatus: 'submitted' });
+                                                      firebaseSendNotification(opp?.brand || 'Brand', 'application', 'Creator clicked: I approve script.');
+                                                    }}
+                                                    style={{ width:'100%', background:C.primary, border:'none', borderRadius:'6px', padding:'6px', fontSize:'10px', fontWeight:700, color:'#fff', cursor:'pointer', marginBottom:'4px' }}
+                                                  >
+                                                    I approve
+                                                  </button>
+                                                )}
+                                                <div style={{ fontSize:'9px', color:C.textMuted }}>C: {creatorScriptApproved ? 'Approved' : 'Pending'} · B: {brandScriptApproved ? 'Approved' : 'Pending'}</div>
+                                              </>
+                                            )}
+                                          </div>
                                           {/* Checklist */}
                                           <div style={{ background: C.bg, borderRadius: '8px', border: `1px solid ${C.border}`, padding: '8px' }}>
                                             <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Checklist</div>
@@ -3403,9 +3471,13 @@ export default function TikTokDemoPage() {
                                           {/* Brand submits formal offer */}
                                           <div style={{ background: C.bg, borderRadius: '8px', border: `1px solid ${C.border}`, padding: '8px' }}>
                                             <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Finalize</div>
+                                            {scriptMode !== 'non_negotiable' && (
+                                              <div style={{ fontSize:'9px', color:C.textMuted, marginBottom:'5px' }}>Script approvals required: C {creatorScriptApproved ? '✓' : '✗'} · B {brandScriptApproved ? '✓' : '✗'}</div>
+                                            )}
                                             <button
+                                              disabled={scriptMode !== 'non_negotiable' && !(creatorScriptApproved && brandScriptApproved)}
                                               onClick={() => setDealRoomPhase('formal_offer')}
-                                              style={{ width: '100%', background: C.primary, border: 'none', padding: '7px', borderRadius: '6px', color: '#fff', fontWeight: 600, fontSize: '11px', cursor: 'pointer', lineHeight: 1.3 }}
+                                              style={{ width: '100%', background: scriptMode !== 'non_negotiable' && !(creatorScriptApproved && brandScriptApproved) ? C.border : C.primary, border: 'none', padding: '7px', borderRadius: '6px', color: '#fff', fontWeight: 600, fontSize: '11px', cursor: scriptMode !== 'non_negotiable' && !(creatorScriptApproved && brandScriptApproved) ? 'not-allowed' : 'pointer', lineHeight: 1.3, opacity: scriptMode !== 'non_negotiable' && !(creatorScriptApproved && brandScriptApproved) ? 0.6 : 1 }}
                                             >
                                               Submit Formal Offer
                                             </button>
@@ -4445,6 +4517,28 @@ export default function TikTokDemoPage() {
                               ))}
                             </div>
                           </div>
+                          {/* Scripting mode */}
+                          <div style={{ marginBottom:'12px' }}>
+                            <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'6px' }}>Scripting mode *</div>
+                            <div style={{ display:'flex', flexDirection:'column', gap:'6px' }}>
+                              {[
+                                { key: 'non_negotiable', title: '1) Non-negotiable script', desc: 'Fixed script in details. Creator accepts/rejects.' },
+                                { key: 'discussion', title: '2) Discussion', desc: 'Both negotiate in chatroom and both approve script.' },
+                                { key: 'creator_freedom', title: '3) Creator freedom', desc: 'Creator drafts script. Brand approves/revises.' },
+                              ].map((m) => (
+                                <button key={m.key} onClick={()=>setNewCampaignScriptMode(m.key as any)} style={{ textAlign:'left', background:newCampaignScriptMode===m.key?`${C.primary}12`:C.bg, border:`1px solid ${newCampaignScriptMode===m.key?C.primary:C.border}`, borderRadius:'8px', padding:'8px', cursor:'pointer' }}>
+                                  <div style={{ fontSize:'11px', fontWeight:700, color:C.text }}>{m.title}</div>
+                                  <div style={{ fontSize:'10px', color:C.textSecondary, marginTop:'2px' }}>{m.desc}</div>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          {newCampaignScriptMode === 'non_negotiable' && (
+                            <div style={{ marginBottom:'12px' }}>
+                              <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>Fixed script text *</div>
+                              <textarea value={newCampaignScriptText} onChange={e=>setNewCampaignScriptText(e.target.value)} rows={4} placeholder="Paste exact script creators must follow" style={{ width:'100%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', color:C.text, padding:'8px 10px', fontSize:'12px', fontFamily:'inherit', outline:'none', resize:'none', boxSizing:'border-box' as const }} />
+                            </div>
+                          )}
                           {/* Exclusivity & Usage Rights */}
                           <div style={{ display:'flex', gap:'10px', marginBottom:'12px' }}>
                             <div style={{ flex:1 }}>
@@ -4529,10 +4623,12 @@ export default function TikTokDemoPage() {
                               if (!newCampaignDesc.trim()) missing.push('Description');
                               if (!newCampaignBudget) missing.push('Budget');
                               if (!newCampaignAudienceTarget.trim()) missing.push('Target audience');
+                              if (!newCampaignScriptMode) missing.push('Scripting mode');
+                              if (newCampaignScriptMode === 'non_negotiable' && newCampaignScriptText.trim().length < 20) missing.push('Fixed script text');
                               if (missing.length > 0) { setPurchaseToast(`Missing: ${missing.join(', ')}`); setTimeout(()=>setPurchaseToast(null),4000); return; }
                               const escrowPool = parseInt(newCampaignBudget||'0') * newCampaignCreatorCount;
                               const newC: Campaign = {
-                                id:Date.now(), brandName:profileName, brandProfession:activeBrandSkin??'', title:newCampaignTitle, description:newCampaignDesc, about:newCampaignAbout, requiredProfessions:[activeBrandSkin ?? ''], minLevel:newCampaignMinLevel, maxLevel:newCampaignMaxLevel, budget:newCampaignBudget, deadline:newCampaignDeadline, location:newCampaignLocation, nonNegotiables:newCampaignNonNeg, deliverables:newCampaignDeliverables, compensationType:newCampaignCompensation, exclusivity:newCampaignExclusivity, usageRights:newCampaignUsageRights, revisionLimit:newCampaignRevisionLimit, audienceTarget:newCampaignAudienceTarget, requirements:newCampaignRequirements, status:'open', applicants:0, creatorCount:newCampaignCreatorCount, escrowFunded:false, escrowPool, escrowAllocated:0,
+                                id:Date.now(), brandName:profileName, brandProfession:activeBrandSkin??'', title:newCampaignTitle, description:newCampaignDesc, about:newCampaignAbout, requiredProfessions:[activeBrandSkin ?? ''], minLevel:newCampaignMinLevel, maxLevel:newCampaignMaxLevel, budget:newCampaignBudget, deadline:newCampaignDeadline, location:newCampaignLocation, nonNegotiables:newCampaignNonNeg, deliverables:newCampaignDeliverables, compensationType:newCampaignCompensation, exclusivity:newCampaignExclusivity, usageRights:newCampaignUsageRights, revisionLimit:newCampaignRevisionLimit, audienceTarget:newCampaignAudienceTarget, requirements:newCampaignRequirements, scriptMode: newCampaignScriptMode as any, scriptText: newCampaignScriptMode === 'non_negotiable' ? newCampaignScriptText : '', status:'open', applicants:0, creatorCount:newCampaignCreatorCount, escrowFunded:false, escrowPool, escrowAllocated:0,
                                 poc: newCampaignPocName.trim() ? {
                                   name: newCampaignPocName.trim(),
                                   instagramHandle: newCampaignPocHandle.trim().startsWith('@') ? newCampaignPocHandle.trim() : `@${newCampaignPocHandle.trim()}`,
@@ -4547,7 +4643,7 @@ export default function TikTokDemoPage() {
                               setShowEscrowFundingModal(true);
                               setEscrowFundingInProgress2(false);
                               setBatchSendCreatorIds(new Set());
-                              setNewCampaignTitle(''); setNewCampaignDesc(''); setNewCampaignAbout(''); setNewCampaignBudget(''); setNewCampaignDeadline(''); setNewCampaignProfessions([]); setNewCampaignMinLevel(1); setNewCampaignMaxLevel(5); setNewCampaignLocation(''); setNewCampaignDeliverables(''); setNewCampaignNonNeg([]); setNewCampaignCompensation('Paid'); setNewCampaignExclusivity('None'); setNewCampaignUsageRights('30 days, social only'); setNewCampaignRevisionLimit(2); setNewCampaignAudienceTarget(''); setNewCampaignRequirements([]); setNewCampaignReqInput(''); setNewCampaignCreatorCount(1); setNewCampaignPocName(''); setNewCampaignPocHandle(''); setNewCampaignPocRole('');
+                              setNewCampaignTitle(''); setNewCampaignDesc(''); setNewCampaignAbout(''); setNewCampaignBudget(''); setNewCampaignDeadline(''); setNewCampaignProfessions([]); setNewCampaignMinLevel(1); setNewCampaignMaxLevel(5); setNewCampaignLocation(''); setNewCampaignDeliverables(''); setNewCampaignNonNeg([]); setNewCampaignCompensation('Paid'); setNewCampaignExclusivity('None'); setNewCampaignUsageRights('30 days, social only'); setNewCampaignRevisionLimit(2); setNewCampaignAudienceTarget(''); setNewCampaignRequirements([]); setNewCampaignReqInput(''); setNewCampaignCreatorCount(1); setNewCampaignScriptMode(''); setNewCampaignScriptText(''); setNewCampaignPocName(''); setNewCampaignPocHandle(''); setNewCampaignPocRole('');
                             }}
                             style={{ width:'100%', background:C.primary, border:'none', borderRadius:'8px', padding:'11px', color:'#fff', fontWeight:700, fontSize:'14px', cursor:'pointer' }}
                           >
@@ -5603,6 +5699,31 @@ export default function TikTokDemoPage() {
                                     </div>
                                   </div>
                                   <div style={{ fontSize: '11px', color: C.textMuted, marginBottom: '10px', lineHeight: 1.4 }}>Review the counter-offer and choose a response. The creator will be notified once you act.</div>
+                                  <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', padding:'8px', marginBottom:'10px' }}>
+                                    <button onClick={() => setShowScriptEditorBrand(v => !v)} style={{ width:'100%', background:'none', border:`1px solid ${C.border}`, borderRadius:'6px', padding:'6px', fontSize:'10px', fontWeight:700, color:C.text, cursor:'pointer', marginBottom:'6px' }}>
+                                      Script {showScriptEditorBrand ? '▲' : '▼'}
+                                    </button>
+                                    {showScriptEditorBrand && (
+                                      <>
+                                        <textarea
+                                          value={brandDeal?.scriptDraft || ''}
+                                          onChange={(e) => {
+                                            if (scriptMode === 'non_negotiable' || !brandDealKey) return;
+                                            updateDeal(brandDealKey, { scriptDraft: e.target.value, scriptStatus: 'draft', creatorScriptApproved: false, brandScriptApproved: false, scriptVersion: ((brandDeal?.scriptVersion || 0) + 1) });
+                                          }}
+                                          rows={4}
+                                          readOnly={scriptMode === 'non_negotiable'}
+                                          style={{ width:'100%', background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:'6px', padding:'6px', fontSize:'10px', color:C.text, fontFamily:'inherit', resize:'none', boxSizing:'border-box', marginBottom:'6px' }}
+                                        />
+                                        {scriptMode !== 'non_negotiable' && (
+                                          <button onClick={() => { if (!brandDealKey) return; updateDeal(brandDealKey, { brandScriptApproved: true, scriptStatus: 'submitted' }); firebaseSendNotification('Creator','application','Brand clicked: I approve script.'); }} style={{ width:'100%', background:C.primary, border:'none', borderRadius:'6px', padding:'6px', fontSize:'10px', fontWeight:700, color:'#fff', cursor:'pointer', marginBottom:'4px' }}>
+                                            I approve
+                                          </button>
+                                        )}
+                                        <div style={{ fontSize:'9px', color:C.textMuted }}>C: {creatorScriptApproved ? 'Approved' : 'Pending'} · B: {brandScriptApproved ? 'Approved' : 'Pending'}</div>
+                                      </>
+                                    )}
+                                  </div>
                                   <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
                                     <button
                                       onClick={() => {
@@ -5671,6 +5792,31 @@ export default function TikTokDemoPage() {
                               {brandDealPhase === 'brand_reviewing' && (
                                 <>
                                   <div style={{ fontSize: '12px', fontWeight: 700, color: C.text, marginBottom: '10px' }}>Send your counter</div>
+                                  <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', padding:'8px', marginBottom:'10px' }}>
+                                    <button onClick={() => setShowScriptEditorBrand(v => !v)} style={{ width:'100%', background:'none', border:`1px solid ${C.border}`, borderRadius:'6px', padding:'6px', fontSize:'10px', fontWeight:700, color:C.text, cursor:'pointer', marginBottom:'6px' }}>
+                                      Script {showScriptEditorBrand ? '▲' : '▼'}
+                                    </button>
+                                    {showScriptEditorBrand && (
+                                      <>
+                                        <textarea
+                                          value={brandDeal?.scriptDraft || ''}
+                                          onChange={(e) => {
+                                            if (scriptMode === 'non_negotiable' || !brandDealKey) return;
+                                            updateDeal(brandDealKey, { scriptDraft: e.target.value, scriptStatus: 'draft', creatorScriptApproved: false, brandScriptApproved: false, scriptVersion: ((brandDeal?.scriptVersion || 0) + 1) });
+                                          }}
+                                          rows={4}
+                                          readOnly={scriptMode === 'non_negotiable'}
+                                          style={{ width:'100%', background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:'6px', padding:'6px', fontSize:'10px', color:C.text, fontFamily:'inherit', resize:'none', boxSizing:'border-box', marginBottom:'6px' }}
+                                        />
+                                        {scriptMode !== 'non_negotiable' && (
+                                          <button onClick={() => { if (!brandDealKey) return; updateDeal(brandDealKey, { brandScriptApproved: true, scriptStatus: 'submitted' }); firebaseSendNotification('Creator','application','Brand clicked: I approve script.'); }} style={{ width:'100%', background:C.primary, border:'none', borderRadius:'6px', padding:'6px', fontSize:'10px', fontWeight:700, color:'#fff', cursor:'pointer', marginBottom:'4px' }}>
+                                            I approve
+                                          </button>
+                                        )}
+                                        <div style={{ fontSize:'9px', color:C.textMuted }}>C: {creatorScriptApproved ? 'Approved' : 'Pending'} · B: {brandScriptApproved ? 'Approved' : 'Pending'}</div>
+                                      </>
+                                    )}
+                                  </div>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
                                     <span style={{ fontSize: '16px', fontWeight: 800, color: C.text }}>$</span>
                                     <input

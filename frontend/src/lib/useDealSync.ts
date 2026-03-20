@@ -138,6 +138,8 @@ export type Campaign = {
   revisionLimit?: number;
   audienceTarget?: string;
   requirements?: string[];
+  scriptMode?: 'non_negotiable' | 'discussion' | 'creator_freedom';
+  scriptText?: string;
   status: 'open' | 'closed' | 'expired';
   applicants: number;
   creatorCount?: number;       // how many creators brand intends to hire
