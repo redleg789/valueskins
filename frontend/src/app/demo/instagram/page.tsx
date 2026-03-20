@@ -4806,9 +4806,10 @@ export default function InstagramDemoPage() {
                     {(() => {
                       const q = brandSearchQuery.trim().toLowerCase();
                       // Show creators with valueSkin matching the active brand skin
+                      // Preserve original index (_origIdx) so deal room lookup works after filtering
                       const creatorsForSkin = activeBrandSkin
-                        ? BRAND_MARKETPLACE_CREATORS.map(c => ({ ...c, valueSkin: activeBrandSkin }))
-                        : [];
+                        ? BRAND_MARKETPLACE_CREATORS.map((c, idx) => ({ ...c, valueSkin: activeBrandSkin, _origIdx: idx }))
+                        : [] as (typeof BRAND_MARKETPLACE_CREATORS[0] & { _origIdx: number })[];
                       let results = creatorsForSkin.filter(c =>
                         (!filterBarterOnly || c.willingToBarter) &&
                         (!filterAudienceAge || c.audienceAgeRange === filterAudienceAge) &&
@@ -4841,12 +4842,13 @@ export default function InstagramDemoPage() {
                             </div>
                           )}
                           {results.map((creator, i) => {
+                      const origIdx = (creator as any)._origIdx ?? i;
                       const badge = PROFESSION_BADGES[creator.valueSkin];
                       const abbr = badge?.abbreviation ?? creator.valueSkin.split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0, 3);
                       const badgeColor = badge?.color ?? C.primary;
-                      const isNegotiating = negotiatingCreator === i;
+                      const isNegotiating = negotiatingCreator === origIdx;
                       return (
-                        <div key={i} style={{ background: C.card, borderRadius: '12px', padding: '16px', marginBottom: '12px', border: `1px solid ${isNegotiating ? 'rgba(230,81,0,0.4)' : creator.featured ? 'rgba(0,102,204,0.3)' : C.border}` }}>
+                        <div key={i} data-creator-idx={origIdx} style={{ background: C.card, borderRadius: '12px', padding: '16px', marginBottom: '12px', border: `1px solid ${isNegotiating ? 'rgba(230,81,0,0.4)' : creator.featured ? 'rgba(0,102,204,0.3)' : C.border}` }}>
                           <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
                             <a href={`https://instagram.com/${creator.handle.replace('@', '')}`} target="_blank" rel="noopener noreferrer" title="View Instagram profile" style={{ flexShrink:0 }}>
                               <img
@@ -5006,7 +5008,7 @@ export default function InstagramDemoPage() {
                                       onClick={() => {
                                         if (noBrandSkin) { setPurchaseToast('Get a brand ValueSkin first'); setTimeout(() => setPurchaseToast(null), 3000); return; }
                                         if (!hasMatch) { setPurchaseToast('No shared ValueSkin with this creator'); setTimeout(() => setPurchaseToast(null), 3000); return; }
-                                        setDirectApproach(false); setNegotiatingCreator(i); setBrandDealPhase('brief'); setBrandBriefTitle(''); setBrandBriefDeliverables(''); setBrandBudget('4000'); setBrandDealIntent('campaign');
+                                        setDirectApproach(false); setNegotiatingCreator(origIdx); setBrandDealPhase('brief'); setBrandBriefTitle(''); setBrandBriefDeliverables(''); setBrandBudget('4000'); setBrandDealIntent('campaign');
                                       }}
                                       style={{ flex:1, background: hasMatch ? (creator.featured ? C.primary : C.surfaceAlt) : C.surfaceAlt, border: hasMatch && creator.featured ? 'none' : `1px solid ${hasMatch ? C.border : 'rgba(230,81,0,0.3)'}`, padding: '10px 16px', borderRadius: '8px', color: hasMatch ? '#fff' : C.warning, fontWeight: '600', cursor: 'pointer', fontSize: '14px', opacity: hasMatch ? 1 : 0.7 }}
                                     >
@@ -5015,7 +5017,7 @@ export default function InstagramDemoPage() {
                                     <button
                                       onClick={() => {
                                         if (noBrandSkin) { setPurchaseToast('Get a brand ValueSkin first'); setTimeout(() => setPurchaseToast(null), 3000); return; }
-                                        setDirectApproach(true); setNegotiatingCreator(i); setBrandDealPhase('brief'); setBrandBriefTitle(''); setBrandBriefDeliverables(''); setBrandBudget('4000'); setBrandDealIntent('campaign');
+                                        setDirectApproach(true); setNegotiatingCreator(origIdx); setBrandDealPhase('brief'); setBrandBriefTitle(''); setBrandBriefDeliverables(''); setBrandBudget('4000'); setBrandDealIntent('campaign');
                                       }}
                                       style={{ flex:1, background:C.surfaceAlt, border:`1px solid ${C.border}`, padding:'10px 12px', borderRadius:'8px', color:C.textSecondary, fontWeight:'600', cursor:'pointer', fontSize:'13px', opacity: noBrandSkin ? 0.5 : 1 }}
                                     >
@@ -6096,6 +6098,11 @@ export default function InstagramDemoPage() {
                                       if (creatorIdx !== -1) {
                                         setNegotiatingCreator(creatorIdx);
                                         setMarketplaceTab('creators');
+                                        // Scroll to the creator card after tab switch renders
+                                        setTimeout(() => {
+                                          const el = document.querySelector(`[data-creator-idx="${creatorIdx}"]`);
+                                          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                        }, 150);
                                       }
                                     }}
                                     style={{ background:C.primary, border:'none', borderRadius:'6px', padding:'5px 12px', color:'#fff', fontSize:'10px', fontWeight:600, cursor:'pointer' }}
