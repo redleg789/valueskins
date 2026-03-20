@@ -52,9 +52,45 @@ fn validate_jwt_secret(secret: &str) {
     }
 }
 
+fn is_strong_shared_secret(secret: &str) -> bool {
+    secret.len() >= 32
+}
+
+fn validate_required_shared_secret(env_key: &str) {
+    let value = match env::var(env_key) {
+        Ok(v) => v,
+        Err(_) => {
+            tracing::error!(key = env_key, "Required secret not set");
+            std::process::exit(1);
+        }
+    };
+    if !is_strong_shared_secret(&value) {
+        tracing::error!(key = env_key, "Required secret failed minimum strength policy");
+        std::process::exit(1);
+    }
+}
+
+fn validate_allowed_origins(origins: &str) {
+    let parsed: Vec<&str> = origins
+        .split(',')
+        .map(str::trim)
+        .filter(|v| !v.is_empty())
+        .collect();
+    if parsed.is_empty() {
+        tracing::error!("ALLOWED_ORIGINS must contain at least one origin");
+        std::process::exit(1);
+    }
+    for origin in parsed {
+        if !(origin.starts_with("https://") || origin.starts_with("http://localhost")) {
+            tracing::error!(origin = origin, "Invalid origin in ALLOWED_ORIGINS");
+            std::process::exit(1);
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::is_strong_jwt_secret;
+    use super::{is_strong_jwt_secret, is_strong_shared_secret};
 
     #[test]
     fn weak_secrets_are_rejected() {
@@ -66,6 +102,12 @@ mod tests {
     #[test]
     fn strong_secrets_are_accepted() {
         assert!(is_strong_jwt_secret("strong-production-jwt-secret-0123456789"));
+    }
+
+    #[test]
+    fn shared_secret_policy() {
+        assert!(!is_strong_shared_secret("short"));
+        assert!(is_strong_shared_secret("minimum-32-chars-shared-secret-key!!"));
     }
 }
 
@@ -106,11 +148,14 @@ async fn main() -> std::io::Result<()> {
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     let jwt_secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set — refusing to start with default secret");
     validate_jwt_secret(&jwt_secret);
+    validate_required_shared_secret("API_KEY_HMAC_SALT");
+    validate_required_shared_secret("VERIFICATION_HMAC_SECRET");
     let allowed_origins = env::var("ALLOWED_ORIGINS")
         .unwrap_or_else(|_| {
             tracing::warn!("ALLOWED_ORIGINS not set — defaulting to production origins only (no localhost)");
             "https://valueskins.io,https://www.valueskins.io".to_string()
         });
+    validate_allowed_origins(&allowed_origins);
 
     tracing::info!("Connecting to database...");
     let pool = match get_db_pool(&database_url).await {
