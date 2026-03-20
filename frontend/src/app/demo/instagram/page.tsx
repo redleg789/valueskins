@@ -878,6 +878,7 @@ export default function InstagramDemoPage() {
   const [brandBriefCampaignDesc, setBrandBriefCampaignDesc] = useState('');
   const [brandOfferNonNegotiable, setBrandOfferNonNegotiable] = useState(false);
   const [brandCounterAmount, setBrandCounterAmount] = useState('');
+  const [brandChatInput, setBrandChatInput] = useState('');
   const [brandSoftHoldHours, setBrandSoftHoldHours] = useState<24 | 48 | 72>(48);
   // Read the creator's counter amount from shared deal state (set by creator's counter-offer handler)
   const brandDealCounterAmount = brandDeal?.counterAmount || '';
@@ -3147,6 +3148,11 @@ export default function InstagramDemoPage() {
                                             const newMsg = { id: Date.now(), sender: msgSender, text: chatInput.trim(), time: timeStr, isoTime: isoNow, seen: false };
                                             setChatMessages(prev => [...prev, newMsg]);
                                             firebaseAddMessage(activeDealKey ?? '', newMsg);
+                                            // Write to shared deal state so the other party sees the message
+                                            if (activeDealKey) {
+                                              const existingMsgs = activeDeal?.chatMessages || [];
+                                              updateDeal(activeDealKey, { chatMessages: [...existingMsgs, newMsg] });
+                                            }
                                             setChatInput('');
                                           }} style={{ display: 'flex', gap: '4px', padding: '6px', borderTop: `1px solid ${C.border}` }}>
                                             <input
@@ -5034,14 +5040,29 @@ export default function InstagramDemoPage() {
                               )}
                               {/* Deal Room Header */}
                               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                                <div>
-                                  <div style={{ fontSize: '11px', fontWeight: 700, color: C.textSecondary, textTransform: 'uppercase', letterSpacing: '0.6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.textSecondary} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                                    </svg>
-                                    Deal Room
+                                <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
+                                  <img
+                                    src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${creator.name.replace(/\s/g, '')}`}
+                                    alt={creator.name}
+                                    style={{ width:'34px', height:'34px', borderRadius:'50%', background:C.surfaceAlt, flexShrink:0 }}
+                                  />
+                                  <div>
+                                    <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
+                                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.textSecondary} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                                      </svg>
+                                      <span style={{ fontSize: '11px', fontWeight: 700, color: C.textSecondary, textTransform: 'uppercase', letterSpacing: '0.6px' }}>Deal Room</span>
+                                    </div>
+                                    <a
+                                      href={`https://instagram.com/${creator.handle.replace('@', '')}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      style={{ fontSize:'12px', fontWeight:700, color:C.text, textDecoration:'none', display:'block', marginTop:'2px' }}
+                                      onMouseEnter={(e) => { (e.target as HTMLElement).style.textDecoration = 'underline'; }}
+                                      onMouseLeave={(e) => { (e.target as HTMLElement).style.textDecoration = 'none'; }}
+                                    >{creator.name}</a>
+                                    {activeBrandSkin && <div style={{ fontSize:'10px', color:C.textMuted, marginTop:'1px' }}>Your identity: {activeBrandSkin}{brandValueSkins.length > 0 && ' · Verified'}</div>}
                                   </div>
-                                  {activeBrandSkin && <div style={{ fontSize:'10px', color:C.textMuted, marginTop:'2px' }}>Your identity: {activeBrandSkin}{brandValueSkins.length > 0 && ' · Verified'}</div>}
                                 </div>
                                 {brandDealPhase === 'pending' && (
                                   <div style={{ fontSize: '10px', color: C.textSecondary, background: C.surfaceAlt, padding: '2px 8px', borderRadius: '10px', fontWeight: 600 }}>
@@ -5796,25 +5817,46 @@ export default function InstagramDemoPage() {
                                   {/* Deal Room Chat — brand side, shows all messages from shared state */}
                                   {(() => {
                                     const brandChatMsgs = (brandDeal?.chatMessages || []) as Array<{id: number; sender: string; text: string; time: string; isoTime?: string; seen?: boolean}>;
-                                    if (brandChatMsgs.length === 0) return null;
                                     return (
                                       <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: '8px', padding: '10px', marginTop: '12px' }}>
                                         <div style={{ fontSize: '9px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={C.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                                          Deal Messages
-                                          <span style={{ fontSize: '9px', color: C.textMuted, fontWeight: 400 }}>{brandChatMsgs.length} documented</span>
+                                          Negotiation
+                                          {brandChatMsgs.length > 0 && <span style={{ fontSize: '9px', color: C.textMuted, fontWeight: 400 }}>{brandChatMsgs.length} messages</span>}
                                         </div>
-                                        <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                                          {brandChatMsgs.map((msg, mi) => (
-                                            <div key={msg.id || mi} style={{ display: 'flex', flexDirection: 'column', alignItems: msg.sender === 'brand' ? 'flex-end' : 'flex-start', marginBottom: '6px' }}>
-                                              <div style={{ maxWidth: '85%', background: msg.sender === 'brand' ? 'rgba(0,149,246,0.08)' : C.surfaceAlt, borderRadius: '8px', padding: '6px 10px' }}>
-                                                <div style={{ fontSize: '10px', fontWeight: 600, color: msg.sender === 'brand' ? C.primary : C.text, marginBottom: '2px' }}>{msg.sender === 'brand' ? 'You' : 'Creator'}</div>
-                                                <div style={{ fontSize: '11px', color: C.text, lineHeight: 1.4 }}>{msg.text}</div>
+                                        {brandChatMsgs.length > 0 && (
+                                          <div style={{ maxHeight: '200px', overflowY: 'auto', marginBottom:'8px' }}>
+                                            {brandChatMsgs.map((msg, mi) => (
+                                              <div key={msg.id || mi} style={{ display: 'flex', flexDirection: 'column', alignItems: msg.sender === 'brand' ? 'flex-end' : 'flex-start', marginBottom: '6px' }}>
+                                                <div style={{ maxWidth: '85%', background: msg.sender === 'brand' ? 'rgba(0,149,246,0.08)' : C.surfaceAlt, borderRadius: '8px', padding: '6px 10px' }}>
+                                                  <div style={{ fontSize: '10px', fontWeight: 600, color: msg.sender === 'brand' ? C.primary : C.text, marginBottom: '2px' }}>{msg.sender === 'brand' ? 'You' : creator.name}</div>
+                                                  <div style={{ fontSize: '11px', color: C.text, lineHeight: 1.4 }}>{msg.text}</div>
+                                                </div>
+                                                <div style={{ fontSize: '9px', color: C.textMuted, marginTop: '2px' }}>{msg.time}</div>
                                               </div>
-                                              <div style={{ fontSize: '9px', color: C.textMuted, marginTop: '2px' }}>{msg.time}</div>
-                                            </div>
-                                          ))}
-                                        </div>
+                                            ))}
+                                          </div>
+                                        )}
+                                        {/* Brand chat input — negotiate terms, deliverables, timeline */}
+                                        <form onSubmit={(e) => {
+                                          e.preventDefault();
+                                          if (!brandChatInput.trim() || !brandDealKey) return;
+                                          const now = new Date();
+                                          const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: false });
+                                          const newMsg = { id: Date.now(), sender: 'brand' as const, text: brandChatInput.trim(), time: timeStr, isoTime: now.toISOString(), seen: false };
+                                          const existingMsgs = brandDeal?.chatMessages || [];
+                                          updateDeal(brandDealKey, { chatMessages: [...existingMsgs, newMsg] });
+                                          setBrandChatInput('');
+                                        }} style={{ display: 'flex', gap: '4px' }}>
+                                          <input
+                                            type="text"
+                                            value={brandChatInput}
+                                            onChange={(e) => setBrandChatInput(e.target.value)}
+                                            placeholder="Negotiate terms, deliverables, timeline..."
+                                            style={{ flex: 1, padding: '6px 10px', background: C.surfaceAlt, border: `1px solid ${C.border}`, borderRadius: '14px', color: C.text, fontSize: '11px', outline: 'none' }}
+                                          />
+                                          <button type="submit" disabled={!brandChatInput.trim()} style={{ padding: '6px 12px', background: brandChatInput.trim() ? C.primary : `${C.primary}40`, color: '#fff', border: 'none', borderRadius: '14px', fontSize: '10px', fontWeight: 600, cursor: brandChatInput.trim() ? 'pointer' : 'not-allowed' }}>Send</button>
+                                        </form>
                                       </div>
                                     );
                                   })()}
@@ -5989,20 +6031,32 @@ export default function InstagramDemoPage() {
                           }
                           return allDeals.map(([key, deal]) => {
                             const [creatorName, creatorSkin] = key.split('|');
+                            const creatorData = BRAND_MARKETPLACE_CREATORS.find(c => c.name === creatorName && c.valueSkin === creatorSkin);
+                            const creatorHandle = creatorData?.handle?.replace('@', '') || creatorName.toLowerCase().replace(/\s/g, '_');
                             const lastMsg = deal.chatMessages?.[deal.chatMessages.length - 1];
                             return (
-                              <div key={key} style={{ background:C.card, borderRadius:'12px', padding:'14px', marginBottom:'10px', border:`1px solid ${C.border}`, cursor:'pointer' }}
-                                onClick={() => {
-                                  // Open brand deal room for this creator
-                                  const creatorIdx = BRAND_MARKETPLACE_CREATORS.findIndex(c => c.name === creatorName && c.valueSkin === creatorSkin);
-                                  if (creatorIdx !== -1) { setNegotiatingCreator(creatorIdx); }
-                                }}
-                              >
-                                <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'6px' }}>
-                                  <span style={{ fontSize:'13px', fontWeight:700, color:C.text }}>{creatorName}</span>
-                                  <span style={{ fontSize:'12px', fontWeight:700, color:C.success }}>{deal.offerAmount ? `$${parseInt(deal.offerAmount).toLocaleString()}` : ''}</span>
+                              <div key={key} style={{ background:C.card, borderRadius:'12px', padding:'14px', marginBottom:'10px', border:`1px solid ${C.border}` }}>
+                                {/* Creator identity row */}
+                                <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'10px' }}>
+                                  <img
+                                    src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${creatorName.replace(/\s/g, '')}`}
+                                    alt={creatorName}
+                                    style={{ width:'36px', height:'36px', borderRadius:'50%', background:C.surfaceAlt, flexShrink:0 }}
+                                  />
+                                  <div style={{ flex:1, minWidth:0 }}>
+                                    <a
+                                      href={`https://instagram.com/${creatorHandle}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      onClick={(e) => e.stopPropagation()}
+                                      style={{ fontSize:'13px', fontWeight:700, color:C.text, textDecoration:'none' }}
+                                      onMouseEnter={(e) => { (e.target as HTMLElement).style.textDecoration = 'underline'; }}
+                                      onMouseLeave={(e) => { (e.target as HTMLElement).style.textDecoration = 'none'; }}
+                                    >{creatorName}</a>
+                                    <div style={{ fontSize:'11px', color:C.textSecondary }}>{creatorSkin}{deal.briefTitle ? ` · ${deal.briefTitle}` : ''}</div>
+                                  </div>
+                                  <span style={{ fontSize:'12px', fontWeight:700, color:C.success, flexShrink:0 }}>{deal.offerAmount ? `$${parseInt(deal.offerAmount).toLocaleString()}` : ''}</span>
                                 </div>
-                                <div style={{ fontSize:'11px', color:C.textSecondary, marginBottom:'8px' }}>{creatorSkin}{deal.briefTitle ? ` · ${deal.briefTitle}` : ''}</div>
                                 {/* Deal status timeline */}
                                 <div style={{ borderLeft:`2px solid ${C.border}`, paddingLeft:'12px', marginBottom:'8px' }}>
                                   <div style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'6px' }}>
@@ -6027,13 +6081,22 @@ export default function InstagramDemoPage() {
                                   </div>
                                 </div>
                                 {lastMsg && (
-                                  <div style={{ fontSize:'10px', color:C.textMuted, padding:'6px 8px', background:C.surfaceAlt, borderRadius:'6px', marginBottom:'6px' }}>
+                                  <div style={{ fontSize:'10px', color:C.textMuted, padding:'6px 8px', background:C.surfaceAlt, borderRadius:'6px', marginBottom:'8px' }}>
                                     <span style={{ fontWeight:600 }}>{lastMsg.sender === 'brand' ? 'You' : creatorName}:</span> {lastMsg.text.length > 80 ? lastMsg.text.slice(0, 80) + '...' : lastMsg.text}
                                   </div>
                                 )}
-                                <div style={{ display:'flex', gap:'5px', flexWrap:'wrap' }}>
-                                  <span style={{ fontSize:'10px', fontWeight:600, color:C.primary, background:`${C.primary}12`, padding:'2px 7px', borderRadius:'6px' }}>{creatorSkin}</span>
-                                  {deal.dealType && <span style={{ fontSize:'10px', fontWeight:600, color:C.textMuted, background:C.surfaceAlt, padding:'2px 7px', borderRadius:'6px' }}>{deal.dealType}</span>}
+                                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                                  <div style={{ display:'flex', gap:'5px', flexWrap:'wrap' }}>
+                                    <span style={{ fontSize:'10px', fontWeight:600, color:C.primary, background:`${C.primary}12`, padding:'2px 7px', borderRadius:'6px' }}>{creatorSkin}</span>
+                                    {deal.dealType && <span style={{ fontSize:'10px', fontWeight:600, color:C.textMuted, background:C.surfaceAlt, padding:'2px 7px', borderRadius:'6px' }}>{deal.dealType}</span>}
+                                  </div>
+                                  <button
+                                    onClick={() => {
+                                      const creatorIdx = BRAND_MARKETPLACE_CREATORS.findIndex(c => c.name === creatorName && c.valueSkin === creatorSkin);
+                                      if (creatorIdx !== -1) { setNegotiatingCreator(creatorIdx); }
+                                    }}
+                                    style={{ background:C.primary, border:'none', borderRadius:'6px', padding:'5px 12px', color:'#fff', fontSize:'10px', fontWeight:600, cursor:'pointer' }}
+                                  >Enter Deal Room</button>
                                 </div>
                               </div>
                             );
