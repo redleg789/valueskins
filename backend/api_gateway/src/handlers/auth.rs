@@ -34,9 +34,17 @@ fn redirect_uri_allowed(redirect_uri: &str) -> bool {
         .any(|entry| entry == redirect_uri)
 }
 
+fn valid_refresh_token_shape(token: &str) -> bool {
+    let t = token.trim();
+    let len_ok = (32..=4096).contains(&t.len());
+    // Keep permissive but bounded and printable; blocks control-byte abuse.
+    let charset_ok = t.chars().all(|c| c.is_ascii_graphic());
+    len_ok && charset_ok
+}
+
 #[cfg(test)]
 mod tests {
-    use super::redirect_uri_allowed;
+    use super::{redirect_uri_allowed, valid_refresh_token_shape};
 
     #[test]
     fn redirect_allowlist_defaults_allow_known_urls() {
@@ -50,6 +58,14 @@ mod tests {
         std::env::remove_var("OAUTH_REDIRECT_ALLOWLIST");
         assert!(!redirect_uri_allowed("https://evil.example.com/callback"));
         assert!(!redirect_uri_allowed("http://localhost:3000/other"));
+    }
+
+    #[test]
+    fn refresh_token_shape_validation() {
+        assert!(valid_refresh_token_shape("abcDEF123._-xyzXYZ9876543210abcDEF123._-xyzXYZ9"));
+        assert!(!valid_refresh_token_shape("short"));
+        assert!(!valid_refresh_token_shape(&"x".repeat(5000)));
+        assert!(!valid_refresh_token_shape("token with spaces"));
     }
 }
 
@@ -362,6 +378,12 @@ pub async fn refresh_token(
     pool: web::Data<PgPool>,
     token_manager: web::Data<TokenManager>,
 ) -> impl Responder {
+    if !valid_refresh_token_shape(&req.refresh_token) {
+        return HttpResponse::BadRequest().json(serde_json::json!({
+            "error": "Invalid refresh token format"
+        }));
+    }
+
     let refresh_svc = shared::refresh_tokens::RefreshTokenService::new(pool.get_ref().clone());
 
     let pair = match refresh_svc.rotate(&req.refresh_token, None, None).await {
@@ -452,7 +474,14 @@ pub async fn logout(
     if req.logout_all.unwrap_or(false) {
         // Extract user_id from JWT claims in request extensions
         if let Some(claims) = http_req.extensions().get::<auth_service::token::Claims>() {
-            let uid = claims.sub.parse::<i64>().unwrap_or(0);
+            let uid = match claims.sub.parse::<i64>() {
+                Ok(v) if v > 0 => v,
+                _ => {
+                    return HttpResponse::Unauthorized().json(serde_json::json!({
+                        "error": "Invalid authentication token"
+                    }));
+                }
+            };
             match refresh_svc.revoke_all_for_user(uid).await {
                 Ok(n) => {
                     info!(user_id = uid, revoked = n, "All sessions revoked");
@@ -484,6 +513,11 @@ pub async fn logout(
     }
 
     if let Some(ref token) = req.refresh_token {
+        if !valid_refresh_token_shape(token) {
+            return HttpResponse::BadRequest().json(serde_json::json!({
+                "error": "Invalid refresh token format"
+            }));
+        }
         if let Err(e) = refresh_svc.revoke(token).await {
             error!("Failed to revoke refresh token: {:?}", e);
         }
