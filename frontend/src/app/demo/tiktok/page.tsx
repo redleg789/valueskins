@@ -5670,7 +5670,7 @@ export default function TikTokDemoPage() {
                                               });
                                             }
                                             // Notify creator that advance has been paid
-                                            firebaseSendNotification(creator.name, 'payment', `Advance paid: $${advanceToCreator.toLocaleString()} has been deposited to your account (30% of $${creatorPayout.toLocaleString()} deal)`);
+                                            firebaseSendNotification(creator.name, 'application', `Advance paid: $${advanceToCreator.toLocaleString()} has been deposited to your account (30% of $${creatorPayout.toLocaleString()} deal)`);
                                             setPurchaseToast(`Escrow funded — $${advanceToCreator.toLocaleString()} advance paid to ${creator.name}`);
                                             setTimeout(() => setPurchaseToast(null), 4000);
                                             setTimeout(() => setBrandApprovalPhase('reviewing'), 2000);

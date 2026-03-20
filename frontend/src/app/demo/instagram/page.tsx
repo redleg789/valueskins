@@ -902,6 +902,7 @@ export default function InstagramDemoPage() {
   // Admin pricing
   const [communityTierCredits, setCommunityTierCredits] = useState(0);
   const [marketplaceTierCredits, setMarketplaceTierCredits] = useState(100);
+  const [platformCommissionPct, setPlatformCommissionPct] = useState(10); // Platform commission % per deal
 
   // Admin-configurable insight visibility
   const [visibleInsights, setVisibleInsights] = useState<Record<string, boolean>>({
@@ -3415,21 +3416,27 @@ export default function InstagramDemoPage() {
                                         const uploadPct = uploadPercent;
                                         const approvalPct = approvalPercent;
 
-                                        // Escrow gate (when !escrowFunded && lifecycle==='checklist')
+                                        // Escrow gate — reads from shared deal state (brand funds escrow from their side)
                                         if (!escrowFunded && creatorDealLifecycle === 'checklist') {
-                                          if (opp.escrowFunded) {
+                                          // Check if brand has funded escrow via shared deal state
+                                          if (activeDeal?.escrowFunded) {
+                                            // Brand funded — auto-advance creator to deliverables phase
                                             setTimeout(() => {
                                               setEscrowFunded(true);
                                               setCreatorDealLifecycle('deliverables');
-                                              setPaymentMilestones(prev => prev.advance === 'released' ? prev : { ...prev, advance: 'released' });
                                             }, 0);
+                                            const advanceAmt = Math.round(agreedPrice * 0.3);
                                             return (
                                               <div style={{ textAlign:'center', padding:'16px 0' }}>
                                                 <div style={{ width:'44px', height:'44px', borderRadius:'50%', background:'rgba(0,212,106,0.1)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 12px' }}>
                                                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={C.success} strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                                                 </div>
                                                 <div style={{ fontSize:'14px', fontWeight:700, color:C.success, marginBottom:'4px' }}>Escrow Funded</div>
-                                                <div style={{ fontSize:'12px', color:C.textSecondary }}>Brand deposited escrow at campaign launch. Advance released — ready to start.</div>
+                                                <div style={{ fontSize:'12px', color:C.textSecondary, marginBottom:'8px' }}>Brand deposited ${agreedPrice.toLocaleString()} into escrow.</div>
+                                                <div style={{ background:'rgba(46,125,50,0.06)', border:'1px solid rgba(46,125,50,0.2)', borderRadius:'8px', padding:'10px', marginBottom:'8px' }}>
+                                                  <div style={{ fontSize:'13px', fontWeight:700, color:C.success }}>Advance paid: ${advanceAmt.toLocaleString()}</div>
+                                                  <div style={{ fontSize:'11px', color:C.textSecondary, marginTop:'2px' }}>30% advance deposited to your account. Begin deliverables to unlock remaining milestones.</div>
+                                                </div>
                                               </div>
                                             );
                                           }
@@ -3440,32 +3447,20 @@ export default function InstagramDemoPage() {
                                               </div>
                                               <div style={{ fontSize:'14px', fontWeight:700, color:C.text, marginBottom:'4px' }}>Awaiting Escrow</div>
                                               <div style={{ fontSize:'12px', color:C.textSecondary, marginBottom:'16px', lineHeight:1.5 }}>
-                                                The brand must deposit <strong>${agreedPrice.toLocaleString()}</strong> into escrow before you can begin work. Funds are held securely and released per your payment milestones.
+                                                The brand must deposit <strong>${agreedPrice.toLocaleString()}</strong> into escrow before you can begin work. The advance (30%) will be paid directly to you on deposit.
                                               </div>
-                                              <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:'10px', padding:'12px', marginBottom:'14px' }}>
+                                              <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:'10px', padding:'12px' }}>
                                                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'6px' }}>
                                                   <span style={{ fontSize:'11px', color:C.textMuted }}>Escrow account</span>
-                                                  <span style={{ fontSize:'12px', fontWeight:700, color: escrowFundingInProgress ? '#f59e0b' : C.textMuted }}>{escrowFundingInProgress ? 'Funding...' : 'Awaiting deposit'}</span>
+                                                  <span style={{ fontSize:'12px', fontWeight:700, color:C.textMuted }}>Awaiting brand deposit</span>
                                                 </div>
                                                 <div style={{ width:'100%', height:'6px', background:C.card, borderRadius:'3px', overflow:'hidden' }}>
-                                                  <div style={{ width: escrowFundingInProgress ? '60%' : '0%', height:'100%', background: escrowFundingInProgress ? '#f59e0b' : C.border, borderRadius:'3px', transition:'width 1.5s ease' }} />
+                                                  <div style={{ width:'0%', height:'100%', background:C.border, borderRadius:'3px' }} />
                                                 </div>
                                                 <div style={{ fontSize:'10px', color:C.textMuted, marginTop:'6px' }}>
                                                   $0 / ${agreedPrice.toLocaleString()} deposited
                                                 </div>
                                               </div>
-                                              <button onClick={() => {
-                                                setEscrowFundingInProgress(true);
-                                                setTimeout(() => {
-                                                  setEscrowFunded(true);
-                                                  setCreatorDealLifecycle('deliverables');
-                                                  setPaymentMilestones(prev => ({ ...prev, advance: 'released' }));
-                                                  setPurchaseToast(`Escrow funded — $${agreedPrice.toLocaleString()} secured. Advance released.`);
-                                                  setTimeout(() => setPurchaseToast(null), 4000);
-                                                }, 2000);
-                                              }} disabled={escrowFundingInProgress} style={{ width:'100%', background: escrowFundingInProgress ? C.border : C.primary, border:'none', padding:'10px', borderRadius:'8px', color:'#fff', fontWeight:600, cursor: escrowFundingInProgress ? 'not-allowed' : 'pointer', fontSize:'13px', opacity: escrowFundingInProgress ? 0.6 : 1 }}>
-                                                {escrowFundingInProgress ? 'Processing deposit...' : 'Simulate: Brand funds escrow'}
-                                              </button>
                                             </div>
                                           );
                                         }
@@ -5493,26 +5488,44 @@ export default function InstagramDemoPage() {
                                   </div>
 
                                   {/* Escrow stages — only for paid/c2c_paid */}
-                                  {(dealType === 'paid' || dealType === 'c2c_paid') && (
-                                    <div style={{ marginBottom: '12px' }}>
-                                      <div style={{ fontSize: '11px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>Escrow Stages</div>
-                                      {[
-                                        { stage: 'Advance', pct: '30%', status: brandApprovalPhase === 'accepted' ? 'Awaiting escrow deposit' : 'Funded — held in escrow' },
-                                        { stage: 'Milestone', pct: '40%', status: 'Released on content delivery' },
-                                        { stage: 'Completion', pct: '30%', status: 'Released on your approval' },
-                                      ].map((s, si) => (
-                                        <div key={si} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 10px', background: C.bg, borderRadius: '6px', marginBottom: '4px', border: `1px solid ${C.border}` }}>
+                                  {(dealType === 'paid' || dealType === 'c2c_paid') && (() => {
+                                    const totalDeal = parseInt(agreedDealAmount) || 0;
+                                    const commission = Math.round(totalDeal * platformCommissionPct / 100);
+                                    const creatorPayout = totalDeal - commission;
+                                    const advancePaid = brandDeal?.paymentMilestones?.advance === 'released';
+                                    return (
+                                      <div style={{ marginBottom: '12px' }}>
+                                        <div style={{ fontSize: '11px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>Payment Breakdown</div>
+                                        {/* Total + commission summary */}
+                                        <div style={{ display:'flex', justifyContent:'space-between', padding:'8px 10px', background:'rgba(0,149,246,0.04)', borderRadius:'6px', marginBottom:'6px', border:`1px solid rgba(0,149,246,0.15)` }}>
                                           <div>
-                                            <div style={{ fontSize: '12px', fontWeight: 600, color: C.text }}>{s.stage} ({s.pct})</div>
-                                            <div style={{ fontSize: '10px', color: C.textMuted }}>{s.status}</div>
+                                            <div style={{ fontSize:'12px', fontWeight:700, color:C.text }}>Agreed Amount</div>
+                                            <div style={{ fontSize:'10px', color:C.textMuted }}>Platform fee: {platformCommissionPct}% (${commission.toLocaleString()})</div>
                                           </div>
-                                          <div style={{ fontSize: '12px', fontWeight: 700, color: C.text }}>
-                                            ${Math.round(parseInt(agreedDealAmount) * parseFloat(s.pct) / 100).toLocaleString()}
+                                          <div style={{ textAlign:'right' }}>
+                                            <div style={{ fontSize:'14px', fontWeight:800, color:C.text }}>${totalDeal.toLocaleString()}</div>
+                                            <div style={{ fontSize:'10px', color:C.success }}>Creator gets ${creatorPayout.toLocaleString()}</div>
                                           </div>
                                         </div>
-                                      ))}
-                                    </div>
-                                  )}
+                                        {/* Milestone stages */}
+                                        {[
+                                          { stage: 'Advance', pct: 30, status: advancePaid ? 'Paid to creator' : brandApprovalPhase === 'accepted' ? 'Awaiting escrow deposit' : 'Held in escrow', released: advancePaid },
+                                          { stage: 'Milestone', pct: 40, status: brandDeal?.paymentMilestones?.upload === 'released' ? 'Paid to creator' : 'Released on content delivery', released: brandDeal?.paymentMilestones?.upload === 'released' },
+                                          { stage: 'Completion', pct: 30, status: brandDeal?.paymentMilestones?.approval === 'released' ? 'Paid to creator' : 'Released on your approval', released: brandDeal?.paymentMilestones?.approval === 'released' },
+                                        ].map((s, si) => (
+                                          <div key={si} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 10px', background: s.released ? 'rgba(46,125,50,0.04)' : C.bg, borderRadius: '6px', marginBottom: '4px', border: `1px solid ${s.released ? 'rgba(46,125,50,0.2)' : C.border}` }}>
+                                            <div>
+                                              <div style={{ fontSize: '12px', fontWeight: 600, color: s.released ? C.success : C.text }}>{s.stage} ({s.pct}%)</div>
+                                              <div style={{ fontSize: '10px', color: s.released ? C.success : C.textMuted }}>{s.status}</div>
+                                            </div>
+                                            <div style={{ fontSize: '12px', fontWeight: 700, color: s.released ? C.success : C.text }}>
+                                              ${Math.round(creatorPayout * s.pct / 100).toLocaleString()}
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    );
+                                  })()}
 
                                   {brandApprovalPhase === 'accepted' && (() => {
                                     switch(dealType) {
@@ -5579,43 +5592,56 @@ export default function InstagramDemoPage() {
                                   })()}
                                   {(dealType === 'paid' || dealType === 'c2c_paid') && brandApprovalPhase === 'funding' && (() => {
                                     const totalAmount = parseInt(agreedDealAmount) || 5000;
+                                    const commission = Math.round(totalAmount * platformCommissionPct / 100);
+                                    const creatorPayout = totalAmount - commission;
+                                    const advanceToCreator = Math.round(creatorPayout * 0.3);
                                     return (
                                       <div style={{ marginTop:'12px' }}>
                                         <div style={{ fontSize:'11px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'10px' }}>Fund Escrow Account</div>
                                         <div style={{ background:C.bg, borderRadius:'10px', padding:'14px', border:`1px solid ${C.border}`, marginBottom:'12px' }}>
                                           <div style={{ fontSize:'12px', color:C.textSecondary, marginBottom:'10px', lineHeight:1.5 }}>
-                                            Deposit <strong style={{ color:C.text }}>${totalAmount.toLocaleString()}</strong> into the ValueSkins escrow. Funds are held securely and released to the creator per the agreed milestones.
+                                            Deposit <strong style={{ color:C.text }}>${totalAmount.toLocaleString()}</strong> into escrow. Platform fee ({platformCommissionPct}%): <strong style={{ color:C.text }}>${commission.toLocaleString()}</strong>. Creator receives <strong style={{ color:C.success }}>${creatorPayout.toLocaleString()}</strong>.
                                           </div>
-                                          <div style={{ display:'flex', justifyContent:'space-between', fontSize:'11px', marginBottom:'4px' }}>
-                                            <span style={{ color:C.textMuted }}>Advance (30%)</span>
-                                            <span style={{ color:C.text, fontWeight:600 }}>${Math.round(totalAmount * 0.3).toLocaleString()} — released immediately</span>
+                                          <div style={{ display:'flex', justifyContent:'space-between', fontSize:'11px', marginBottom:'6px', padding:'6px 8px', background:'rgba(46,125,50,0.06)', borderRadius:'4px', border:'1px solid rgba(46,125,50,0.15)' }}>
+                                            <span style={{ color:C.success, fontWeight:600 }}>Advance (30%)</span>
+                                            <span style={{ color:C.success, fontWeight:700 }}>${advanceToCreator.toLocaleString()} — paid to creator immediately</span>
                                           </div>
                                           <div style={{ display:'flex', justifyContent:'space-between', fontSize:'11px', marginBottom:'4px' }}>
                                             <span style={{ color:C.textMuted }}>Milestone (40%)</span>
-                                            <span style={{ color:C.text, fontWeight:600 }}>${Math.round(totalAmount * 0.4).toLocaleString()} — on content delivery</span>
+                                            <span style={{ color:C.text, fontWeight:600 }}>${Math.round(creatorPayout * 0.4).toLocaleString()} — on content delivery</span>
                                           </div>
-                                          <div style={{ display:'flex', justifyContent:'space-between', fontSize:'11px' }}>
+                                          <div style={{ display:'flex', justifyContent:'space-between', fontSize:'11px', marginBottom:'4px' }}>
                                             <span style={{ color:C.textMuted }}>Completion (30%)</span>
-                                            <span style={{ color:C.text, fontWeight:600 }}>${Math.round(totalAmount * 0.3).toLocaleString()} — on your approval</span>
+                                            <span style={{ color:C.text, fontWeight:600 }}>${Math.round(creatorPayout * 0.3).toLocaleString()} — on your approval</span>
+                                          </div>
+                                          <div style={{ display:'flex', justifyContent:'space-between', fontSize:'11px', marginTop:'6px', padding:'4px 8px', background:'rgba(0,149,246,0.04)', borderRadius:'4px' }}>
+                                            <span style={{ color:C.textMuted }}>Platform fee ({platformCommissionPct}%)</span>
+                                            <span style={{ color:C.textSecondary, fontWeight:600 }}>${commission.toLocaleString()}</span>
                                           </div>
                                         </div>
                                         <div style={{ background:'rgba(0,102,204,0.06)', border:'1px solid rgba(0,102,204,0.15)', borderRadius:'8px', padding:'10px', marginBottom:'12px', fontSize:'11px', color:C.textSecondary, lineHeight:1.5 }}>
-                                          Funds are protected by ValueSkins escrow. You can dispute and recover funds if the creator fails to deliver.
+                                          On deposit, the advance (${advanceToCreator.toLocaleString()}) is paid directly to the creator. Remaining funds are held in escrow and released per milestones. Platform fee is deducted automatically.
                                         </div>
                                         <button
                                           onClick={() => {
                                             setBrandApprovalPhase('funded');
-                                            // Sync escrow funded to shared deal state so creator sees it in real-time
+                                            const now = new Date();
+                                            const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: false });
+                                            const advanceMsg = { id: Date.now(), sender: 'brand' as const, text: `Escrow funded: $${totalAmount.toLocaleString()} deposited. Advance of $${advanceToCreator.toLocaleString()} (30%) paid to creator. Platform fee: $${commission.toLocaleString()} (${platformCommissionPct}%).`, time: timeStr, isoTime: now.toISOString(), seen: false };
+                                            const existingMsgs = brandDeal?.chatMessages || [];
                                             if (brandDealKey) {
                                               updateDeal(brandDealKey, {
                                                 escrowFunded: true,
                                                 brandApprovalPhase: 'funded',
                                                 creatorDealLifecycle: 'deliverables',
                                                 paymentMilestones: { advance: 'released', upload: 'pending', approval: 'pending' },
+                                                chatMessages: [...existingMsgs, advanceMsg],
                                               });
                                             }
-                                            setPurchaseToast('Escrow funded — creator notified to begin work');
-                                            setTimeout(() => setPurchaseToast(null), 3000);
+                                            // Notify creator that advance has been paid
+                                            firebaseSendNotification(creator.name, 'application', `Advance paid: $${advanceToCreator.toLocaleString()} has been deposited to your account (30% of $${creatorPayout.toLocaleString()} deal)`);
+                                            setPurchaseToast(`Escrow funded — $${advanceToCreator.toLocaleString()} advance paid to ${creator.name}`);
+                                            setTimeout(() => setPurchaseToast(null), 4000);
                                             setTimeout(() => setBrandApprovalPhase('reviewing'), 2000);
                                           }}
                                           style={{ width:'100%', background:C.success, border:'none', padding:'10px', borderRadius:'8px', color:'#fff', fontWeight:700, cursor:'pointer', fontSize:'13px' }}
@@ -6653,6 +6679,70 @@ export default function InstagramDemoPage() {
                     }}
                   >
                     Save Pricing
+                  </button>
+                </div>
+
+                {/* Platform Commission Control */}
+                <div style={{ marginTop: '24px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: 700, color: C.textMuted, letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: '12px' }}>
+                    Deal Commission
+                  </div>
+                  <p style={{ fontSize: '13px', color: C.textSecondary, marginBottom: '16px', lineHeight: 1.5 }}>
+                    Set the platform commission percentage charged on every completed deal. This is deducted from the total deal amount before payout to the creator.
+                  </p>
+                  <div style={{ padding: '14px 16px', background: C.card, borderRadius: '10px', border: `1px solid ${C.border}` }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                      <div>
+                        <div style={{ fontSize: '14px', fontWeight: 600, color: C.text }}>Commission rate</div>
+                        <div style={{ fontSize: '11px', color: C.textMuted }}>Applied to all deal types (paid, c2c_paid)</div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <input
+                          type="number"
+                          min="0"
+                          max="50"
+                          value={platformCommissionPct}
+                          onChange={(e) => setPlatformCommissionPct(Math.max(0, Math.min(50, parseInt(e.target.value) || 0)))}
+                          style={{ width: '56px', padding: '8px', borderRadius: '6px', border: `1px solid ${C.border}`, background: C.surface, color: C.text, textAlign: 'center', fontSize: '15px', fontWeight: 700 }}
+                        />
+                        <span style={{ fontSize: '14px', fontWeight: 700, color: C.text }}>%</span>
+                      </div>
+                    </div>
+                    {/* Commission slider */}
+                    <input
+                      type="range"
+                      min="0"
+                      max="50"
+                      value={platformCommissionPct}
+                      onChange={(e) => setPlatformCommissionPct(parseInt(e.target.value))}
+                      style={{ width: '100%', cursor: 'pointer' }}
+                    />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: C.textMuted, marginTop: '4px' }}>
+                      <span>0%</span>
+                      <span>25%</span>
+                      <span>50%</span>
+                    </div>
+                    {/* Example calculation */}
+                    <div style={{ marginTop: '12px', padding: '10px', background: C.bg, borderRadius: '6px', border: `1px solid ${C.border}` }}>
+                      <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', marginBottom: '6px' }}>Example: $10,000 deal</div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '3px' }}>
+                        <span style={{ color: C.textSecondary }}>Platform revenue</span>
+                        <span style={{ color: C.primary, fontWeight: 700 }}>${(10000 * platformCommissionPct / 100).toLocaleString()}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
+                        <span style={{ color: C.textSecondary }}>Creator payout</span>
+                        <span style={{ color: C.success, fontWeight: 700 }}>${(10000 - 10000 * platformCommissionPct / 100).toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setPurchaseToast(`Commission set to ${platformCommissionPct}%`);
+                      setTimeout(() => setPurchaseToast(null), 3000);
+                    }}
+                    style={{ width: '100%', marginTop: '12px', padding: '12px 16px', borderRadius: '6px', border: 'none', background: C.primary, color: '#fff', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
+                  >
+                    Save Commission Rate
                   </button>
                 </div>
 
