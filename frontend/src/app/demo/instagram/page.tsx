@@ -1094,9 +1094,39 @@ export default function InstagramDemoPage() {
   const [newCampaignPocHandle, setNewCampaignPocHandle] = useState('');
   const [newCampaignPocRole, setNewCampaignPocRole] = useState('');
 
+  // Campaign script mode selection (brand chooses during creation)
+  const [newCampaignScriptMode, setNewCampaignScriptMode] = useState<'non_negotiable' | 'discussion' | 'creator_freedom'>('creator_freedom');
+  const [newCampaignScriptText, setNewCampaignScriptText] = useState('');
+
   // Barter goods tracker and international compliance states
   const [goodsTrackingInput, setGoodsTrackingInput] = useState('');
   const [intlTaxAcknowledged, setIntlTaxAcknowledged] = useState(false);
+
+  // Payment milestone states — tracks which stages have been released
+  const [advanceReleased, setAdvanceReleased] = useState(false);
+  const [uploadReleased, setUploadReleased] = useState(false);
+  const [approvalReleased, setApprovalReleased] = useState(false);
+  const [allowContentApprovalPayment, setAllowContentApprovalPayment] = useState(true); // Brand toggles this during campaign creation
+
+  // Communities creation state
+  const [showCreateCommunity, setShowCreateCommunity] = useState(false);
+  const [newCommunityName, setNewCommunityName] = useState('');
+  const [newCommunityDescription, setNewCommunityDescription] = useState('');
+  const [newCommunityGateType, setNewCommunityGateType] = useState<'any_valueskin' | 'specific' | 'manual'>('any_valueskin');
+  const [newCommunityRequiredSkin, setNewCommunityRequiredSkin] = useState('');
+  const [newCommunityPrice, setNewCommunityPrice] = useState('');
+  const [newCommunityMembers, setNewCommunityMembers] = useState<string[]>([]);
+
+  // Tip system state
+  const [showTipModal, setShowTipModal] = useState(false);
+  const [tipAmount, setTipAmount] = useState('');
+  const [tipForDealId, setTipForDealId] = useState<number | null>(null);
+
+  // Dispute resolution state
+  const [showDisputeModal, setShowDisputeModal] = useState<number|null>(null);
+  const [disputeForDealId, setDisputeForDealId] = useState<number | null>(null);
+  const [disputeType, setDisputeType] = useState<'late_delivery' | 'quality_issue' | 'payment' | 'other'>('other');
+  const [disputeDescription, setDisputeDescription] = useState('');
   const [intlCustomsAcknowledged, setIntlCustomsAcknowledged] = useState(false);
 
   // Campaign escrow funding modal (shown after publish, before batch send)
@@ -1131,7 +1161,7 @@ export default function InstagramDemoPage() {
   const brandApprovalPhase: BrandApprovalPhase = (brandDeal?.brandApprovalPhase as BrandApprovalPhase) || 'accepted';
   const setBrandApprovalPhase = (p: BrandApprovalPhase) => { if (brandDealKey) updateDeal(brandDealKey, { brandApprovalPhase: p }); };
   const [dealUploadSimulated, setDealUploadSimulated] = useState(false);
-  type CompletedDeal = { id:number; brand:string; amount:number; completedAt:string; deliverable:string; usageRightsDays?:number; exclusivityDays?:number; exclusivitySkin?:string; disputed?:boolean; disputeReason?:string; disputeStatus?:'filed'|'under_review'|'resolved'; contractSignedAt?:string; };
+  type CompletedDeal = { id:number; brand:string; amount:number; completedAt:string; deliverable:string; usageRightsDays?:number; exclusivityDays?:number; exclusivitySkin?:string; disputed?:boolean; disputeReason?:string; disputeStatus?:'filed'|'under_review'|'resolved'; contractSignedAt?:string; tipped?:number; };
   const [completedDeals, setCompletedDeals] = useState<CompletedDeal[]>([]);
   // Deliverable checklist tracking (per-deliverable status + Instagram links)
   // Deliverable statuses + links — synced from shared deal state for brand to see creator submissions
@@ -1180,8 +1210,7 @@ export default function InstagramDemoPage() {
     const newVal = typeof v === 'function' ? v(paymentMilestones) : v;
     updateDeal(activeDealKey, { paymentMilestones: newVal as any });
   };
-  // Dispute filing
-  const [showDisputeModal, setShowDisputeModal] = useState<number|null>(null);
+  // Dispute evidence input
   const [disputeEvidence, setDisputeEvidence] = useState('');
   // Escrow funding — synced from shared deal state
   const escrowFunded = activeDeal?.escrowFunded ?? false;
@@ -2077,10 +2106,15 @@ export default function InstagramDemoPage() {
                           <span style={{ fontSize:'10px', color:C.textMuted }}>Completed {deal.completedAt}</span>
                           <span style={{ fontSize:'10px', fontWeight:700, color:C.success, background:C.surfaceAlt, padding:'2px 8px', borderRadius:'6px' }}>Approved</span>
                         </div>
-                        {/* Feature 5: Request repeat deal button */}
-                        <button onClick={() => { setPurchaseToast(`Reach out to ${deal.brand} about a repeat deal`); setTimeout(() => setPurchaseToast(null), 3000); }} style={{ width:'100%', fontSize:'11px', fontWeight:700, padding:'8px 10px', background:`${C.primary}15`, border:`1px solid ${C.primary}30`, borderRadius:'8px', color:C.primary, cursor:'pointer' }}>
-                          Request Repeat Deal
-                        </button>
+                        {/* Repeat deal & tip buttons */}
+                        <div style={{ display:'flex', gap:'8px' }}>
+                          <button onClick={() => { setPurchaseToast(`Reach out to ${deal.brand} about a repeat deal`); setTimeout(() => setPurchaseToast(null), 3000); }} style={{ flex:1, fontSize:'11px', fontWeight:700, padding:'8px 10px', background:`${C.primary}15`, border:`1px solid ${C.primary}30`, borderRadius:'8px', color:C.primary, cursor:'pointer' }}>
+                            Repeat Deal
+                          </button>
+                          <button onClick={() => { setTipForDealId(i); setShowTipModal(true); }} style={{ flex:1, fontSize:'11px', fontWeight:700, padding:'8px 10px', background:`rgba(255,171,0,0.12)`, border:`1px solid rgba(255,171,0,0.4)`, borderRadius:'8px', color:C.warning, cursor:'pointer' }}>
+                            💰 Tip
+                          </button>
+                        </div>
                       </div>
                     ))
                   )}
@@ -3150,6 +3184,7 @@ export default function InstagramDemoPage() {
                                               <span style={{ fontFamily: 'monospace' }}>{refId}</span> · {signedAt}
                                             </div>
                                           </div>
+
                                           {/* Script editor */}
                                           <div style={{ background: C.bg, borderRadius: '8px', border: `1px solid ${C.border}`, padding: '8px' }}>
                                             <button onClick={() => setShowScriptEditorCreator(v => !v)} style={{ width:'100%', background:'none', border:`1px solid ${C.border}`, borderRadius:'6px', padding:'5px 6px', fontSize:'10px', fontWeight:700, color:C.text, cursor:'pointer', marginBottom:'6px' }}>
@@ -4430,6 +4465,55 @@ export default function InstagramDemoPage() {
                               ))}
                             </div>
                           </div>
+
+                          {/* Script mode selection */}
+                          <div style={{ marginBottom:'12px' }}>
+                            <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'6px' }}>Script negotiation mode *</div>
+                            <div style={{ display:'flex', flexDirection:'column', gap:'6px' }}>
+                              <button onClick={()=>setNewCampaignScriptMode('non_negotiable')} style={{ padding:'10px 12px', borderRadius:'8px', textAlign:'left', background:newCampaignScriptMode==='non_negotiable'?`${C.primary}15`:C.bg, border:`1px solid ${newCampaignScriptMode==='non_negotiable'?C.primary:C.border}`, cursor:'pointer' }}>
+                                <div style={{ fontSize:'12px', fontWeight:700, color:newCampaignScriptMode==='non_negotiable'?C.primary:C.text, marginBottom:'2px' }}>Non-negotiable (Locked)</div>
+                                <div style={{ fontSize:'10px', color:C.textMuted }}>You provide the exact script creators must use</div>
+                              </button>
+                              <button onClick={()=>setNewCampaignScriptMode('discussion')} style={{ padding:'10px 12px', borderRadius:'8px', textAlign:'left', background:newCampaignScriptMode==='discussion'?`${C.primary}15`:C.bg, border:`1px solid ${newCampaignScriptMode==='discussion'?C.primary:C.border}`, cursor:'pointer' }}>
+                                <div style={{ fontSize:'12px', fontWeight:700, color:newCampaignScriptMode==='discussion'?C.primary:C.text, marginBottom:'2px' }}>Collaborative (Both Edit)</div>
+                                <div style={{ fontSize:'10px', color:C.textMuted }}>Both parties negotiate and edit the script together</div>
+                              </button>
+                              <button onClick={()=>setNewCampaignScriptMode('creator_freedom')} style={{ padding:'10px 12px', borderRadius:'8px', textAlign:'left', background:newCampaignScriptMode==='creator_freedom'?`${C.primary}15`:C.bg, border:`1px solid ${newCampaignScriptMode==='creator_freedom'?C.primary:C.border}`, cursor:'pointer' }}>
+                                <div style={{ fontSize:'12px', fontWeight:700, color:newCampaignScriptMode==='creator_freedom'?C.primary:C.text, marginBottom:'2px' }}>Creator Freedom</div>
+                                <div style={{ fontSize:'10px', color:C.textMuted }}>Creator has complete freedom; you only review and approve</div>
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Non-negotiable script text input */}
+                          {newCampaignScriptMode === 'non_negotiable' && (
+                            <div style={{ marginBottom:'12px' }}>
+                              <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>Script to provide (locked) *</div>
+                              <textarea value={newCampaignScriptText} onChange={e=>setNewCampaignScriptText(e.target.value)} rows={3} placeholder="Paste the exact script creators must follow..." style={{ width:'100%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', color:C.text, padding:'8px 10px', fontSize:'12px', fontFamily:'inherit', outline:'none', resize:'none', boxSizing:'border-box' as const }} />
+                            </div>
+                          )}
+
+                          {/* Collaborative script text input (optional starter) */}
+                          {newCampaignScriptMode === 'discussion' && (
+                            <div style={{ marginBottom:'12px' }}>
+                              <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>Starting script (optional)</div>
+                              <textarea value={newCampaignScriptText} onChange={e=>setNewCampaignScriptText(e.target.value)} rows={3} placeholder="Provide a starting point — creators can edit and suggest changes..." style={{ width:'100%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', color:C.text, padding:'8px 10px', fontSize:'12px', fontFamily:'inherit', outline:'none', resize:'none', boxSizing:'border-box' as const }} />
+                            </div>
+                          )}
+
+                          {/* Allow optional content approval payment stage */}
+                          {newCampaignCompensation.includes('Paid') && (
+                            <div style={{ marginBottom:'12px', background:`${C.primary}08`, border:`1px solid ${C.primary}30`, borderRadius:'8px', padding:'10px 12px' }}>
+                              <label style={{ display:'flex', alignItems:'center', gap:'8px', cursor:'pointer' }}>
+                                <input type="checkbox" checked={allowContentApprovalPayment} onChange={e=>setAllowContentApprovalPayment(e.target.checked)} style={{ width:16, height:16, cursor:'pointer' }} />
+                                <div>
+                                  <div style={{ fontSize:'12px', fontWeight:600, color:C.text }}>Require content approval for final payment</div>
+                                  <div style={{ fontSize:'10px', color:C.textMuted, marginTop:'2px' }}>If enabled: Creator gets 30% advance, 40% on upload, 30% after you approve final content</div>
+                                </div>
+                              </label>
+                            </div>
+                          )}
+
                           {/* Exclusivity & Usage Rights */}
                           <div style={{ display:'flex', gap:'10px', marginBottom:'12px' }}>
                             <div style={{ flex:1 }}>
@@ -4517,7 +4601,7 @@ export default function InstagramDemoPage() {
                               if (missing.length > 0) { setPurchaseToast(`Missing: ${missing.join(', ')}`); setTimeout(()=>setPurchaseToast(null),4000); return; }
                               const escrowPool = parseInt(newCampaignBudget||'0') * newCampaignCreatorCount;
                               const newC: Campaign = {
-                                id:Date.now(), brandName:profileName, brandProfession:activeBrandSkin??'', title:newCampaignTitle, description:newCampaignDesc, about:newCampaignAbout, requiredProfessions:[activeBrandSkin ?? ''], minLevel:newCampaignMinLevel, maxLevel:newCampaignMaxLevel, budget:newCampaignBudget, deadline:newCampaignDeadline, location:newCampaignLocation, nonNegotiables:newCampaignNonNeg, deliverables:newCampaignDeliverables, compensationType:newCampaignCompensation, exclusivity:newCampaignExclusivity, usageRights:newCampaignUsageRights, revisionLimit:newCampaignRevisionLimit, audienceTarget:newCampaignAudienceTarget, requirements:newCampaignRequirements, status:'open', applicants:0, creatorCount:newCampaignCreatorCount, escrowFunded:false, escrowPool, escrowAllocated:0,
+                                id:Date.now(), brandName:profileName, brandProfession:activeBrandSkin??'', title:newCampaignTitle, description:newCampaignDesc, about:newCampaignAbout, requiredProfessions:[activeBrandSkin ?? ''], minLevel:newCampaignMinLevel, maxLevel:newCampaignMaxLevel, budget:newCampaignBudget, deadline:newCampaignDeadline, location:newCampaignLocation, nonNegotiables:newCampaignNonNeg, deliverables:newCampaignDeliverables, compensationType:newCampaignCompensation, exclusivity:newCampaignExclusivity, usageRights:newCampaignUsageRights, revisionLimit:newCampaignRevisionLimit, audienceTarget:newCampaignAudienceTarget, requirements:newCampaignRequirements, scriptMode:newCampaignScriptMode, scriptText:newCampaignScriptText, allowContentApprovalPayment:allowContentApprovalPayment, status:'open', applicants:0, creatorCount:newCampaignCreatorCount, escrowFunded:false, escrowPool, escrowAllocated:0,
                                 poc: newCampaignPocName.trim() ? {
                                   name: newCampaignPocName.trim(),
                                   instagramHandle: newCampaignPocHandle.trim().startsWith('@') ? newCampaignPocHandle.trim() : `@${newCampaignPocHandle.trim()}`,
@@ -4532,7 +4616,7 @@ export default function InstagramDemoPage() {
                               setShowEscrowFundingModal(true);
                               setEscrowFundingInProgress2(false);
                               setBatchSendCreatorIds(new Set());
-                              setNewCampaignTitle(''); setNewCampaignDesc(''); setNewCampaignAbout(''); setNewCampaignBudget(''); setNewCampaignDeadline(''); setNewCampaignProfessions([]); setNewCampaignMinLevel(1); setNewCampaignMaxLevel(5); setNewCampaignLocation(''); setNewCampaignDeliverables(''); setNewCampaignNonNeg([]); setNewCampaignCompensation('Paid'); setNewCampaignExclusivity('None'); setNewCampaignUsageRights('30 days, social only'); setNewCampaignRevisionLimit(2); setNewCampaignAudienceTarget(''); setNewCampaignRequirements([]); setNewCampaignReqInput(''); setNewCampaignCreatorCount(1); setNewCampaignPocName(''); setNewCampaignPocHandle(''); setNewCampaignPocRole('');
+                              setNewCampaignTitle(''); setNewCampaignDesc(''); setNewCampaignAbout(''); setNewCampaignBudget(''); setNewCampaignDeadline(''); setNewCampaignProfessions([]); setNewCampaignMinLevel(1); setNewCampaignMaxLevel(5); setNewCampaignLocation(''); setNewCampaignDeliverables(''); setNewCampaignNonNeg([]); setNewCampaignCompensation('Paid'); setNewCampaignExclusivity('None'); setNewCampaignUsageRights('30 days, social only'); setNewCampaignRevisionLimit(2); setNewCampaignAudienceTarget(''); setNewCampaignRequirements([]); setNewCampaignReqInput(''); setNewCampaignCreatorCount(1); setNewCampaignPocName(''); setNewCampaignPocHandle(''); setNewCampaignPocRole(''); setNewCampaignScriptMode('creator_freedom'); setNewCampaignScriptText(''); setAllowContentApprovalPayment(true);
                             }}
                             style={{ width:'100%', background:C.primary, border:'none', borderRadius:'8px', padding:'11px', color:'#fff', fontWeight:700, fontSize:'14px', cursor:'pointer' }}
                           >
@@ -4704,6 +4788,28 @@ export default function InstagramDemoPage() {
                               setTimeout(() => setPurchaseToast(null), 3000);
                               setShowDisputeModal(null); setDisputeReason(''); setDisputeEvidence('');
                             }} disabled={!disputeReason} style={{ flex:1, background: disputeReason ? '#ef4444' : C.border, border:'none', borderRadius:'8px', padding:'10px', color:'#fff', fontWeight:600, fontSize:'13px', cursor: disputeReason ? 'pointer' : 'not-allowed', opacity: disputeReason ? 1 : 0.5 }}>File Dispute</button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Tip Modal */}
+                    {showTipModal && tipForDealId !== null && (
+                      <div style={{ position:'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.6)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:9999, padding:'16px' }}>
+                        <div style={{ background:C.surface, borderRadius:'14px', padding:'20px', maxWidth:'400px', width:'100%', border:`1px solid ${C.border}` }}>
+                          <div style={{ fontSize:'15px', fontWeight:700, color:C.text, marginBottom:'4px' }}>Send a Tip 💰</div>
+                          <div style={{ fontSize:'12px', color:C.textSecondary, marginBottom:'14px' }}>Thank this creator for excellent work. Tips go directly to them with zero platform fees.</div>
+                          <div style={{ marginBottom:'14px' }}>
+                            <div style={{ fontSize:'11px', fontWeight:600, color:C.textMuted, marginBottom:'6px' }}>Tip amount ($) *</div>
+                            <input type="number" value={tipAmount} onChange={e => setTipAmount(e.target.value)} placeholder="Enter amount" min="1" style={{ width:'100%', background:C.card, border:`1px solid ${C.border}`, borderRadius:'8px', padding:'10px 12px', fontSize:'13px', color:C.text, boxSizing:'border-box' }} />
+                          </div>
+                          <div style={{ marginBottom:'14px', padding:'10px 12px', background:`${C.warning}12`, border:`1px solid ${C.warning}30`, borderRadius:'8px' }}>
+                            <div style={{ fontSize:'11px', color:C.warning, fontWeight:600 }}>Direct payout</div>
+                            <div style={{ fontSize:'10px', color:C.textSecondary, marginTop:'2px' }}>${tipAmount ? parseInt(tipAmount).toLocaleString() : '0'}.00 will go straight to the creator. No commission, no fees.</div>
+                          </div>
+                          <div style={{ display:'flex', gap:'8px' }}>
+                            <button onClick={() => { setShowTipModal(false); setTipAmount(''); setTipForDealId(null); }} style={{ flex:1, background:'none', border:`1px solid ${C.border}`, borderRadius:'8px', padding:'10px', color:C.text, fontWeight:600, fontSize:'13px', cursor:'pointer' }}>Cancel</button>
+                            <button onClick={() => { if (tipAmount && completedDeals[tipForDealId!]) { const updatedDeals = [...completedDeals]; updatedDeals[tipForDealId!] = { ...updatedDeals[tipForDealId!], tipped: (updatedDeals[tipForDealId!].tipped || 0) + parseInt(tipAmount) }; setCompletedDeals(updatedDeals); setPurchaseToast(`💰 Tip of $${parseInt(tipAmount).toLocaleString()} sent to ${completedDeals[tipForDealId!].brand}`); setTimeout(() => setPurchaseToast(null), 3000); setShowTipModal(false); setTipAmount(''); setTipForDealId(null); } }} disabled={!tipAmount || parseInt(tipAmount) < 1} style={{ flex:1, background: (tipAmount && parseInt(tipAmount) >= 1) ? C.warning : C.border, border:'none', borderRadius:'8px', padding:'10px', color:tipAmount && parseInt(tipAmount) >= 1 ? '#000' : C.text, fontWeight:600, fontSize:'13px', cursor: (tipAmount && parseInt(tipAmount) >= 1) ? 'pointer' : 'not-allowed', opacity: (tipAmount && parseInt(tipAmount) >= 1) ? 1 : 0.5 }}>Send Tip</button>
                           </div>
                         </div>
                       </div>

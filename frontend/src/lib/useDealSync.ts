@@ -74,6 +74,21 @@ export type DealState = {
   customsComplianceAcknowledged?: boolean;
   // Escrow state — synced between brand (funder) and creator (receiver)
   escrowFunded?: boolean;
+  // Payment milestone tracking — which stages have been released to creator
+  milestoneAdvanceReleased?: boolean;
+  milestoneUploadReleased?: boolean;
+  milestoneApprovalReleased?: boolean;
+  // Tip system — brand can tip after deal completion
+  tipsReceived?: Array<{ amount: string; from: string; timestamp: string; message?: string }>;
+  // Dispute tracking
+  disputes?: Array<{
+    id: number;
+    type: 'late_delivery' | 'quality_issue' | 'payment' | 'other';
+    description: string;
+    filledBy: 'creator' | 'brand';
+    timestamp: string;
+    status: 'open' | 'resolved';
+  }>;
   // Point of Contact — set at campaign creation, shown to both parties
   poc?: { name: string; instagramHandle: string; role: string };
   // Campaign linkage — connects deal to its originating campaign for Sent Deals tracking
@@ -147,6 +162,7 @@ export type Campaign = {
   requirements?: string[];
   scriptMode?: 'non_negotiable' | 'discussion' | 'creator_freedom';
   scriptText?: string;
+  allowContentApprovalPayment?: boolean; // If true, brand must approve content for final 30% payout
   status: 'open' | 'closed' | 'expired';
   applicants: number;
   creatorCount?: number;       // how many creators brand intends to hire
