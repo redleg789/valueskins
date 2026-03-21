@@ -100,6 +100,7 @@ jobs:
       JWT_SECRET: test-secret-minimum-32-characters-long
       API_KEY_HMAC_SALT: test-salt-minimum-32-characters-long-here
       VERIFICATION_HMAC_SECRET: test-verification-secret-32-chars
+      PLATFORM_SIGNING_KEY_ED25519: dGVzdC1lZDI1NTE5LXNpZ25pbmcta2V5LTMyLWNoYXJz
       LINKEDIN_CLIENT_ID: test-linkedin-client-id
       LINKEDIN_CLIENT_SECRET: test-linkedin-client-secret
       LINKEDIN_FEATURE_FLAG: "true"
@@ -250,6 +251,9 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${{ matrix.service }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          provenance: true
+          sbom: true
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.created=${{ github.event.head_commit.timestamp }}

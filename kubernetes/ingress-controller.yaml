@@ -105,7 +105,7 @@ spec:
         - --tcp-services-configmap=ingress-nginx/tcp-services
         - --udp-services-configmap=ingress-nginx/udp-services
         - --publish-service=ingress-nginx/nginx-ingress-service
-        - --watch-namespace=instagram  # Only watch instagram namespace
+        - --watch-namespace=valueskins  # Only watch instagram namespace
         - --election-id=nginx-ingress-controller-leader
         - --controller-class=k8s.io/ingress-nginx
         - --ingress-class=nginx

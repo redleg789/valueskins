@@ -14,10 +14,13 @@ use tokio::time;
 pub async fn start(pool: PgPool, interval: Duration) {
     tracing::info!("Cleanup worker started (interval={:?})", interval);
 
+    let hostname = std::env::var("HOSTNAME").unwrap_or_else(|_| "unknown".to_string());
     let mut tick = time::interval(interval);
+    let mut cycle: i64 = 0;
 
     loop {
         tick.tick().await;
+        cycle += 1;
 
         // Each cleanup is independent — one failure doesn't block others
         if let Err(e) = expire_soft_holds(&pool).await {
@@ -54,6 +57,18 @@ pub async fn start(pool: PgPool, interval: Duration) {
         if let Err(e) = cleanup_idempotency_keys(&pool).await {
             tracing::error!(error = %e, "Idempotency key cleanup failed");
         }
+
+        // Heartbeat
+        let _ = sqlx::query(
+            "INSERT INTO worker_heartbeats (worker_name, last_seen_at, cycle_count, last_items_processed, pod_hostname)
+             VALUES ('cleanup_worker', NOW(), $1, 0, $2)
+             ON CONFLICT (worker_name) DO UPDATE SET
+               last_seen_at = NOW(), cycle_count = $1, pod_hostname = $2"
+        )
+        .bind(cycle)
+        .bind(&hostname)
+        .execute(&pool)
+        .await;
     }
 }
 
@@ -73,29 +88,18 @@ async fn expire_soft_holds(pool: &PgPool) -> Result<(), sqlx::Error> {
 }
 
 async fn expire_offer_rounds(pool: &PgPool) -> Result<(), sqlx::Error> {
-    // Auto-reject offers that weren't responded to within the deadline.
-    // Uses LIMIT to prevent locking millions of rows at once.
-    let result = sqlx::query(
+    // Auto-reject offers not responded to within the deadline.
+    // Use subquery form — LIMIT on UPDATE is non-standard and unsupported in PostgreSQL.
+    sqlx::query(
         "UPDATE offer_rounds SET response = 'rejected', responded_at = NOW(), silent_decline = TRUE
-         WHERE responded_at IS NULL AND response_due_at <= NOW()
-         LIMIT 1000"
+         WHERE id IN (
+            SELECT id FROM offer_rounds
+            WHERE responded_at IS NULL AND response_due_at <= NOW()
+            LIMIT 1000
+         )"
     )
     .execute(pool)
-    .await;
-
-    // LIMIT not supported on UPDATE in all PG versions — fallback
-    if result.is_err() {
-        sqlx::query(
-            "UPDATE offer_rounds SET response = 'rejected', responded_at = NOW(), silent_decline = TRUE
-             WHERE id IN (
-                SELECT id FROM offer_rounds
-                WHERE responded_at IS NULL AND response_due_at <= NOW()
-                LIMIT 1000
-             )"
-        )
-        .execute(pool)
-        .await?;
-    }
+    .await?;
 
     Ok(())
 }
@@ -131,13 +135,29 @@ async fn cleanup_rate_limit_windows(pool: &PgPool) -> Result<(), sqlx::Error> {
 }
 
 async fn refresh_materialized_views(pool: &PgPool) -> Result<(), sqlx::Error> {
+    let start = std::time::Instant::now();
+
     // CONCURRENTLY allows reads during refresh (requires unique index, which we have)
     sqlx::query("REFRESH MATERIALIZED VIEW CONCURRENTLY creator_leaderboard")
         .execute(pool)
         .await?;
+
+    let leaderboard_ms = start.elapsed().as_millis() as i32;
+
     sqlx::query("REFRESH MATERIALIZED VIEW platform_stats")
         .execute(pool)
         .await?;
+
+    // Log refresh timing for monitoring
+    let _ = sqlx::query(
+        "INSERT INTO matview_refresh_log (view_name, last_refreshed, duration_ms)
+         VALUES ('creator_leaderboard', NOW(), $1), ('platform_stats', NOW(), NULL)
+         ON CONFLICT (view_name) DO UPDATE SET last_refreshed = NOW(), duration_ms = EXCLUDED.duration_ms"
+    )
+    .bind(leaderboard_ms)
+    .execute(pool)
+    .await;
+
     Ok(())
 }
 

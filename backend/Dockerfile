@@ -1,15 +1,15 @@
 # ==================================
 # Build Stage — compiles entire Rust workspace
 # ==================================
-FROM rust:1.82-slim-bookworm AS builder
+FROM rust:1.82.0-slim-bookworm AS builder
 
 WORKDIR /app
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
-    pkg-config \
-    libssl-dev \
-    && rm -rf /var/lib/apt/lists/*
+  pkg-config \
+  libssl-dev \
+  && rm -rf /var/lib/apt/lists/*
 
 # Copy workspace manifest first for dependency caching
 COPY Cargo.toml Cargo.lock ./
@@ -29,6 +29,14 @@ COPY waitlist_service ./waitlist_service
 COPY brand_api ./brand_api
 COPY communities_service ./communities_service
 COPY credential_service ./credential_service
+COPY matching_service ./matching_service
+COPY settings_service ./settings_service
+COPY linkedin_service ./linkedin_service
+COPY platform_service ./platform_service
+COPY pricing_service ./pricing_service
+COPY credit_service ./credit_service
+COPY contract_service ./contract_service
+COPY reputation_service ./reputation_service
 COPY indexer ./indexer
 COPY shared ./shared
 COPY migrations ./migrations
@@ -42,10 +50,10 @@ RUN cargo build --release --workspace
 FROM debian:bookworm-slim AS api
 
 RUN apt-get update && apt-get install -y \
-    ca-certificates \
-    libssl3 \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+  ca-certificates \
+  libssl3 \
+  curl \
+  && rm -rf /var/lib/apt/lists/*
 
 # Non-root user for security
 RUN useradd -r -s /bin/false appuser

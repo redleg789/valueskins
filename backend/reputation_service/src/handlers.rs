@@ -63,7 +63,7 @@ pub async fn list_exports(
 ) -> impl Responder {
     let user_id = match extract_user_id(&req) { Ok(id) => id, Err(r) => return r };
     match svc.list_exports(user_id, &query).await {
-        Ok(exports) => HttpResponse::Ok().json(serde_json::json!({"exports": exports, "total": exports.len()})),
+        Ok((exports, total_count)) => HttpResponse::Ok().json(serde_json::json!({"exports": exports, "total": total_count})),
         Err(e) => error_response(e),
     }
 }

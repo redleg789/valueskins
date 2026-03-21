@@ -213,6 +213,13 @@ async fn main() -> std::io::Result<()> {
     let idempotency = shared::idempotency::IdempotencyService::new(pool.clone());
     let platform_cfg = std::sync::Arc::new(shared::platform_config::PlatformConfigService::new(pool.clone()));
 
+    // Initialize Redis Cache
+    let redis_url = env::var("REDIS_URL").unwrap_or_else(|_| "redis://localhost:6379".to_string());
+    let redis_cache = shared::cache::RedisCache::new(&redis_url).await.unwrap_or_else(|_| {
+        tracing::warn!("Starting with disabled distributed cache");
+        shared::cache::RedisCache::new_disabled()
+    });
+
     // Initialize services
     let social_service = SocialService::new(pool.clone());
     let analytics_service = AnalyticsService::new(pool.clone());
@@ -252,6 +259,7 @@ async fn main() -> std::io::Result<()> {
     let refresh_tokens_data = web::Data::new(refresh_tokens);
     let pii_audit_data = web::Data::new(pii_audit);
     let idempotency_data = web::Data::new(idempotency);
+    let cache_data = web::Data::new(redis_cache);
 
     // Clone jwt_secret for middleware creation inside HttpServer closure
     let jwt_secret_clone = jwt_secret.clone();
@@ -365,6 +373,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(refresh_tokens_data.clone())
             .app_data(pii_audit_data.clone())
             .app_data(idempotency_data.clone())
+            .app_data(cache_data.clone())
             .app_data(web::Data::from(platform_cfg.clone()))
             .app_data(reputation_data.clone())
 
@@ -372,7 +381,7 @@ async fn main() -> std::io::Result<()> {
             .route("/health", web::get().to(health_check))
             .route("/health/live", web::get().to(health_check))
             .route("/health/ready", web::get().to(health_ready))
-            // Prometheus metrics endpoint for monitoring
+            // Prometheus metrics — bearer-token gated (internal scraper only)
             .route("/metrics", web::get().to(shared::observability::metrics::metrics_handler))
 
             .service(

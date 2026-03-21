@@ -37,6 +37,7 @@ where
 pub struct MatchingService {
     pool: PgPool,
     read_pool: PgPool,
+    cache: shared::cache::RedisCache,
 }
 
 /// Result of a fraud rule threshold lookup.
@@ -121,12 +122,12 @@ impl From<sqlx::Error> for MatchingError {
 }
 
 impl MatchingService {
-    pub fn new(pool: PgPool) -> Self {
-        Self { pool: pool.clone(), read_pool: pool }
+    pub fn new(pool: PgPool, cache: shared::cache::RedisCache) -> Self {
+        Self { pool: pool.clone(), read_pool: pool, cache }
     }
 
-    pub fn new_with_read_pool(pool: PgPool, read_pool: PgPool) -> Self {
-        Self { pool, read_pool }
+    pub fn new_with_read_pool(pool: PgPool, read_pool: PgPool, cache: shared::cache::RedisCache) -> Self {
+        Self { pool, read_pool, cache }
     }
 
     /// Lookup a fraud rule threshold from the admin-configurable fraud_rules table.
@@ -227,60 +228,70 @@ impl MatchingService {
             total_count: i64,
         }
 
-        // Core query: JOIN persona_professions with professions to enforce ValuSkin match.
-        // LEFT JOIN user_settings for barter/energy filtering.
-        // Exclude the brand's own user from results.
-        let rows = with_timeout(sqlx::query_as::<_, CreatorWithCount>(
-            r#"
-            SELECT
-                u.id AS user_id,
-                u.username,
-                u.display_name,
-                u.avatar_url,
-                pr.name AS profession,
-                pp.slot,
-                pp.level,
-                pp.real_score AS score,
-                COALESCE(us.willing_to_barter, FALSE) AS willing_to_barter,
-                COALESCE(us.energy_state, 'available') AS energy_state,
-                COALESCE(us.price_band, 'mid-tier') AS price_band,
-                COUNT(*) OVER()::int8 AS total_count
-            FROM persona_professions pp
-            JOIN personas p ON pp.persona_id = p.id AND p.exists = TRUE
-            JOIN users u ON p.owner_user_id = u.id AND u.is_active = TRUE
-            JOIN professions pr ON pp.profession_id = pr.id
-            LEFT JOIN user_settings us ON u.id = us.user_id
-            WHERE pr.name = $1
-              AND pp.level >= $2
-              AND u.id != $3
-              AND COALESCE(us.energy_state, 'available') != 'pause'
-              AND ($4 = FALSE OR COALESCE(us.willing_to_barter, FALSE) = TRUE)
-            ORDER BY pp.level DESC, pp.real_score DESC
-            LIMIT $5 OFFSET $6
-            "#,
-        )
-        .bind(profession)
-        .bind(min_level)
-        .bind(brand_user_id)
-        .bind(barter_only)
-        .bind(limit)
-        .bind(offset)
-        .fetch_all(&self.read_pool)).await?;
+        let cache_key = format!("matching:discover:{}:{}:{}:{}:{}", profession, min_level, barter_only, limit, offset);
 
-        let total_count = rows.first().map(|r| r.total_count).unwrap_or(0);
-        let creators: Vec<MatchedCreator> = rows.into_iter().map(|r| MatchedCreator {
-            user_id: r.user_id,
-            username: r.username,
-            display_name: r.display_name,
-            avatar_url: r.avatar_url,
-            profession: r.profession,
-            slot: r.slot.map(|s| s.to_string()).unwrap_or_default(),
-            level: r.level,
-            score: r.score as i64,
-            willing_to_barter: r.willing_to_barter,
-            energy_state: r.energy_state,
-            price_band: r.price_band,
-        }).collect();
+        let (creators, total_count) = match self.cache.get::<(Vec<MatchedCreator>, i64)>(&cache_key).await.unwrap_or(None) {
+            Some(cached) => cached,
+            None => {
+                // Core query: JOIN persona_professions with professions to enforce ValuSkin match.
+                // LEFT JOIN user_settings for barter/energy filtering.
+                // Exclude the brand's own user from results.
+                let rows = with_timeout(sqlx::query_as::<_, CreatorWithCount>(
+                    r#"
+                    SELECT
+                        u.id AS user_id,
+                        u.username,
+                        u.display_name,
+                        u.avatar_url,
+                        pr.name AS profession,
+                        pp.slot,
+                        pp.level,
+                        pp.real_score AS score,
+                        COALESCE(us.willing_to_barter, FALSE) AS willing_to_barter,
+                        COALESCE(us.energy_state, 'available') AS energy_state,
+                        COALESCE(us.price_band, 'mid-tier') AS price_band,
+                        COUNT(*) OVER()::int8 AS total_count
+                    FROM persona_professions pp
+                    JOIN personas p ON pp.persona_id = p.id AND p.exists = TRUE
+                    JOIN users u ON p.owner_user_id = u.id AND u.is_active = TRUE
+                    JOIN professions pr ON pp.profession_id = pr.id
+                    LEFT JOIN user_settings us ON u.id = us.user_id
+                    WHERE pr.name = $1
+                      AND pp.level >= $2
+                      AND u.id != $3
+                      AND COALESCE(us.energy_state, 'available') != 'pause'
+                      AND ($4 = FALSE OR COALESCE(us.willing_to_barter, FALSE) = TRUE)
+                    ORDER BY pp.level DESC, pp.real_score DESC
+                    LIMIT $5 OFFSET $6
+                    "#,
+                )
+                .bind(profession)
+                .bind(min_level)
+                .bind(brand_user_id)
+                .bind(barter_only)
+                .bind(limit)
+                .bind(offset)
+                .fetch_all(&self.read_pool)).await?;
+
+                let total_count = rows.first().map(|r| r.total_count).unwrap_or(0);
+                let fetch_creators: Vec<MatchedCreator> = rows.into_iter().map(|r| MatchedCreator {
+                    user_id: r.user_id,
+                    username: r.username,
+                    display_name: r.display_name,
+                    avatar_url: r.avatar_url,
+                    profession: r.profession,
+                    slot: r.slot.map(|s| s.to_string()).unwrap_or_default(),
+                    level: r.level,
+                    score: r.score as i64,
+                    willing_to_barter: r.willing_to_barter,
+                    energy_state: r.energy_state,
+                    price_band: r.price_band,
+                }).collect();
+
+                let _ = self.cache.set(&cache_key, &(fetch_creators.clone(), total_count), std::time::Duration::from_secs(60)).await;
+                (fetch_creators, total_count)
+            }
+        };
 
         // Batch log audit entries for matched creators (prevent N+1 loop)
         // Build list of tuples to insert, then do a single batch insert

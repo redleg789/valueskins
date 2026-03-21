@@ -139,7 +139,29 @@ mod tests {
 }
 
 /// Actix handler: GET /metrics
-pub async fn metrics_handler() -> HttpResponse {
+/// Protected by METRICS_BEARER_TOKEN env var (set to a random 32+ char secret).
+/// Prometheus scraper must include: Authorization: Bearer <token>
+/// Falls back to open access (with a warning log) if the env var is not set,
+/// so local dev and test environments don't need the secret.
+pub async fn metrics_handler(req: actix_web::HttpRequest) -> HttpResponse {
+    // Check bearer token if METRICS_BEARER_TOKEN is configured
+    if let Ok(expected) = std::env::var("METRICS_BEARER_TOKEN") {
+        if !expected.is_empty() {
+            let provided = req
+                .headers()
+                .get("Authorization")
+                .and_then(|h| h.to_str().ok())
+                .and_then(|h| h.strip_prefix("Bearer "))
+                .unwrap_or("");
+
+            if provided != expected.as_str() {
+                return HttpResponse::Unauthorized()
+                    .content_type("text/plain")
+                    .body("Unauthorized");
+            }
+        }
+    }
+
     HttpResponse::Ok()
         .content_type("text/plain; version=0.0.4")
         .body(MetricsCollector::global().render())

@@ -25,16 +25,16 @@ function getStickerForProfession(profession: string): string | undefined {
 }
 
 const C = {
-  primary: '#FE2C55',
-  bg: '#121212',
-  surface: '#1E1E1E',
-  surfaceAlt: '#2A2A2A',
-  card: '#1A1A1A',
-  text: '#E8E8E8',
-  textSecondary: '#A0A0A0',
-  textMuted: '#6B6B6B',
-  border: '#2E2E2E',
-  borderLight: '#3A3A3A',
+  primary: '#0A66C2',
+  bg: '#FFFFFF',
+  surface: '#F3F2EF',
+  surfaceAlt: '#E5E5E1',
+  card: '#FFFFFF',
+  text: '#0A66C2',
+  textSecondary: '#625B5F',
+  textMuted: '#8A8D91',
+  border: '#DADCE0',
+  borderLight: '#E5E5E1',
   // Semantic — use these instead of random hex colors
   success: '#10B981',
   successBg: 'rgba(16,185,129,0.12)',
@@ -45,9 +45,9 @@ const C = {
   danger: '#EF4444',
   dangerBg: 'rgba(239,68,68,0.12)',
   dangerBorder: 'rgba(239,68,68,0.30)',
-  accent: '#25F4EE',
-  accentBg: 'rgba(37,244,238,0.15)',
-  accentBorder: 'rgba(37,244,238,0.35)',
+  accent: '#0A66C2',
+  accentBg: 'rgba(10,102,194,0.15)',
+  accentBorder: 'rgba(10,102,194,0.35)',
 };
 
 // ---- Deal type helpers ----

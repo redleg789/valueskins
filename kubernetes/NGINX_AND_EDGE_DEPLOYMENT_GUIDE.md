@@ -86,7 +86,7 @@
   kubectl create secret tls valueskins-tls-cert \
     --cert=path/to/cert.crt \
     --key=path/to/cert.key \
-    -n instagram
+    -n valueskins
   ```
 
 - [ ] **Deploy Istio service mesh**
@@ -504,7 +504,7 @@ Solution: Scale horizontally
 ```bash
 # 1. Create namespaces
 kubectl create namespace ingress-nginx
-kubectl create namespace instagram
+kubectl create namespace valueskins
 
 # 2. Deploy NGINX Ingress Controller
 kubectl apply -f kubernetes/ingress-controller.yaml
@@ -528,9 +528,9 @@ kubectl apply -f kubernetes/frontend-static-serving.yaml
 kubectl apply -f kubernetes/deployment.yaml
 
 # 8. Verify health
-kubectl get pods -n instagram
-kubectl get svc -n instagram
-kubectl get ingress -n instagram
+kubectl get pods -n valueskins
+kubectl get svc -n valueskins
+kubectl get ingress -n valueskins
 ```
 
 ### Monitor Deployment
@@ -540,7 +540,7 @@ kubectl get ingress -n instagram
 kubectl logs -f -n ingress-nginx deployment/nginx-ingress-controller
 
 # Watch API pods
-kubectl logs -f -n instagram deployment/valueskins-matching
+kubectl logs -f -n valueskins deployment/valueskins-matching
 
 # Check metrics (if Prometheus installed)
 kubectl port-forward -n monitoring svc/prometheus 9090:9090
@@ -551,11 +551,11 @@ kubectl port-forward -n monitoring svc/prometheus 9090:9090
 
 ```bash
 # Disable feature flag (instant, no redeploy)
-kubectl patch configmap feature-flags -n instagram \
+kubectl patch configmap feature-flags -n valueskins \
   -p '{"data":{"valueskins_enabled":"false"}}'
 
 # Or delete ingress (traffic stops in 5 seconds)
-kubectl delete ingress valueskins-ingress -n instagram
+kubectl delete ingress valueskins-ingress -n valueskins
 
 # Pods keep running, manual traffic reroute if needed
 ```

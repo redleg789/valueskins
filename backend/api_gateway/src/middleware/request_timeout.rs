@@ -72,7 +72,6 @@ where
                         timeout_ms = timeout.as_millis() as u64,
                         "Request timed out"
                     );
-                    // Return 504 Gateway Timeout
                     Err(actix_web::error::ErrorGatewayTimeout(
                         "Request timed out"
                     ))

@@ -18,21 +18,42 @@ use tokio::time;
 pub async fn start(pool: PgPool, poll_interval: Duration) {
     tracing::info!("Outbox worker started (interval={:?})", poll_interval);
 
+    let hostname = std::env::var("HOSTNAME").unwrap_or_else(|_| "unknown".to_string());
     let mut interval = time::interval(poll_interval);
+    let mut cycle: i64 = 0;
 
     loop {
         interval.tick().await;
+        cycle += 1;
 
-        match poll_batch(&pool, 100).await {
-            Ok(dispatched) => {
-                if dispatched > 0 {
-                    tracing::info!(dispatched = dispatched, "Outbox events dispatched");
+        let dispatched = match poll_batch(&pool, 100).await {
+            Ok(n) => {
+                if n > 0 {
+                    tracing::info!(dispatched = n, "Outbox events dispatched");
                 }
+                n as i32
             }
             Err(e) => {
                 tracing::error!(error = %e, "Outbox worker poll failed");
+                0
             }
-        }
+        };
+
+        // Heartbeat: lets monitoring detect a stuck/dead worker
+        let _ = sqlx::query(
+            "INSERT INTO worker_heartbeats (worker_name, last_seen_at, cycle_count, last_items_processed, pod_hostname)
+             VALUES ('outbox_worker', NOW(), $1, $2, $3)
+             ON CONFLICT (worker_name) DO UPDATE SET
+               last_seen_at = NOW(),
+               cycle_count = $1,
+               last_items_processed = $2,
+               pod_hostname = $3"
+        )
+        .bind(cycle)
+        .bind(dispatched)
+        .bind(&hostname)
+        .execute(&pool)
+        .await;
     }
 }
 

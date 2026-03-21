@@ -1,4 +1,4 @@
-version: '3.8'
+# Compose V2 — no 'version:' field (deprecated, ignored by modern Docker)
 
 services:
   # ── Data Layer ─────────────────────────────────────────────────────
@@ -14,7 +14,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./backend/migrations:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -27,7 +27,7 @@ services:
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -48,10 +48,11 @@ services:
     volumes:
       - kafka_data:/bitnami/kafka
     healthcheck:
-      test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list"]
-      interval: 10s
+      test: [ "CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list 2>/dev/null || exit 1" ]
+      interval: 15s
       timeout: 10s
-      retries: 5
+      retries: 6
+      start_period: 30s
 
   # ── Application Layer ──────────────────────────────────────────────
   api:
@@ -66,9 +67,10 @@ services:
       DATABASE_URL: postgres://postgres:password@postgres:5432/valueskins
       REDIS_URL: redis://redis:6379
       KAFKA_BROKERS: kafka:9092
-      JWT_SECRET: ${JWT_SECRET:-valueskins_jwt_secret_change_in_production}
-      API_KEY_HMAC_SALT: ${API_KEY_HMAC_SALT:-dev_api_key_salt_32_chars_minimum}
-      VERIFICATION_HMAC_SECRET: ${VERIFICATION_HMAC_SECRET:-dev_verification_secret_32_chars}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set — use a 32+ char random string}
+      API_KEY_HMAC_SALT: ${API_KEY_HMAC_SALT:?API_KEY_HMAC_SALT must be set}
+      VERIFICATION_HMAC_SECRET: ${VERIFICATION_HMAC_SECRET:?VERIFICATION_HMAC_SECRET must be set}
+      PLATFORM_SIGNING_KEY_ED25519: ${PLATFORM_SIGNING_KEY_ED25519:?PLATFORM_SIGNING_KEY_ED25519 must be set}
       RUST_LOG: info,api_gateway=debug
       ALLOWED_ORIGINS: http://localhost:3000,http://localhost:3001
       SMTP_HOST: ${SMTP_HOST:-smtp.example.com}
@@ -87,7 +89,7 @@ services:
           cpus: '2'
           memory: 1G
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/health/live || exit 1"]
+      test: [ "CMD-SHELL", "curl -f http://localhost:8080/health/live || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 3

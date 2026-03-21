@@ -337,7 +337,7 @@ Total: ~80ms (p95: 120ms, p99: 180ms)
 
 - [ ] **Day 2: Application**
   - [ ] kubectl apply deployment.yaml (API pods)
-  - [ ] Verify: `kubectl get pods -n instagram`
+  - [ ] Verify: `kubectl get pods -n valueskins`
   - [ ] Check logs: `kubectl logs -f deployment/valueskins-matching`
   - [ ] Health check: `curl https://api.instagram.com/health/ready`
 

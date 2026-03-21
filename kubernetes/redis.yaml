@@ -8,7 +8,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: redis-config
-  namespace: instagram
+  namespace: valueskins
 data:
   redis.conf: |
     # Persistence: AOF + RDB for durability
@@ -53,10 +53,10 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: redis-secret
-  namespace: instagram
+  namespace: valueskins
 type: Opaque
 # data.password must be set via CI/CD or sealed-secrets — never committed
-# Example: kubectl create secret generic redis-secret -n instagram --from-literal=password="$(openssl rand -base64 32)"
+# Example: kubectl create secret generic redis-secret -n valueskins --from-literal=password="$(openssl rand -base64 32)"
 
 ---
 # 3. StatefulSet: Redis primary (with persistence)
@@ -64,7 +64,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: redis-primary
-  namespace: instagram
+  namespace: valueskins
   labels:
     app: redis
     role: primary
@@ -163,7 +163,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: redis-replica
-  namespace: instagram
+  namespace: valueskins
   labels:
     app: redis
     role: replica
@@ -257,7 +257,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: redis-primary
-  namespace: instagram
+  namespace: valueskins
   labels:
     app: redis
     role: primary
@@ -277,7 +277,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: redis-read
-  namespace: instagram
+  namespace: valueskins
   labels:
     app: redis
     role: replica
@@ -297,7 +297,7 @@ apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   name: redis-replica-hpa
-  namespace: instagram
+  namespace: valueskins
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
@@ -319,7 +319,7 @@ apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: redis-pdb
-  namespace: instagram
+  namespace: valueskins
 spec:
   minAvailable: 1
   selector:
@@ -332,7 +332,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: redis-network-policy
-  namespace: instagram
+  namespace: valueskins
 spec:
   podSelector:
     matchLabels:
@@ -359,7 +359,7 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: redis-monitor
-  namespace: instagram
+  namespace: valueskins
   labels:
     app: redis
 spec:

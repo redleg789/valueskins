@@ -49,6 +49,7 @@ fn error_response(err: MatchingError) -> HttpResponse {
 pub async fn discover_creators(
     req: HttpRequest,
     router: web::Data<ReplicaRouter>,
+    cache: web::Data<shared::cache::RedisCache>,
     query: web::Query<DiscoverCreatorsQuery>,
 ) -> impl Responder {
     let claims = match req.extensions().get::<auth_service::token::Claims>() {
@@ -61,7 +62,7 @@ pub async fn discover_creators(
         Err(_) => return HttpResponse::BadRequest().json(serde_json::json!({"error": "Invalid user ID"})),
     };
 
-    let service = MatchingService::new_with_read_pool(router.write_pool().clone(), router.read_pool().clone());
+    let service = MatchingService::new_with_read_pool(router.write_pool().clone(), router.read_pool().clone(), cache.get_ref().clone());
     match service.discover_creators(user_id, &query).await {
         Ok((creators, total_count)) => HttpResponse::Ok().json(serde_json::json!({
             "creators": creators,
@@ -79,6 +80,7 @@ pub async fn discover_creators(
 pub async fn discover_opportunities(
     req: HttpRequest,
     router: web::Data<ReplicaRouter>,
+    cache: web::Data<shared::cache::RedisCache>,
     query: web::Query<DiscoverOpportunitiesQuery>,
 ) -> impl Responder {
     let claims = match req.extensions().get::<auth_service::token::Claims>() {
@@ -91,7 +93,7 @@ pub async fn discover_opportunities(
         Err(_) => return HttpResponse::BadRequest().json(serde_json::json!({"error": "Invalid user ID"})),
     };
 
-    let service = MatchingService::new_with_read_pool(router.write_pool().clone(), router.read_pool().clone());
+    let service = MatchingService::new_with_read_pool(router.write_pool().clone(), router.read_pool().clone(), cache.get_ref().clone());
     match service.discover_opportunities(user_id, &query).await {
         Ok((opps, total_count)) => HttpResponse::Ok().json(serde_json::json!({
             "opportunities": opps,
@@ -110,6 +112,7 @@ pub async fn discover_opportunities(
 pub async fn set_requirements(
     req: HttpRequest,
     router: web::Data<ReplicaRouter>,
+    cache: web::Data<shared::cache::RedisCache>,
     path: web::Path<i64>,
     body: web::Json<SetMatchingRequirementsRequest>,
 ) -> impl Responder {
@@ -124,7 +127,7 @@ pub async fn set_requirements(
     };
 
     let opportunity_id = path.into_inner();
-    let service = MatchingService::new_with_read_pool(router.write_pool().clone(), router.read_pool().clone());
+    let service = MatchingService::new_with_read_pool(router.write_pool().clone(), router.read_pool().clone(), cache.get_ref().clone());
     match service.set_requirements(opportunity_id, user_id, &body).await {
         Ok(reqs) => HttpResponse::Ok().json(serde_json::json!({
             "requirements": reqs,
@@ -139,10 +142,11 @@ pub async fn set_requirements(
 /// Get the matching requirements for an opportunity.
 pub async fn get_requirements(
     router: web::Data<ReplicaRouter>,
+    cache: web::Data<shared::cache::RedisCache>,
     path: web::Path<i64>,
 ) -> impl Responder {
     let opportunity_id = path.into_inner();
-    let service = MatchingService::new_with_read_pool(router.write_pool().clone(), router.read_pool().clone());
+    let service = MatchingService::new_with_read_pool(router.write_pool().clone(), router.read_pool().clone(), cache.get_ref().clone());
     match service.get_requirements(opportunity_id).await {
         Ok(reqs) => HttpResponse::Ok().json(reqs),
         Err(e) => error_response(e),
@@ -160,6 +164,7 @@ pub struct AuditLogQuery {
 pub async fn get_audit_log(
     req: HttpRequest,
     router: web::Data<ReplicaRouter>,
+    cache: web::Data<shared::cache::RedisCache>,
     query: web::Query<AuditLogQuery>,
 ) -> impl Responder {
     let claims = match req.extensions().get::<auth_service::token::Claims>() {
@@ -173,7 +178,7 @@ pub async fn get_audit_log(
     };
 
     let limit = query.limit.unwrap_or(50).min(100);
-    let service = MatchingService::new_with_read_pool(router.write_pool().clone(), router.read_pool().clone());
+    let service = MatchingService::new_with_read_pool(router.write_pool().clone(), router.read_pool().clone(), cache.get_ref().clone());
     match service.get_audit_log(user_id, limit).await {
         Ok(log) => HttpResponse::Ok().json(log),
         Err(e) => error_response(e),
@@ -186,6 +191,7 @@ pub async fn get_audit_log(
 pub async fn get_suggestions(
     req: HttpRequest,
     router: web::Data<ReplicaRouter>,
+    cache: web::Data<shared::cache::RedisCache>,
     query: web::Query<SuggestionQuery>,
 ) -> impl Responder {
     let claims = match req.extensions().get::<auth_service::token::Claims>() {
@@ -198,7 +204,7 @@ pub async fn get_suggestions(
         Err(_) => return HttpResponse::BadRequest().json(serde_json::json!({"error": "Invalid user ID"})),
     };
 
-    let service = MatchingService::new_with_read_pool(router.write_pool().clone(), router.read_pool().clone());
+    let service = MatchingService::new_with_read_pool(router.write_pool().clone(), router.read_pool().clone(), cache.get_ref().clone());
     match service.get_suggestions(&query).await {
         Ok((suggestions, total_count)) => HttpResponse::Ok().json(serde_json::json!({
             "suggestions": suggestions,
@@ -213,6 +219,7 @@ pub async fn get_suggestions(
 pub async fn act_on_suggestion(
     req: HttpRequest,
     router: web::Data<ReplicaRouter>,
+    cache: web::Data<shared::cache::RedisCache>,
     path: web::Path<i64>,
     body: web::Json<SuggestionAction>,
 ) -> impl Responder {
@@ -227,7 +234,7 @@ pub async fn act_on_suggestion(
     };
 
     let suggestion_id = path.into_inner();
-    let service = MatchingService::new_with_read_pool(router.write_pool().clone(), router.read_pool().clone());
+    let service = MatchingService::new_with_read_pool(router.write_pool().clone(), router.read_pool().clone(), cache.get_ref().clone());
     match service.act_on_suggestion(user_id, suggestion_id, &body.action).await {
         Ok(()) => HttpResponse::Ok().json(serde_json::json!({
             "message": format!("Suggestion {}", body.action)
@@ -240,6 +247,7 @@ pub async fn act_on_suggestion(
 pub async fn generate_suggestions(
     req: HttpRequest,
     router: web::Data<ReplicaRouter>,
+    cache: web::Data<shared::cache::RedisCache>,
     path: web::Path<i64>,
 ) -> impl Responder {
     let claims = match req.extensions().get::<auth_service::token::Claims>() {
@@ -253,7 +261,7 @@ pub async fn generate_suggestions(
     };
 
     let opportunity_id = path.into_inner();
-    let service = MatchingService::new_with_read_pool(router.write_pool().clone(), router.read_pool().clone());
+    let service = MatchingService::new_with_read_pool(router.write_pool().clone(), router.read_pool().clone(), cache.get_ref().clone());
     match service.generate_suggestions_for_opportunity(user_id, opportunity_id).await {
         Ok(count) => HttpResponse::Ok().json(serde_json::json!({
             "suggestions_generated": count,

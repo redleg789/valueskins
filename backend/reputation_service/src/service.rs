@@ -238,16 +238,33 @@ impl ReputationService {
         })
     }
 
-    pub async fn list_exports(&self, user_id: i64, query: &ExportListQuery) -> Result<Vec<ReputationExport>, ReputationError> {
+    pub async fn list_exports(&self, user_id: i64, query: &ExportListQuery) -> Result<(Vec<ReputationExport>, i64), ReputationError> {
         let limit = query.limit.unwrap_or(20).min(100) as i64;
         let offset = query.offset.unwrap_or(0).max(0) as i64;
 
-        with_timeout(
-            sqlx::query_as::<_, ReputationExport>(
+        #[derive(sqlx::FromRow)]
+        struct ExportWithCount {
+            id: i64,
+            persona_id: i64,
+            export_version: i32,
+            deal_count: i32,
+            avg_deal_cents: i64,
+            completion_rate_pct: f64,
+            on_time_rate_pct: f64,
+            trust_scores_snapshot: serde_json::Value,
+            testimonial_count: i32,
+            signed_hash: String,
+            created_at: chrono::DateTime<chrono::Utc>,
+            total_count: i64,
+        }
+
+        let rows = with_timeout(
+            sqlx::query_as::<_, ExportWithCount>(
                 r#"SELECT re.id, re.persona_id, re.export_version, re.deal_count, re.avg_deal_cents,
                           re.completion_rate_pct::float8 AS completion_rate_pct,
                           re.on_time_rate_pct::float8 AS on_time_rate_pct,
-                          re.trust_scores_snapshot, re.testimonial_count, re.signed_hash, re.created_at
+                          re.trust_scores_snapshot, re.testimonial_count, re.signed_hash, re.created_at,
+                          COUNT(*) OVER()::int8 AS total_count
                    FROM reputation_exports re
                    JOIN personas p ON re.persona_id = p.id
                    WHERE re.persona_id = $1 AND p.owner_user_id = $2
@@ -255,6 +272,23 @@ impl ReputationService {
             )
             .bind(query.persona_id).bind(user_id).bind(limit).bind(offset)
             .fetch_all(&self.read_pool)
-        ).await
+        ).await?;
+
+        let total_count = rows.first().map(|r| r.total_count).unwrap_or(0);
+        let exports = rows.into_iter().map(|r| ReputationExport {
+            id: r.id,
+            persona_id: r.persona_id,
+            export_version: r.export_version,
+            deal_count: r.deal_count,
+            avg_deal_cents: r.avg_deal_cents,
+            completion_rate_pct: r.completion_rate_pct,
+            on_time_rate_pct: r.on_time_rate_pct,
+            trust_scores_snapshot: r.trust_scores_snapshot,
+            testimonial_count: r.testimonial_count,
+            signed_hash: r.signed_hash,
+            created_at: r.created_at,
+        }).collect();
+
+        Ok((exports, total_count))
     }
 }
