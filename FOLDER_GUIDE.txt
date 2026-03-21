@@ -1,0 +1,272 @@
+READ THIS FIRST: Understanding the folder structure
+
+If you have NO coding experience, start with this file, then read ARCHITECTURE_GUIDE.txt
+
+================================================================================
+                        WHAT EACH FOLDER DOES
+================================================================================
+
+WHAT IS THIS PROJECT?
+  ValueSkins is a platform where:
+  - Creators can be discovered by brands
+  - Brands can hire creators for campaigns
+  - Creators and brands negotiate terms, pricing, and content
+
+================================================================================
+
+frontend/
+  |
+  What: Everything the user sees in their web browser
+  Why: React.js framework for building interactive websites
+  Main file: frontend/src/app/demo/instagram/page.tsx (4000+ lines of UI)
+  |
+  +-- src/app/demo/
+      |-- instagram/page.tsx   <- What you see on Instagram (creator & brand view)
+      |-- tiktok/page.tsx      <- Same but with TikTok styling
+      |-- youtube/page.tsx     <- Same but with YouTube styling
+      |-- linkedin/page.tsx    <- Same but with LinkedIn styling
+  |
+  +-- src/lib/
+      |-- api.ts              <- Makes requests to backend ("go fetch the creator list")
+      |-- useDealSync.ts      <- Stores deal data so pages remember state
+      |-- useFirebaseRoom.ts  <- Gets real-time updates from Firebase
+  |
+  +-- src/components/
+      |-- Reusable pieces: buttons, modals, cards that appear on pages
+
+================================================================================
+
+backend/
+  |
+  What: The engine that does work on a server (you don't see this in browser)
+  Why: Handles logic that needs to be secure (authentication, payments, etc)
+  Language: Rust (fast, safe programming language)
+  |
+  +-- api_gateway/
+      |
+      What: The main entrance - all requests from frontend come here first
+      Does: Routes requests to the right service
+      Example: If frontend asks "give me creators", api_gateway sends to marketplace_service
+  |
+  +-- marketplace_service/
+      |
+      What: Handles finding creators and brands
+      Does: Returns lists of creators, filters by skill/level, ranks by match score
+  |
+  +-- contract_service/
+      |
+      What: Manages the negotiation and deal process
+      Does: Creates offers, tracks deal progress (proposal -> accepted -> completed)
+  |
+  +-- notification_service/
+      |
+      What: Sends notifications to users
+      Does: "Brand sent you an offer!" or "Creator approved script"
+      Via: Firebase, Email, or SMS
+  |
+  +-- auth_service/
+      |
+      What: Handles login and "who are you?"
+      Does: Checks if you're a real user, keeps you logged in
+  |
+  +-- [15+ other services - each handles specific features]
+  |
+  +-- migrations/
+      |
+      What: SQL scripts that set up the database
+      When: Runs once when server starts
+      Example: 001_create_users_table.sql creates the "users" table in database
+  |
+  +-- shared/
+      |
+      What: Code used by all services to avoid duplication
+      Contains: Error handling, database connections, logging, common types
+
+================================================================================
+
+database (not shown as folder, exists on server)
+  |
+  What: Where all data is permanently stored
+  Type: PostgreSQL (popular database system)
+  How it's created: backend/migrations/ (SQL scripts)
+  Stores: Users, creators, brands, deals, messages, everything
+  |
+  Tables (like spreadsheets):
+    users       <- All accounts
+    deals       <- All negotiations between creators and brands
+    contracts   <- Final agreed-upon terms
+    messages    <- All chat messages
+    offers      <- All price offers
+    notifications  <- All notifications sent to users
+
+================================================================================
+
+kubernetes/
+  |
+  What: Instructions for running code on servers
+  Why: When millions of users visit, you need 100s of servers
+  Uses: Kubernetes (auto-scales servers up/down based on demand)
+  Contains: Config files that tell servers how to start, restart, etc
+
+infrastructure/
+  |
+  What: Server setup and configuration
+  Where: AWS, Google Cloud, or similar
+  Contains: Storage buckets, backups, monitoring, logging
+
+docker-compose.yml
+  |
+  What: How to run EVERYTHING on your laptop for testing
+  Does: Starts frontend, backend, database all at once
+  Command: docker-compose up
+
+Dockerfile
+  |
+  What: How to package the app to run anywhere
+  Does: Creates a container (like a virtual computer) with everything needed
+
+================================================================================
+
+docs/
+  |
+  What: Detailed documentation about specific features
+  Examples:
+    - How script negotiation works
+    - How escrow (payment holding) works
+    - How real-time chat updates work
+
+.env.example
+  |
+  What: List of passwords and settings you need to provide
+  Why: Each environment (local, staging, production) needs different settings
+  Example: Production database URL is different from local database URL
+
+package.json
+  |
+  What: List of libraries we're using
+  Why: JavaScript ecosystem (frontend and some tools) need this
+  Example: We use React, TypeScript, Next.js
+
+Cargo.toml / Cargo.lock
+  |
+  What: List of Rust libraries we're using (backend)
+  Why: Rust needs to know what code packages to download and use
+
+.github/
+  |
+  What: GitHub automation
+  Contains: Workflows that auto-run tests when you push code
+
+.git/
+  |
+  What: Git version control
+  Tracks: Every change ever made to the code
+  Allows: Going back to old versions if something breaks
+
+vercel.json
+  |
+  What: How to deploy frontend
+  When: When you push code to GitHub, Vercel auto-deploys it
+  Result: Your code goes live on the internet
+
+fly.toml
+  |
+  What: How to deploy backend
+  When: When you push code to GitHub, Fly.io auto-deploys it
+  Result: Backend server starts running the new code
+
+ARCHITECTURE_GUIDE.txt
+  |
+  What: Detailed explanation of entire codebase
+  Read this after reading FOLDER_GUIDE.txt (this file)
+
+README.md
+  |
+  What: Quick start instructions
+  Contains: How to run locally, deploy, basic setup
+
+================================================================================
+                        THE ABSOLUTE SIMPLEST EXPLANATION
+================================================================================
+
+FRONTEND (What you click on)
+  └-- HTML/CSS/JavaScript code in browser
+      └-- Stored in: frontend/src/
+          └-- Makes requests: "Hey backend, give me creator list"
+
+BACKEND (The engine doing the work)
+  └-- Rust code running on a server
+      └-- Stored in: backend/
+          └-- Responds: "Here's the creator list"
+
+DATABASE (Where data is saved)
+  └-- PostgreSQL running on a server
+      └-- Stored in: Migrations create the structure
+          └-- Contains: All users, deals, messages, etc
+
+FLOW:
+  User clicks button
+    ↓
+  Frontend code runs
+    ↓
+  Makes request to backend (via api.ts)
+    ↓
+  Backend receives it (api_gateway routes it)
+    ↓
+  Backend service handles it (marketplace_service, contract_service, etc)
+    ↓
+  Backend queries database
+    ↓
+  Backend sends response back
+    ↓
+  Frontend receives data
+    ↓
+  React updates what you see on screen
+
+================================================================================
+                        RECOMMENDED READING ORDER
+================================================================================
+
+New to coding? Read in this order:
+
+1. This file (FOLDER_GUIDE.txt)
+2. README.md (quick overview)
+3. ARCHITECTURE_GUIDE.txt (how everything connects)
+4. frontend/src/lib/useDealSync.ts (what data looks like)
+5. frontend/src/app/demo/instagram/page.tsx (main UI - it's big but shows everything)
+6. backend/api_gateway/ (where requests go first)
+7. backend/marketplace_service/ (example of how services work)
+8. backend/migrations/001_*.sql (how database is created)
+
+After that you'll understand the whole codebase!
+
+================================================================================
+                        ASKING "WHERE DO I FIND..."
+================================================================================
+
+Q: Where is the code that shows the list of creators?
+A: frontend/src/app/demo/instagram/page.tsx calls api.ts
+   api.ts calls GET /creators
+   Backend handles that in: backend/marketplace_service/
+
+Q: Where is the chat feature?
+A: frontend/src/app/demo/instagram/page.tsx (chat section)
+   Uses Firebase for real-time updates: frontend/src/lib/useFirebaseRoom.ts
+
+Q: Where is the deal negotiation logic?
+A: frontend/src/lib/useDealSync.ts (state management)
+   backend/contract_service/ (handles logic)
+   database/deals table (stores data)
+
+Q: Where is the payment system?
+A: backend/payment_service/ (handles payments)
+   frontend/src/app/demo/instagram/page.tsx (shows payment breakdown)
+   database/transactions table (records payments)
+
+Q: Where do I add a new feature?
+A: Always touch 3 places:
+   1. Frontend: frontend/src/app/demo/instagram/page.tsx
+   2. Backend: backend/[service]/ where [service] handles the logic
+   3. Database: backend/migrations/ to add any new tables/columns
+
+================================================================================
