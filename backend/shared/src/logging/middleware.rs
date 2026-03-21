@@ -23,6 +23,7 @@ use std::rc::Rc;
 use std::time::Instant;
 
 use super::correlation;
+use crate::observability::metrics::MetricsCollector;
 use super::pii;
 
 /// Lightweight user ID container injected by auth middleware.
@@ -110,7 +111,7 @@ where
         // Extract request metadata
         let method = req.method().to_string();
         let path = req.path().to_string();
-        let query = req.query_string().to_string();
+        let query = sanitize_log_query(req.query_string());
 
         // Extract client IP (masked for privacy)
         let client_ip = req
@@ -137,6 +138,12 @@ where
                         .map(|u| u.0.clone());
 
                     let status = response.status().as_u16();
+                    MetricsCollector::global().record_request(
+                        method.as_str(),
+                        path.as_str(),
+                        status,
+                        duration_ms as f64 / 1000.0,
+                    );
 
                     if status >= 500 {
                         tracing::error!(
@@ -178,6 +185,12 @@ where
                     }
                 }
                 Err(err) => {
+                    MetricsCollector::global().record_request(
+                        method.as_str(),
+                        path.as_str(),
+                        500,
+                        duration_ms as f64 / 1000.0,
+                    );
                     tracing::error!(
                         service = service_name.as_str(),
                         correlation_id = correlation_id.as_str(),
@@ -192,5 +205,32 @@ where
 
             result
         })
+    }
+}
+
+fn sanitize_log_query(query: &str) -> String {
+    const MAX_QUERY_LOG_LEN: usize = 512;
+    let mut cleaned = String::with_capacity(query.len().min(MAX_QUERY_LOG_LEN));
+    for ch in query.chars() {
+        if ch.is_control() {
+            cleaned.push('?');
+        } else {
+            cleaned.push(ch);
+        }
+        if cleaned.len() >= MAX_QUERY_LOG_LEN {
+            break;
+        }
+    }
+    cleaned
+}
+
+#[cfg(test)]
+mod tests {
+    use super::sanitize_log_query;
+
+    #[test]
+    fn query_sanitization_redacts_control_bytes_and_caps_length() {
+        assert_eq!(sanitize_log_query("a=1\nb=2"), "a=1?b=2");
+        assert_eq!(sanitize_log_query(&"x".repeat(1024)).len(), 512);
     }
 }

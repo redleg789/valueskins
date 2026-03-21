@@ -1,12 +1,12 @@
 //! Prometheus metrics — Four Golden Signals
 //! Latency, Traffic, Errors, Saturation tracked per endpoint
 
-use actix_web::{dev, Error, HttpResponse};
-use actix_web::middleware::ErrorHandlerResponse;
+use actix_web::HttpResponse;
 use std::sync::OnceLock;
 use std::collections::HashMap;
 use std::sync::Mutex;
-use std::time::Instant;
+
+const MAX_METRIC_SERIES: usize = 20_000;
 
 /// Lightweight metrics collector that exports Prometheus text format
 /// In production, use the prometheus crate — this is the integration shape
@@ -31,9 +31,14 @@ impl MetricsCollector {
     }
 
     pub fn record_request(&self, method: &str, path: &str, status: u16, duration_secs: f64) {
-        let key = (method.to_string(), path.to_string(), status);
+        let normalized_path = normalize_metric_path(path);
+        let key = (method.to_string(), normalized_path, status);
         if let Ok(mut counts) = self.request_counts.lock() {
-            *counts.entry(key).or_insert(0) += 1;
+            if let Some(v) = counts.get_mut(&key) {
+                *v += 1;
+            } else if counts.len() < MAX_METRIC_SERIES {
+                counts.insert(key, 1);
+            }
         }
         if let Ok(mut durations) = self.request_durations.lock() {
             durations.push((method.to_string(), path.to_string(), duration_secs));
@@ -75,6 +80,61 @@ impl MetricsCollector {
         out.push_str(&format!("http_active_connections {}\n", conns));
 
         out
+    }
+}
+
+fn looks_like_uuid(segment: &str) -> bool {
+    if segment.len() != 36 {
+        return false;
+    }
+    segment
+        .chars()
+        .all(|c| c.is_ascii_hexdigit() || c == '-')
+}
+
+fn normalize_metric_path(path: &str) -> String {
+    if path.is_empty() {
+        return "/".to_string();
+    }
+
+    let mut out = String::new();
+    for part in path.split('/') {
+        if part.is_empty() {
+            continue;
+        }
+        out.push('/');
+        let normalized = if part.chars().all(|c| c.is_ascii_digit()) || looks_like_uuid(part) {
+            ":id"
+        } else if part.len() > 96 {
+            ":segment"
+        } else {
+            part
+        };
+        out.push_str(normalized);
+    }
+    if out.is_empty() {
+        "/".to_string()
+    } else {
+        out
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::normalize_metric_path;
+
+    #[test]
+    fn normalizes_numeric_and_uuid_segments() {
+        assert_eq!(normalize_metric_path("/marketplace/opportunities/123"), "/marketplace/opportunities/:id");
+        assert_eq!(
+            normalize_metric_path("/deals/550e8400-e29b-41d4-a716-446655440000/messages"),
+            "/deals/:id/messages"
+        );
+    }
+
+    #[test]
+    fn keeps_static_paths() {
+        assert_eq!(normalize_metric_path("/health/ready"), "/health/ready");
     }
 }
 

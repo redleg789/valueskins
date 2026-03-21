@@ -17,5 +17,16 @@ k6 run -e BASE_URL="$BASE_URL" backend/load-tests/auth-abuse.js
 echo "[load-tests] Running large-payload-defense"
 k6 run -e BASE_URL="$BASE_URL" backend/load-tests/large-payload-defense.js
 
-echo "[load-tests] Completed"
+echo "[load-tests] Running rate-limit-flood"
+k6 run -e BASE_URL="$BASE_URL" backend/load-tests/rate-limit-flood.js
 
+echo "[load-tests] Running refresh-abuse"
+k6 run -e BASE_URL="$BASE_URL" backend/load-tests/refresh-abuse.js
+
+echo "[load-tests] Running malformed-json-flood"
+k6 run -e BASE_URL="$BASE_URL" backend/load-tests/malformed-json-flood.js
+
+echo "[load-tests] Running timeout-pressure"
+k6 run -e BASE_URL="$BASE_URL" backend/load-tests/timeout-pressure.js
+
+echo "[load-tests] Completed"

@@ -6,17 +6,61 @@ use log::{info, error};
 use crate::models::*;
 use crate::service::{MarketplaceService, ServiceError};
 use shared::idempotency::IdempotencyService;
+use serde_json::Value;
 
-fn idempotency_key(req: &HttpRequest) -> Option<String> {
-    let key = req.headers()
+#[derive(Debug)]
+enum IdempotencyKeyError {
+    Missing,
+    Invalid,
+}
+
+fn parse_idempotency_key(req: &HttpRequest) -> Result<String, IdempotencyKeyError> {
+    let raw = req
+        .headers()
         .get("Idempotency-Key")
         .and_then(|h| h.to_str().ok())
-        .map(str::trim)
-        .filter(|v| !v.is_empty())
-        .filter(|v| v.len() <= 128)
-        .filter(|v| v.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '.'))
-        .map(ToOwned::to_owned);
-    key
+        .ok_or(IdempotencyKeyError::Missing)?;
+
+    let trimmed = raw.trim();
+    if trimmed.is_empty()
+        || trimmed.len() > 128
+        || !trimmed
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '.')
+    {
+        return Err(IdempotencyKeyError::Invalid);
+    }
+
+    Ok(trimmed.to_owned())
+}
+
+async fn check_cached_idempotent_response(
+    idempotency: &IdempotencyService,
+    key: &str,
+    endpoint: &str,
+) -> Result<Option<Value>, HttpResponse> {
+    match idempotency.check(key, endpoint).await {
+        Ok(cached) => Ok(cached),
+        Err(e) => {
+            error!("Idempotency check failed: {:?}", e);
+            Err(HttpResponse::ServiceUnavailable().json(serde_json::json!({
+                "error": "Service temporarily unavailable"
+            })))
+        }
+    }
+}
+
+async fn store_idempotent_response(
+    idempotency: &IdempotencyService,
+    key: &str,
+    endpoint: &str,
+    user_id: i64,
+    status: i16,
+    body: &Value,
+) {
+    if let Err(e) = idempotency.store(key, endpoint, user_id, status, body).await {
+        error!("Idempotency store failed: {:?}", e);
+    }
 }
 
 /// GET /marketplace/opportunities
@@ -76,11 +120,16 @@ pub async fn create_opportunity(
 ) -> impl Responder {
     let service = MarketplaceService::new(pool.get_ref().clone());
     let endpoint = "/marketplace/opportunities";
-    let key = match idempotency_key(&req) {
-        Some(v) => v,
-        None => {
+    let key = match parse_idempotency_key(&req) {
+        Ok(v) => v,
+        Err(IdempotencyKeyError::Missing) => {
             return HttpResponse::BadRequest().json(serde_json::json!({
                 "error": "Idempotency-Key header is required"
+            }))
+        }
+        Err(IdempotencyKeyError::Invalid) => {
+            return HttpResponse::BadRequest().json(serde_json::json!({
+                "error": "Idempotency-Key header is invalid"
             }))
         }
     };
@@ -92,7 +141,10 @@ pub async fn create_opportunity(
         })),
     };
 
-    if let Ok(Some(cached)) = idempotency.check(&key, endpoint).await {
+    if let Some(cached) = match check_cached_idempotent_response(idempotency.get_ref(), &key, endpoint).await {
+        Ok(cached) => cached,
+        Err(resp) => return resp,
+    } {
         return HttpResponse::Ok().json(cached);
     }
 
@@ -102,9 +154,7 @@ pub async fn create_opportunity(
             let response_body = serde_json::json!({
                 "opportunity_id": id
             });
-            let _ = idempotency
-                .store(&key, endpoint, brand_user_id, 201, &response_body)
-                .await;
+            store_idempotent_response(idempotency.get_ref(), &key, endpoint, brand_user_id, 201, &response_body).await;
             HttpResponse::Created().json(response_body)
         }
         Err(ServiceError::BarterViolation(reason)) => {
@@ -129,11 +179,16 @@ pub async fn apply_to_opportunity(
 ) -> impl Responder {
     let service = MarketplaceService::new(pool.get_ref().clone());
     let endpoint = "/marketplace/applications";
-    let key = match idempotency_key(&req) {
-        Some(v) => v,
-        None => {
+    let key = match parse_idempotency_key(&req) {
+        Ok(v) => v,
+        Err(IdempotencyKeyError::Missing) => {
             return HttpResponse::BadRequest().json(serde_json::json!({
                 "error": "Idempotency-Key header is required"
+            }))
+        }
+        Err(IdempotencyKeyError::Invalid) => {
+            return HttpResponse::BadRequest().json(serde_json::json!({
+                "error": "Idempotency-Key header is invalid"
             }))
         }
     };
@@ -143,7 +198,10 @@ pub async fn apply_to_opportunity(
         None => return HttpResponse::Unauthorized().finish(),
     };
 
-    if let Ok(Some(cached)) = idempotency.check(&key, endpoint).await {
+    if let Some(cached) = match check_cached_idempotent_response(idempotency.get_ref(), &key, endpoint).await {
+        Ok(cached) => cached,
+        Err(resp) => return resp,
+    } {
         return HttpResponse::Ok().json(cached);
     }
 
@@ -164,9 +222,7 @@ pub async fn apply_to_opportunity(
             let response_body = serde_json::json!({
                 "application_id": id
             });
-            let _ = idempotency
-                .store(&key, endpoint, user_id, 201, &response_body)
-                .await;
+            store_idempotent_response(idempotency.get_ref(), &key, endpoint, user_id, 201, &response_body).await;
             HttpResponse::Created().json(response_body)
         }
         Err(ServiceError::NotFound) => {
@@ -302,11 +358,16 @@ pub async fn accept_application(
     req: HttpRequest,
 ) -> impl Responder {
     let endpoint = "/brands/applications/accept";
-    let key = match idempotency_key(&req) {
-        Some(v) => v,
-        None => {
+    let key = match parse_idempotency_key(&req) {
+        Ok(v) => v,
+        Err(IdempotencyKeyError::Missing) => {
             return HttpResponse::BadRequest().json(serde_json::json!({
                 "error": "Idempotency-Key header is required"
+            }))
+        }
+        Err(IdempotencyKeyError::Invalid) => {
+            return HttpResponse::BadRequest().json(serde_json::json!({
+                "error": "Idempotency-Key header is invalid"
             }))
         }
     };
@@ -318,7 +379,10 @@ pub async fn accept_application(
         })),
     };
 
-    if let Ok(Some(cached)) = idempotency.check(&key, endpoint).await {
+    if let Some(cached) = match check_cached_idempotent_response(idempotency.get_ref(), &key, endpoint).await {
+        Ok(cached) => cached,
+        Err(resp) => return resp,
+    } {
         return HttpResponse::Ok().json(cached);
     }
 
@@ -345,9 +409,7 @@ pub async fn accept_application(
             let response_body = serde_json::json!({
                 "success": true
             });
-            let _ = idempotency
-                .store(&key, endpoint, brand_user_id, 200, &response_body)
-                .await;
+            store_idempotent_response(idempotency.get_ref(), &key, endpoint, brand_user_id, 200, &response_body).await;
             HttpResponse::Ok().json(response_body)
         }
         Err(e) => {
@@ -365,11 +427,16 @@ pub async fn complete_deal(
     req: HttpRequest,
 ) -> impl Responder {
     let endpoint = "/brands/deals/complete";
-    let key = match idempotency_key(&req) {
-        Some(v) => v,
-        None => {
+    let key = match parse_idempotency_key(&req) {
+        Ok(v) => v,
+        Err(IdempotencyKeyError::Missing) => {
             return HttpResponse::BadRequest().json(serde_json::json!({
                 "error": "Idempotency-Key header is required"
+            }))
+        }
+        Err(IdempotencyKeyError::Invalid) => {
+            return HttpResponse::BadRequest().json(serde_json::json!({
+                "error": "Idempotency-Key header is invalid"
             }))
         }
     };
@@ -381,7 +448,10 @@ pub async fn complete_deal(
         })),
     };
 
-    if let Ok(Some(cached)) = idempotency.check(&key, endpoint).await {
+    if let Some(cached) = match check_cached_idempotent_response(idempotency.get_ref(), &key, endpoint).await {
+        Ok(cached) => cached,
+        Err(resp) => return resp,
+    } {
         return HttpResponse::Ok().json(cached);
     }
 
@@ -408,9 +478,7 @@ pub async fn complete_deal(
             let response_body = serde_json::json!({
                 "success": true
             });
-            let _ = idempotency
-                .store(&key, endpoint, brand_user_id, 200, &response_body)
-                .await;
+            store_idempotent_response(idempotency.get_ref(), &key, endpoint, brand_user_id, 200, &response_body).await;
             HttpResponse::Ok().json(response_body)
         }
         Err(ServiceError::InvalidStatus) => {
@@ -1829,5 +1897,30 @@ pub async fn list_professions(
                 "error": "Failed to fetch professions"
             }))
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{parse_idempotency_key, IdempotencyKeyError};
+    use actix_web::test::TestRequest;
+
+    #[test]
+    fn parses_valid_idempotency_key() {
+        let req = TestRequest::default()
+            .insert_header(("Idempotency-Key", "order_123-abc.DEF"))
+            .to_http_request();
+        assert_eq!(parse_idempotency_key(&req).unwrap(), "order_123-abc.DEF");
+    }
+
+    #[test]
+    fn rejects_missing_or_invalid_idempotency_key() {
+        let missing = TestRequest::default().to_http_request();
+        assert!(matches!(parse_idempotency_key(&missing), Err(IdempotencyKeyError::Missing)));
+
+        let invalid = TestRequest::default()
+            .insert_header(("Idempotency-Key", "bad key with spaces"))
+            .to_http_request();
+        assert!(matches!(parse_idempotency_key(&invalid), Err(IdempotencyKeyError::Invalid)));
     }
 }

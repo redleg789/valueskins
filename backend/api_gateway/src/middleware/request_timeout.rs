@@ -7,7 +7,7 @@
 
 use actix_web::{
     dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform},
-    Error, HttpResponse,
+    Error,
     body::EitherBody,
 };
 use futures_util::future::LocalBoxFuture;
@@ -73,7 +73,6 @@ where
                         "Request timed out"
                     );
                     // Return 504 Gateway Timeout
-                    // We don't have the original request anymore, so create a bare response
                     Err(actix_web::error::ErrorGatewayTimeout(
                         "Request timed out"
                     ))

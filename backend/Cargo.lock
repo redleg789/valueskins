@@ -2790,6 +2790,7 @@ dependencies = [
  "serde_json",
  "shared",
  "sqlx",
+ "tokio",
  "tracing",
  "uuid 1.20.0",
 ]

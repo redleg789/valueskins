@@ -8,6 +8,31 @@ use std::{future::{ready, Ready}, rc::Rc};
 use auth_service::token::TokenManager;
 use shared::logging::middleware::LogUserId;
 
+fn extract_bearer_token(header: Option<&str>) -> Option<&str> {
+    header
+        .and_then(|h| h.strip_prefix("Bearer "))
+        .map(str::trim)
+        .filter(|t| !t.is_empty())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::extract_bearer_token;
+
+    #[test]
+    fn extracts_valid_bearer_token() {
+        assert_eq!(extract_bearer_token(Some("Bearer abc123")), Some("abc123"));
+        assert_eq!(extract_bearer_token(Some("Bearer   xyz")), Some("xyz"));
+    }
+
+    #[test]
+    fn rejects_invalid_or_empty_bearer_token() {
+        assert_eq!(extract_bearer_token(Some("Basic abc123")), None);
+        assert_eq!(extract_bearer_token(Some("Bearer ")), None);
+        assert_eq!(extract_bearer_token(None), None);
+    }
+}
+
 /// JWT Authentication Middleware
 pub struct JwtAuth {
     token_manager: Rc<TokenManager>,
@@ -71,15 +96,12 @@ where
                     .headers()
                     .get("Authorization")
                     .and_then(|h| h.to_str().ok());
-                match auth_header {
-                    Some(h) if h.starts_with("Bearer ") => {
-                        h.strip_prefix("Bearer ").unwrap().to_owned()
-                    }
-                    _ => {
-                        let response = HttpResponse::Unauthorized()
-                            .json(serde_json::json!({ "error": "Missing or invalid session" }));
-                        return Ok(req.into_response(response).map_into_right_body());
-                    }
+                if let Some(token) = extract_bearer_token(auth_header) {
+                    token.to_owned()
+                } else {
+                    let response = HttpResponse::Unauthorized()
+                        .json(serde_json::json!({ "error": "Missing or invalid session" }));
+                    return Ok(req.into_response(response).map_into_right_body());
                 }
             };
             let token = token_str.as_str();

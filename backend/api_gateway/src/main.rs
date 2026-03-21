@@ -56,6 +56,14 @@ fn is_strong_shared_secret(secret: &str) -> bool {
     secret.len() >= 32
 }
 
+fn is_valid_origin_for_env(origin: &str, is_prod: bool) -> bool {
+    let base_valid = origin.starts_with("https://") || origin.starts_with("http://localhost");
+    if !base_valid {
+        return false;
+    }
+    !(is_prod && origin.starts_with("http://localhost"))
+}
+
 fn validate_required_shared_secret(env_key: &str) {
     let value = match env::var(env_key) {
         Ok(v) => v,
@@ -71,6 +79,7 @@ fn validate_required_shared_secret(env_key: &str) {
 }
 
 fn validate_allowed_origins(origins: &str) {
+    let is_prod = env::var("APP_ENV").map(|v| v == "production").unwrap_or(false);
     let parsed: Vec<&str> = origins
         .split(',')
         .map(str::trim)
@@ -81,8 +90,8 @@ fn validate_allowed_origins(origins: &str) {
         std::process::exit(1);
     }
     for origin in parsed {
-        if !(origin.starts_with("https://") || origin.starts_with("http://localhost")) {
-            tracing::error!(origin = origin, "Invalid origin in ALLOWED_ORIGINS");
+        if !is_valid_origin_for_env(origin, is_prod) {
+            tracing::error!(origin = origin, "Invalid origin in ALLOWED_ORIGINS for current environment");
             std::process::exit(1);
         }
     }
@@ -90,7 +99,7 @@ fn validate_allowed_origins(origins: &str) {
 
 #[cfg(test)]
 mod tests {
-    use super::{is_strong_jwt_secret, is_strong_shared_secret};
+    use super::{is_strong_jwt_secret, is_strong_shared_secret, is_valid_origin_for_env};
 
     #[test]
     fn weak_secrets_are_rejected() {
@@ -108,6 +117,14 @@ mod tests {
     fn shared_secret_policy() {
         assert!(!is_strong_shared_secret("short"));
         assert!(is_strong_shared_secret("minimum-32-chars-shared-secret-key!!"));
+    }
+
+    #[test]
+    fn origin_policy_respects_environment() {
+        assert!(is_valid_origin_for_env("https://valueskins.io", true));
+        assert!(!is_valid_origin_for_env("http://localhost:3000", true));
+        assert!(is_valid_origin_for_env("http://localhost:3000", false));
+        assert!(!is_valid_origin_for_env("http://example.com", false));
     }
 }
 

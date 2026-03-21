@@ -25,7 +25,8 @@ function getStickerForProfession(profession: string): string | undefined {
 }
 
 const C = {
-  primary: '#0095F6',
+  primary: '#E1306C',
+  primaryGradient: 'linear-gradient(45deg, #F58529, #DD2A7B, #8134AF, #515BD4)',
   bg: '#000000',
   surface: '#000000',
   surfaceAlt: '#121212',
@@ -71,18 +72,18 @@ const DEAL_LABELS = {
 } as const;
 
 const PROFESSIONS = {
-  'Technology':     { name: 'Technology',     subProfessions: ['Software Engineer','Full Stack Developer','Data Scientist','Product Manager','DevOps Engineer','UX/UI Designer','Tech Entrepreneur','Security Researcher','AI/ML Specialist','Mobile Developer','Blockchain Developer','QA Engineer'] },
+  'Fashion':        { name: 'Fashion',        subProfessions: ['Fashion Influencer','Stylist','Fashion Designer','Model','Personal Shopper','Fashion Photographer','Streetwear Creator','Sustainable Fashion Advocate'] },
+  'Beauty':         { name: 'Beauty',         subProfessions: ['Makeup Artist','Skincare Specialist','Hair Stylist','Nail Artist','Beauty Reviewer','Fragrance Enthusiast','Esthetician','Beauty Educator'] },
+  'Travel':         { name: 'Travel',         subProfessions: ['Travel Blogger','Adventure Creator','Luxury Travel','Budget Travel','Solo Travel','Travel Photographer','Digital Nomad','Hotel Reviewer'] },
+  'Food & Beverage':{ name: 'Food & Beverage',subProfessions: ['Chef','Food Photographer','Recipe Creator','Restaurant Reviewer','Pastry Chef','Nutritionist','Food Stylist','Culinary Student'] },
+  'Fitness':        { name: 'Fitness',        subProfessions: ['Personal Trainer','Yoga Instructor','Fitness Coach','CrossFit Athlete','Pilates Instructor','Bodybuilder','Marathon Runner','Sports Nutritionist'] },
+  'Lifestyle':      { name: 'Lifestyle',      subProfessions: ['Lifestyle Blogger','Minimalist','Wellness Coach','Self-Care Advocate','Productivity Creator','Journal Creator','Morning Routine Creator','Slow Living Advocate'] },
+  'Photography':    { name: 'Photography',    subProfessions: ['Portrait Photographer','Street Photographer','Landscape Photographer','Product Photographer','Wedding Photographer','Drone Photographer','Photo Editor','Analog Film Creator'] },
+  'Interior Design':{ name: 'Interior Design',subProfessions: ['Interior Designer','Home Decor Creator','DIY Home','Minimalist Home','Plant Parent','Organization Expert','Furniture Designer','Renovation Creator'] },
+  'Technology':     { name: 'Technology',     subProfessions: ['Software Engineer','Full Stack Developer','Data Scientist','Product Manager','DevOps Engineer','UX/UI Designer','Tech Entrepreneur','AI/ML Specialist'] },
   'Entertainment':  { name: 'Entertainment',  subProfessions: ['Actor','Comedian','Musician','Producer','Director','Screenwriter','Animator','Voice Actor','Podcast Host','DJ','Streamer','Stunt Performer'] },
-  'Sports':         { name: 'Sports',         subProfessions: ['Professional Athlete','Fitness Coach','Sports Coach','Yoga Instructor','Nutritionist','Sports Analyst','Personal Trainer','Physical Therapist','Sports Manager','Football Player','Cricket Player','Hockey Player','Basketball Player','Tennis Player','Swimmer','Cyclist','Boxer','Martial Artist','Golfer','Gymnast','Track & Field Athlete'] },
-  'Aviation':       { name: 'Aviation',       subProfessions: ['Commercial Pilot','Flight Attendant','Aviation Student','Ground Staff','Air Traffic Controller','Aircraft Engineer','Aviation Safety Officer','Cabin Crew Manager'] },
-  'Healthcare':     { name: 'Healthcare',     subProfessions: ['Doctor','Nurse','Surgeon','Dentist','Therapist','Pharmacist','Medical Student','Health Coach'] },
-  'Finance':        { name: 'Finance',        subProfessions: ['Investment Banker','Financial Advisor','Accountant','Trader','Crypto Analyst','Tax Specialist','Portfolio Manager','Finance Student'] },
-  'Law':            { name: 'Law',            subProfessions: ['Attorney','Judge','Paralegal','Legal Analyst','Contract Specialist','Intellectual Property Lawyer','Corporate Lawyer','Law Student'] },
-  'Education':      { name: 'Education',      subProfessions: ['Professor','Teacher','Tutor','EdTech Creator','Curriculum Designer','Teaching Assistant','Academic Coach','Education Researcher'] },
-  'Art & Design':   { name: 'Art & Design',   subProfessions: ['Graphic Designer','Illustrator','Digital Artist','3D Modeler','Fashion Designer','Interior Designer','Art Director','Concept Artist'] },
+  'Sports':         { name: 'Sports',         subProfessions: ['Professional Athlete','Fitness Coach','Sports Coach','Yoga Instructor','Nutritionist','Sports Analyst','Personal Trainer','Physical Therapist'] },
   'Business':       { name: 'Business',       subProfessions: ['CEO','Entrepreneur','Consultant','Sales Manager','HR Manager','Operations Manager','Marketing Manager','Business Analyst'] },
-  'Real Estate':    { name: 'Real Estate',    subProfessions: ['Real Estate Agent','Property Manager','Real Estate Developer','Real Estate Appraiser','Mortgage Broker','Real Estate Investor','Real Estate Photographer','Urban Planner'] },
-  'Food & Beverage':{ name: 'Food & Beverage',subProfessions: ['Chef','Food Critic','Nutritionist','Pastry Chef','Restaurant Owner','Sommelier','Food Photographer','Culinary Student'] },
 };
 
 const BRAND_MARKETPLACE_CREATORS = [

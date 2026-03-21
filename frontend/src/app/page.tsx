@@ -43,7 +43,7 @@ export default function HomePage() {
             Valueskins MVP
           </h1>
           <p style={{ fontSize: '18px', color: '#8e8e8e', marginBottom: '24px' }}>
-            See how Instagram, LinkedIn & YouTube could integrate Valueskins
+            See how Instagram, LinkedIn, YouTube & TikTok could integrate Valueskins
           </p>
         </div>
 

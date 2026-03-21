@@ -60,8 +60,47 @@ impl TierLimits {
     }
 }
 
+fn normalize_tier(tier: &str) -> &str {
+    match tier {
+        "free" | "basic" | "pro" | "enterprise" => tier,
+        _ => "free",
+    }
+}
+
+fn safe_prefix(input: &str, max_chars: usize) -> String {
+    input.chars().take(max_chars).collect()
+}
+
 /// Per-key sliding-window state: (request count, window start time)
 type ClientMap = Arc<Mutex<HashMap<String, (u32, Instant)>>>;
+const MAX_RATE_KEYS: usize = 50_000;
+const RATE_KEYS_TARGET_AFTER_EVICT: usize = 45_000;
+
+fn evict_rate_keys(map: &mut HashMap<String, (u32, Instant)>, now: Instant, window: Duration) {
+    if map.len() <= MAX_RATE_KEYS {
+        return;
+    }
+
+    map.retain(|_, (_, start)| now.duration_since(*start) < window);
+    if map.len() <= MAX_RATE_KEYS {
+        return;
+    }
+
+    let drop_count = map.len().saturating_sub(RATE_KEYS_TARGET_AFTER_EVICT);
+    if drop_count == 0 {
+        return;
+    }
+
+    let mut oldest: Vec<(String, Instant)> = map
+        .iter()
+        .map(|(k, (_, start))| (k.clone(), *start))
+        .collect();
+    oldest.sort_by_key(|(_, started_at)| *started_at);
+
+    for (key, _) in oldest.into_iter().take(drop_count) {
+        map.remove(&key);
+    }
+}
 
 /// Tiered rate limiter middleware factory.
 pub struct TieredRateLimiter {
@@ -142,8 +181,15 @@ where
 
             // ── Sliding window check ─────────────────────────────────────────
             let (exceeded, current_count) = {
-                let mut map = clients.lock().unwrap();
+                let mut map = match clients.lock() {
+                    Ok(guard) => guard,
+                    Err(poisoned) => {
+                        tracing::error!("TieredRateLimiter mutex poisoned — recovering");
+                        poisoned.into_inner()
+                    }
+                };
                 let now = Instant::now();
+                evict_rate_keys(&mut map, now, window);
                 let entry = map.entry(rate_key.clone()).or_insert((0, now));
 
                 if now.duration_since(entry.1) >= window {
@@ -173,14 +219,20 @@ where
 
             // Pass rate limit headers on successful requests
             let remaining = limit.saturating_sub(current_count);
-            let res = service.call(req).await?;
+            let mut res = service.call(req).await?;
+            res.headers_mut().insert(
+                actix_web::http::header::HeaderName::from_static("x-ratelimit-limit"),
+                actix_web::http::header::HeaderValue::from_str(&limit.to_string()).unwrap_or_else(|_| actix_web::http::header::HeaderValue::from_static("0")),
+            );
+            res.headers_mut().insert(
+                actix_web::http::header::HeaderName::from_static("x-ratelimit-remaining"),
+                actix_web::http::header::HeaderValue::from_str(&remaining.to_string()).unwrap_or_else(|_| actix_web::http::header::HeaderValue::from_static("0")),
+            );
+            res.headers_mut().insert(
+                actix_web::http::header::HeaderName::from_static("x-ratelimit-tier"),
+                actix_web::http::header::HeaderValue::from_str(tier.as_str()).unwrap_or_else(|_| actix_web::http::header::HeaderValue::from_static("free")),
+            );
             let res = res.map_into_left_body();
-
-            // Inject response headers for client awareness
-            // (actix doesn't let us mutate after map_into_left_body easily,
-            // so these headers are set only on the 429 path above where we
-            // control the response; downstream services add them if needed)
-            let _ = remaining; // used by downstream if needed
 
             Ok(res)
         })
@@ -199,18 +251,19 @@ fn resolve_tier_and_key(req: &ServiceRequest) -> (String, String) {
     // Check for API key tier injected by API key validation middleware
     if let Some(api_tier) = req.headers().get("X-Resolved-Tier") {
         if let Ok(tier) = api_tier.to_str() {
+            let tier = normalize_tier(tier);
             let key_prefix = req.headers()
                 .get("X-API-Key")
                 .and_then(|h| h.to_str().ok())
-                .map(|k| &k[..k.len().min(8)])
-                .unwrap_or("apikey");
+                .map(|k| safe_prefix(k, 8))
+                .unwrap_or_else(|| "apikey".to_string());
             return (tier.to_string(), format!("apikey:{}", key_prefix));
         }
     }
 
     // Check JWT claims tier
     if let Some(claims) = req.extensions().get::<Claims>() {
-        let tier = claims.tier.as_deref().unwrap_or("free").to_string();
+        let tier = normalize_tier(claims.tier.as_deref().unwrap_or("free")).to_string();
         let user_id = claims.sub.clone();
         return (tier, format!("user:{}", user_id));
     }
@@ -221,6 +274,48 @@ fn resolve_tier_and_key(req: &ServiceRequest) -> (String, String) {
         .unwrap_or("unknown")
         .to_string();
     ("free".to_string(), format!("ip:{}", ip))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{evict_rate_keys, normalize_tier, safe_prefix, TierLimits, MAX_RATE_KEYS};
+    use std::collections::HashMap;
+    use std::time::{Duration, Instant};
+
+    #[test]
+    fn normalize_tier_rejects_unknown_values() {
+        assert_eq!(normalize_tier("free"), "free");
+        assert_eq!(normalize_tier("enterprise"), "enterprise");
+        assert_eq!(normalize_tier("godmode"), "free");
+    }
+
+    #[test]
+    fn tier_limits_defaults_for_unknown() {
+        let limits = TierLimits::default();
+        assert_eq!(limits.limit_for("basic"), limits.basic);
+        assert_eq!(limits.limit_for("invalid"), limits.free);
+    }
+
+    #[test]
+    fn safe_prefix_handles_unicode_without_panics() {
+        assert_eq!(safe_prefix("abcdefghijk", 8), "abcdefgh");
+        assert_eq!(safe_prefix("😀😀😀😀", 3), "😀😀😀");
+    }
+
+    #[test]
+    fn evict_rate_keys_trims_map_without_full_reset() {
+        let now = Instant::now();
+        let mut map: HashMap<String, (u32, Instant)> = HashMap::new();
+        let initial_len = MAX_RATE_KEYS + 100;
+        for i in 0..initial_len {
+            map.insert(format!("k{i}"), (1, now - Duration::from_secs((i % 120) as u64)));
+        }
+
+        evict_rate_keys(&mut map, now, Duration::from_secs(60));
+        assert!(map.len() <= MAX_RATE_KEYS);
+        assert!(map.len() < initial_len);
+        assert!(!map.is_empty());
+    }
 }
 
 /// Simple IP-only rate limiter (used as first-line defense for public endpoints).
@@ -292,8 +387,15 @@ where
                 .to_string();
 
             let should_limit = {
-                let mut clients = clients.lock().unwrap();
+                let mut clients = match clients.lock() {
+                    Ok(guard) => guard,
+                    Err(poisoned) => {
+                        tracing::error!("RateLimiter mutex poisoned — recovering");
+                        poisoned.into_inner()
+                    }
+                };
                 let now = Instant::now();
+                evict_rate_keys(&mut clients, now, window);
                 let (count, window_start) = clients.entry(ip.clone()).or_insert((0, now));
                 if now.duration_since(*window_start) > window {
                     *count = 0;
