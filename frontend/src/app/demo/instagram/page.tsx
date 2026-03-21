@@ -1845,7 +1845,7 @@ export default function InstagramDemoPage() {
 
       {/* Main Content */}
       <div style={{ flex: 1, display: 'flex', justifyContent: 'center', overflowX: 'hidden', paddingBottom: isMobile ? '60px' : 0 }}>
-        <div style={{ width: '100%', maxWidth: '600px', borderLeft: isMobile ? 'none' : `1px solid ${C.border}`, borderRight: isMobile ? 'none' : `1px solid ${C.border}`, background: C.bg, overflowX: 'hidden' }}>
+        <div style={{ width: '100%', maxWidth: (activeView === 'store' || activeView === 'mim' || activeView === 'admin') ? '900px' : '600px', borderLeft: isMobile ? 'none' : `1px solid ${C.border}`, borderRight: isMobile ? 'none' : `1px solid ${C.border}`, background: C.bg, overflowX: 'hidden' }}>
 
           {/* ── PROFILE VIEW ──────────────────────────────────── */}
           {activeView === 'profile' && (
