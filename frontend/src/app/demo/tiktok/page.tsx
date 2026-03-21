@@ -1173,8 +1173,6 @@ export default function TikTokDemoPage() {
   const brandApprovalPhase: BrandApprovalPhase = (brandDeal?.brandApprovalPhase as BrandApprovalPhase) || 'accepted';
   const setBrandApprovalPhase = (p: BrandApprovalPhase) => { if (brandDealKey) updateDeal(brandDealKey, { brandApprovalPhase: p }); };
   const [dealUploadSimulated, setDealUploadSimulated] = useState(false);
-  const [showScriptEditorCreator, setShowScriptEditorCreator] = useState(false);
-  const [showScriptEditorBrand, setShowScriptEditorBrand] = useState(false);
   type CompletedDeal = { id:number; brand:string; amount:number; completedAt:string; deliverable:string; usageRightsDays?:number; exclusivityDays?:number; exclusivitySkin?:string; disputed?:boolean; disputeReason?:string; disputeStatus?:'filed'|'under_review'|'resolved'; contractSignedAt?:string; };
   const [completedDeals, setCompletedDeals] = useState<CompletedDeal[]>([]);
   // Deliverable checklist tracking (per-deliverable status + TikTok links)
@@ -1202,6 +1200,13 @@ export default function TikTokDemoPage() {
   const brandScriptText = activeDeal?.brandScriptText ?? '';
   const creatorScriptApproved = activeDeal?.creatorScriptApproved ?? false;
   const brandScriptApproved = activeDeal?.brandScriptApproved ?? false;
+  const scriptVersionHistory = (activeDeal?.scriptVersionHistory as any[]) ?? [];
+  const scriptApprovedAt = activeDeal?.scriptApprovedAt ?? '';
+  const [showScriptEditorCreator, setShowScriptEditorCreator] = useState(false);
+  const [showScriptExpandedCreator, setShowScriptExpandedCreator] = useState(false);
+  const [scriptEditReason, setScriptEditReason] = useState('');
+  const [scriptEditorText, setScriptEditorText] = useState(scriptDraft);
+  const [showScriptHistory, setShowScriptHistory] = useState(false);
   const publishEvents = activeDeal?.publishEvents ?? [];
   const appendPublishEvent = (event: { id: number; type: 'video_published' | 'milestone_released'; message: string; at: string }) => {
     if (!activeDealKey) return;
@@ -1366,6 +1371,56 @@ export default function TikTokDemoPage() {
     setActiveView('profile');
     setPurchaseToast(`${label} applied as your ${slotLabel}`);
     setTimeout(() => setPurchaseToast(null), 3000);
+  };
+
+  // Script approval handlers
+  const handleScriptChange = (newText: string, reason?: string) => {
+    if (!activeDealKey || scriptMode === 'non_negotiable') return;
+    const newVersion = (scriptVersion || 0) + 1;
+    const now = new Date();
+    const historyEntry = {
+      version: newVersion,
+      text: scriptDraft,
+      editedBy: marketplaceRole === 'creator' ? 'creator' : 'brand',
+      editedAt: now.toISOString(),
+      reason,
+    };
+    updateDeal(activeDealKey, {
+      scriptDraft: newText,
+      scriptVersion: newVersion,
+      scriptStatus: 'draft',
+      creatorScriptApproved: false,
+      brandScriptApproved: false,
+      scriptVersionHistory: [...scriptVersionHistory, historyEntry],
+    });
+  };
+
+  const handleScriptApprove = () => {
+    if (!activeDealKey) return;
+    const isCreator = marketplaceRole === 'creator';
+    const otherParty = isCreator ? (askModalOpp?.brand || 'Brand') : 'Creator';
+    const bothApproved = (isCreator && brandScriptApproved) || (!isCreator && creatorScriptApproved);
+    const payload: any = {
+      [isCreator ? 'creatorScriptApproved' : 'brandScriptApproved']: true,
+      scriptStatus: bothApproved ? 'approved' : 'submitted',
+    };
+    if (bothApproved) {
+      payload.scriptApprovedAt = new Date().toISOString();
+      payload.scriptStatus = 'approved';
+      firebaseSendNotification(otherParty, 'application', 'Both parties approved the script! Ready to move to deliverables.');
+    } else {
+      firebaseSendNotification(otherParty, 'application', `${isCreator ? 'Creator' : 'Brand'} approved the script. Awaiting your approval to proceed.`);
+    }
+    updateDeal(activeDealKey, payload);
+  };
+
+  const handleScriptRevoke = () => {
+    if (!activeDealKey) return;
+    const isCreator = marketplaceRole === 'creator';
+    updateDeal(activeDealKey, {
+      [isCreator ? 'creatorScriptApproved' : 'brandScriptApproved']: false,
+      scriptStatus: 'draft',
+    });
   };
 
   // Rate intelligence — market rate range based on skin, followers, engagement
@@ -3109,7 +3164,7 @@ export default function TikTokDemoPage() {
                                             </div>
                                           )}
                                           <div style={{ display: 'flex', gap: '8px' }}>
-                                            <button onClick={() => { setDealRoomPhase('softhold'); setGoodsTrackerStatus('goods_preparing'); }} style={{ flex: 2, background: C.primary, border: 'none', padding: '10px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}>
+                                            <button disabled={!creatorScriptApproved || !brandScriptApproved} onClick={() => { if(creatorScriptApproved && brandScriptApproved) { setDealRoomPhase('softhold'); setGoodsTrackerStatus('goods_preparing'); } else setPurchaseToast('Both parties must approve the script first'); }} style={{ flex: 2, background: (creatorScriptApproved && brandScriptApproved) ? C.primary : C.border, border: 'none', padding: '10px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: (creatorScriptApproved && brandScriptApproved) ? 'pointer' : 'not-allowed', fontSize: '13px', opacity: (creatorScriptApproved && brandScriptApproved) ? 1 : 0.5 }}>
                                               Begin Work
                                             </button>
                                             <button onClick={() => setShowCancelDealModal(true)} style={{ flex: 1, background: 'none', border: `1px solid rgba(239,68,68,0.3)`, padding: '10px', borderRadius: '8px', color: '#ef4444', fontSize: '12px', cursor: 'pointer', fontWeight: 500 }}>
@@ -3140,7 +3195,7 @@ export default function TikTokDemoPage() {
                                             </div>
                                           )}
                                           <div style={{ display: 'flex', gap: '8px' }}>
-                                            <button onClick={() => { setDealRoomPhase('softhold'); setC2cContentStatus('content_creating'); }} style={{ flex: 2, background: C.primary, border: 'none', padding: '10px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}>
+                                            <button disabled={!creatorScriptApproved || !brandScriptApproved} onClick={() => { if(creatorScriptApproved && brandScriptApproved) { setDealRoomPhase('softhold'); setC2cContentStatus('content_creating'); } else setPurchaseToast('Both parties must approve the script first'); }} style={{ flex: 2, background: (creatorScriptApproved && brandScriptApproved) ? C.primary : C.border, border: 'none', padding: '10px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: (creatorScriptApproved && brandScriptApproved) ? 'pointer' : 'not-allowed', fontSize: '13px', opacity: (creatorScriptApproved && brandScriptApproved) ? 1 : 0.5 }}>
                                               Begin Work
                                             </button>
                                             <button onClick={() => setShowCancelDealModal(true)} style={{ flex: 1, background: 'none', border: `1px solid rgba(239,68,68,0.3)`, padding: '10px', borderRadius: '8px', color: '#ef4444', fontSize: '12px', cursor: 'pointer', fontWeight: 500 }}>
@@ -3211,7 +3266,7 @@ export default function TikTokDemoPage() {
                                             </div>
                                           )}
                                           <div style={{ display: 'flex', gap: '8px' }}>
-                                            <button onClick={() => { setDealRoomPhase('softhold'); setEscrowFunded(false); setEscrowFundingInProgress(false); setCreatorDealLifecycle('checklist'); }} style={{ flex: 2, background: C.primary, border: 'none', padding: '10px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}>
+                                            <button disabled={!creatorScriptApproved || !brandScriptApproved} onClick={() => { if(creatorScriptApproved && brandScriptApproved) { setDealRoomPhase('softhold'); setEscrowFunded(false); setEscrowFundingInProgress(false); setCreatorDealLifecycle('checklist'); } else setPurchaseToast('Both parties must approve the script first'); }} style={{ flex: 2, background: (creatorScriptApproved && brandScriptApproved) ? C.primary : C.border, border: 'none', padding: '10px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: (creatorScriptApproved && brandScriptApproved) ? 'pointer' : 'not-allowed', fontSize: '13px', opacity: (creatorScriptApproved && brandScriptApproved) ? 1 : 0.5 }}>
                                               Begin Work
                                             </button>
                                             <button onClick={() => setShowCancelDealModal(true)} style={{ flex: 1, background: 'none', border: `1px solid rgba(239,68,68,0.3)`, padding: '10px', borderRadius: '8px', color: '#ef4444', fontSize: '12px', cursor: 'pointer', fontWeight: 500 }}>
@@ -3333,36 +3388,84 @@ export default function TikTokDemoPage() {
                                           {/* Script editor */}
                                           <div style={{ background: C.bg, borderRadius: '8px', border: `1px solid ${C.border}`, padding: '8px' }}>
                                             <button onClick={() => setShowScriptEditorCreator(v => !v)} style={{ width:'100%', background:'none', border:`1px solid ${C.border}`, borderRadius:'6px', padding:'5px 6px', fontSize:'10px', fontWeight:700, color:C.text, cursor:'pointer', marginBottom:'6px' }}>
-                                              Script {showScriptEditorCreator ? '▲' : '▼'}
+                                              Script {showScriptEditorCreator ? '▲' : '▼'} {scriptStatus === 'approved' && <span style={{color:C.success}}>✓</span>}
                                             </button>
                                             {showScriptEditorCreator && (
                                               <>
-                                                <div style={{ fontSize:'9px', color:C.textMuted, marginBottom:'4px' }}>{scriptMode === 'non_negotiable' ? 'Non-negotiable' : scriptMode === 'discussion' ? 'Discussion' : 'Creator freedom'}</div>
-                                                <textarea
-                                                  value={scriptDraft}
-                                                  onChange={(e) => {
-                                                    if (scriptMode === 'non_negotiable') return;
-                                                    if (!activeDealKey) return;
-                                                    updateDeal(activeDealKey, { scriptDraft: e.target.value, scriptStatus: 'draft', creatorScriptApproved: false, brandScriptApproved: false, scriptVersion: (scriptVersion || 0) + 1 });
-                                                  }}
-                                                  rows={4}
-                                                  readOnly={scriptMode === 'non_negotiable'}
-                                                  placeholder="Draft script..."
-                                                  style={{ width:'100%', background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:'6px', padding:'6px', fontSize:'10px', color:C.text, fontFamily:'inherit', resize:'none', boxSizing:'border-box', marginBottom:'6px' }}
-                                                />
+                                                <div style={{ fontSize:'9px', color:C.textMuted, marginBottom:'4px' }}>{scriptMode === 'non_negotiable' ? 'Non-negotiable (locked)' : scriptMode === 'discussion' ? 'Discussion' : 'Creator freedom'}</div>
+                                                {scriptMode === 'non_negotiable' ? (
+                                                  <div style={{ fontSize:'10px', color:C.text, background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:'6px', padding:'6px', marginBottom:'6px', whiteSpace:'pre-wrap', lineHeight:1.4, maxHeight:'100px', overflowY:'auto' }}>
+                                                    {brandScriptText || 'No script provided'}
+                                                  </div>
+                                                ) : (
+                                                  <>
+                                                    <textarea
+                                                      value={scriptDraft}
+                                                      onChange={(e) => {
+                                                        setScriptEditorText(e.target.value);
+                                                        if (activeDealKey) updateDeal(activeDealKey, { scriptDraft: e.target.value, scriptStatus: 'draft', creatorScriptApproved: false, brandScriptApproved: false });
+                                                      }}
+                                                      rows={4}
+                                                      placeholder="Draft script..."
+                                                      style={{ width:'100%', background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:'6px', padding:'6px', fontSize:'10px', color:C.text, fontFamily:'inherit', resize:'none', boxSizing:'border-box', marginBottom:'4px' }}
+                                                    />
+                                                    <div style={{ fontSize:'8px', color:C.textMuted, marginBottom:'4px' }}>{scriptDraft.length} chars · {scriptDraft.split('\n').length} lines</div>
+                                                    <input type="text" value={scriptEditReason} onChange={(e) => setScriptEditReason(e.target.value)} placeholder="Reason for change (optional)" style={{ width:'100%', background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:'4px', padding:'4px 6px', fontSize:'9px', color:C.text, marginBottom:'4px', boxSizing:'border-box' }} />
+                                                    <button
+                                                      onClick={() => { handleScriptChange(scriptDraft, scriptEditReason); setScriptEditReason(''); }}
+                                                      style={{ width:'100%', background:C.primary, border:'none', borderRadius:'4px', padding:'4px', fontSize:'9px', fontWeight:700, color:'#fff', cursor:'pointer', marginBottom:'4px' }}
+                                                    >
+                                                      Save Changes
+                                                    </button>
+                                                  </>
+                                                )}
+                                                <div style={{ background:C.surfaceAlt, borderRadius:'4px', padding:'6px', marginBottom:'4px' }}>
+                                                  <div style={{ fontSize:'9px', fontWeight:700, color:C.text, marginBottom:'3px' }}>Approvals</div>
+                                                  <div style={{ fontSize:'8px', color:C.textSecondary, marginBottom:'3px' }}>
+                                                    {creatorScriptApproved ? '✓' : '○'} You {creatorScriptApproved ? 'approved' : 'not approved'}
+                                                  </div>
+                                                  <div style={{ fontSize:'8px', color:C.textSecondary, marginBottom:'3px' }}>
+                                                    {brandScriptApproved ? '✓' : '○'} Brand {brandScriptApproved ? 'approved' : 'not approved'}
+                                                  </div>
+                                                </div>
                                                 {scriptMode !== 'non_negotiable' && (
+                                                  <>
+                                                    {!creatorScriptApproved ? (
+                                                      <button
+                                                        onClick={handleScriptApprove}
+                                                        style={{ width:'100%', background:C.primary, border:'none', borderRadius:'6px', padding:'6px', fontSize:'10px', fontWeight:700, color:'#fff', cursor:'pointer', marginBottom:'4px' }}
+                                                      >
+                                                        I Approve Script
+                                                      </button>
+                                                    ) : (
+                                                      <button
+                                                        onClick={handleScriptRevoke}
+                                                        style={{ width:'100%', background:'transparent', border:`1px solid ${C.border}`, borderRadius:'6px', padding:'6px', fontSize:'10px', fontWeight:700, color:C.textSecondary, cursor:'pointer', marginBottom:'4px' }}
+                                                      >
+                                                        Revoke Approval
+                                                      </button>
+                                                    )}
+                                                  </>
+                                                )}
+                                                {scriptVersionHistory.length > 0 && (
                                                   <button
-                                                    onClick={() => {
-                                                      if (!activeDealKey) return;
-                                                      updateDeal(activeDealKey, { creatorScriptApproved: true, scriptStatus: 'submitted' });
-                                                      firebaseSendNotification(opp?.brand || 'Brand', 'application', 'Creator clicked: I approve script.');
-                                                    }}
-                                                    style={{ width:'100%', background:C.primary, border:'none', borderRadius:'6px', padding:'6px', fontSize:'10px', fontWeight:700, color:'#fff', cursor:'pointer', marginBottom:'4px' }}
+                                                    onClick={() => setShowScriptHistory(!showScriptHistory)}
+                                                    style={{ width:'100%', background:'none', border:`1px solid ${C.border}`, borderRadius:'4px', padding:'4px', fontSize:'9px', fontWeight:700, color:C.textSecondary, cursor:'pointer' }}
                                                   >
-                                                    I approve
+                                                    Version history ({scriptVersionHistory.length})
                                                   </button>
                                                 )}
-                                                <div style={{ fontSize:'9px', color:C.textMuted }}>C: {creatorScriptApproved ? 'Approved' : 'Pending'} · B: {brandScriptApproved ? 'Approved' : 'Pending'}</div>
+                                                {showScriptHistory && scriptVersionHistory.length > 0 && (
+                                                  <div style={{ fontSize:'8px', color:C.textSecondary, background:C.surfaceAlt, borderRadius:'4px', padding:'4px', marginTop:'4px', maxHeight:'120px', overflowY:'auto' }}>
+                                                    {scriptVersionHistory.slice(-3).reverse().map((v: any, i: number) => (
+                                                      <div key={i} style={{ marginBottom:'6px', paddingBottom:'4px', borderBottom: i < 2 ? `1px solid ${C.border}` : 'none' }}>
+                                                        <div style={{ fontWeight:700 }}>v{v.version} · {v.editedBy === 'creator' ? 'You' : 'Brand'}</div>
+                                                        <div>{new Date(v.editedAt).toLocaleTimeString()}</div>
+                                                        {v.reason && <div style={{color:C.textMuted}}>"{v.reason}"</div>}
+                                                      </div>
+                                                    ))}
+                                                  </div>
+                                                )}
                                               </>
                                             )}
                                           </div>
@@ -5700,10 +5803,10 @@ export default function TikTokDemoPage() {
                                   </div>
                                   <div style={{ fontSize: '11px', color: C.textMuted, marginBottom: '10px', lineHeight: 1.4 }}>Review the counter-offer and choose a response. The creator will be notified once you act.</div>
                                   <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', padding:'8px', marginBottom:'10px' }}>
-                                    <button onClick={() => setShowScriptEditorBrand(v => !v)} style={{ width:'100%', background:'none', border:`1px solid ${C.border}`, borderRadius:'6px', padding:'6px', fontSize:'10px', fontWeight:700, color:C.text, cursor:'pointer', marginBottom:'6px' }}>
-                                      Script {showScriptEditorBrand ? '▲' : '▼'}
+                                    <button onClick={() => setShowScriptEditorCreator(v => !v)} style={{ width:'100%', background:'none', border:`1px solid ${C.border}`, borderRadius:'6px', padding:'6px', fontSize:'10px', fontWeight:700, color:C.text, cursor:'pointer', marginBottom:'6px' }}>
+                                      Script {showScriptEditorCreator ? '▲' : '▼'}
                                     </button>
-                                    {showScriptEditorBrand && (
+                                    {showScriptEditorCreator && (
                                       <>
                                         <textarea
                                           value={brandDeal?.scriptDraft || ''}
@@ -5793,10 +5896,10 @@ export default function TikTokDemoPage() {
                                 <>
                                   <div style={{ fontSize: '12px', fontWeight: 700, color: C.text, marginBottom: '10px' }}>Send your counter</div>
                                   <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', padding:'8px', marginBottom:'10px' }}>
-                                    <button onClick={() => setShowScriptEditorBrand(v => !v)} style={{ width:'100%', background:'none', border:`1px solid ${C.border}`, borderRadius:'6px', padding:'6px', fontSize:'10px', fontWeight:700, color:C.text, cursor:'pointer', marginBottom:'6px' }}>
-                                      Script {showScriptEditorBrand ? '▲' : '▼'}
+                                    <button onClick={() => setShowScriptEditorCreator(v => !v)} style={{ width:'100%', background:'none', border:`1px solid ${C.border}`, borderRadius:'6px', padding:'6px', fontSize:'10px', fontWeight:700, color:C.text, cursor:'pointer', marginBottom:'6px' }}>
+                                      Script {showScriptEditorCreator ? '▲' : '▼'}
                                     </button>
-                                    {showScriptEditorBrand && (
+                                    {showScriptEditorCreator && (
                                       <>
                                         <textarea
                                           value={brandDeal?.scriptDraft || ''}
