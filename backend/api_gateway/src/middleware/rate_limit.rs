@@ -15,6 +15,21 @@
 //!   1. X-API-Key header → look up key in api_keys table, use that tier
 //!   2. JWT claims.tier field → use declared tier
 //!   3. Default: "free"
+//!
+//! ## Multi-Pod Scaling Note
+//!
+//! Current implementation uses in-memory `Arc<Mutex<HashMap>>`. This is per-process.
+//! In a multi-pod Kubernetes deployment, each pod tracks independently.
+//! Effective limit = N_pods × configured_limit.
+//!
+//! **Migration path for Redis-backed rate limiting:**
+//! 1. Add `redis` to shared/Cargo.toml (already a dependency)
+//! 2. Replace `ClientMap` with Redis INCR + EXPIRE (sliding window)
+//! 3. Use `shared::cache::RedisCache` which already handles connection pooling
+//! 4. Fall back to in-memory if Redis is unavailable (graceful degradation)
+//!
+//! For most deployments (< 10 pods), the current approach is sufficient because
+//! the IP-level governor (actix-governor) provides a hard ceiling regardless.
 
 use actix_web::{
     dev::{ServiceRequest, ServiceResponse, Transform, Service},

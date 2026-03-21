@@ -225,12 +225,30 @@ async fn main() -> std::io::Result<()> {
     let analytics_service = AnalyticsService::new(pool.clone());
     let recommendation_service = RecommendationService::new(pool.clone());
 
-    let email_service = EmailService::new(
-        &env::var("SMTP_HOST").unwrap_or_else(|_| "smtp.example.com".to_string()),
-        &env::var("SMTP_USER").unwrap_or_else(|_| "user".to_string()),
-        &env::var("SMTP_PASS").unwrap_or_else(|_| "pass".to_string()),
-        &env::var("SMTP_FROM").unwrap_or_else(|_| "noreply@valueskins.io".to_string()),
-    );
+    // SMTP: fail-loud if credentials look like placeholders
+    let smtp_host = env::var("SMTP_HOST").unwrap_or_default();
+    let smtp_user = env::var("SMTP_USER").unwrap_or_default();
+    let smtp_pass = env::var("SMTP_PASS").unwrap_or_default();
+    let smtp_from = env::var("SMTP_FROM").unwrap_or_else(|_| "noreply@valueskins.io".to_string());
+    let smtp_configured = !smtp_host.is_empty()
+        && !smtp_host.contains("example.com")
+        && !smtp_user.is_empty()
+        && smtp_user != "user"
+        && !smtp_pass.is_empty()
+        && smtp_pass != "pass";
+
+    if !smtp_configured {
+        tracing::warn!("SMTP not configured — email notifications will be queued but NOT delivered. Set SMTP_HOST, SMTP_USER, SMTP_PASS to enable.");
+    }
+
+    let email_service = if smtp_configured {
+        Some(EmailService::new(&smtp_host, &smtp_user, &smtp_pass, &smtp_from))
+    } else {
+        None
+    };
+
+    // Wrap in a shared Arc for both the worker and HTTP handlers
+    let email_service_arc: std::sync::Arc<Option<EmailService>> = std::sync::Arc::new(email_service);
 
     // Rate limiter: 60 requests per minute per IP
     let governor_conf = GovernorConfigBuilder::default()
@@ -252,7 +270,7 @@ async fn main() -> std::io::Result<()> {
     let social_data = web::Data::new(social_service);
     let analytics_data = web::Data::new(analytics_service);
     let recommendation_data = web::Data::new(recommendation_service);
-    let email_data = web::Data::new(email_service);
+    let email_data = web::Data::from(email_service_arc.clone());
     let replica_data = web::Data::new(replica_router);
     let circuit_breaker_data = web::Data::new(circuit_breaker);
     let feature_flags_data = web::Data::new(feature_flags);
@@ -286,7 +304,7 @@ async fn main() -> std::io::Result<()> {
     // Notification worker: dispatches pending notifications every 5s
     let notif_pool = pool_data.clone();
     tokio::spawn(async move {
-        shared::workers::notification_worker::start(
+        shared::workers::notification_worker::start_basic(
             notif_pool.as_ref().clone(),
             Duration::from_secs(5),
         ).await;

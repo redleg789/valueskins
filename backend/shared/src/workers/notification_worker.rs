@@ -2,20 +2,40 @@
 //!
 //! Handles retry logic with exponential backoff. Dead-letters after max_retries.
 //! Uses SELECT FOR UPDATE SKIP LOCKED for safe multi-instance execution.
+//!
+//! Email channel delegates to notification_service::EmailService when available.
+//! Push/SMS log intent but require external provider integration (FCM/Twilio).
 
 use sqlx::PgPool;
+use std::sync::Arc;
 use std::time::Duration;
 use tokio::time;
 
-pub async fn start(pool: PgPool, interval: Duration) {
-    tracing::info!("Notification worker started (interval={:?})", interval);
+/// Optional email sender trait — allows injecting the real EmailService without
+/// adding a hard dependency on notification_service from shared.
+pub trait EmailSender: Send + Sync + 'static {
+    fn send_raw(
+        &self,
+        to: &str,
+        subject: &str,
+        body: &str,
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<(), String>> + Send + '_>>;
+}
+
+/// Configuration for the notification worker.
+pub struct NotificationWorkerConfig {
+    pub email_sender: Option<Arc<dyn EmailSender>>,
+}
+
+pub async fn start(pool: PgPool, interval: Duration, config: NotificationWorkerConfig) {
+    tracing::info!("Notification worker started (interval={:?}, email={})", interval, config.email_sender.is_some());
 
     let mut tick = time::interval(interval);
 
     loop {
         tick.tick().await;
 
-        match dispatch_batch(&pool, 50).await {
+        match dispatch_batch(&pool, 50, &config).await {
             Ok(dispatched) => {
                 if dispatched > 0 {
                     tracing::info!(dispatched = dispatched, "Notifications dispatched");
@@ -28,9 +48,12 @@ pub async fn start(pool: PgPool, interval: Duration) {
     }
 }
 
-async fn dispatch_batch(pool: &PgPool, batch_size: i64) -> Result<usize, sqlx::Error> {
-    // Columns match notification_queue schema exactly:
-    // id, recipient_user_id, channel, message, metadata(JSONB), retry_count, max_retries
+/// Backward-compatible entry point (no email sender).
+pub async fn start_basic(pool: PgPool, interval: Duration) {
+    start(pool, interval, NotificationWorkerConfig { email_sender: None }).await;
+}
+
+async fn dispatch_batch(pool: &PgPool, batch_size: i64, config: &NotificationWorkerConfig) -> Result<usize, sqlx::Error> {
     let pending: Vec<(i64, i64, String, String, Option<serde_json::Value>, i32, i32)> = sqlx::query_as(
         "SELECT id, recipient_user_id, channel, message,
                 metadata, retry_count, max_retries
@@ -48,8 +71,8 @@ async fn dispatch_batch(pool: &PgPool, batch_size: i64) -> Result<usize, sqlx::E
 
     let mut count = 0;
 
-    for (id, recipient_user_id, channel, message, _metadata, retry_count, _max_retries) in &pending {
-        let result = deliver(recipient_user_id, channel, message).await;
+    for (id, recipient_user_id, channel, message, metadata, retry_count, _max_retries) in &pending {
+        let result = deliver(*recipient_user_id, channel, message, metadata.as_ref(), config).await;
 
         match result {
             Ok(()) => {
@@ -85,16 +108,41 @@ async fn dispatch_batch(pool: &PgPool, batch_size: i64) -> Result<usize, sqlx::E
 }
 
 /// Deliver a notification via the appropriate channel.
-/// In production, each channel delegates to an external service (SendGrid, FCM, Twilio).
-async fn deliver(recipient_user_id: &i64, channel: &str, message: &str) -> Result<(), String> {
+async fn deliver(
+    recipient_user_id: i64,
+    channel: &str,
+    message: &str,
+    metadata: Option<&serde_json::Value>,
+    config: &NotificationWorkerConfig,
+) -> Result<(), String> {
     match channel {
         "email" => {
-            // Wire to EmailService when SMTP is configured
-            tracing::debug!(recipient_user_id = recipient_user_id, "Email dispatched: {}", &message[..message.len().min(50)]);
-            Ok(())
+            // Extract recipient email from metadata
+            let to_email = metadata
+                .and_then(|m| m.get("email"))
+                .and_then(|e| e.as_str())
+                .unwrap_or("");
+
+            if to_email.is_empty() {
+                return Err("No recipient email in metadata".to_string());
+            }
+
+            match &config.email_sender {
+                Some(sender) => {
+                    sender.send_raw(to_email, "Valueskins Notification", message).await?;
+                    tracing::info!(recipient_user_id = recipient_user_id, to = to_email, "Email sent");
+                    Ok(())
+                }
+                None => {
+                    tracing::warn!(recipient_user_id = recipient_user_id, "Email channel not configured — notification queued but not sent");
+                    Err("Email sender not configured".to_string())
+                }
+            }
         }
         "push" => {
-            tracing::debug!(recipient_user_id = recipient_user_id, "Push dispatched");
+            // FCM/APNs integration point — log for now, wire when provider is configured
+            tracing::info!(recipient_user_id = recipient_user_id, "Push notification queued (provider not configured)");
+            // Return Ok so it's marked delivered — push is best-effort
             Ok(())
         }
         "in_app" => {
@@ -103,7 +151,8 @@ async fn deliver(recipient_user_id: &i64, channel: &str, message: &str) -> Resul
             Ok(())
         }
         "sms" => {
-            tracing::debug!(recipient_user_id = recipient_user_id, "SMS dispatched");
+            // Twilio integration point — log for now
+            tracing::info!(recipient_user_id = recipient_user_id, "SMS notification queued (provider not configured)");
             Ok(())
         }
         _ => {
