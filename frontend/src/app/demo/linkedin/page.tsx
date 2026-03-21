@@ -512,8 +512,7 @@ export default function TikTokDemoPage() {
         if (d.profileDealTypes) setProfileDealTypes(d.profileDealTypes);
         if (d.willingToBarter !== undefined) setWillingToBarter(d.willingToBarter);
         if (d.notifications) setNotifications(d.notifications);
-        if (d.onboardingDone !== undefined) setOnboardingDone(d.onboardingDone);
-        if (d.joinedCommunities) setJoinedCommunities(d.joinedCommunities);
+        if (d.onboardingDone !== undefined)        if (d.joinedCommunities) setJoinedCommunities(d.joinedCommunities);
         if (d.dmMessages) setDmMessages(d.dmMessages);
         if (d.communityMessages) setCommunityMessages(d.communityMessages);
         if (d.skinXP) setSkinXP(d.skinXP);
@@ -596,7 +595,6 @@ export default function TikTokDemoPage() {
       localStorage.removeItem('vs_demo_hidden_skins');
       localStorage.setItem('vs_demo_version', VERSION);
       setValueSkins({});
-      setOnboardingDone(false);
       setMarketplaceRole('none');
       setBrandValueSkins([]);
       setActiveBrandSkin(null);

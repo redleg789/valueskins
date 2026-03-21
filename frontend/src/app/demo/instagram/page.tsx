@@ -573,7 +573,6 @@ export default function InstagramDemoPage() {
       localStorage.removeItem('vs_demo_hidden_skins');
       localStorage.setItem('vs_demo_version', VERSION);
       setValueSkins({});
-      setOnboardingDone(false);
       setMarketplaceRole('none');
       setBrandValueSkins([]);
       setActiveBrandSkin(null);
