@@ -1,3 +1,12 @@
+// ARCHITECTURE: See ARCHITECTURE_GUIDE.txt for codebase overview
+// FILE PURPOSE: All HTTP requests from frontend to backend go through here
+// ROLE IN SYSTEM: Bridge between React components and backend services
+// WHAT IT DOES:
+//   - Makes fetch() calls to backend
+//   - Examples: GET /creators, POST /deals, PATCH /deals/123
+//   - Returns JSON data that components display
+// CALLED BY: instagram/page.tsx, tiktok/page.tsx, useDealSync.ts, and other components
+
 import type { DealStatus, DeliverableType, OpportunityStatus } from './deals';
 
 // In browser: proxy through Next.js API route to avoid CORS issues.

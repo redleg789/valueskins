@@ -1,4 +1,14 @@
 /**
+ * ARCHITECTURE: See ARCHITECTURE_GUIDE.txt for codebase overview
+ * FILE PURPOSE: Core state management hook for deal negotiation
+ * ROLE IN SYSTEM: Central place where all deal data lives (offers, scripts, chat, etc)
+ * WHAT IT DOES:
+ *   - Manages deal state using React hooks
+ *   - Syncs with localStorage (offline support)
+ *   - Syncs with Firebase (real-time notifications)
+ *   - Syncs across browser tabs via BroadcastChannel
+ * CONSUMED BY: instagram/page.tsx, tiktok/page.tsx, youtube/page.tsx, linkedin/page.tsx
+ *
  * Deal synchronization hook — bridges localStorage state with backend API.
  *
  * Strategy:

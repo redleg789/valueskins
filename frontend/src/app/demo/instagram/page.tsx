@@ -1,5 +1,9 @@
 'use client';
-// per-skin levels, individual skin click, onboarding gate
+// ARCHITECTURE: See ARCHITECTURE_GUIDE.txt for codebase overview
+// FILE PURPOSE: Main Instagram demo page - shows creator & brand workflow
+// ROLE IN SYSTEM: Frontend UI component that displays marketplace, deals, chat, script negotiation
+// DATA SOURCE: useDealSync.ts (local state) + api.ts (backend calls) + Firebase (real-time)
+// OUTPUT: Interactive UI where creators browse offers and negotiate with brands
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
