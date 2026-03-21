@@ -1335,14 +1335,14 @@ export default function TikTokDemoPage() {
       localStorage.setItem('vs_demo_persist', JSON.stringify({
         marketplaceRole, brandValueSkins, activeBrandSkin, profileName, profileBio, profileAvatar,
         selectedCountry, selectedLanguages, rateCard, profileDealTypes, willingToBarter,
-        notifications, onboardingDone, joinedCommunities, dmMessages, communityMessages,
+        notifications, joinedCommunities, dmMessages, communityMessages,
         skinXP, brandProfileSelections, creatorEnergy, metrics, skinPitchTexts, skinPitchVideos,
         skinPositions,
       }));
     } catch (e) { /* ignore */ }
   }, [marketplaceRole, brandValueSkins, activeBrandSkin, profileName, profileBio, profileAvatar,
       selectedCountry, selectedLanguages, rateCard, profileDealTypes, willingToBarter,
-      notifications, onboardingDone, joinedCommunities, dmMessages, communityMessages,
+      notifications, joinedCommunities, dmMessages, communityMessages,
       skinXP, brandProfileSelections, creatorEnergy, metrics, skinsLoaded, skinPitchTexts, skinPitchVideos,
       skinPositions]);
 

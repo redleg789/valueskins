@@ -344,16 +344,6 @@ export default function InstagramDemoPage() {
   const [notifications, setNotifications] = useState<Array<{ id: number; type: string; text: string; time: string; read: boolean }>>([]);
 
   // Onboarding
-  const [onboardingDone, setOnboardingDone] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    try {
-      const s = localStorage.getItem('vs_demo_persist');
-      if (s) { const d = JSON.parse(s); return d.onboardingDone === true; }
-    } catch (e) { /* ignore */ }
-    return false;
-  });
-  const [onboardingStep, setOnboardingStep] = useState(0);
-
   // Creator profile preview (from brand marketplace)
   const [previewCreator, setPreviewCreator] = useState<typeof BRAND_MARKETPLACE_CREATORS[0] | null>(null);
 
@@ -503,7 +493,6 @@ export default function InstagramDemoPage() {
         if (d.profileDealTypes) setProfileDealTypes(d.profileDealTypes);
         if (d.willingToBarter !== undefined) setWillingToBarter(d.willingToBarter);
         if (d.notifications) setNotifications(d.notifications);
-        if (d.onboardingDone !== undefined) setOnboardingDone(d.onboardingDone);
         if (d.joinedCommunities) setJoinedCommunities(d.joinedCommunities);
         if (d.dmMessages) setDmMessages(d.dmMessages);
         if (d.communityMessages) setCommunityMessages(d.communityMessages);
@@ -1246,14 +1235,14 @@ export default function InstagramDemoPage() {
       localStorage.setItem('vs_demo_persist', JSON.stringify({
         marketplaceRole, brandValueSkins, activeBrandSkin, profileName, profileBio, profileAvatar,
         selectedCountry, selectedLanguages, rateCard, profileDealTypes, willingToBarter,
-        notifications, onboardingDone, joinedCommunities, dmMessages, communityMessages,
+        notifications, joinedCommunities, dmMessages, communityMessages,
         skinXP, brandProfileSelections, creatorEnergy, metrics, skinPitchTexts, skinPitchVideos,
         skinPositions,
       }));
     } catch (e) { /* ignore */ }
   }, [marketplaceRole, brandValueSkins, activeBrandSkin, profileName, profileBio, profileAvatar,
       selectedCountry, selectedLanguages, rateCard, profileDealTypes, willingToBarter,
-      notifications, onboardingDone, joinedCommunities, dmMessages, communityMessages,
+      notifications, joinedCommunities, dmMessages, communityMessages,
       skinXP, brandProfileSelections, creatorEnergy, metrics, skinsLoaded, skinPitchTexts, skinPitchVideos,
       skinPositions]);
 
@@ -1502,69 +1491,6 @@ export default function InstagramDemoPage() {
     <div style={{ background: C.bg, minHeight: '100vh', display: 'flex', color: C.text, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif', overflowX: 'hidden' }}>
 
       {/* ── ONBOARDING OVERLAY ──────────────────────────── */}
-      {!onboardingDone && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100000 }}>
-          <div style={{ background: C.surface, borderRadius: '16px', padding: '32px', maxWidth: '420px', width: '90vw', border: `1px solid ${C.border}`, textAlign: 'center' }}>
-            {onboardingStep === 0 && (
-              <>
-                <div style={{ fontSize: '22px', fontWeight: 700, color: C.text, marginBottom: '8px' }}>Welcome to ValueSkins</div>
-                <div style={{ fontSize: '14px', color: C.textSecondary, lineHeight: 1.5, marginBottom: '24px' }}>
-                  ValueSkins are verified professional identities that unlock communities, marketplace access, and brand deals.
-                </div>
-                <button onClick={() => setOnboardingStep(1)} style={{ width: '100%', padding: '12px', borderRadius: '8px', border: 'none', background: C.primary, color: '#fff', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>
-                  Get Started
-                </button>
-              </>
-            )}
-            {onboardingStep === 1 && (
-              <>
-                <div style={{ fontSize: '18px', fontWeight: 700, color: C.text, marginBottom: '8px' }}>Choose Your Role</div>
-                <div style={{ fontSize: '13px', color: C.textSecondary, marginBottom: '20px' }}>Are you a creator looking for deals, or a brand looking for creators?</div>
-                <div style={{ display: 'flex', gap: '12px' }}>
-                  <button onClick={() => { setMarketplaceRole('creator'); setOnboardingStep(2); }}
-                    style={{ flex: 1, padding: '16px 12px', borderRadius: '10px', border: `1px solid ${C.border}`, background: C.card, color: C.text, cursor: 'pointer', transition: 'border-color 0.15s' }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = C.primary; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; }}>
-                    <div style={{ fontSize: '24px', marginBottom: '8px' }}>Creator</div>
-                    <div style={{ fontSize: '11px', color: C.textMuted }}>Get discovered by brands through your ValueSkin</div>
-                  </button>
-                  <button onClick={() => { setMarketplaceRole('brand'); setOnboardingStep(2); }}
-                    style={{ flex: 1, padding: '16px 12px', borderRadius: '10px', border: `1px solid ${C.border}`, background: C.card, color: C.text, cursor: 'pointer', transition: 'border-color 0.15s' }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = C.primary; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; }}>
-                    <div style={{ fontSize: '24px', marginBottom: '8px' }}>Brand</div>
-                    <div style={{ fontSize: '11px', color: C.textMuted }}>Find and negotiate with verified creators</div>
-                  </button>
-                </div>
-              </>
-            )}
-            {onboardingStep === 2 && (
-              <>
-                <div style={{ fontSize: '18px', fontWeight: 700, color: C.text, marginBottom: '8px' }}>Get Your First ValueSkin</div>
-                <div style={{ fontSize: '13px', color: C.textSecondary, lineHeight: 1.5, marginBottom: '20px' }}>
-                  Visit the Store to pick a ValueSkin that matches your profession. Your skin unlocks matching creators, communities, and deals.
-                </div>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <button onClick={() => { setOnboardingDone(true); setActiveView('store'); }}
-                    style={{ flex: 1, padding: '12px', borderRadius: '8px', border: 'none', background: C.primary, color: '#fff', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>
-                    Go to Store
-                  </button>
-                  <button onClick={() => { setOnboardingDone(true); }}
-                    style={{ flex: 1, padding: '12px', borderRadius: '8px', border: `1px solid ${C.border}`, background: 'transparent', color: C.textSecondary, fontSize: '14px', fontWeight: 500, cursor: 'pointer' }}>
-                    Skip for now
-                  </button>
-                </div>
-              </>
-            )}
-            {/* Step indicators */}
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', marginTop: '20px' }}>
-              {[0, 1, 2].map(s => (
-                <div key={s} style={{ width: s === onboardingStep ? '20px' : '6px', height: '6px', borderRadius: '3px', background: s === onboardingStep ? C.primary : C.border, transition: 'all 0.2s' }} />
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ValueSkin Showcase Modal — add video + pitch when clicking your skin */}
       {showSkinShowcaseModal && (
