@@ -2,11 +2,11 @@ import type { NextConfig } from "next";
 
 const cspHeader = [
   "default-src 'self'",
-  "script-src 'self'",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com",
   "img-src 'self' data: blob: https:",
-  "connect-src 'self' https://api.valueskins.io http://localhost:8080 wss:",
+  "connect-src 'self' https://api.valueskins.io http://localhost:8080 wss: https://*.firebaseio.com https://*.googleapis.com",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",

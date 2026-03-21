@@ -329,9 +329,6 @@ export default function InstagramDemoPage() {
   const [activeView, setActiveView] = useState<'profile' | 'mim' | 'store' | 'admin' | 'messages' | 'settings' | 'explore' | 'notifications'>('profile');
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
-    console.log('activeView changed to:', activeView);
-  }, [activeView]);
-  useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 480);
     check();
     window.addEventListener('resize', check);
@@ -1837,8 +1834,8 @@ export default function InstagramDemoPage() {
             <NavItem label="Create" active={false} onClick={() => { setActiveView('profile'); }} />
             <NavItem label="Profile" active={activeView === 'profile'} onClick={() => setActiveView('profile')} />
             <div style={{ height: '1px', background: C.border, margin: '12px 0' }} />
-            <NavItem label="Marketplace" active={activeView === 'mim'} onClick={() => { alert('Marketplace clicked!'); setMarketplaceRole('none'); setActiveView('mim'); }} />
-            <NavItem label="Store" active={activeView === 'store'} onClick={() => { alert('Store clicked! activeView was: ' + activeView); setActiveView('store'); }} />
+            <NavItem label="Marketplace" active={activeView === 'mim'} onClick={() => { setMarketplaceRole('none'); setActiveView('mim'); }} />
+            <NavItem label="Store" active={activeView === 'store'} onClick={() => setActiveView('store')} />
             <NavItem label="Settings" active={activeView === 'settings'} onClick={() => setActiveView('settings')} />
             <div style={{ height: '1px', background: C.border, margin: '12px 0' }} />
             <NavItem label="Admin Panel" active={activeView === 'admin'} onClick={() => setActiveView('admin')} />
