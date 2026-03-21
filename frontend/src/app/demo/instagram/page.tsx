@@ -329,6 +329,9 @@ export default function InstagramDemoPage() {
   const [activeView, setActiveView] = useState<'profile' | 'mim' | 'store' | 'admin' | 'messages' | 'settings' | 'explore' | 'notifications'>('profile');
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
+    console.log('activeView changed to:', activeView);
+  }, [activeView]);
+  useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 480);
     check();
     window.addEventListener('resize', check);
