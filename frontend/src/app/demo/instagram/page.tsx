@@ -25,7 +25,7 @@ function getStickerForProfession(profession: string): string | undefined {
 }
 
 const C = {
-  primary: '#E1306C',
+  primary: '#3B82F6',
   primaryGradient: 'linear-gradient(45deg, #F58529, #DD2A7B, #8134AF, #515BD4)',
   bg: '#000000',
   surface: '#000000',
@@ -46,9 +46,9 @@ const C = {
   danger: '#ED4956',
   dangerBg: 'rgba(237,73,86,0.08)',
   dangerBorder: 'rgba(237,73,86,0.25)',
-  accent: '#7C3AED',
-  accentBg: 'rgba(124,58,237,0.08)',
-  accentBorder: 'rgba(124,58,237,0.25)',
+  accent: '#3B82F6',
+  accentBg: 'rgba(59,130,246,0.08)',
+  accentBorder: 'rgba(59,130,246,0.25)',
 };
 
 // ---- Deal type helpers ----
