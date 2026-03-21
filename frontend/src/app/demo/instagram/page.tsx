@@ -903,7 +903,8 @@ export default function InstagramDemoPage() {
   // Admin pricing
   const [communityTierCredits, setCommunityTierCredits] = useState(0);
   const [marketplaceTierCredits, setMarketplaceTierCredits] = useState(100);
-  const [platformCommissionPct, setPlatformCommissionPct] = useState(10); // Platform commission % per deal
+  const [platformCommissionPct, setPlatformCommissionPct] = useState(5); // Platform commission % per deal
+  const [commissionPaidBy, setCommissionPaidBy] = useState<'brand' | 'creator'>('brand'); // Who pays the commission
 
   // Admin-configurable insight visibility
   const [visibleInsights, setVisibleInsights] = useState<Record<string, boolean>>({
@@ -5492,7 +5493,7 @@ export default function InstagramDemoPage() {
                                   {(dealType === 'paid' || dealType === 'c2c_paid') && (() => {
                                     const totalDeal = parseInt(agreedDealAmount) || 0;
                                     const commission = Math.round(totalDeal * platformCommissionPct / 100);
-                                    const creatorPayout = totalDeal - commission;
+                                    const creatorPayout = commissionPaidBy === 'brand' ? totalDeal : totalDeal - commission;
                                     const advancePaid = brandDeal?.paymentMilestones?.advance === 'released';
                                     return (
                                       <div style={{ marginBottom: '12px' }}>
@@ -5501,10 +5502,10 @@ export default function InstagramDemoPage() {
                                         <div style={{ display:'flex', justifyContent:'space-between', padding:'8px 10px', background:'rgba(0,149,246,0.04)', borderRadius:'6px', marginBottom:'6px', border:`1px solid rgba(0,149,246,0.15)` }}>
                                           <div>
                                             <div style={{ fontSize:'12px', fontWeight:700, color:C.text }}>Agreed Amount</div>
-                                            <div style={{ fontSize:'10px', color:C.textMuted }}>Platform fee: {platformCommissionPct}% (${commission.toLocaleString()})</div>
+                                            <div style={{ fontSize:'10px', color:C.textMuted }}>Platform fee: {platformCommissionPct}% (${commission.toLocaleString()}) {commissionPaidBy === 'brand' ? '— paid by brand' : '— deducted from creator'}</div>
                                           </div>
                                           <div style={{ textAlign:'right' }}>
-                                            <div style={{ fontSize:'14px', fontWeight:800, color:C.text }}>${totalDeal.toLocaleString()}</div>
+                                            <div style={{ fontSize:'14px', fontWeight:800, color:C.text }}>${commissionPaidBy === 'brand' ? (totalDeal + commission).toLocaleString() : totalDeal.toLocaleString()}</div>
                                             <div style={{ fontSize:'10px', color:C.success }}>Creator gets ${creatorPayout.toLocaleString()}</div>
                                           </div>
                                         </div>
@@ -5594,14 +5595,15 @@ export default function InstagramDemoPage() {
                                   {(dealType === 'paid' || dealType === 'c2c_paid') && brandApprovalPhase === 'funding' && (() => {
                                     const totalAmount = parseInt(agreedDealAmount) || 5000;
                                     const commission = Math.round(totalAmount * platformCommissionPct / 100);
-                                    const creatorPayout = totalAmount - commission;
+                                    const creatorPayout = commissionPaidBy === 'brand' ? totalAmount : totalAmount - commission;
+                                    const brandDeposit = commissionPaidBy === 'brand' ? totalAmount + commission : totalAmount;
                                     const advanceToCreator = Math.round(creatorPayout * 0.3);
                                     return (
                                       <div style={{ marginTop:'12px' }}>
                                         <div style={{ fontSize:'11px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'10px' }}>Fund Escrow Account</div>
                                         <div style={{ background:C.bg, borderRadius:'10px', padding:'14px', border:`1px solid ${C.border}`, marginBottom:'12px' }}>
                                           <div style={{ fontSize:'12px', color:C.textSecondary, marginBottom:'10px', lineHeight:1.5 }}>
-                                            Deposit <strong style={{ color:C.text }}>${totalAmount.toLocaleString()}</strong> into escrow. Platform fee ({platformCommissionPct}%): <strong style={{ color:C.text }}>${commission.toLocaleString()}</strong>. Creator receives <strong style={{ color:C.success }}>${creatorPayout.toLocaleString()}</strong>.
+                                            Deposit <strong style={{ color:C.text }}>${brandDeposit.toLocaleString()}</strong> into escrow {commissionPaidBy === 'brand' ? `(includes ${platformCommissionPct}% fee: $${commission.toLocaleString()})` : ''}. Creator receives <strong style={{ color:C.success }}>${creatorPayout.toLocaleString()}</strong>.
                                           </div>
                                           <div style={{ display:'flex', justifyContent:'space-between', fontSize:'11px', marginBottom:'6px', padding:'6px 8px', background:'rgba(46,125,50,0.06)', borderRadius:'4px', border:'1px solid rgba(46,125,50,0.15)' }}>
                                             <span style={{ color:C.success, fontWeight:600 }}>Advance (30%)</span>
@@ -6689,8 +6691,50 @@ export default function InstagramDemoPage() {
                     Deal Commission
                   </div>
                   <p style={{ fontSize: '13px', color: C.textSecondary, marginBottom: '16px', lineHeight: 1.5 }}>
-                    Set the platform commission percentage charged on every completed deal. This is deducted from the total deal amount before payout to the creator.
+                    Set the platform commission percentage charged on every completed deal.
                   </p>
+                  {/* Commission Payer Toggle */}
+                  <div style={{ marginBottom: '16px', padding: '12px 14px', background: C.card, borderRadius: '10px', border: `1px solid ${C.border}` }}>
+                    <div style={{ fontSize: '11px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', marginBottom: '10px' }}>
+                      Commission Paid By
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button
+                        onClick={() => setCommissionPaidBy('brand')}
+                        style={{
+                          flex: 1,
+                          padding: '10px 12px',
+                          borderRadius: '6px',
+                          border: 'none',
+                          background: commissionPaidBy === 'brand' ? C.primary : C.surface,
+                          color: commissionPaidBy === 'brand' ? '#fff' : C.textSecondary,
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                        }}
+                      >
+                        Brand (Creator keeps full amount)
+                      </button>
+                      <button
+                        onClick={() => setCommissionPaidBy('creator')}
+                        style={{
+                          flex: 1,
+                          padding: '10px 12px',
+                          borderRadius: '6px',
+                          border: 'none',
+                          background: commissionPaidBy === 'creator' ? C.primary : C.surface,
+                          color: commissionPaidBy === 'creator' ? '#fff' : C.textSecondary,
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                        }}
+                      >
+                        Creator (Deducted from payout)
+                      </button>
+                    </div>
+                  </div>
                   <div style={{ padding: '14px 16px', background: C.card, borderRadius: '10px', border: `1px solid ${C.border}` }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                       <div>
@@ -6725,15 +6769,38 @@ export default function InstagramDemoPage() {
                     </div>
                     {/* Example calculation */}
                     <div style={{ marginTop: '12px', padding: '10px', background: C.bg, borderRadius: '6px', border: `1px solid ${C.border}` }}>
-                      <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', marginBottom: '6px' }}>Example: $10,000 deal</div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '3px' }}>
-                        <span style={{ color: C.textSecondary }}>Platform revenue</span>
-                        <span style={{ color: C.primary, fontWeight: 700 }}>${(10000 * platformCommissionPct / 100).toLocaleString()}</span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
-                        <span style={{ color: C.textSecondary }}>Creator payout</span>
-                        <span style={{ color: C.success, fontWeight: 700 }}>${(10000 - 10000 * platformCommissionPct / 100).toLocaleString()}</span>
-                      </div>
+                      <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', marginBottom: '8px' }}>Example: $10,000 deal @ {platformCommissionPct}%</div>
+                      {commissionPaidBy === 'brand' ? (
+                        <>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '3px' }}>
+                            <span style={{ color: C.textSecondary }}>Creator receives</span>
+                            <span style={{ color: C.success, fontWeight: 700 }}>$10,000</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
+                            <span style={{ color: C.textSecondary }}>Brand pays (total)</span>
+                            <span style={{ color: C.primary, fontWeight: 700 }}>${(10000 + 10000 * platformCommissionPct / 100).toLocaleString()}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginTop: '3px', paddingTop: '3px', borderTop: `1px solid ${C.border}`, color: C.textMuted }}>
+                            <span>ValueSkins revenue</span>
+                            <span>${(10000 * platformCommissionPct / 100).toLocaleString()}</span>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '3px' }}>
+                            <span style={{ color: C.textSecondary }}>Creator receives</span>
+                            <span style={{ color: C.success, fontWeight: 700 }}>${(10000 - 10000 * platformCommissionPct / 100).toLocaleString()}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
+                            <span style={{ color: C.textSecondary }}>Brand pays (total)</span>
+                            <span style={{ color: C.primary, fontWeight: 700 }}>$10,000</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginTop: '3px', paddingTop: '3px', borderTop: `1px solid ${C.border}`, color: C.textMuted }}>
+                            <span>ValueSkins revenue</span>
+                            <span>${(10000 * platformCommissionPct / 100).toLocaleString()}</span>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                   <button
