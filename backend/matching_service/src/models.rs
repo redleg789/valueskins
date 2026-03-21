@@ -15,7 +15,7 @@ pub struct MatchingRequirement {
 
 /// A matched creator returned to a brand.
 /// Only includes creators whose ValuSkin matches the brand's requirements.
-#[derive(Debug, Serialize, sqlx::FromRow)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct MatchedCreator {
     pub user_id: i64,
     pub username: String,

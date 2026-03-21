@@ -7,7 +7,6 @@ use tracing::{error, info, warn};
 /// Uses connection pooling (ConnectionManager) for high concurrency.
 #[derive(Clone)]
 pub struct RedisCache {
-    client: Client,
     pub manager: Option<ConnectionManager>,
 }
 
@@ -34,8 +33,8 @@ impl RedisCache {
     /// Initialize connection to Redis
     pub async fn new(redis_url: &str) -> Result<Self, CacheError> {
         let client = Client::open(redis_url)?;
-        
-        let manager = match ConnectionManager::new(client.clone()).await {
+
+        let manager = match ConnectionManager::new(client).await {
             Ok(mgr) => Some(mgr),
             Err(e) => {
                 warn!("Failed to connect to Redis cache. Running in local/degraded mode. Error: {}", e);
@@ -47,13 +46,12 @@ impl RedisCache {
             info!("Redis Cache ConnectionManager initialized successfully.");
         }
 
-        Ok(Self { client, manager })
+        Ok(Self { manager })
     }
 
     /// Default degraded cache that just acts as an in-memory pass-through
     pub fn new_disabled() -> Self {
-        let client = Client::open("redis://localhost:6379").unwrap();
-        Self { client, manager: None }
+        Self { manager: None }
     }
 
     /// Read an item from Cache
@@ -79,7 +77,7 @@ impl RedisCache {
         };
 
         let json = serde_json::to_string(value)?;
-        conn.set_ex(key, json, ttl.as_secs()).await?;
+        let _ : () = conn.set_ex(key, json, ttl.as_secs()).await?;
         Ok(())
     }
 
@@ -90,7 +88,7 @@ impl RedisCache {
             None => return Ok(()),
         };
 
-        conn.del(key).await?;
+        let _ : () = conn.del(key).await?;
         Ok(())
     }
 }
