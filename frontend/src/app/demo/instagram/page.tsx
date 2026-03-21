@@ -1419,10 +1419,13 @@ export default function InstagramDemoPage() {
       payload.scriptApprovedAt = new Date().toISOString();
       payload.scriptStatus = 'approved';
       firebaseSendNotification(otherParty, 'application', 'Both parties approved the script! Ready to move to deliverables.');
+      setPurchaseToast('Script approved by both parties');
     } else {
       firebaseSendNotification(otherParty, 'application', `${isCreator ? 'Creator' : 'Brand'} approved the script. Awaiting your approval to proceed.`);
+      setPurchaseToast(`Script approved by ${isCreator ? 'you' : 'brand'}`);
     }
     updateDeal(activeDealKey, payload);
+    setTimeout(() => setPurchaseToast(null), 2500);
   };
 
   const handleScriptRevoke = () => {
@@ -1432,6 +1435,8 @@ export default function InstagramDemoPage() {
       [isCreator ? 'creatorScriptApproved' : 'brandScriptApproved']: false,
       scriptStatus: 'draft',
     });
+    setPurchaseToast('Approval revoked');
+    setTimeout(() => setPurchaseToast(null), 2500);
   };
 
   // Which professions are already assigned (to show status in store)

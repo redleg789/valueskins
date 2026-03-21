@@ -933,6 +933,7 @@ export default function TikTokDemoPage() {
   const [communityTierCredits, setCommunityTierCredits] = useState(0);
   const [marketplaceTierCredits, setMarketplaceTierCredits] = useState(100);
   const [platformCommissionPct, setPlatformCommissionPct] = useState(10); // Platform commission % per deal
+  const [commissionPaidBy, setCommissionPaidBy] = useState<'brand' | 'creator'>('brand'); // Who pays the commission
 
   // Admin-configurable insight visibility
   const [visibleInsights, setVisibleInsights] = useState<Record<string, boolean>>({
@@ -1393,6 +1394,8 @@ export default function TikTokDemoPage() {
       brandScriptApproved: false,
       scriptVersionHistory: [...scriptVersionHistory, historyEntry],
     });
+    setPurchaseToast('Script edited');
+    setTimeout(() => setPurchaseToast(null), 2500);
   };
 
   const handleScriptApprove = () => {
@@ -1408,10 +1411,13 @@ export default function TikTokDemoPage() {
       payload.scriptApprovedAt = new Date().toISOString();
       payload.scriptStatus = 'approved';
       firebaseSendNotification(otherParty, 'application', 'Both parties approved the script! Ready to move to deliverables.');
+      setPurchaseToast('Script approved by both parties');
     } else {
       firebaseSendNotification(otherParty, 'application', `${isCreator ? 'Creator' : 'Brand'} approved the script. Awaiting your approval to proceed.`);
+      setPurchaseToast(`Script approved by ${isCreator ? 'you' : 'brand'}`);
     }
     updateDeal(activeDealKey, payload);
+    setTimeout(() => setPurchaseToast(null), 2500);
   };
 
   const handleScriptRevoke = () => {
@@ -1421,6 +1427,8 @@ export default function TikTokDemoPage() {
       [isCreator ? 'creatorScriptApproved' : 'brandScriptApproved']: false,
       scriptStatus: 'draft',
     });
+    setPurchaseToast('Approval revoked');
+    setTimeout(() => setPurchaseToast(null), 2500);
   };
 
   // Rate intelligence — market rate range based on skin, followers, engagement
@@ -7291,8 +7299,50 @@ export default function TikTokDemoPage() {
                     Deal Commission
                   </div>
                   <p style={{ fontSize: '13px', color: C.textSecondary, marginBottom: '16px', lineHeight: 1.5 }}>
-                    Set the platform commission percentage charged on every completed deal. This is deducted from the total deal amount before payout to the creator.
+                    Set the platform commission percentage charged on every completed deal.
                   </p>
+                  {/* Commission Payer Toggle */}
+                  <div style={{ marginBottom: '16px', padding: '12px 14px', background: C.card, borderRadius: '10px', border: `1px solid ${C.border}` }}>
+                    <div style={{ fontSize: '11px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', marginBottom: '10px' }}>
+                      Commission Paid By
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button
+                        onClick={() => setCommissionPaidBy('brand')}
+                        style={{
+                          flex: 1,
+                          padding: '10px 12px',
+                          borderRadius: '6px',
+                          border: 'none',
+                          background: commissionPaidBy === 'brand' ? C.primary : C.surface,
+                          color: commissionPaidBy === 'brand' ? '#fff' : C.textSecondary,
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                        }}
+                      >
+                        Brand (Creator keeps full amount)
+                      </button>
+                      <button
+                        onClick={() => setCommissionPaidBy('creator')}
+                        style={{
+                          flex: 1,
+                          padding: '10px 12px',
+                          borderRadius: '6px',
+                          border: 'none',
+                          background: commissionPaidBy === 'creator' ? C.primary : C.surface,
+                          color: commissionPaidBy === 'creator' ? '#fff' : C.textSecondary,
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                        }}
+                      >
+                        Creator (Deducted from payout)
+                      </button>
+                    </div>
+                  </div>
                   <div style={{ padding: '14px 16px', background: C.card, borderRadius: '10px', border: `1px solid ${C.border}` }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                       <div>
@@ -7327,15 +7377,38 @@ export default function TikTokDemoPage() {
                     </div>
                     {/* Example calculation */}
                     <div style={{ marginTop: '12px', padding: '10px', background: C.bg, borderRadius: '6px', border: `1px solid ${C.border}` }}>
-                      <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', marginBottom: '6px' }}>Example: $10,000 deal</div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '3px' }}>
-                        <span style={{ color: C.textSecondary }}>Platform revenue</span>
-                        <span style={{ color: C.primary, fontWeight: 700 }}>${(10000 * platformCommissionPct / 100).toLocaleString()}</span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
-                        <span style={{ color: C.textSecondary }}>Creator payout</span>
-                        <span style={{ color: C.success, fontWeight: 700 }}>${(10000 - 10000 * platformCommissionPct / 100).toLocaleString()}</span>
-                      </div>
+                      <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', marginBottom: '8px' }}>Example: $10,000 deal @ {platformCommissionPct}%</div>
+                      {commissionPaidBy === 'brand' ? (
+                        <>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '3px' }}>
+                            <span style={{ color: C.textSecondary }}>Creator receives</span>
+                            <span style={{ color: C.success, fontWeight: 700 }}>$10,000</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
+                            <span style={{ color: C.textSecondary }}>Brand pays (total)</span>
+                            <span style={{ color: C.primary, fontWeight: 700 }}>${(10000 + 10000 * platformCommissionPct / 100).toLocaleString()}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginTop: '3px', paddingTop: '3px', borderTop: `1px solid ${C.border}`, color: C.textMuted }}>
+                            <span>ValueSkins revenue</span>
+                            <span>${(10000 * platformCommissionPct / 100).toLocaleString()}</span>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '3px' }}>
+                            <span style={{ color: C.textSecondary }}>Creator receives</span>
+                            <span style={{ color: C.success, fontWeight: 700 }}>${(10000 - 10000 * platformCommissionPct / 100).toLocaleString()}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
+                            <span style={{ color: C.textSecondary }}>Brand pays (total)</span>
+                            <span style={{ color: C.primary, fontWeight: 700 }}>$10,000</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginTop: '3px', paddingTop: '3px', borderTop: `1px solid ${C.border}`, color: C.textMuted }}>
+                            <span>ValueSkins revenue</span>
+                            <span>${(10000 * platformCommissionPct / 100).toLocaleString()}</span>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                   <button
