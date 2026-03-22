@@ -6,3 +6,4 @@
 pub mod email;
 pub mod templates;
 pub mod handlers;
+pub mod messaging;
