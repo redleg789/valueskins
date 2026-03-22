@@ -26,5 +26,6 @@ members = [
     "contract_service",
     "reputation_service",
     "payment_service",
+    "storage_service",
 ]
 
