@@ -19,3 +19,4 @@ pub mod completeness_service;
 pub mod payout_service;
 pub mod interest_service;
 pub mod interest_handlers;
+pub mod opportunity_source;

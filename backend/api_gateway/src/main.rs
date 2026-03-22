@@ -1,5 +1,6 @@
 mod handlers;
 mod middleware;
+mod routes;
 
 use actix_cors::Cors;
 use actix_governor::{Governor, GovernorConfigBuilder};
@@ -428,6 +429,16 @@ async fn main() -> std::io::Result<()> {
                     .route("/badge/{persona_id}/{profession_id}.svg", web::get().to(brand_handlers::get_badge_svg))
                     .route("/usage", web::get().to(brand_handlers::get_usage_stats))
                     .route("/professions", web::get().to(brand_handlers::list_professions))
+                    // Creator data source API (mock for MVP, real API when Instagram/YouTube/TikTok/LinkedIn adopt)
+                    .service(
+                        web::scope("/creators")
+                            .configure(routes::creators::configure)
+                    )
+                    // Opportunity/Campaign API (database-backed)
+                    .service(
+                        web::scope("/opportunities")
+                            .configure(routes::opportunities::configure)
+                    )
             )
 
             // Referral code validation is public
