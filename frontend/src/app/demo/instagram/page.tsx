@@ -1167,6 +1167,9 @@ export default function InstagramDemoPage() {
   const [dealUploadSimulated, setDealUploadSimulated] = useState(false);
   type CompletedDeal = { id:number; brand:string; amount:number; completedAt:string; deliverable:string; usageRightsDays?:number; exclusivityDays?:number; exclusivitySkin?:string; disputed?:boolean; disputeReason?:string; disputeStatus?:'filed'|'under_review'|'resolved'; contractSignedAt?:string; tipped?:number; };
   const [completedDeals, setCompletedDeals] = useState<CompletedDeal[]>([]);
+  // Track uploaded deliverables across all deals (for "Uploaded" profile tab)
+  type UploadedItem = { id:string; brand:string; dealId:string; format:string; link:string; uploadedAt:string; };
+  const [uploadedItems, setUploadedItems] = useState<UploadedItem[]>([]);
   // Deliverable checklist tracking (per-deliverable status + Instagram links)
   // Deliverable statuses + links — synced from shared deal state for brand to see creator submissions
   const deliverableStatuses: Record<number, 'pending'|'linking'|'uploaded'|'approved'> = (activeDeal?.deliverableStatuses as Record<number, 'pending'|'linking'|'uploaded'|'approved'>) || {};
@@ -2066,7 +2069,7 @@ export default function InstagramDemoPage() {
 
               {/* Tabs */}
               <div style={{ borderTop: `1px solid ${C.border}`, display: 'flex' }}>
-                {['posts', 'reels', 'tagged', 'insights', 'deals'].map((tab) => (
+                {['posts', 'reels', 'tagged', 'insights', 'deals', 'uploaded'].map((tab) => (
                   <div key={tab} onClick={() => setActiveTab(tab)} style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', height: '44px', borderTop: activeTab === tab ? `2px solid ${tab === 'insights' ? C.primary : C.text}` : '2px solid transparent', color: activeTab === tab ? (tab === 'insights' ? C.primary : C.text) : C.textMuted, cursor: 'pointer', fontWeight: activeTab === tab ? '600' : 'normal', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                     {tab}
                   </div>
@@ -2126,6 +2129,32 @@ export default function InstagramDemoPage() {
                     <div style={{ fontSize:'11px', fontWeight:700, color:C.text, marginBottom:'2px' }}>Total earned: ${completedDeals.reduce((s,d) => s+d.amount, 0).toLocaleString()}</div>
                     <div style={{ fontSize:'11px', color:C.textSecondary }}>{completedDeals.length} deal{completedDeals.length !== 1 ? 's' : ''} completed</div>
                   </div>
+                </div>
+              )}
+
+              {/* Uploaded Tab Content */}
+              {activeTab === 'uploaded' && (
+                <div style={{ padding: '20px' }}>
+                  {uploadedItems.length === 0 ? (
+                    <div style={{ textAlign:'center', padding:'40px 20px', color:C.textMuted }}>
+                      <div style={{ fontSize:'14px', marginBottom:'4px' }}>No uploads yet</div>
+                      <div style={{ fontSize:'12px' }}>Complete deals and upload deliverables to see them here.</div>
+                    </div>
+                  ) : (
+                    <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(100px, 1fr))', gap:'8px' }}>
+                      {uploadedItems.map((item, i) => (
+                        <a key={i} href={item.link} target="_blank" rel="noopener noreferrer" style={{ position:'relative', paddingBottom:'100%', overflow:'hidden', borderRadius:'8px', background:C.card, border:`1px solid ${C.border}`, textDecoration:'none', display:'block' }}>
+                          <div style={{ position:'absolute', inset:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'8px', background:'rgba(0,0,0,0.6)', opacity:0, transition:'opacity 0.2s', cursor:'pointer' }} onMouseEnter={(e) => e.currentTarget.style.opacity = '1'} onMouseLeave={(e) => e.currentTarget.style.opacity = '0'}>
+                            <div style={{ fontSize:'10px', fontWeight:700, color:C.text, marginBottom:'4px' }}>{item.format}</div>
+                            <div style={{ fontSize:'9px', color:C.textMuted }}>{item.brand}</div>
+                          </div>
+                          <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 12h6m-3-3v6"/></svg>
+                          </div>
+                        </a>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -3066,12 +3095,25 @@ export default function InstagramDemoPage() {
                                                 )}
                                                 <div style={{ background:C.surfaceAlt, borderRadius:'4px', padding:'6px', marginBottom:'4px' }}>
                                                   <div style={{ fontSize:'9px', fontWeight:700, color:C.text, marginBottom:'3px' }}>Approvals</div>
-                                                  <div style={{ fontSize:'8px', color:C.textSecondary, marginBottom:'3px' }}>
-                                                    {creatorScriptApproved ? '✓' : '○'} You {creatorScriptApproved ? 'approved' : 'not approved'}
-                                                  </div>
-                                                  <div style={{ fontSize:'8px', color:C.textSecondary, marginBottom:'3px' }}>
-                                                    {brandScriptApproved ? '✓' : '○'} Brand {brandScriptApproved ? 'approved' : 'not approved'}
-                                                  </div>
+                                                  {marketplaceRole === 'creator' ? (
+                                                    <>
+                                                      <div style={{ fontSize:'8px', color:C.textSecondary, marginBottom:'3px' }}>
+                                                        {creatorScriptApproved ? '✓' : '○'} You {creatorScriptApproved ? 'approved' : 'not approved'}
+                                                      </div>
+                                                      <div style={{ fontSize:'8px', color:brandScriptApproved ? C.success : C.textSecondary, marginBottom:'3px' }}>
+                                                        {brandScriptApproved ? '✓' : '○'} Brand {brandScriptApproved ? 'approved' : 'not approved'}
+                                                      </div>
+                                                    </>
+                                                  ) : (
+                                                    <>
+                                                      <div style={{ fontSize:'8px', color:C.textSecondary, marginBottom:'3px' }}>
+                                                        {creatorScriptApproved ? '✓' : '○'} Creator {creatorScriptApproved ? 'approved' : 'not approved'}
+                                                      </div>
+                                                      <div style={{ fontSize:'8px', color:brandScriptApproved ? C.success : C.textSecondary, marginBottom:'3px' }}>
+                                                        {brandScriptApproved ? '✓' : '○'} You {brandScriptApproved ? 'approved' : 'not approved'}
+                                                      </div>
+                                                    </>
+                                                  )}
                                                 </div>
                                                 {scriptMode !== 'non_negotiable' && (
                                                   <>
@@ -3225,12 +3267,25 @@ export default function InstagramDemoPage() {
                                                 )}
                                                 <div style={{ background:C.surfaceAlt, borderRadius:'4px', padding:'6px', marginBottom:'4px' }}>
                                                   <div style={{ fontSize:'9px', fontWeight:700, color:C.text, marginBottom:'3px' }}>Approvals</div>
-                                                  <div style={{ fontSize:'8px', color:C.textSecondary, marginBottom:'3px' }}>
-                                                    {creatorScriptApproved ? '✓' : '○'} You {creatorScriptApproved ? 'approved' : 'not approved'}
-                                                  </div>
-                                                  <div style={{ fontSize:'8px', color:C.textSecondary, marginBottom:'3px' }}>
-                                                    {brandScriptApproved ? '✓' : '○'} Brand {brandScriptApproved ? 'approved' : 'not approved'}
-                                                  </div>
+                                                  {marketplaceRole === 'creator' ? (
+                                                    <>
+                                                      <div style={{ fontSize:'8px', color:C.textSecondary, marginBottom:'3px' }}>
+                                                        {creatorScriptApproved ? '✓' : '○'} You {creatorScriptApproved ? 'approved' : 'not approved'}
+                                                      </div>
+                                                      <div style={{ fontSize:'8px', color:brandScriptApproved ? C.success : C.textSecondary, marginBottom:'3px' }}>
+                                                        {brandScriptApproved ? '✓' : '○'} Brand {brandScriptApproved ? 'approved' : 'not approved'}
+                                                      </div>
+                                                    </>
+                                                  ) : (
+                                                    <>
+                                                      <div style={{ fontSize:'8px', color:C.textSecondary, marginBottom:'3px' }}>
+                                                        {creatorScriptApproved ? '✓' : '○'} Creator {creatorScriptApproved ? 'approved' : 'not approved'}
+                                                      </div>
+                                                      <div style={{ fontSize:'8px', color:brandScriptApproved ? C.success : C.textSecondary, marginBottom:'3px' }}>
+                                                        {brandScriptApproved ? '✓' : '○'} You {brandScriptApproved ? 'approved' : 'not approved'}
+                                                      </div>
+                                                    </>
+                                                  )}
                                                 </div>
                                                 {scriptMode !== 'non_negotiable' && (
                                                   <>
@@ -3780,6 +3835,15 @@ export default function InstagramDemoPage() {
                                                                 setDeliverableLinks(prev => ({ ...prev, [di]: inputVal }));
                                                                 setDeliverableStatuses(prev => ({ ...prev, [di]: 'uploaded' }));
                                                                 setDeliverableLinkInputs(prev => ({ ...prev, [di]: '' }));
+                                                                const newUploadItem: UploadedItem = {
+                                                                  id: Date.now().toString() + Math.random(),
+                                                                  brand: opp.brand || 'Unknown',
+                                                                  dealId: activeDealKey || '',
+                                                                  format: d.format,
+                                                                  link: inputVal,
+                                                                  uploadedAt: new Date().toLocaleDateString('en-US', { month:'short', day:'numeric', year:'2-digit' })
+                                                                };
+                                                                setUploadedItems(prev => [...prev, newUploadItem]);
                                                               }}
                                                               style={{ background: isValidIgUrl(inputVal) ? C.success : C.border, border:'none', borderRadius:'6px', padding:'7px 12px', color:'#fff', fontSize:'11px', fontWeight:700, cursor: isValidIgUrl(inputVal) ? 'pointer' : 'not-allowed', opacity: isValidIgUrl(inputVal) ? 1 : 0.5, flexShrink:0 }}
                                                             >Confirm</button>
@@ -6435,16 +6499,14 @@ export default function InstagramDemoPage() {
                                   </div>
                                   <button
                                     onClick={() => {
-                                      const creatorIdx = BRAND_MARKETPLACE_CREATORS.findIndex(c => c.name === creatorName && c.valueSkin === creatorSkin);
-                                      if (creatorIdx !== -1) {
-                                        setNegotiatingCreator(creatorIdx);
-                                        setMarketplaceTab('creators');
-                                        // Scroll to the creator card after tab switch renders
-                                        setTimeout(() => {
-                                          const el = document.querySelector(`[data-creator-idx="${creatorIdx}"]`);
-                                          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                                        }, 150);
-                                      }
+                                      // Navigate brand to the messages view to view the chat for this deal
+                                      // The deal is already active since we're viewing it in the Sent tab
+                                      setActiveView('messages');
+                                      // Scroll to chat section
+                                      setTimeout(() => {
+                                        const chatEl = document.querySelector('[data-chat-room]');
+                                        if (chatEl) chatEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                      }, 150);
                                     }}
                                     style={{ background:C.primary, border:'none', borderRadius:'6px', padding:'5px 12px', color:'#fff', fontSize:'10px', fontWeight:600, cursor:'pointer' }}
                                   >Enter Deal Room</button>
@@ -6464,51 +6526,50 @@ export default function InstagramDemoPage() {
                           <div style={{ fontSize:'13px', marginBottom:'4px' }}>No proposals yet</div>
                           <div style={{ fontSize:'11px' }}>Creators will appear here once they enter negotiations or apply to campaigns.</div>
                         </div>
-                      ) : sharedApplications.filter(a => a.status !== 'invited').map((app,i) => {
+                      ) : sharedApplications.filter(a => a.status !== 'invited').slice(0, 15).map((app,i) => {
                         const camp = campaigns.find(c=>c.id===app.campaignId);
                         const displayName = app.creatorName || app.creatorHandle;
                         const igUrl = app.creatorInstagramUrl || `https://instagram.com/${app.creatorHandle.replace('@', '')}`;
+                        const allApps = sharedApplications.filter(a => a.status !== 'invited');
                         return (
-                          <div key={i} style={{ display:'flex', alignItems:'center', gap:'12px', padding:'14px 0', borderBottom: i < sharedApplications.filter(a => a.status !== 'invited').length - 1 ? `1px solid ${C.border}` : 'none' }}>
+                          <div key={i} style={{ display:'flex', alignItems:'center', gap:'10px', padding:'12px 0', borderBottom: i < Math.min(15, allApps.length) - 1 ? `1px solid ${C.border}` : 'none' }}>
                             {/* Avatar */}
                             <a href={igUrl} target="_blank" rel="noopener noreferrer" style={{ flexShrink:0 }}>
                               <img
                                 src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${displayName.replace(/[\s@]/g, '')}`}
                                 alt={displayName}
-                                style={{ width:'44px', height:'44px', borderRadius:'50%', background:C.card }}
+                                style={{ width:'40px', height:'40px', borderRadius:'50%', background:C.card }}
                               />
                             </a>
-                            {/* Info */}
+                            {/* Compact Info */}
                             <div style={{ flex:1, minWidth:0 }}>
-                              <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
-                                <span style={{ fontSize:'14px', fontWeight:700, color:C.text }}>{displayName}</span>
+                              <div style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'2px' }}>
+                                <span style={{ fontSize:'13px', fontWeight:700, color:C.text }}>{displayName}</span>
                                 {app.creatorLevel && (
-                                  <span style={{ fontSize:'10px', fontWeight:700, color:'#fff', background:app.creatorLevel>=4?C.primary:app.creatorLevel>=2?C.warning:C.textMuted, padding:'2px 6px', borderRadius:'4px' }}>Lv.{app.creatorLevel}</span>
+                                  <span style={{ fontSize:'9px', fontWeight:700, color:'#fff', background:app.creatorLevel>=4?C.primary:app.creatorLevel>=2?C.warning:C.textMuted, padding:'1px 5px', borderRadius:'3px' }}>Lv{app.creatorLevel}</span>
                                 )}
                               </div>
-                              <div style={{ fontSize:'12px', color:C.textSecondary }}>{app.creatorHandle} · {app.creatorProfession}</div>
-                              {/* Stat row */}
-                              <div style={{ display:'flex', gap:'12px', marginTop:'4px' }}>
-                                {app.creatorEngagement && <span style={{ fontSize:'12px', color:C.textMuted }}>{app.creatorEngagement} eng.</span>}
-                                {app.creatorMatchScore && <span style={{ fontSize:'12px', color:C.primary, fontWeight:600 }}>{app.creatorMatchScore} match</span>}
-                                {app.creatorRate && <span style={{ fontSize:'12px', color:C.textMuted }}>{app.creatorRate}</span>}
+                              <div style={{ fontSize:'11px', color:C.textSecondary, display:'flex', alignItems:'center', gap:'6px' }}>
+                                {app.creatorHandle}
+                                {app.creatorMatchScore && <span style={{ color:C.primary, fontWeight:600 }}>· {app.creatorMatchScore}</span>}
                               </div>
                             </div>
                             {/* Action */}
-                            <div style={{ flexShrink:0, textAlign:'right' }}>
-                              {app.creatorRate && <div style={{ fontSize:'13px', fontWeight:700, color:C.text, marginBottom:'4px' }}>{app.creatorRate}</div>}
+                            <div style={{ flexShrink:0 }}>
                               {app.status === 'pending' ? (
-                                <div style={{ display:'flex', gap:'6px' }}>
-                                  <button onClick={() => { persistApplications(sharedApplications.map(a=>a.id===app.id?{...a,status:'accepted' as const}:a)); setPurchaseToast('Accepted'); setTimeout(()=>setPurchaseToast(null),3000); }} style={{ background:C.primary, border:'none', borderRadius:'8px', padding:'8px 14px', fontSize:'12px', fontWeight:600, color:'#fff', cursor:'pointer' }}>Accept</button>
-                                  <button onClick={() => { persistApplications(sharedApplications.map(a=>a.id===app.id?{...a,status:'rejected' as const}:a)); setPurchaseToast('Declined'); setTimeout(()=>setPurchaseToast(null),3000); }} style={{ background:'transparent', border:`1px solid ${C.border}`, borderRadius:'8px', padding:'8px 14px', fontSize:'12px', fontWeight:600, color:C.textSecondary, cursor:'pointer' }}>Decline</button>
-                                </div>
+                                <button onClick={() => { persistApplications(sharedApplications.map(a=>a.id===app.id?{...a,status:'accepted' as const}:a)); setPurchaseToast('Accepted'); setTimeout(()=>setPurchaseToast(null),3000); }} style={{ background:C.primary, border:'none', borderRadius:'6px', padding:'6px 12px', fontSize:'11px', fontWeight:600, color:'#fff', cursor:'pointer' }}>Accept</button>
                               ) : (
-                                <span style={{ fontSize:'11px', fontWeight:600, color:app.status==='accepted'?C.success:C.textMuted, textTransform:'uppercase' }}>{app.status}</span>
+                                <span style={{ fontSize:'10px', fontWeight:600, color:app.status==='accepted'?C.success:C.textMuted, textTransform:'uppercase' }}>{app.status}</span>
                               )}
                             </div>
                           </div>
                         );
                       })}
+                      {sharedApplications.filter(a => a.status !== 'invited').length > 15 && (
+                        <div style={{ textAlign:'center', padding:'12px 0', borderTop:`1px solid ${C.border}` }}>
+                          <button style={{ background:'none', border:'none', color:C.primary, fontSize:'12px', fontWeight:600, cursor:'pointer', textDecoration:'underline' }}>View more ({sharedApplications.filter(a => a.status !== 'invited').length - 15})</button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </>
