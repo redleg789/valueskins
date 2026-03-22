@@ -25,5 +25,6 @@ members = [
     "credit_service",
     "contract_service",
     "reputation_service",
+    "payment_service",
 ]
 

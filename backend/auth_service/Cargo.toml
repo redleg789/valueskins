@@ -15,3 +15,5 @@ chrono = "0.4"
 async-trait = "0.1"
 log = "0.4"
 sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "postgres", "uuid", "chrono", "macros"] }
+urlencoding = "2.1"
+base64 = "0.21"

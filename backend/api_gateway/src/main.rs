@@ -439,6 +439,11 @@ async fn main() -> std::io::Result<()> {
                         web::scope("/opportunities")
                             .configure(routes::opportunities::configure)
                     )
+                    // Reputation API (calculated from deal history)
+                    .service(
+                        web::scope("/creators")
+                            .configure(routes::reputation::configure)
+                    )
             )
 
             // Referral code validation is public
