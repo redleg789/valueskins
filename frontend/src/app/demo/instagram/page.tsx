@@ -2936,6 +2936,15 @@ export default function InstagramDemoPage() {
                                     </>
                                   )}
 
+                                  {/* Creator has sent counter, waiting for brand response */}
+                                  {dealRoomPhase === 'counter' && (
+                                    <div style={{ background: 'rgba(255,193,7,0.06)', borderRadius: '8px', padding: '12px', border: `1px solid rgba(255,193,7,0.2)` }}>
+                                      <div style={{ fontSize: '11px', fontWeight: 700, color: '#f59e0b', marginBottom: '6px' }}>Counter Offer Sent</div>
+                                      <div style={{ fontSize: '12px', color: C.text, marginBottom: '8px' }}>Your counter-offer of <strong>${parseInt(dealCounterAmount || '0').toLocaleString()}</strong> has been sent to the brand.</div>
+                                      <div style={{ fontSize: '11px', color: C.textSecondary, lineHeight: 1.5 }}>Waiting for their response — they can accept, reject, or send a counter-offer back.</div>
+                                    </div>
+                                  )}
+
                                   {dealRoomPhase === 'formal_offer' && (() => {
                                     const agreedPrice = dealCounterAmount || dealOfferAmount || opp.budget.replace(/[^0-9]/g, '') || '5000';
                                     const totalPrice = parseInt(agreedPrice) || 5000;
@@ -3696,7 +3705,9 @@ export default function InstagramDemoPage() {
                                                 setTimeout(() => setPurchaseToast(null), 2000);
                                               }}
                                               style={{ width: '100%', background: dealCounterAmount && parseInt(dealCounterAmount) > 0 ? C.primary : C.border, border: 'none', padding: '6px', borderRadius: '6px', color: '#fff', fontWeight: 600, fontSize: '11px', cursor: dealCounterAmount && parseInt(dealCounterAmount) > 0 ? 'pointer' : 'not-allowed', opacity: dealCounterAmount && parseInt(dealCounterAmount) > 0 ? 1 : 0.5 }}
-                                            >Send Counter</button>
+                                            >
+                                              Send Counter
+                                            </button>
                                           </div>
 
                                           {/* Payment split */}
@@ -6407,7 +6418,7 @@ export default function InstagramDemoPage() {
                               </div>
                             )}
                             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                              <span style={{ fontSize:'10px', color:C.textMuted }}>{c.applicants} applicant{c.applicants!==1?'s':''}{c.deadline?` · Deadline ${c.deadline}`:''}</span>
+                              <span style={{ fontSize:'10px', color:C.textMuted }}>{c.deadline?`Deadline ${c.deadline}`:''}</span>
                               <span style={{ fontSize:'10px', fontWeight:700, color:c.status==='expired'?C.textMuted:c.status==='open'?C.success:'#888', background:c.status==='expired'?'rgba(239,68,68,0.1)':c.status==='open'?C.surfaceAlt:'rgba(136,136,136,0.1)', padding:'2px 8px', borderRadius:'6px', textTransform:'uppercase' }}>{c.status}</span>
                             </div>
                           </div>
