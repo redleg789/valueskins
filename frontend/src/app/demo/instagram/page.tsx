@@ -2795,18 +2795,8 @@ export default function InstagramDemoPage() {
                                 </button>
                               </div>
 
-                              {/* Deal Room — shown when negotiating */}
-                              {!isNegotiating ? null : negotiatingOpp !== i && hasActiveDeal ? (
-                                <div onClick={() => setNegotiatingOpp(i)} style={{ background: C.surfaceAlt, borderRadius: '10px', padding: '12px 14px', border: `1px solid rgba(0,102,204,0.3)`, cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
-                                    <span style={{ fontSize: '11px', fontWeight: 700, color: C.primary, textTransform: 'uppercase', letterSpacing: '0.6px' }}>Deal Room · <a href={opp.instagramUrl || `https://instagram.com/${opp.brand.replace(/\s+/g, '')}`} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ color: C.primary, textDecoration: 'none', cursor: 'pointer' }} onMouseEnter={e => { e.currentTarget.style.textDecoration = 'underline'; }} onMouseLeave={e => { e.currentTarget.style.textDecoration = 'none'; }}>{opp.brand}</a></span>
-                                  </div>
-                                  <span style={{ fontSize: '10px', fontWeight: 600, color: C.textSecondary, background: C.bg, padding: '2px 8px', borderRadius: '4px', border: `1px solid ${C.border}` }}>
-                                    {existingDeal.phase === 'chatroom' ? 'In Chat' : existingDeal.phase === 'formal_offer' ? 'Formal Offer' : existingDeal.phase === 'accepted' ? 'Accepted' : existingDeal.phase === 'checklist' ? 'Checklist' : existingDeal.phase === 'softhold' ? 'Soft Hold' : 'Active'}
-                                  </span>
-                                </div>
-                              ) : (
+                              {/* Deal Room — shown when negotiating or when there's an active deal */}
+                              {isNegotiating && (negotiatingOpp === i || hasActiveDeal) && (
                                 <div style={{ background: C.card, borderRadius: '16px', padding: '16px', border: `1px solid ${C.border}` }}>
                                   {/* Deal Room Back Button */}
                                   <button onClick={() => setNegotiatingOpp(null)} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: C.textSecondary, cursor: 'pointer', fontSize: '12px', fontWeight: 600, padding: '0 0 10px', marginBottom: '2px' }}>
@@ -5595,8 +5585,24 @@ export default function InstagramDemoPage() {
                                     {brandOfferNonNegotiable && <div style={{ fontSize: '10px', fontWeight: 700, color: 'rgba(239,68,68,0.85)', marginTop: '6px', padding: '3px 6px', background: 'rgba(239,68,68,0.07)', borderRadius: '4px', display: 'inline-block' }}>Non-negotiable offer</div>}
                                   </div>
 
-<div style={{ marginBottom: '12px' }}>
-                                    <div style={{ fontSize: '11px', color: C.textMuted, marginBottom: '4px', fontWeight: 600 }}>Your offer per post</div>
+                                  <div style={{ marginBottom: '12px' }}>
+                                    <div style={{ fontSize: '11px', color: C.textMuted, marginBottom: '8px', fontWeight: 600 }}>Creator's rate card</div>
+                                    <div style={{ background: C.bg, borderRadius: '8px', padding: '10px', marginBottom: '12px', border: `1px solid ${C.border}` }}>
+                                      {creator.rateCard && Object.entries(creator.rateCard).length > 0 ? (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                          {Object.entries(creator.rateCard).map(([format, rate]) => (
+                                            <div key={format} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: C.text }}>
+                                              <span style={{ textTransform: 'capitalize', color: C.textMuted }}>{format}</span>
+                                              <span style={{ fontWeight: 600 }}>${parseInt(rate).toLocaleString()}</span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      ) : (
+                                        <div style={{ fontSize: '12px', color: C.textMuted }}>Standard rate: ${parseInt(creator.rate).toLocaleString()}/post</div>
+                                      )}
+                                    </div>
+
+                                    <div style={{ fontSize: '11px', color: C.textMuted, marginBottom: '4px', fontWeight: 600 }}>Your offer</div>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                       <span style={{ fontSize: '18px', fontWeight: 800, color: C.text }}>$</span>
                                       <input
@@ -5607,7 +5613,7 @@ export default function InstagramDemoPage() {
                                         onFocus={(e) => { e.currentTarget.style.borderColor = C.warning; }}
                                         onBlur={(e) => { e.currentTarget.style.borderColor = C.border; }}
                                       />
-                                      <span style={{ fontSize: '12px', color: C.textMuted }}>/post</span>
+                                      <span style={{ fontSize: '12px', color: C.textMuted }}>/any format</span>
                                     </div>
                                   </div>
 
