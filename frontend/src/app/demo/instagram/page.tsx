@@ -148,18 +148,60 @@ const BRAND_MARKETPLACE_CREATORS = [
     portfolio: ['DataStack AI tutorial — 1.8M views', 'Kaggle walkthrough — 920K views'],
   },
   {
-    name: 'Jordan Blake', handle: '@jordan_devops', valueSkin: 'DevOps Engineer',
-    followers: '310K', engagement: '9.1%', rate: '$3,800', matchScore: '87%',
-    featured: false, willingToBarter: true,
-    timezone: 'UTC+0 (GMT)', responseTimeHrs: 6, minDealUsd: 1500,
-    audienceAgeRange: '25-34', audienceLocation: 'UK', audienceLang: 'English',
-    dealTypes: ['Paid', 'Barter', 'Ambassador'], openToDeals: true,
+    name: 'Alex Rivera', handle: '@alex_codes', valueSkin: 'Software Engineer',
+    followers: '890K', engagement: '7.2%', rate: '$4,500', matchScore: '96%',
+    featured: true, willingToBarter: true,
+    timezone: 'UTC-5 (EST)', responseTimeHrs: 4, minDealUsd: 2000,
+    audienceAgeRange: '25-34', audienceLocation: 'USA', audienceLang: 'English',
+    dealTypes: ['Paid', 'Equity', 'Barter'], openToDeals: true,
     ndaOk: true, usageRightsOk: true,
-    dealCompletionRate: 93, incomeTier: '10k+', isFirstDeal: false,
-    rateCard: { reel: '$3,800', story: '$900', post: '$2,200' },
-    exclusivitySlotFree: true, revisionLimit: 2, usageRightsDays: 45,
+    dealCompletionRate: 97, incomeTier: '50k+', isFirstDeal: false,
+    rateCard: { reel: '$4,500', story: '$1,200', post: '$2,800' },
+    exclusivitySlotFree: true, revisionLimit: 2, usageRightsDays: 90,
+    availableFrom: 'Now', contractMode: 'both',
+    portfolio: ['TechFlow collab — 2.1M views', 'CloudBase integration — 890K views'],
+  },
+  {
+    name: 'Priya Sharma', handle: '@priya_designs', valueSkin: 'UX/UI Designer',
+    followers: '1.2M', engagement: '5.8%', rate: '$6,000', matchScore: '91%',
+    featured: false, willingToBarter: false,
+    timezone: 'UTC+5:30 (IST)', responseTimeHrs: 12, minDealUsd: 4000,
+    audienceAgeRange: '18-24', audienceLocation: 'India', audienceLang: 'English',
+    dealTypes: ['Paid', 'Revenue Share'], openToDeals: true,
+    ndaOk: true, usageRightsOk: false,
+    dealCompletionRate: 91, incomeTier: '100k+', isFirstDeal: false,
+    rateCard: { reel: '$6,000', story: '$1,800', post: '$4,000' },
+    exclusivitySlotFree: false, revisionLimit: 3, usageRightsDays: 60,
+    availableFrom: 'Mar 15', contractMode: 'long-term',
+    portfolio: ['Figma design showcase — 3.4M views', 'Framer landing page — 1.2M views'],
+  },
+  {
+    name: 'Marcus Chen', handle: '@marcus_fitness', valueSkin: 'Fitness Coach',
+    followers: '650K', engagement: '8.1%', rate: '$3,200', matchScore: '84%',
+    featured: false, willingToBarter: true,
+    timezone: 'UTC-8 (PST)', responseTimeHrs: 24, minDealUsd: 500,
+    audienceAgeRange: '18-24', audienceLocation: 'USA', audienceLang: 'English',
+    dealTypes: ['Paid', 'Gifted Product', 'Barter', 'Ambassador'], openToDeals: true,
+    ndaOk: false, usageRightsOk: true,
+    dealCompletionRate: 88, incomeTier: '10k+', isFirstDeal: false,
+    rateCard: { reel: '$3,200', story: '$800', post: '$1,800' },
+    exclusivitySlotFree: true, revisionLimit: 2, usageRightsDays: 30,
     availableFrom: 'Now', contractMode: 'one-off',
-    portfolio: ['Kubernetes deep dive — 1.4M views', 'CI/CD pipeline build — 670K views'],
+    portfolio: ['Nike Training series — 4.1M views', 'MyProtein review — 980K views'],
+  },
+  {
+    name: 'Sarah Kim', handle: '@sarah_data', valueSkin: 'Data Scientist',
+    followers: '420K', engagement: '6.5%', rate: '$5,200', matchScore: '92%',
+    featured: true, willingToBarter: false,
+    timezone: 'UTC-8 (PST)', responseTimeHrs: 8, minDealUsd: 3000,
+    audienceAgeRange: '25-34', audienceLocation: 'USA', audienceLang: 'English',
+    dealTypes: ['Paid', 'Equity'], openToDeals: true,
+    ndaOk: true, usageRightsOk: true,
+    dealCompletionRate: 95, incomeTier: '50k+', isFirstDeal: false,
+    rateCard: { reel: '$5,200', story: '$1,500', post: '$3,400' },
+    exclusivitySlotFree: true, revisionLimit: 2, usageRightsDays: 60,
+    availableFrom: 'Now', contractMode: 'both',
+    portfolio: ['DataStack AI tutorial — 1.8M views', 'Kaggle walkthrough — 920K views'],
   },
   {
     name: 'Elena Rodriguez', handle: '@elena_chef', valueSkin: 'Chef',
@@ -174,62 +216,6 @@ const BRAND_MARKETPLACE_CREATORS = [
     exclusivitySlotFree: true, revisionLimit: 2, usageRightsDays: 60,
     availableFrom: 'Now', contractMode: 'both',
     portfolio: ['HelloFresh chef upgrade — 2.3M views', 'Street food series — 1.1M views'],
-  },
-  {
-    name: 'Raj Patel', handle: '@raj_product', valueSkin: 'Product Manager',
-    followers: '560K', engagement: '5.4%', rate: '$5,500', matchScore: '88%',
-    featured: false, willingToBarter: false,
-    timezone: 'UTC+5:30 (IST)', responseTimeHrs: 16, minDealUsd: 3500,
-    audienceAgeRange: '25-34', audienceLocation: 'India', audienceLang: 'English',
-    dealTypes: ['Paid', 'Revenue Share'], openToDeals: true,
-    ndaOk: true, usageRightsOk: true,
-    dealCompletionRate: 94, incomeTier: '100k+', isFirstDeal: false,
-    rateCard: { reel: '$5,500', story: '$1,600', post: '$3,600' },
-    exclusivitySlotFree: false, revisionLimit: 3, usageRightsDays: 90,
-    availableFrom: 'Apr 1', contractMode: 'long-term',
-    portfolio: ['Product teardown series — 2.7M views', 'Roadmap workshop — 1.5M views'],
-  },
-  {
-    name: 'Lena Okafor', handle: '@lena_security', valueSkin: 'Security Researcher',
-    followers: '270K', engagement: '10.2%', rate: '$4,800', matchScore: '82%',
-    featured: false, willingToBarter: false,
-    timezone: 'UTC+1 (CET)', responseTimeHrs: 8, minDealUsd: 3000,
-    audienceAgeRange: '25-34', audienceLocation: 'Germany', audienceLang: 'English',
-    dealTypes: ['Paid'], openToDeals: true,
-    ndaOk: true, usageRightsOk: false,
-    dealCompletionRate: 99, incomeTier: '50k+', isFirstDeal: false,
-    rateCard: { reel: '$4,800', story: '$1,400', post: '$3,200' },
-    exclusivitySlotFree: true, revisionLimit: 1, usageRightsDays: 30,
-    availableFrom: 'Now', contractMode: 'one-off',
-    portfolio: ['Bug bounty writeup — 890K views', 'OWASP Top 10 explained — 1.6M views'],
-  },
-  {
-    name: 'Tommy Nguyen', handle: '@tommy_ai', valueSkin: 'AI/ML Specialist',
-    followers: '1.5M', engagement: '6.9%', rate: '$7,500', matchScore: '95%',
-    featured: true, willingToBarter: false,
-    timezone: 'UTC-5 (EST)', responseTimeHrs: 4, minDealUsd: 5000,
-    audienceAgeRange: '25-34', audienceLocation: 'USA', audienceLang: 'English',
-    dealTypes: ['Paid', 'Equity'], openToDeals: true,
-    ndaOk: true, usageRightsOk: true,
-    dealCompletionRate: 98, incomeTier: '100k+', isFirstDeal: false,
-    rateCard: { reel: '$7,500', story: '$2,200', post: '$5,000' },
-    exclusivitySlotFree: false, revisionLimit: 2, usageRightsDays: 120,
-    availableFrom: 'Now', contractMode: 'both',
-    portfolio: ['GPT fine-tuning tutorial — 5.2M views', 'RAG pipeline build — 3.1M views'],
-  },
-  {
-    name: 'Mia Johnson', handle: '@mia_yoga', valueSkin: 'Yoga Instructor',
-    followers: '920K', engagement: '8.7%', rate: '$3,500', matchScore: '86%',
-    featured: false, willingToBarter: true,
-    timezone: 'UTC-7 (MST)', responseTimeHrs: 6, minDealUsd: 1000,
-    audienceAgeRange: '18-24', audienceLocation: 'USA', audienceLang: 'English',
-    dealTypes: ['Paid', 'Gifted Product', 'Barter', 'Ambassador'], openToDeals: true,
-    ndaOk: false, usageRightsOk: true,
-    dealCompletionRate: 92, incomeTier: '50k+', isFirstDeal: false,
-    rateCard: { reel: '$3,500', story: '$900', post: '$2,000' },
-    exclusivitySlotFree: true, revisionLimit: 2, usageRightsDays: 60,
-    availableFrom: 'Now', contractMode: 'one-off',
-    portfolio: ['Morning flow series — 3.8M views', 'Lululemon partnership — 1.9M views'],
   },
 ];
 
@@ -5906,6 +5892,38 @@ export default function InstagramDemoPage() {
                                   })()}
 
                                   {brandApprovalPhase === 'accepted' && (() => {
+                                    // Show script approval for c2c_collab before moving to funding
+                                    if (dealType === 'c2c_collab' && !brandScriptApproved) {
+                                      return (
+                                        <div style={{ background: C.bg, borderRadius: '8px', border: `1px solid ${C.border}`, padding: '12px', marginBottom: '12px' }}>
+                                          <div style={{ fontSize: '11px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>Review Script</div>
+                                          <div style={{ background: C.surfaceAlt, borderRadius: '6px', padding: '10px', marginBottom: '10px', maxHeight: '120px', overflowY: 'auto', fontSize: '10px', color: C.text, lineHeight: 1.5, whiteSpace: 'pre-wrap', fontFamily: 'monospace' }}>
+                                            {scriptDraft || 'No script provided yet. Initiator will submit their creative direction.'}
+                                          </div>
+                                          <div style={{ display: 'flex', gap: '8px' }}>
+                                            {!brandScriptApproved ? (
+                                              <button
+                                                onClick={() => {
+                                                  if (brandDealKey) {
+                                                    updateDeal(brandDealKey, { brandScriptApproved: true });
+                                                  }
+                                                  setPurchaseToast('Script approved — creator can now proceed');
+                                                  setTimeout(() => setPurchaseToast(null), 3000);
+                                                }}
+                                                style={{ flex: 1, background: C.primary, border: 'none', borderRadius: '6px', padding: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '11px' }}
+                                              >
+                                                Approve Script
+                                              </button>
+                                            ) : (
+                                              <div style={{ flex: 1, background: 'rgba(0,212,106,0.08)', border: `1px solid rgba(0,212,106,0.2)`, borderRadius: '6px', padding: '8px', color: C.success, fontSize: '11px', fontWeight: 600, textAlign: 'center' }}>
+                                                ✓ Approved
+                                              </div>
+                                            )}
+                                          </div>
+                                        </div>
+                                      );
+                                    }
+
                                     switch(dealType) {
                                       case 'paid':
                                       case 'c2c_paid':
