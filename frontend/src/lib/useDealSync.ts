@@ -104,6 +104,12 @@ export type DealState = {
   // Campaign linkage — connects deal to its originating campaign for Sent Deals tracking
   campaignId?: number;
   campaignTitle?: string;
+  // Deal context — ensures both parties can find the same deal
+  // creatorName|creatorSkin is the deal key itself, but we also store context for reference
+  creatorMarketplaceIndex?: number; // BRAND_MARKETPLACE_CREATORS array index
+  opportunityIndex?: number;        // activeOpportunities array index (creator side)
+  creatorName?: string;             // Name of creator from BRAND_MARKETPLACE_CREATORS
+  creatorSkin?: string;             // ValueSkin (profession) of creator
 };
 
 export type ChatMessage = {

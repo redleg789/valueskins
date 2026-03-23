@@ -610,12 +610,25 @@ export default function InstagramDemoPage() {
   // In demo: creator always has a counterpart in BRAND_MARKETPLACE_CREATORS (matched by skin)
   // Use: creatorName|creatorSkin to enable cross-party deal lookup
   let activeDealKey: string | null = null;
-  if (marketplaceRole === 'creator' && selectedMarketplaceSkin && negotiatingOpp !== null) {
+  if (marketplaceRole === 'creator' && selectedMarketplaceSkin) {
     // Find the creator in BRAND_MARKETPLACE_CREATORS that matches this creator's skin
     // In the demo, we're simulating this creator interacting with opportunities
     const matchingCreator = BRAND_MARKETPLACE_CREATORS.find(c => c.valueSkin === selectedMarketplaceSkin);
     if (matchingCreator) {
-      activeDealKey = `${matchingCreator.name}|${selectedMarketplaceSkin}`;
+      // PRIMARY: if user explicitly selected an opp, use it
+      if (negotiatingOpp !== null) {
+        activeDealKey = `${matchingCreator.name}|${selectedMarketplaceSkin}`;
+      }
+      // FALLBACK: if no opp selected but there's an active deal with this creator, auto-open it
+      else {
+        const potentialKey = `${matchingCreator.name}|${selectedMarketplaceSkin}`;
+        const potentialDeal = getOrCreateDeal(potentialKey);
+        // Auto-open deal if: phase is not 'brief' (meaning a brand has already sent an offer)
+        if (potentialDeal && potentialDeal.phase !== 'brief') {
+          activeDealKey = potentialKey;
+          setNegotiatingOpp(potentialDeal.opportunityIndex ?? 0); // Auto-select the opp
+        }
+      }
     }
   }
 
@@ -777,6 +790,20 @@ export default function InstagramDemoPage() {
 
   const brandDealKey = getBrandDealKey();
   const brandDeal = brandDealKey ? getOrCreateDeal(brandDealKey) : null;
+
+  // AUTO-SYNC: Brand side should find open deals if they reload without negotiatingCreator set
+  useEffect(() => {
+    if (marketplaceRole === 'brand' && negotiatingCreator === null) {
+      // Search through all deals to find one that has been initiated by a creator
+      for (const [key, deal] of Object.entries(dealStates)) {
+        if (deal && deal.phase !== 'brief' && deal.creatorMarketplaceIndex !== undefined) {
+          // Found an active deal, auto-switch to it
+          setNegotiatingCreator(deal.creatorMarketplaceIndex);
+          break; // Only auto-open the first active deal
+        }
+      }
+    }
+  }, [dealStates, marketplaceRole, negotiatingCreator]);
 
   // Use dealStates phase, fallback to 'brief' if no deal yet
   const brandDealPhase = (brandDeal?.phase as any) || 'brief';
@@ -2619,6 +2646,11 @@ export default function InstagramDemoPage() {
                                       dealType: resolveDealType(opp.compensationType || 'Paid'),
                                       isInternationalDeal: isInternationalDeal(matchingCreator?.audienceLocation || '', opp.location || ''),
                                       poc: opp.poc,
+                                      // Save context so brand can find this deal
+                                      opportunityIndex: i,
+                                      creatorName: matchingCreator?.name,
+                                      creatorSkin: selectedMarketplaceSkin,
+                                      creatorMarketplaceIndex: matchingCreator ? BRAND_MARKETPLACE_CREATORS.indexOf(matchingCreator) : undefined,
                                     });
                                   }}
                                   style={{ flex: 1, fontSize: '13px', fontWeight: 700, color: '#fff', background: C.primary, border: 'none', padding: '10px', borderRadius: '10px', cursor: 'pointer' }}
@@ -5220,6 +5252,13 @@ export default function InstagramDemoPage() {
                                       if (noBrandSkin) { setPurchaseToast('Get a brand ValueSkin first'); setTimeout(() => setPurchaseToast(null), 3000); return; }
                                       if (!hasMatch) { setPurchaseToast('No shared ValueSkin with this creator'); setTimeout(() => setPurchaseToast(null), 3000); return; }
                                       setNegotiatingCreator(origIdx); setBrandDealPhase('brief'); setBrandBriefTitle(''); setBrandBriefDeliverables(''); setBrandBudget('4000'); setBrandDealIntent('campaign');
+                                      // Initialize deal context when brand opens a creator
+                                      const dealKey = `${creator.name}|${creator.valueSkin}`;
+                                      updateDeal(dealKey, {
+                                        creatorName: creator.name,
+                                        creatorSkin: creator.valueSkin,
+                                        creatorMarketplaceIndex: origIdx,
+                                      });
                                     }}
                                     style={{ width:'100%', background: hasMatch ? (creator.featured ? C.primary : C.surfaceAlt) : C.surfaceAlt, border: hasMatch && creator.featured ? 'none' : `1px solid ${hasMatch ? C.border : 'rgba(230,81,0,0.3)'}`, padding: '10px 16px', borderRadius: '8px', color: hasMatch ? '#fff' : C.warning, fontWeight: '600', cursor: 'pointer', fontSize: '14px', opacity: hasMatch ? 1 : 0.7 }}
                                   >
@@ -5327,20 +5366,6 @@ export default function InstagramDemoPage() {
                                     />
                                   </div>
 
-                                  {/* Intent selector */}
-                                  <div style={{ marginBottom: '10px' }}>
-                                    <div style={{ fontSize: '11px', color: C.textMuted, marginBottom: '6px', fontWeight: 600 }}>Intent</div>
-                                    <div style={{ display: 'flex', gap: '6px' }}>
-                                      {(['explore', 'campaign', 'long-term'] as const).map(intent => (
-                                        <button
-                                          key={intent}
-                                          onClick={() => setBrandDealIntent(intent)}
-                                          style={{ flex: 1, padding: '6px 4px', borderRadius: '6px', border: `1px solid ${brandDealIntent === intent ? C.warning : C.border}`, background: brandDealIntent === intent ? 'rgba(230,81,0,0.1)' : C.bg, color: brandDealIntent === intent ? C.warning : C.textSecondary, fontSize: '10px', fontWeight: 600, cursor: 'pointer', textTransform: 'capitalize' }}
-                                        >{intent}</button>
-                                      ))}
-                                    </div>
-                                  </div>
-
                                   {/* Brief title */}
                                   <div style={{ marginBottom: '10px' }}>
                                     <div style={{ fontSize: '11px', color: C.textMuted, marginBottom: '4px', fontWeight: 600 }}>Campaign title <span style={{ color: C.textSecondary }}>*</span></div>
@@ -5410,7 +5435,7 @@ export default function InstagramDemoPage() {
                                   <div style={{ background: C.bg, borderRadius: '8px', padding: '10px 12px', marginBottom: '12px', border: `1px solid ${C.border}` }}>
                                     <div style={{ fontSize: '10px', color: C.textMuted, fontWeight: 700, textTransform: 'uppercase', marginBottom: '4px' }}>Brief</div>
                                     <div style={{ fontSize: '12px', fontWeight: 600, color: C.text }}>{brandBriefTitle}</div>
-                                    <div style={{ fontSize: '11px', color: C.textSecondary, marginTop: '2px' }}>{brandCampaignType} · {brandDealIntent}</div>
+                                    <div style={{ fontSize: '11px', color: C.textSecondary, marginTop: '2px' }}>{brandCampaignType}</div>
                                     {brandBriefAbout && <div style={{ fontSize: '11px', color: C.textMuted, marginTop: '4px', lineHeight: 1.4 }}><span style={{ fontWeight: 600, color: C.textSecondary }}>Brand: </span>{brandBriefAbout}</div>}
                                     {brandBriefCampaignDesc && <div style={{ fontSize: '11px', color: C.textMuted, marginTop: '3px', lineHeight: 1.4 }}><span style={{ fontWeight: 600, color: C.textSecondary }}>Campaign: </span>{brandBriefCampaignDesc}</div>}
                                     <div style={{ fontSize: '11px', color: C.textMuted, marginTop: '4px', lineHeight: 1.4 }}>{brandBriefDeliverables}</div>
@@ -5425,7 +5450,7 @@ export default function InstagramDemoPage() {
                                           {Object.entries(creator.rateCard).map(([format, rate]) => (
                                             <div key={format} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: C.text }}>
                                               <span style={{ textTransform: 'capitalize', color: C.textMuted }}>{format}</span>
-                                              <span style={{ fontWeight: 600 }}>${parseInt(rate).toLocaleString()}</span>
+                                              <span style={{ fontWeight: 600 }}>{parseInt(String(rate).replace(/[^0-9]/g, '')).toLocaleString() ? `$${parseInt(String(rate).replace(/[^0-9]/g, '')).toLocaleString()}` : 'N/A'}</span>
                                             </div>
                                           ))}
                                         </div>
@@ -5471,6 +5496,10 @@ export default function InstagramDemoPage() {
                                             offerAmount: brandBudget,
                                             briefTitle: brandBriefTitle,
                                             chatMessages: [...existingMsgs, offerMsg],
+                                            // Ensure context is always saved
+                                            creatorName: creator.name,
+                                            creatorSkin: creator.valueSkin,
+                                            creatorMarketplaceIndex: negotiatingCreator ?? undefined,
                                           });
                                         }
                                         setBrandDealPhase('pending');
