@@ -6364,19 +6364,12 @@ export default function InstagramDemoPage() {
                     })()}
                     </>)}
 
-                    {/* Campaign tabs: Your Campaigns | Sent Deals */}
+                    {/* Campaign tabs: Your Campaigns */}
                     <div style={{ marginTop:'24px', paddingTop:'20px', borderTop:`1px solid ${C.border}` }}>
                       <div style={{ display:'flex', gap:'0', marginBottom:'14px', borderBottom:`1px solid ${C.border}` }}>
-                        {(['campaigns', 'sent'] as const).map(tab => {
-                          const label = tab === 'campaigns' ? 'Your Campaigns' : 'Sent Deals';
-                          const count = tab === 'campaigns' ? campaigns.length : campaigns.filter(c => c.status === 'open').length;
-                          const isActive = marketplaceTab === tab;
-                          return (
-                            <button key={tab} onClick={() => setMarketplaceTab(tab)} style={{ flex:1, padding:'10px 0', background:'none', border:'none', borderBottom:`2px solid ${isActive ? C.primary : 'transparent'}`, color: isActive ? C.text : C.textMuted, fontSize:'12px', fontWeight:700, cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.5px' }}>
-                              {label} {count > 0 && <span style={{ fontSize:'10px', background: isActive ? C.primary : C.border, color:'#fff', padding:'1px 5px', borderRadius:'8px', marginLeft:'4px' }}>{count}</span>}
-                            </button>
-                          );
-                        })}
+                        <button onClick={() => setMarketplaceTab('campaigns')} style={{ flex:1, padding:'10px 0', background:'none', border:'none', borderBottom:`2px solid ${marketplaceTab === 'campaigns' ? C.primary : 'transparent'}`, color: marketplaceTab === 'campaigns' ? C.text : C.textMuted, fontSize:'12px', fontWeight:700, cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.5px' }}>
+                          Your Campaigns {campaigns.length > 0 && <span style={{ fontSize:'10px', background: marketplaceTab === 'campaigns' ? C.primary : C.border, color:'#fff', padding:'1px 5px', borderRadius:'8px', marginLeft:'4px' }}>{campaigns.length}</span>}
+                        </button>
                       </div>
 
                       {marketplaceTab === 'campaigns' && (<>
@@ -6430,127 +6423,6 @@ export default function InstagramDemoPage() {
                           </div>
                         ))}
                       </>)}
-
-                      {marketplaceTab === 'sent' && (<>
-                        {(() => {
-                          // Show ALL deals from dealStates — these are the real-time deal entries
-                          const allDeals = Object.entries(dealStates).filter(([, deal]) => deal.phase !== 'brief');
-                          const getPhaseLabel = (phase: string) => {
-                            switch (phase) {
-                              case 'offer': return 'Offer sent';
-                              case 'pending': return 'Waiting for response';
-                              case 'counter': return 'Creator countered';
-                              case 'brand_considering': return 'Reviewing counter';
-                              case 'brand_countered': return 'You countered back';
-                              case 'brand_reviewing': return 'Reviewing deliverables';
-                              case 'last_offer': return 'Final offer sent';
-                              case 'rejected': return 'Deal declined';
-                              case 'chatroom': return 'In negotiation';
-                              case 'formal_offer': return 'Formal offer sent';
-                              case 'accepted': return 'Deal accepted';
-                              case 'checklist': return 'Checklist phase';
-                              case 'softhold': return 'Deliverables in progress';
-                              default: return phase.replace(/_/g, ' ');
-                            }
-                          };
-                          const getPhaseColor = (phase: string) => {
-                            switch (phase) {
-                              case 'counter': return C.warning;
-                              case 'pending': return C.textSecondary;
-                              case 'offer': return C.primary;
-                              case 'brand_countered': case 'last_offer': return C.warning;
-                              case 'accepted': case 'checklist': case 'softhold': return C.success;
-                              case 'rejected': case 'brand_rejected': return '#ef4444';
-                              case 'chatroom': return C.warning;
-                              case 'formal_offer': return C.primary;
-                              default: return C.textMuted;
-                            }
-                          };
-                          if (allDeals.length === 0) {
-                            return (
-                              <div style={{ textAlign:'center', padding:'24px 20px', color:C.textMuted }}>
-                                <div style={{ fontSize:'13px', marginBottom:'4px' }}>No active deals</div>
-                                <div style={{ fontSize:'11px' }}>Send an offer to a creator to start tracking deals.</div>
-                              </div>
-                            );
-                          }
-                          return allDeals.map(([key, deal]) => {
-                            const [creatorName, creatorSkin] = key.split('|');
-                            const creatorData = BRAND_MARKETPLACE_CREATORS.find(c => c.name === creatorName && c.valueSkin === creatorSkin);
-                            const creatorHandle = creatorData?.handle?.replace('@', '') || creatorName.toLowerCase().replace(/\s/g, '_');
-                            const lastMsg = deal.chatMessages?.[deal.chatMessages.length - 1];
-                            return (
-                              <div key={key} style={{ background:C.card, borderRadius:'12px', padding:'14px', marginBottom:'10px', border:`1px solid ${C.border}` }}>
-                                {/* Creator identity row */}
-                                <div style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'10px' }}>
-                                  <img
-                                    src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${creatorName.replace(/\s/g, '')}`}
-                                    alt={creatorName}
-                                    style={{ width:'36px', height:'36px', borderRadius:'50%', background:C.surfaceAlt, flexShrink:0 }}
-                                  />
-                                  <div style={{ flex:1, minWidth:0 }}>
-                                    <a
-                                      href={`https://instagram.com/${creatorHandle}`}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      onClick={(e) => e.stopPropagation()}
-                                      style={{ fontSize:'13px', fontWeight:700, color:C.text, textDecoration:'none' }}
-                                      onMouseEnter={(e) => { (e.target as HTMLElement).style.textDecoration = 'underline'; }}
-                                      onMouseLeave={(e) => { (e.target as HTMLElement).style.textDecoration = 'none'; }}
-                                    >{creatorName}</a>
-                                    <div style={{ fontSize:'11px', color:C.textSecondary }}>{creatorSkin}{deal.briefTitle ? ` · ${deal.briefTitle}` : ''}</div>
-                                  </div>
-                                  <span style={{ fontSize:'12px', fontWeight:700, color:C.success, flexShrink:0 }}>{deal.offerAmount ? `$${parseInt(deal.offerAmount).toLocaleString()}` : ''}</span>
-                                </div>
-                                {/* Deal status timeline */}
-                                <div style={{ borderLeft:`2px solid ${C.border}`, paddingLeft:'12px', marginBottom:'8px' }}>
-                                  <div style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'6px' }}>
-                                    <div style={{ width:8, height:8, borderRadius:'50%', background:C.success, marginLeft:'-16px' }} />
-                                    <span style={{ fontSize:'11px', color:C.success, fontWeight:600 }}>Offer sent · ${deal.offerAmount ? parseInt(deal.offerAmount).toLocaleString() : '—'}</span>
-                                  </div>
-                                  {deal.counterAmount && (
-                                    <div style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'6px' }}>
-                                      <div style={{ width:8, height:8, borderRadius:'50%', background:C.warning, marginLeft:'-16px' }} />
-                                      <span style={{ fontSize:'11px', color:C.warning, fontWeight:600 }}>Creator countered · ${parseInt(deal.counterAmount).toLocaleString()}</span>
-                                    </div>
-                                  )}
-                                  {deal.brandResponseAmount && (
-                                    <div style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'6px' }}>
-                                      <div style={{ width:8, height:8, borderRadius:'50%', background:C.primary, marginLeft:'-16px' }} />
-                                      <span style={{ fontSize:'11px', color:C.primary, fontWeight:600 }}>You countered · ${parseInt(deal.brandResponseAmount).toLocaleString()}</span>
-                                    </div>
-                                  )}
-                                  <div style={{ display:'flex', alignItems:'center', gap:'6px', marginBottom:'6px' }}>
-                                    <div style={{ width:8, height:8, borderRadius:'50%', background:getPhaseColor(deal.phase), marginLeft:'-16px' }} />
-                                    <span style={{ fontSize:'11px', color:getPhaseColor(deal.phase), fontWeight:600 }}>{getPhaseLabel(deal.phase)}</span>
-                                  </div>
-                                </div>
-                                {lastMsg && (
-                                  <div style={{ fontSize:'10px', color:C.textMuted, padding:'6px 8px', background:C.surfaceAlt, borderRadius:'6px', marginBottom:'8px' }}>
-                                    <span style={{ fontWeight:600 }}>{lastMsg.sender === 'brand' ? 'You' : creatorName}:</span> {lastMsg.text.length > 80 ? lastMsg.text.slice(0, 80) + '...' : lastMsg.text}
-                                  </div>
-                                )}
-                                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-                                  <div style={{ display:'flex', gap:'5px', flexWrap:'wrap' }}>
-                                    <span style={{ fontSize:'10px', fontWeight:600, color:C.primary, background:`${C.primary}12`, padding:'2px 7px', borderRadius:'6px' }}>{creatorSkin}</span>
-                                    {deal.dealType && <span style={{ fontSize:'10px', fontWeight:600, color:C.textMuted, background:C.surfaceAlt, padding:'2px 7px', borderRadius:'6px' }}>{deal.dealType}</span>}
-                                  </div>
-                                  <button
-                                    onClick={() => {
-                                      // Set the negotiating creator to open the deal room in the marketplace
-                                      if (creatorData) {
-                                        const creatorIdx = BRAND_MARKETPLACE_CREATORS.indexOf(creatorData);
-                                        setNegotiatingCreator(creatorIdx);
-                                      }
-                                    }}
-                                    style={{ background:C.primary, border:'none', borderRadius:'6px', padding:'5px 12px', color:'#fff', fontSize:'10px', fontWeight:600, cursor:'pointer' }}
-                                  >Enter Deal Room</button>
-                                </div>
-                              </div>
-                            );
-                          });
-                        })()}
-                      </>)}
                     </div>
 
                     {/* Applications Received */}
@@ -6590,11 +6462,19 @@ export default function InstagramDemoPage() {
                               </div>
                             </div>
                             {/* Action */}
-                            <div style={{ flexShrink:0 }}>
+                            <div style={{ flexShrink:0, display:'flex', gap:'6px' }}>
                               {app.status === 'pending' ? (
                                 <button onClick={() => { persistApplications(sharedApplications.map(a=>a.id===app.id?{...a,status:'accepted' as const}:a)); setPurchaseToast('Accepted'); setTimeout(()=>setPurchaseToast(null),3000); }} style={{ background:C.primary, border:'none', borderRadius:'6px', padding:'6px 12px', fontSize:'11px', fontWeight:600, color:'#fff', cursor:'pointer' }}>Accept</button>
                               ) : (
-                                <span style={{ fontSize:'10px', fontWeight:600, color:app.status==='accepted'?C.success:C.textMuted, textTransform:'uppercase' }}>{app.status}</span>
+                                <>
+                                  <span style={{ fontSize:'10px', fontWeight:600, color:app.status==='accepted'?C.success:C.textMuted, textTransform:'uppercase' }}>{app.status}</span>
+                                  {app.status === 'accepted' && (() => {
+                                    const creatorData = BRAND_MARKETPLACE_CREATORS.find(c => c.handle === app.creatorHandle || c.name === app.creatorName);
+                                    return creatorData ? (
+                                      <button onClick={() => setNegotiatingCreator(BRAND_MARKETPLACE_CREATORS.indexOf(creatorData))} style={{ background:C.primary, border:'none', borderRadius:'6px', padding:'4px 10px', fontSize:'10px', fontWeight:600, color:'#fff', cursor:'pointer' }}>Deal Room</button>
+                                    ) : null;
+                                  })()}
+                                </>
                               )}
                             </div>
                           </div>
