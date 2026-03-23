@@ -6531,14 +6531,11 @@ export default function InstagramDemoPage() {
                                   </div>
                                   <button
                                     onClick={() => {
-                                      // Navigate brand to the messages view to view the chat for this deal
-                                      // The deal is already active since we're viewing it in the Sent tab
-                                      setActiveView('messages');
-                                      // Scroll to chat section
-                                      setTimeout(() => {
-                                        const chatEl = document.querySelector('[data-chat-room]');
-                                        if (chatEl) chatEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                                      }, 150);
+                                      // Set the negotiating creator to open the deal room in the marketplace
+                                      if (creatorData) {
+                                        const creatorIdx = BRAND_MARKETPLACE_CREATORS.indexOf(creatorData);
+                                        setNegotiatingCreator(creatorIdx);
+                                      }
                                     }}
                                     style={{ background:C.primary, border:'none', borderRadius:'6px', padding:'5px 12px', color:'#fff', fontSize:'10px', fontWeight:600, cursor:'pointer' }}
                                   >Enter Deal Room</button>
