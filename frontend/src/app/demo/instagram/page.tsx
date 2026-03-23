@@ -5207,143 +5207,18 @@ export default function InstagramDemoPage() {
                       const badgeColor = badge?.color ?? C.primary;
                       const isNegotiating = negotiatingCreator === origIdx;
                       return (
-                        <div key={i} data-creator-idx={origIdx} style={{ background: C.card, borderRadius: '12px', padding: '16px', marginBottom: '12px', border: `1px solid ${isNegotiating ? 'rgba(230,81,0,0.4)' : creator.featured ? 'rgba(0,102,204,0.3)' : C.border}` }}>
-                          <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
-                            <a href={`https://instagram.com/${creator.handle.replace('@', '')}`} target="_blank" rel="noopener noreferrer" title="View Instagram profile" style={{ flexShrink:0 }}>
-                              <img
-                                src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${creator.name.replace(/\s/g, '')}`}
-                                alt={creator.name}
-                                style={{ width: '44px', height: '44px', borderRadius: '50%', background: C.surfaceAlt, cursor:'pointer', border:`2px solid ${C.primary}` }}
-                              />
-                            </a>
-                            <div style={{ flex: 1 }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-                                <span onClick={e => { e.stopPropagation(); setSelectedProfileCreator(creator); setShowCreatorProfileModal(true); }} style={{ fontWeight: 700, fontSize: '14px', cursor: 'pointer' }}
-                                  onMouseEnter={e => { e.currentTarget.style.textDecoration = 'underline'; }}
-                                  onMouseLeave={e => { e.currentTarget.style.textDecoration = 'none'; }}>{creator.name}</span>
-                                <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '20px', height: '20px', borderRadius: '4px', background: badgeColor, color: '#fff', fontSize: '7px', fontWeight: 700 }}>{abbr}</span>
-                                {creator.featured && <span style={{ fontSize: '10px', fontWeight: 700, color: C.primary, background: `${C.primary}15`, padding: '2px 6px', borderRadius: '4px' }}>TOP MATCH</span>}
-                                {creator.willingToBarter && <span style={{ fontSize: '10px', fontWeight: 700, color: C.textSecondary, background: C.surfaceAlt, padding: '2px 6px', borderRadius: '4px' }}>OPEN TO BARTER</span>}
-                              </div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <a href={`https://instagram.com/${creator.handle.replace('@', '')}`} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontSize: '12px', color: C.primary, textDecoration: 'none', cursor: 'pointer' }} onMouseEnter={e => { e.currentTarget.style.textDecoration = 'underline'; }} onMouseLeave={e => { e.currentTarget.style.textDecoration = 'none'; }}>{creator.handle}</a>
-                                <span style={{ fontSize: '11px', color: C.textSecondary }}>·</span>
-                                {/* Feature 10: Creator performance history visible to brands */}
-                                <span title={`${creator.dealCompletionRate}% on-time completion · Responds in ≤${creator.responseTimeHrs}h`} style={{ fontSize: '11px', color: C.textSecondary, cursor: 'help' }}>4.8★ from {(creator.name.charCodeAt(0) % 15) + 5} deals · {creator.dealCompletionRate}% complete</span>
-                                <button onClick={() => { setSelectedProfileCreator(creator); setShowCreatorProfileModal(true); }} style={{ marginLeft: 'auto', fontSize: '10px', fontWeight: 600, color: C.primary, background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>View Profile</button>
-                              </div>
-                            </div>
-                            <div style={{ textAlign: 'right' }}>
-                              <div style={{ fontSize: '16px', fontWeight: 800, color: C.primary }}>{creator.matchScore}</div>
-                              <div style={{ fontSize: '10px', color: C.textMuted }}>match</div>
-                            </div>
+                        <div key={i} data-creator-idx={origIdx} style={{ background: C.card, borderRadius: '10px', padding: '12px', marginBottom: '10px', border: `1px solid ${isNegotiating ? C.primary : C.border}`, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <img
+                            src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${creator.name.replace(/\s/g, '')}`}
+                            alt={creator.name}
+                            style={{ width: '40px', height: '40px', borderRadius: '50%', flexShrink: 0 }}
+                          />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontWeight: 600, fontSize: '13px', color: C.text }}>{creator.name}</div>
+                            <a href={`https://instagram.com/${creator.handle.replace('@', '')}`} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontSize: '11px', color: C.primary, textDecoration: 'none' }}>{creator.handle}</a>
                           </div>
-                          {/* Public stats */}
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '5px', marginBottom: '10px' }}>
-                            {[
-                              { label: 'Followers', value: creator.followers },
-                              { label: 'Engagement', value: creator.engagement },
-                              { label: 'Responds', value: `≤${creator.responseTimeHrs}h` },
-                              { label: 'Min Deal', value: `$${(creator.minDealUsd / 1000).toFixed(creator.minDealUsd < 1000 ? 0 : 1)}K` },
-                            ].map(stat => (
-                              <div key={stat.label} style={{ textAlign: 'center', padding: '5px 3px', background: C.surfaceAlt, borderRadius: '6px' }}>
-                                <div style={{ fontSize: '12px', fontWeight: 700, color: C.text }}>{stat.value}</div>
-                                <div style={{ fontSize: '8px', color: C.textMuted, textTransform: 'uppercase', fontWeight: 600 }}>{stat.label}</div>
-                              </div>
-                            ))}
-                          </div>
-                          {/* Audience & Deal meta row */}
-                          <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', marginBottom: '8px' }}>
-                            <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '10px', background: 'rgba(0,102,204,0.08)', color: C.primary, border: `1px solid rgba(0,102,204,0.2)` }}>
-                              {creator.audienceLocation}
-                            </span>
-                            <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '10px', background: 'rgba(0,102,204,0.08)', color: C.primary, border: `1px solid rgba(0,102,204,0.2)` }}>
-                              {creator.audienceAgeRange}
-                            </span>
-                            <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '10px', background: 'rgba(0,102,204,0.08)', color: C.primary, border: `1px solid rgba(0,102,204,0.2)` }}>
-                              {creator.audienceLang}
-                            </span>
-                            <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '10px', background: 'rgba(100,100,100,0.1)', color: C.textSecondary, border: `1px solid ${C.border}` }}>
-                              {creator.timezone}
-                            </span>
-                          </div>
-                          {/* Deal types + NDA/rights row */}
-                          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '8px' }}>
-                            {creator.dealTypes.map(dt => (
-                              <span key={dt} style={{ fontSize: '9px', fontWeight: 700, padding: '2px 6px', borderRadius: '8px', background: C.surfaceAlt, color: C.textSecondary, border: '1px solid rgba(16,185,129,0.2)', textTransform: 'uppercase' }}>{dt}</span>
-                            ))}
-                            {creator.ndaOk && <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 6px', borderRadius: '8px', background: 'rgba(139,92,246,0.08)', color: C.textSecondary, border: '1px solid rgba(139,92,246,0.2)', textTransform: 'uppercase' }}>NDA</span>}
-                            {creator.usageRightsOk && <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 6px', borderRadius: '8px', background: 'rgba(139,92,246,0.08)', color: C.textSecondary, border: '1px solid rgba(139,92,246,0.2)', textTransform: 'uppercase' }}>Usage Rights</span>}
-                          </div>
-
-                          {/* Rate card */}
-                          {adminShowRateCard && (
-                            <div style={{ background: C.bg, borderRadius: '7px', padding: '8px 10px', marginBottom: '8px', border: `1px solid ${C.border}` }}>
-                              <div style={{ fontSize: '9px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', marginBottom: '5px' }}>Rate Card</div>
-                              <div style={{ display: 'flex', gap: '6px' }}>
-                                {Object.entries(creator.rateCard).map(([fmt, price]) => (
-                                  <div key={fmt} style={{ flex: 1, textAlign: 'center', padding: '4px', background: C.card, borderRadius: '5px' }}>
-                                    <div style={{ fontSize: '11px', fontWeight: 700, color: C.text }}>{price}</div>
-                                    <div style={{ fontSize: '8px', color: C.textMuted, textTransform: 'capitalize' }}>{fmt}</div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Trust signals row */}
-                          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '8px' }}>
-                            {adminShowDealCompletion && (
-                              <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 7px', borderRadius: '8px',
-                                background: creator.dealCompletionRate >= 90 ? 'rgba(34,197,94,0.1)' : 'rgba(245,158,11,0.1)',
-                                color: creator.dealCompletionRate >= 90 ? '#22c55e' : '#f59e0b',
-                                border: `1px solid ${creator.dealCompletionRate >= 90 ? 'rgba(34,197,94,0.25)' : 'rgba(245,158,11,0.25)'}`,
-                              }}>{creator.dealCompletionRate}% completion</span>
-                            )}
-                            {adminShowIncomeTier && (
-                              <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 7px', borderRadius: '8px', background: 'rgba(0,102,204,0.08)', color: C.primary, border: `1px solid rgba(0,102,204,0.2)` }}>
-                                ${creator.incomeTier} earned
-                              </span>
-                            )}
-                            {adminShowAvailabilityCalendar && (
-                              <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 7px', borderRadius: '8px',
-                                background: creator.availableFrom === 'Now' ? 'rgba(34,197,94,0.08)' : 'rgba(100,100,100,0.08)',
-                                color: creator.availableFrom === 'Now' ? '#22c55e' : C.textSecondary,
-                                border: `1px solid ${creator.availableFrom === 'Now' ? 'rgba(34,197,94,0.2)' : C.border}`,
-                              }}>{creator.availableFrom === 'Now' ? 'Available now' : `From ${creator.availableFrom}`}</span>
-                            )}
-                            {adminShowExclusivitySignal && !creator.exclusivitySlotFree && (
-                              <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 7px', borderRadius: '8px', background: 'rgba(239,68,68,0.08)', color: C.textMuted, border: '1px solid rgba(239,68,68,0.2)' }}>Exclusivity taken</span>
-                            )}
-                            {adminShowRevisionLimit && (
-                              <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 7px', borderRadius: '8px', background: 'rgba(100,100,100,0.08)', color: C.textSecondary, border: `1px solid ${C.border}` }}>{creator.revisionLimit} revisions</span>
-                            )}
-                            {adminShowUsageRightsDuration && (
-                              <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 7px', borderRadius: '8px', background: 'rgba(139,92,246,0.08)', color: C.textSecondary, border: '1px solid rgba(139,92,246,0.2)' }}>{creator.usageRightsDays}d rights</span>
-                            )}
-                          </div>
-
-                          {/* Portfolio samples */}
-                          {adminShowPortfolio && (
-                            <div style={{ marginBottom: '8px' }}>
-                              <div style={{ fontSize: '9px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', marginBottom: '4px' }}>Portfolio</div>
-                              {creator.portfolio.map((p, pi) => (
-                                <div key={pi} style={{ fontSize: '10px', color: C.textSecondary, padding: '3px 0', borderTop: pi > 0 ? `1px solid ${C.border}` : 'none' }}>▶ {p}</div>
-                              ))}
-                            </div>
-                          )}
-
-                          {/* Platform safety status bar */}
-                          <div style={{ display: 'flex', gap: '5px', marginBottom: '8px', flexWrap: 'wrap' }}>
-                            {safetyRequireVerifiedBrand && (
-                              <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 7px', borderRadius: '8px', background: C.surfaceAlt, color: C.textSecondary, border: '1px solid rgba(16,185,129,0.2)' }}>VERIFIED BRAND</span>
-                            )}
-                            {safetyRequireBrief && (
-                              <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 7px', borderRadius: '8px', background: 'rgba(0,102,204,0.08)', color: C.primary, border: `1px solid rgba(0,102,204,0.2)` }}>BRIEF REQUIRED</span>
-                            )}
-                            <span style={{ fontSize: '9px', fontWeight: 700, padding: '2px 7px', borderRadius: '8px', background: 'rgba(245,158,11,0.08)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.2)' }}>
-                              MAX {safetyDmRateLimit}/DAY
-                            </span>
+                          <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                            <div style={{ fontWeight: 700, fontSize: '12px', color: C.text }}>{creator.rate}</div>
                           </div>
 
                           {!isNegotiating ? (
