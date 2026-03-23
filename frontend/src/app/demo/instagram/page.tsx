@@ -3487,7 +3487,7 @@ export default function InstagramDemoPage() {
                                             </div>
                                           )}
                                           <div style={{ display: 'flex', gap: '8px' }}>
-                                            <button disabled={!creatorScriptApproved || !brandScriptApproved} onClick={() => { if(creatorScriptApproved && brandScriptApproved) { setDealRoomPhase('softhold'); setEscrowFunded(false); setEscrowFundingInProgress(false); setCreatorDealLifecycle('checklist'); } else setPurchaseToast('Both parties must approve the script first'); }} style={{ flex: 2, background: (creatorScriptApproved && brandScriptApproved) ? C.primary : C.border, border: 'none', padding: '10px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: (creatorScriptApproved && brandScriptApproved) ? 'pointer' : 'not-allowed', fontSize: '13px', opacity: (creatorScriptApproved && brandScriptApproved) ? 1 : 0.5 }}>
+                                            <button onClick={() => { setDealRoomPhase('softhold'); setEscrowFunded(false); setEscrowFundingInProgress(false); setCreatorDealLifecycle('checklist'); }} style={{ flex: 2, background: C.primary, border: 'none', padding: '10px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}>
                                               Begin Work
                                             </button>
                                             <button onClick={() => setShowCancelDealModal(true)} style={{ flex: 1, background: 'none', border: `1px solid rgba(239,68,68,0.3)`, padding: '10px', borderRadius: '8px', color: '#ef4444', fontSize: '12px', cursor: 'pointer', fontWeight: 500 }}>
@@ -5947,13 +5947,17 @@ export default function InstagramDemoPage() {
                                     switch(dealType) {
                                       case 'paid':
                                       case 'c2c_paid':
-                                        return (
+                                        return brandDeal?.phase === 'accepted' ? (
                                           <button
                                             onClick={() => setBrandApprovalPhase('funding')}
                                             style={{ width: '100%', background: C.primary, border: 'none', padding: '9px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}
                                           >
                                             Fund Escrow to Begin
                                           </button>
+                                        ) : (
+                                          <div style={{ width: '100%', background: C.bg, border: `1px solid ${C.border}`, padding: '9px', borderRadius: '8px', color: C.textMuted, fontWeight: 600, textAlign: 'center', fontSize: '13px' }}>
+                                            Waiting for creator to accept offer
+                                          </div>
                                         );
                                       case 'barter':
                                         return (
