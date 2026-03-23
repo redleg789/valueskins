@@ -1175,7 +1175,6 @@ export default function InstagramDemoPage() {
   const [newCampaignCompensation, setNewCampaignCompensation] = useState('Paid');
   const [newCampaignExclusivity, setNewCampaignExclusivity] = useState('None');
   const [newCampaignUsageRights, setNewCampaignUsageRights] = useState('30 days, social only');
-  const [newCampaignRevisionLimit, setNewCampaignRevisionLimit] = useState(2);
   const [newCampaignAudienceTarget, setNewCampaignAudienceTarget] = useState('');
   const [newCampaignRequirements, setNewCampaignRequirements] = useState<string[]>([]);
   const [newCampaignReqInput, setNewCampaignReqInput] = useState('');
@@ -1198,7 +1197,6 @@ export default function InstagramDemoPage() {
   const [advanceReleased, setAdvanceReleased] = useState(false);
   const [uploadReleased, setUploadReleased] = useState(false);
   const [approvalReleased, setApprovalReleased] = useState(false);
-  const [allowContentApprovalPayment, setAllowContentApprovalPayment] = useState(true); // Brand toggles this during campaign creation
 
   // Communities creation state
   const [showCreateCommunity, setShowCreateCommunity] = useState(false);
@@ -1573,10 +1571,52 @@ export default function InstagramDemoPage() {
     return c;
   });
 
+  // Check if creator matches campaign requirements
+  const creatorMatchesCampaignRequirements = (campaign: Campaign, creatorProfession: string, creatorData?: any): boolean => {
+    // Must have matching profession
+    if (!campaign.requiredProfessions.includes(creatorProfession)) return false;
+
+    // If creator data provided, check other requirements
+    if (creatorData) {
+      // Location: must match if campaign specifies a non-remote location
+      if (campaign.location && campaign.location.trim().toLowerCase() !== 'remote') {
+        const campaignLoc = campaign.location.toLowerCase().trim();
+        const creatorLoc = creatorData.audienceLocation?.toLowerCase().trim() || '';
+        if (creatorLoc && !creatorLoc.includes(campaignLoc) && campaignLoc !== creatorLoc) {
+          return false;
+        }
+      }
+
+      // Age range: must overlap
+      if (campaign.requirements?.some(r => r.toLowerCase().includes('age') || r.toLowerCase().includes('25-34'))) {
+        const creatorAge = creatorData.audienceAgeRange || '';
+        const ageMatch = campaign.requirements?.some(r => {
+          const lower = r.toLowerCase();
+          return lower.includes(creatorAge.toLowerCase()) || creatorAge.toLowerCase().includes(lower.split(' ')[0]);
+        });
+        if (!ageMatch && campaign.requirements?.some(r => /\d+-\d+/.test(r))) return false;
+      }
+
+      // Language: must match if specified
+      if (campaign.requirements?.some(r => r.toLowerCase().includes('language') || r.toLowerCase().includes('english'))) {
+        const creatorLang = creatorData.audienceLang || '';
+        const langMatch = campaign.requirements?.some(r => creatorLang.toLowerCase().includes(r.toLowerCase().split(/\s+/)[0]));
+        if (!langMatch && campaign.requirements?.some(r => /language|english|spanish/i.test(r))) return false;
+      }
+    }
+
+    return true;
+  };
+
   // Opportunities for the currently selected skin — sorted by match % descending
   // Merge hardcoded opportunities with brand-created campaigns (converted to Opportunity format)
   const campaignOpportunities: Opportunity[] = liveCampaigns
-    .filter(c => c.status === 'open' && selectedMarketplaceSkin && c.requiredProfessions.includes(selectedMarketplaceSkin))
+    .filter(c => {
+      if (c.status !== 'open' || !selectedMarketplaceSkin) return false;
+      // Get the current creator's data if available (from marketplace creators)
+      const currentCreator = BRAND_MARKETPLACE_CREATORS.find(cr => cr.valueSkin === selectedMarketplaceSkin);
+      return creatorMatchesCampaignRequirements(c, selectedMarketplaceSkin, currentCreator);
+    })
     .map(c => ({
       brand: c.brandName || 'Brand',
       type: c.title,
@@ -3591,11 +3631,39 @@ export default function InstagramDemoPage() {
                                             <div style={{ fontSize: '10px', color: C.textSecondary, marginBottom: '4px' }}>
                                               Brand offer: <strong style={{ color: C.text }}>${parseInt(dealOfferAmount || opp.budget.replace(/[^0-9]/g, '') || '0').toLocaleString()}</strong>
                                             </div>
-                                            {/* Feature 4: Counter-offer intelligence suggestion */}
-                                            <div style={{ fontSize: '10px', color: C.success, marginBottom: '6px', padding: '4px 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.success} strokeWidth="2"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
-                                              Suggested: ${Math.round(parseInt(dealOfferAmount || opp.budget.replace(/[^0-9]/g, '') || '0') * 1.25 / 50) * 50}.00 (25% above)
-                                            </div>
+                                            {/* Feature 4: Fair counter-offer suggestion */}
+                                            {(() => {
+                                              const brandOffer = parseInt(dealOfferAmount || opp.budget.replace(/[^0-9]/g, '') || '0');
+                                              // Find creator's standard rate from BRAND_MARKETPLACE_CREATORS
+                                              const matchingCreator = BRAND_MARKETPLACE_CREATORS.find(c => c.valueSkin === opp.type);
+                                              const creatorRate = matchingCreator ? parseInt(matchingCreator.rate.replace(/[^0-9]/g, '') || '0') : brandOffer;
+                                              // Fair suggestion: if offer is below creator's rate, suggest rate; otherwise suggest accepting or small adjustment
+                                              let suggestedPrice = brandOffer;
+                                              let reason = 'Market-aligned';
+                                              if (brandOffer < creatorRate * 0.9) {
+                                                // Brand offer is 10%+ below creator's rate — suggest creator's standard
+                                                suggestedPrice = creatorRate;
+                                                reason = 'Your standard rate';
+                                              } else if (brandOffer >= creatorRate * 0.95 && brandOffer <= creatorRate * 1.1) {
+                                                // Brand offer is within 5-10% of creator's rate — fair, no adjustment needed
+                                                suggestedPrice = brandOffer;
+                                                reason = 'Fair offer — accept or negotiate minimally';
+                                              } else if (brandOffer > creatorRate * 1.1) {
+                                                // Brand offer is 10%+ above rate — it's generous, accept it
+                                                suggestedPrice = brandOffer;
+                                                reason = 'Above standard — consider accepting';
+                                              } else {
+                                                // Minor adjustment if below standard
+                                                suggestedPrice = Math.round(Math.max(brandOffer, creatorRate * 0.95) / 50) * 50;
+                                                reason = 'Reasonable adjustment';
+                                              }
+                                              return (
+                                                <div style={{ fontSize: '10px', color: C.success, marginBottom: '6px', padding: '4px 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.success} strokeWidth="2"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+                                                  Suggested: ${suggestedPrice.toLocaleString()} ({reason})
+                                                </div>
+                                              );
+                                            })()}
                                             <input
                                               type="number"
                                               value={dealCounterAmount}
@@ -4654,19 +4722,6 @@ export default function InstagramDemoPage() {
                             </div>
                           )}
 
-                          {/* Allow optional content approval payment stage */}
-                          {newCampaignCompensation.includes('Paid') && (
-                            <div style={{ marginBottom:'12px', background:`${C.primary}08`, border:`1px solid ${C.primary}30`, borderRadius:'8px', padding:'10px 12px' }}>
-                              <label style={{ display:'flex', alignItems:'center', gap:'8px', cursor:'pointer' }}>
-                                <input type="checkbox" checked={allowContentApprovalPayment} onChange={e=>setAllowContentApprovalPayment(e.target.checked)} style={{ width:16, height:16, cursor:'pointer' }} />
-                                <div>
-                                  <div style={{ fontSize:'12px', fontWeight:600, color:C.text }}>Require content approval for final payment</div>
-                                  <div style={{ fontSize:'10px', color:C.textMuted, marginTop:'2px' }}>If enabled: Creator gets 30% advance, 40% on upload, 30% after you approve final content</div>
-                                </div>
-                              </label>
-                            </div>
-                          )}
-
                           {/* Exclusivity & Usage Rights */}
                           <div style={{ display:'flex', gap:'10px', marginBottom:'12px' }}>
                             <div style={{ flex:1 }}>
@@ -4691,27 +4746,18 @@ export default function InstagramDemoPage() {
                               </select>
                             </div>
                           </div>
-                          {/* Revision limit & Target audience */}
-                          <div style={{ display:'flex', gap:'10px', marginBottom:'12px' }}>
-                            <div style={{ flex:1 }}>
-                              <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>Revision limit</div>
-                              <div style={{ display:'flex', gap:'4px' }}>
-                                {[1,2,3,4,5].map(n => (
-                                  <button key={n} onClick={()=>setNewCampaignRevisionLimit(n)} style={{ flex:1, padding:'7px 0', borderRadius:'6px', fontSize:'12px', fontWeight:700, cursor:'pointer', background:newCampaignRevisionLimit===n?C.primary:C.bg, color:newCampaignRevisionLimit===n?'#fff':C.textSecondary, border:`1px solid ${newCampaignRevisionLimit===n?C.primary:C.border}` }}>{n}</button>
-                                ))}
-                              </div>
-                            </div>
-                            <div style={{ flex:1 }}>
-                              <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>Target audience *</div>
-                              <input type="text" value={newCampaignAudienceTarget} onChange={e=>setNewCampaignAudienceTarget(e.target.value)} placeholder="e.g. Developers, 25-40" style={{ width:'100%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', color:C.text, padding:'8px 10px', fontSize:'12px', fontFamily:'inherit', outline:'none', boxSizing:'border-box' as const }} />
-                            </div>
+                          {/* Target audience */}
+                          <div style={{ marginBottom:'12px' }}>
+                            <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>Target audience *</div>
+                            <input type="text" value={newCampaignAudienceTarget} onChange={e=>setNewCampaignAudienceTarget(e.target.value)} placeholder="e.g. Developers, 25-40" style={{ width:'100%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', color:C.text, padding:'8px 10px', fontSize:'12px', fontFamily:'inherit', outline:'none', boxSizing:'border-box' as const }} />
                           </div>
                           {/* Requirements — what creators must meet */}
                           <div style={{ marginBottom:'12px' }}>
                             <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>Creator requirements</div>
-                            <div style={{ fontSize:'10px', color:C.textMuted, marginBottom:'6px' }}>What must a creator have or do to qualify? Creators see this before applying.</div>
+                            <div style={{ fontSize:'10px', color:C.textMuted, marginBottom:'6px' }}>Creators must match these to see the campaign. Include audience age, language, or specific requirements.</div>
+                            <div style={{ fontSize:'9px', color:C.textMuted, marginBottom:'6px', fontStyle:'italic' }}>Examples: "Audience age 25-34", "English speaking", "Must have 100K+ followers"</div>
                             <div style={{ display:'flex', gap:'6px', marginBottom:'6px' }}>
-                              <input type="text" value={newCampaignReqInput} onChange={e=>setNewCampaignReqInput(e.target.value)} placeholder="e.g. Must have active GitHub profile" onKeyDown={e => { if (e.key === 'Enter' && newCampaignReqInput.trim()) { e.preventDefault(); setNewCampaignRequirements(prev=>[...prev,newCampaignReqInput.trim()]); setNewCampaignReqInput(''); }}} style={{ flex:1, background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', color:C.text, padding:'7px 10px', fontSize:'12px', fontFamily:'inherit', outline:'none', boxSizing:'border-box' as const }} />
+                              <input type="text" value={newCampaignReqInput} onChange={e=>setNewCampaignReqInput(e.target.value)} placeholder="e.g. Audience age 25-34, English speaking, GitHub profile" onKeyDown={e => { if (e.key === 'Enter' && newCampaignReqInput.trim()) { e.preventDefault(); setNewCampaignRequirements(prev=>[...prev,newCampaignReqInput.trim()]); setNewCampaignReqInput(''); }}} style={{ flex:1, background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', color:C.text, padding:'7px 10px', fontSize:'12px', fontFamily:'inherit', outline:'none', boxSizing:'border-box' as const }} />
                               <button onClick={()=>{ if (newCampaignReqInput.trim()) { setNewCampaignRequirements(prev=>[...prev,newCampaignReqInput.trim()]); setNewCampaignReqInput(''); }}} style={{ background:C.primary, border:'none', borderRadius:'8px', padding:'7px 12px', color:'#fff', fontSize:'11px', fontWeight:600, cursor:'pointer' }}>Add</button>
                             </div>
                             {newCampaignRequirements.length > 0 && (
@@ -4754,7 +4800,7 @@ export default function InstagramDemoPage() {
                               if (missing.length > 0) { setPurchaseToast(`Missing: ${missing.join(', ')}`); setTimeout(()=>setPurchaseToast(null),4000); return; }
                               const escrowPool = parseInt(newCampaignBudget||'0') * newCampaignCreatorCount;
                               const newC: Campaign = {
-                                id:Date.now(), brandName:profileName, brandProfession:activeBrandSkin??'', title:newCampaignTitle, description:newCampaignDesc, about:newCampaignAbout, requiredProfessions:[activeBrandSkin ?? ''], minLevel:newCampaignMinLevel, maxLevel:newCampaignMaxLevel, budget:newCampaignBudget, deadline:newCampaignDeadline, location:newCampaignLocation, nonNegotiables:newCampaignNonNeg, deliverables:newCampaignDeliverables, compensationType:newCampaignCompensation, exclusivity:newCampaignExclusivity, usageRights:newCampaignUsageRights, revisionLimit:newCampaignRevisionLimit, audienceTarget:newCampaignAudienceTarget, requirements:newCampaignRequirements, scriptMode:newCampaignScriptMode, scriptText:newCampaignScriptText, allowContentApprovalPayment:allowContentApprovalPayment, status:'open', applicants:0, creatorCount:newCampaignCreatorCount, escrowFunded:false, escrowPool, escrowAllocated:0,
+                                id:Date.now(), brandName:profileName, brandProfession:activeBrandSkin??'', title:newCampaignTitle, description:newCampaignDesc, about:newCampaignAbout, requiredProfessions:[activeBrandSkin ?? ''], minLevel:newCampaignMinLevel, maxLevel:newCampaignMaxLevel, budget:newCampaignBudget, deadline:newCampaignDeadline, location:newCampaignLocation, nonNegotiables:newCampaignNonNeg, deliverables:newCampaignDeliverables, compensationType:newCampaignCompensation, exclusivity:newCampaignExclusivity, usageRights:newCampaignUsageRights, audienceTarget:newCampaignAudienceTarget, requirements:newCampaignRequirements, scriptMode:newCampaignScriptMode, scriptText:newCampaignScriptText, status:'open', applicants:0, creatorCount:newCampaignCreatorCount, escrowFunded:false, escrowPool, escrowAllocated:0,
                                 poc: newCampaignPocName.trim() ? {
                                   name: newCampaignPocName.trim(),
                                   instagramHandle: newCampaignPocHandle.trim().startsWith('@') ? newCampaignPocHandle.trim() : `@${newCampaignPocHandle.trim()}`,
@@ -4769,7 +4815,7 @@ export default function InstagramDemoPage() {
                               setShowEscrowFundingModal(true);
                               setEscrowFundingInProgress2(false);
                               setBatchSendCreatorIds(new Set());
-                              setNewCampaignTitle(''); setNewCampaignDesc(''); setNewCampaignAbout(''); setNewCampaignBudget(''); setNewCampaignDeadline(''); setNewCampaignProfessions([]); setNewCampaignMinLevel(1); setNewCampaignMaxLevel(5); setNewCampaignLocation(''); setNewCampaignDeliverables(''); setNewCampaignNonNeg([]); setNewCampaignCompensation('Paid'); setNewCampaignExclusivity('None'); setNewCampaignUsageRights('30 days, social only'); setNewCampaignRevisionLimit(2); setNewCampaignAudienceTarget(''); setNewCampaignRequirements([]); setNewCampaignReqInput(''); setNewCampaignCreatorCount(1); setNewCampaignPocName(''); setNewCampaignPocHandle(''); setNewCampaignPocRole(''); setNewCampaignScriptMode('creator_freedom'); setNewCampaignScriptText(''); setAllowContentApprovalPayment(true);
+                              setNewCampaignTitle(''); setNewCampaignDesc(''); setNewCampaignAbout(''); setNewCampaignBudget(''); setNewCampaignDeadline(''); setNewCampaignProfessions([]); setNewCampaignMinLevel(1); setNewCampaignMaxLevel(5); setNewCampaignLocation(''); setNewCampaignDeliverables(''); setNewCampaignNonNeg([]); setNewCampaignCompensation('Paid'); setNewCampaignExclusivity('None'); setNewCampaignUsageRights('30 days, social only'); setNewCampaignAudienceTarget(''); setNewCampaignRequirements([]); setNewCampaignReqInput(''); setNewCampaignCreatorCount(1); setNewCampaignPocName(''); setNewCampaignPocHandle(''); setNewCampaignPocRole(''); setNewCampaignScriptMode('creator_freedom'); setNewCampaignScriptText('');
                             }}
                             style={{ width:'100%', background:C.primary, border:'none', borderRadius:'8px', padding:'11px', color:'#fff', fontWeight:700, fontSize:'14px', cursor:'pointer' }}
                           >
