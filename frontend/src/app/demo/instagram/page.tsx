@@ -6459,6 +6459,14 @@ export default function InstagramDemoPage() {
                                 {app.creatorLevel && (
                                   <span style={{ fontSize:'9px', fontWeight:700, color:'#fff', background:app.creatorLevel>=4?C.primary:app.creatorLevel>=2?C.warning:C.textMuted, padding:'1px 5px', borderRadius:'3px' }}>Lv{app.creatorLevel}</span>
                                 )}
+                                {(() => {
+                                  const creatorData = BRAND_MARKETPLACE_CREATORS.find(c => c.handle === app.creatorHandle || c.name === app.creatorName);
+                                  const dealKey = creatorData ? `${creatorData.name}|${creatorData.valueSkin}` : null;
+                                  const deal = dealKey ? getOrCreateDeal(dealKey) : null;
+                                  return deal?.phase === 'counter' ? (
+                                    <span style={{ fontSize:'8px', fontWeight:700, color:'#fff', background:C.warning, padding:'2px 6px', borderRadius:'4px', textTransform:'uppercase' }}>Counter waiting</span>
+                                  ) : null;
+                                })()}
                               </div>
                               <div style={{ fontSize:'11px', color:C.textSecondary, display:'flex', alignItems:'center', gap:'6px' }}>
                                 {app.creatorHandle}
