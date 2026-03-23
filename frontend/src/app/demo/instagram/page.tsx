@@ -91,6 +91,7 @@ const PROFESSIONS = {
 };
 
 const BRAND_MARKETPLACE_CREATORS = [
+  // Software Engineers
   {
     name: 'Alex Rivera', handle: '@alex_codes', valueSkin: 'Software Engineer',
     followers: '890K', engagement: '7.2%', rate: '$4,500', matchScore: '96%',
@@ -105,6 +106,35 @@ const BRAND_MARKETPLACE_CREATORS = [
     availableFrom: 'Now', contractMode: 'both',
     portfolio: ['TechFlow collab — 2.1M views', 'CloudBase integration — 890K views'],
   },
+  {
+    name: 'Jordan Lee', handle: '@jordan_dev', valueSkin: 'Software Engineer',
+    followers: '550K', engagement: '6.8%', rate: '$3,200', matchScore: '88%',
+    featured: false, willingToBarter: false,
+    timezone: 'UTC+8 (SGT)', responseTimeHrs: 6, minDealUsd: 2500,
+    audienceAgeRange: '22-28', audienceLocation: 'Singapore', audienceLang: 'English',
+    dealTypes: ['Paid'], openToDeals: true,
+    ndaOk: true, usageRightsOk: true,
+    dealCompletionRate: 92, incomeTier: '25k+', isFirstDeal: false,
+    rateCard: { reel: '$3,200', story: '$900', post: '$2,000' },
+    exclusivitySlotFree: true, revisionLimit: 3, usageRightsDays: 45,
+    availableFrom: 'Now', contractMode: 'one-off',
+    portfolio: ['React optimization — 1.3M views', 'Web3 tutorial — 650K views'],
+  },
+  {
+    name: 'Casey Murphy', handle: '@casey_full_stack', valueSkin: 'Software Engineer',
+    followers: '720K', engagement: '5.4%', rate: '$5,800', matchScore: '85%',
+    featured: false, willingToBarter: false,
+    timezone: 'UTC+0 (GMT)', responseTimeHrs: 12, minDealUsd: 3500,
+    audienceAgeRange: '28-35', audienceLocation: 'UK', audienceLang: 'English',
+    dealTypes: ['Paid', 'Revenue Share'], openToDeals: true,
+    ndaOk: true, usageRightsOk: false,
+    dealCompletionRate: 89, incomeTier: '75k+', isFirstDeal: false,
+    rateCard: { reel: '$5,800', story: '$1,600', post: '$3,800' },
+    exclusivitySlotFree: false, revisionLimit: 2, usageRightsDays: 120,
+    availableFrom: 'Apr 1', contractMode: 'long-term',
+    portfolio: ['Backend deep dive — 2.2M views', 'DevOps series — 1.1M views'],
+  },
+  // UX/UI Designers
   {
     name: 'Priya Sharma', handle: '@priya_designs', valueSkin: 'UX/UI Designer',
     followers: '1.2M', engagement: '5.8%', rate: '$6,000', matchScore: '91%',
@@ -120,6 +150,35 @@ const BRAND_MARKETPLACE_CREATORS = [
     portfolio: ['Figma design showcase — 3.4M views', 'Framer landing page — 1.2M views'],
   },
   {
+    name: 'Mira Patel', handle: '@mira_ux', valueSkin: 'UX/UI Designer',
+    followers: '680K', engagement: '6.2%', rate: '$4,200', matchScore: '87%',
+    featured: true, willingToBarter: true,
+    timezone: 'UTC+5:30 (IST)', responseTimeHrs: 8, minDealUsd: 2000,
+    audienceAgeRange: '20-26', audienceLocation: 'India', audienceLang: 'English',
+    dealTypes: ['Paid', 'Barter'], openToDeals: true,
+    ndaOk: false, usageRightsOk: true,
+    dealCompletionRate: 88, incomeTier: '50k+', isFirstDeal: false,
+    rateCard: { reel: '$4,200', story: '$1,200', post: '$2,600' },
+    exclusivitySlotFree: true, revisionLimit: 4, usageRightsDays: 45,
+    availableFrom: 'Now', contractMode: 'one-off',
+    portfolio: ['Mobile app redesign — 920K views', 'Design systems — 1.8M views'],
+  },
+  {
+    name: 'David Chen', handle: '@david_interaction_design', valueSkin: 'UX/UI Designer',
+    followers: '510K', engagement: '7.1%', rate: '$5,500', matchScore: '90%',
+    featured: false, willingToBarter: false,
+    timezone: 'UTC-8 (PST)', responseTimeHrs: 10, minDealUsd: 3000,
+    audienceAgeRange: '25-32', audienceLocation: 'USA', audienceLang: 'English',
+    dealTypes: ['Paid', 'Equity'], openToDeals: true,
+    ndaOk: true, usageRightsOk: true,
+    dealCompletionRate: 94, incomeTier: '75k+', isFirstDeal: false,
+    rateCard: { reel: '$5,500', story: '$1,600', post: '$3,500' },
+    exclusivitySlotFree: true, revisionLimit: 2, usageRightsDays: 90,
+    availableFrom: 'Now', contractMode: 'both',
+    portfolio: ['Interaction pattern library — 2.4M views', 'Accessibility guide — 1.5M views'],
+  },
+  // Fitness Coaches
+  {
     name: 'Marcus Chen', handle: '@marcus_fitness', valueSkin: 'Fitness Coach',
     followers: '650K', engagement: '8.1%', rate: '$3,200', matchScore: '84%',
     featured: false, willingToBarter: true,
@@ -133,6 +192,35 @@ const BRAND_MARKETPLACE_CREATORS = [
     availableFrom: 'Now', contractMode: 'one-off',
     portfolio: ['Nike Training series — 4.1M views', 'MyProtein review — 980K views'],
   },
+  {
+    name: 'Sophia Gonzalez', handle: '@sophia_wellness', valueSkin: 'Fitness Coach',
+    followers: '820K', engagement: '9.2%', rate: '$4,000', matchScore: '92%',
+    featured: true, willingToBarter: false,
+    timezone: 'UTC-6 (CST)', responseTimeHrs: 6, minDealUsd: 1500,
+    audienceAgeRange: '25-35', audienceLocation: 'Mexico', audienceLang: 'Spanish',
+    dealTypes: ['Paid', 'Ambassador'], openToDeals: true,
+    ndaOk: true, usageRightsOk: true,
+    dealCompletionRate: 95, incomeTier: '25k+', isFirstDeal: false,
+    rateCard: { reel: '$4,000', story: '$1,000', post: '$2,200' },
+    exclusivitySlotFree: true, revisionLimit: 3, usageRightsDays: 60,
+    availableFrom: 'Now', contractMode: 'long-term',
+    portfolio: ['Transformation series — 5.2M views', 'Nutrition guide — 2.1M views'],
+  },
+  {
+    name: 'Liam O\'Connor', handle: '@liam_strength', valueSkin: 'Fitness Coach',
+    followers: '420K', engagement: '7.8%', rate: '$2,500', matchScore: '80%',
+    featured: false, willingToBarter: true,
+    timezone: 'UTC+0 (GMT)', responseTimeHrs: 18, minDealUsd: 800,
+    audienceAgeRange: '20-30', audienceLocation: 'Ireland', audienceLang: 'English',
+    dealTypes: ['Paid', 'Barter', 'Gifted Product'], openToDeals: true,
+    ndaOk: false, usageRightsOk: true,
+    dealCompletionRate: 85, incomeTier: '15k+', isFirstDeal: false,
+    rateCard: { reel: '$2,500', story: '$700', post: '$1,500' },
+    exclusivitySlotFree: true, revisionLimit: 4, usageRightsDays: 45,
+    availableFrom: 'Now', contractMode: 'one-off',
+    portfolio: ['Gym challenge series — 1.8M views', 'Recovery techniques — 900K views'],
+  },
+  // Data Scientists
   {
     name: 'Sarah Kim', handle: '@sarah_data', valueSkin: 'Data Scientist',
     followers: '420K', engagement: '6.5%', rate: '$5,200', matchScore: '92%',
@@ -148,18 +236,32 @@ const BRAND_MARKETPLACE_CREATORS = [
     portfolio: ['DataStack AI tutorial — 1.8M views', 'Kaggle walkthrough — 920K views'],
   },
   {
-    name: 'Alex Rivera', handle: '@alex_codes', valueSkin: 'Software Engineer',
-    followers: '890K', engagement: '7.2%', rate: '$4,500', matchScore: '96%',
-    featured: true, willingToBarter: true,
-    timezone: 'UTC-5 (EST)', responseTimeHrs: 4, minDealUsd: 2000,
-    audienceAgeRange: '25-34', audienceLocation: 'USA', audienceLang: 'English',
-    dealTypes: ['Paid', 'Equity', 'Barter'], openToDeals: true,
+    name: 'Raj Gupta', handle: '@raj_analytics', valueSkin: 'Data Scientist',
+    followers: '380K', engagement: '5.9%', rate: '$3,800', matchScore: '86%',
+    featured: false, willingToBarter: true,
+    timezone: 'UTC+5:30 (IST)', responseTimeHrs: 10, minDealUsd: 2000,
+    audienceAgeRange: '24-32', audienceLocation: 'India', audienceLang: 'English',
+    dealTypes: ['Paid', 'Revenue Share', 'Barter'], openToDeals: true,
     ndaOk: true, usageRightsOk: true,
-    dealCompletionRate: 97, incomeTier: '50k+', isFirstDeal: false,
-    rateCard: { reel: '$4,500', story: '$1,200', post: '$2,800' },
-    exclusivitySlotFree: true, revisionLimit: 2, usageRightsDays: 90,
-    availableFrom: 'Now', contractMode: 'both',
-    portfolio: ['TechFlow collab — 2.1M views', 'CloudBase integration — 890K views'],
+    dealCompletionRate: 90, incomeTier: '35k+', isFirstDeal: false,
+    rateCard: { reel: '$3,800', story: '$1,100', post: '$2,400' },
+    exclusivitySlotFree: false, revisionLimit: 3, usageRightsDays: 45,
+    availableFrom: 'Now', contractMode: 'one-off',
+    portfolio: ['Python tutorial series — 1.4M views', 'Machine learning guide — 1.1M views'],
+  },
+  {
+    name: 'Elena Rodriguez', handle: '@elena_ml', valueSkin: 'Data Scientist',
+    followers: '510K', engagement: '6.8%', rate: '$6,100', matchScore: '89%',
+    featured: false, willingToBarter: false,
+    timezone: 'UTC-3 (ART)', responseTimeHrs: 14, minDealUsd: 3500,
+    audienceAgeRange: '28-36', audienceLocation: 'Argentina', audienceLang: 'Spanish',
+    dealTypes: ['Paid', 'Equity', 'Revenue Share'], openToDeals: true,
+    ndaOk: true, usageRightsOk: false,
+    dealCompletionRate: 93, incomeTier: '60k+', isFirstDeal: false,
+    rateCard: { reel: '$6,100', story: '$1,700', post: '$3,900' },
+    exclusivitySlotFree: false, revisionLimit: 2, usageRightsDays: 90,
+    availableFrom: 'Mar 20', contractMode: 'long-term',
+    portfolio: ['AI trend analysis — 2.3M views', 'Data visualization guide — 1.6M views'],
   },
   {
     name: 'Priya Sharma', handle: '@priya_designs', valueSkin: 'UX/UI Designer',
@@ -1171,9 +1273,6 @@ export default function InstagramDemoPage() {
     updateDeal(activeDealKey, { deliverableLinks: newVal });
   };
   const [deliverableLinkInputs, setDeliverableLinkInputs] = useState<Record<number, string>>({});
-  // Feature 1: Direct approach (no campaign)
-  const [directApproach, setDirectApproachRaw] = useState<boolean>(() => typeof window !== 'undefined' ? localStorage.getItem('vs_brand_direct_approach') === 'true' : false);
-  const setDirectApproach = (v: boolean) => { setDirectApproachRaw(v); localStorage.setItem('vs_brand_direct_approach', String(v)); };
   // Feature 2: Available for deals toggle
   const [availableForDeals, setAvailableForDeals] = useState(true);
   // Feature 3: Market rates panel
@@ -5237,27 +5336,16 @@ export default function InstagramDemoPage() {
                                       Get a brand ValueSkin to contact creators
                                     </div>
                                   )}
-                                  <div style={{ display:'flex', gap:'6px' }}>
-                                    <button
-                                      onClick={() => {
-                                        if (noBrandSkin) { setPurchaseToast('Get a brand ValueSkin first'); setTimeout(() => setPurchaseToast(null), 3000); return; }
-                                        if (!hasMatch) { setPurchaseToast('No shared ValueSkin with this creator'); setTimeout(() => setPurchaseToast(null), 3000); return; }
-                                        setDirectApproach(false); setNegotiatingCreator(origIdx); setBrandDealPhase('brief'); setBrandBriefTitle(''); setBrandBriefDeliverables(''); setBrandBudget('4000'); setBrandDealIntent('campaign');
-                                      }}
-                                      style={{ flex:1, background: hasMatch ? (creator.featured ? C.primary : C.surfaceAlt) : C.surfaceAlt, border: hasMatch && creator.featured ? 'none' : `1px solid ${hasMatch ? C.border : 'rgba(230,81,0,0.3)'}`, padding: '10px 16px', borderRadius: '8px', color: hasMatch ? '#fff' : C.warning, fontWeight: '600', cursor: 'pointer', fontSize: '14px', opacity: hasMatch ? 1 : 0.7 }}
-                                    >
-                                      {noBrandSkin ? 'No ValueSkin' : hasMatch ? 'Send Proposal' : 'No Shared ValueSkin'}
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        if (noBrandSkin) { setPurchaseToast('Get a brand ValueSkin first'); setTimeout(() => setPurchaseToast(null), 3000); return; }
-                                        setDirectApproach(true); setNegotiatingCreator(origIdx); setBrandDealPhase('brief'); setBrandBriefTitle(''); setBrandBriefDeliverables(''); setBrandBudget('4000'); setBrandDealIntent('campaign');
-                                      }}
-                                      style={{ flex:1, background:C.surfaceAlt, border:`1px solid ${C.border}`, padding:'10px 12px', borderRadius:'8px', color:C.textSecondary, fontWeight:'600', cursor:'pointer', fontSize:'13px', opacity: noBrandSkin ? 0.5 : 1 }}
-                                    >
-                                      Direct approach
-                                    </button>
-                                  </div>
+                                  <button
+                                    onClick={() => {
+                                      if (noBrandSkin) { setPurchaseToast('Get a brand ValueSkin first'); setTimeout(() => setPurchaseToast(null), 3000); return; }
+                                      if (!hasMatch) { setPurchaseToast('No shared ValueSkin with this creator'); setTimeout(() => setPurchaseToast(null), 3000); return; }
+                                      setNegotiatingCreator(origIdx); setBrandDealPhase('brief'); setBrandBriefTitle(''); setBrandBriefDeliverables(''); setBrandBudget('4000'); setBrandDealIntent('campaign');
+                                    }}
+                                    style={{ width:'100%', background: hasMatch ? (creator.featured ? C.primary : C.surfaceAlt) : C.surfaceAlt, border: hasMatch && creator.featured ? 'none' : `1px solid ${hasMatch ? C.border : 'rgba(230,81,0,0.3)'}`, padding: '10px 16px', borderRadius: '8px', color: hasMatch ? '#fff' : C.warning, fontWeight: '600', cursor: 'pointer', fontSize: '14px', opacity: hasMatch ? 1 : 0.7 }}
+                                  >
+                                    {noBrandSkin ? 'No ValueSkin' : hasMatch ? 'Send Proposal' : 'No Shared ValueSkin'}
+                                  </button>
                                 </div>
                               );
                             })()
@@ -5268,12 +5356,6 @@ export default function InstagramDemoPage() {
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.textSecondary} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
                                 Back to creators
                               </button>
-                              {/* Direct approach banner */}
-                              {directApproach && (
-                                <div style={{ background:'rgba(0,149,246,0.06)', border:'1px solid rgba(0,149,246,0.2)', borderRadius:'8px', padding:'8px 10px', marginBottom:'10px', fontSize:'11px', color:C.primary }}>
-                                  Direct approach — no campaign required. You are contacting this creator outside a campaign.
-                                </div>
-                              )}
                               {/* Deal Room Header */}
                               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
                                 <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
