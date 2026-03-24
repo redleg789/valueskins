@@ -3943,7 +3943,7 @@ export default function InstagramDemoPage() {
                                               <div style={{ background:'rgba(46,125,50,0.06)', border:'1px solid rgba(46,125,50,0.2)', borderRadius:'8px', padding:'10px', marginBottom:'12px', fontSize:'11px', color:C.textSecondary }}>
                                                 Brand payment on-hold: ${agreedPrice.toLocaleString()} — released per milestones above
                                               </div>
-                                              {allUploaded && (
+                                              {allUploaded && activeDeal?.creatorDealLifecycle !== 'submitted' && (
                                                 <button onClick={() => {
                                                   const agreedAmt = parseInt(dealCounterAmount || '5000');
                                                   setCreatorDealLifecycle('submitted');
@@ -3951,8 +3951,10 @@ export default function InstagramDemoPage() {
                                                   if (activeDealKey) {
                                                     updateDeal(activeDealKey, {
                                                       creatorDealLifecycle: 'submitted',
+                                                      brandApprovalPhase: 'reviewing',
                                                       paymentMilestones: { advance: 'released', upload: 'released', approval: 'pending' },
-                                                      deliverableStatuses: deliverableStatuses
+                                                      deliverableStatuses: deliverableStatuses,
+                                                      deliverableLinks: deliverableLinks,
                                                     });
                                                     firebaseSendNotification(opp?.brand || 'Brand', 'application', `Deliverables submitted: ${agreedAmt.toLocaleString()} – Advance & upload milestones released. Awaiting approval.`);
                                                   }
@@ -3961,6 +3963,11 @@ export default function InstagramDemoPage() {
                                                 }} style={{ width:'100%', background:C.primary, border:'none', padding:'10px', borderRadius:'8px', color:'#fff', fontWeight:600, cursor:'pointer', fontSize:'13px', marginBottom:'8px' }}>
                                                   Submit for Review
                                                 </button>
+                                              )}
+                                              {allUploaded && activeDeal?.creatorDealLifecycle === 'submitted' && (
+                                                <div style={{ width:'100%', padding:'10px', background:'rgba(0,149,246,0.08)', border:`1px solid rgba(0,149,246,0.25)`, borderRadius:'8px', color:C.primary, fontWeight:600, fontSize:'13px', textAlign:'center', marginBottom:'8px' }}>
+                                                  ⏳ Waiting for brand&apos;s approval
+                                                </div>
                                               )}
                                               <button onClick={() => setShowCancelDealModal(true)} style={{ width:'100%', background:'none', border:`1px solid rgba(239,68,68,0.3)`, padding:'8px', borderRadius:'8px', color:'#ef4444', fontSize:'11px', cursor:'pointer', fontWeight:500 }}>
                                                 Cancel Deal
