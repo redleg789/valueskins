@@ -1166,6 +1166,8 @@ export default function InstagramDemoPage() {
   const [profileLinkCopied, setProfileLinkCopied] = useState(false);
   // Deal cancellation
   const [showCancelDealModal, setShowCancelDealModal] = useState(false);
+  const [submittedForReview, setSubmittedForReview] = useState(false);
+  const [campaignsSectionOpen, setCampaignsSectionOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   // Deal rating (post-completion)
   const [showRatingModal, setShowRatingModal] = useState(false);
@@ -2622,6 +2624,7 @@ export default function InstagramDemoPage() {
                           const dealKey = matchingCreator ? `${matchingCreator.name}|${selectedMarketplaceSkin}` : null;
                           const existingDeal = dealKey ? dealStates[dealKey] : undefined;
                           const hasActiveDeal = existingDeal && existingDeal.phase !== 'brief';
+                          const isDealDone = existingDeal && (existingDeal.creatorDealLifecycle === 'approved' || existingDeal.brandApprovalPhase === 'approved');
                           const isNegotiating = negotiatingOpp === i || hasActiveDeal;
                           const brandInitial = opp.brand.charAt(0).toUpperCase();
                           return (
@@ -2662,6 +2665,7 @@ export default function InstagramDemoPage() {
                                 </button>
                                 <button
                                   onClick={() => {
+                                    if (isDealDone) return;
                                     const dealKey = matchingCreator ? `${matchingCreator.name}|${selectedMarketplaceSkin}` : null;
                                     if (!dealKey) return;
                                     setNegotiatingOpp(i);
@@ -2681,9 +2685,9 @@ export default function InstagramDemoPage() {
                                       });
                                     }
                                   }}
-                                  style={{ flex: 1, fontSize: '13px', fontWeight: 700, color: '#fff', background: hasActiveDeal ? C.success : C.primary, border: 'none', padding: '10px', borderRadius: '10px', cursor: 'pointer' }}
+                                  style={{ flex: 1, fontSize: '13px', fontWeight: 700, color: '#fff', background: isDealDone ? C.textMuted : hasActiveDeal ? C.success : C.primary, border: 'none', padding: '10px', borderRadius: '10px', cursor: isDealDone ? 'default' : 'pointer', opacity: isDealDone ? 0.6 : 1 }}
                                 >
-                                  {hasActiveDeal ? 'Open Deal' : 'View Deal'}
+                                  {isDealDone ? 'Deal Complete' : hasActiveDeal ? 'Open Deal' : 'View Deal'}
                                 </button>
                               </div>
 
@@ -3978,8 +3982,9 @@ export default function InstagramDemoPage() {
                                               <div style={{ background:'rgba(46,125,50,0.06)', border:'1px solid rgba(46,125,50,0.2)', borderRadius:'8px', padding:'10px', marginBottom:'12px', fontSize:'11px', color:C.textSecondary }}>
                                                 Brand payment on-hold: ${agreedPrice.toLocaleString()} — released per milestones above
                                               </div>
-                                              {allUploaded && activeDeal?.creatorDealLifecycle !== 'submitted' && (
+                                              {allUploaded && !submittedForReview && activeDeal?.creatorDealLifecycle !== 'submitted' && activeDeal?.creatorDealLifecycle !== 'approved' && (
                                                 <button onClick={() => {
+                                                  setSubmittedForReview(true);
                                                   const agreedAmt = parseInt(dealCounterAmount || '5000');
                                                   setCreatorDealLifecycle('submitted');
                                                   setPaymentMilestones({ advance: 'released', upload: 'released', approval: 'pending' });
@@ -3999,7 +4004,7 @@ export default function InstagramDemoPage() {
                                                   Submit for Review
                                                 </button>
                                               )}
-                                              {allUploaded && activeDeal?.creatorDealLifecycle === 'submitted' && (
+                                              {allUploaded && (submittedForReview || activeDeal?.creatorDealLifecycle === 'submitted') && activeDeal?.creatorDealLifecycle !== 'approved' && (
                                                 <div style={{ width:'100%', padding:'10px', background:'rgba(0,149,246,0.08)', border:`1px solid rgba(0,149,246,0.25)`, borderRadius:'8px', color:C.primary, fontWeight:600, fontSize:'13px', textAlign:'center', marginBottom:'8px' }}>
                                                   ⏳ Waiting for brand&apos;s approval
                                                 </div>
@@ -5723,9 +5728,61 @@ export default function InstagramDemoPage() {
                                       </div>
                                       <div style={{ fontSize:'14px', fontWeight:700, color:C.success }}>Escrow Funded</div>
                                       <div style={{ fontSize:'12px', color:C.textSecondary, marginTop:'4px' }}>Creator has been notified to begin work</div>
-                                      {brandDeal?.creatorDealLifecycle === 'submitted' && (
-                                        <div style={{ marginTop:'12px', padding:'10px', background:'rgba(0,149,246,0.08)', border:`1px solid rgba(0,149,246,0.25)`, borderRadius:'8px', fontSize:'12px', color:C.primary, fontWeight:600 }}>
-                                          📎 Creator submitted deliverables — switch to Review tab to approve
+                                      {brandDeal?.creatorDealLifecycle === 'submitted' && brandDeal?.brandApprovalPhase !== 'approved' && (() => {
+                                        const bdLinks = (brandDeal?.deliverableLinks || {}) as Record<number, string>;
+                                        const agreedAmt = parseInt(agreedDealAmount || brandBudget || '5000');
+                                        const approvalAmt = Math.round(agreedAmt * 0.3);
+                                        return (
+                                          <div style={{ marginTop:'14px', textAlign:'left' }}>
+                                            <div style={{ fontSize:'11px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'10px' }}>Review Submitted Deliverables</div>
+                                            {Object.entries(bdLinks).length > 0 ? Object.entries(bdLinks).map(([idx, link]) => (
+                                              <div key={idx} style={{ background:C.bg, borderRadius:'8px', padding:'10px', border:`1px solid ${C.border}`, marginBottom:'8px' }}>
+                                                <div style={{ fontSize:'12px', fontWeight:600, color:C.text, marginBottom:'4px' }}>Deliverable #{parseInt(idx) + 1}</div>
+                                                <a href={link} target="_blank" rel="noopener noreferrer" style={{ fontSize:'10px', color:C.primary, textDecoration:'none', display:'block', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{link}</a>
+                                              </div>
+                                            )) : (
+                                              <div style={{ background:C.bg, borderRadius:'8px', padding:'10px', border:`1px solid ${C.border}`, marginBottom:'8px', fontSize:'11px', color:C.textSecondary }}>
+                                                Creator submitted deliverables — review pending
+                                              </div>
+                                            )}
+                                            <div style={{ display:'flex', gap:'8px', marginTop:'10px' }}>
+                                              <button
+                                                onClick={() => {
+                                                  if (brandDealKey) {
+                                                    updateDeal(brandDealKey, {
+                                                      brandApprovalPhase: 'approved',
+                                                      paymentMilestones: { advance: 'released', upload: 'released', approval: 'released' },
+                                                      creatorDealLifecycle: 'approved'
+                                                    });
+                                                    setBrandApprovalPhase('approved');
+                                                    firebaseSendNotification('Creator', 'application', `Deliverables approved! Final payment released: $${approvalAmt.toLocaleString()}`);
+                                                  }
+                                                  setPurchaseToast(`Approved — $${approvalAmt.toLocaleString()} released to creator`);
+                                                  setTimeout(() => setPurchaseToast(null), 3500);
+                                                }}
+                                                style={{ flex:1, background:C.success, border:'none', padding:'9px', borderRadius:'8px', color:'#fff', fontWeight:700, cursor:'pointer', fontSize:'12px' }}
+                                              >
+                                                Approve
+                                              </button>
+                                              <button
+                                                onClick={() => {
+                                                  if (brandDealKey) {
+                                                    firebaseSendNotification('Creator', 'application', 'Brand requested revision — please update your deliverables');
+                                                  }
+                                                  setPurchaseToast('Revision requested — creator notified');
+                                                  setTimeout(() => setPurchaseToast(null), 3000);
+                                                }}
+                                                style={{ flex:1, background:'none', border:`1px solid ${C.border}`, padding:'9px', borderRadius:'8px', color:C.textSecondary, fontWeight:600, cursor:'pointer', fontSize:'12px' }}
+                                              >
+                                                Request Revision
+                                              </button>
+                                            </div>
+                                          </div>
+                                        );
+                                      })()}
+                                      {brandDeal?.brandApprovalPhase === 'approved' && (
+                                        <div style={{ marginTop:'12px', padding:'10px', background:'rgba(0,212,106,0.08)', border:`1px solid rgba(0,212,106,0.25)`, borderRadius:'8px', fontSize:'12px', color:C.success, fontWeight:600 }}>
+                                          ✅ Deal complete — all payments released
                                         </div>
                                       )}
                                     </div>
@@ -6411,15 +6468,20 @@ export default function InstagramDemoPage() {
                     })()}
                     </>)}
 
-                    {/* Campaign tabs: Your Campaigns */}
+                    {/* Campaign tabs: Your Campaigns — collapsible, does NOT hide the creator list */}
                     <div style={{ marginTop:'24px', paddingTop:'20px', borderTop:`1px solid ${C.border}` }}>
-                      <div style={{ display:'flex', gap:'0', marginBottom:'14px', borderBottom:`1px solid ${C.border}` }}>
-                        <button onClick={() => setMarketplaceTab('campaigns')} style={{ flex:1, padding:'10px 0', background:'none', border:'none', borderBottom:`2px solid ${marketplaceTab === 'campaigns' ? C.primary : 'transparent'}`, color: marketplaceTab === 'campaigns' ? C.text : C.textMuted, fontSize:'12px', fontWeight:700, cursor:'pointer', textTransform:'uppercase', letterSpacing:'0.5px' }}>
-                          Your Campaigns {campaigns.length > 0 && <span style={{ fontSize:'10px', background: marketplaceTab === 'campaigns' ? C.primary : C.border, color:'#fff', padding:'1px 5px', borderRadius:'8px', marginLeft:'4px' }}>{campaigns.length}</span>}
-                        </button>
-                      </div>
+                      <button
+                        onClick={() => setCampaignsSectionOpen(v => !v)}
+                        style={{ width:'100%', display:'flex', justifyContent:'space-between', alignItems:'center', background:'none', border:'none', padding:'0 0 14px', cursor:'pointer' }}
+                      >
+                        <span style={{ fontSize:'12px', fontWeight:700, color:C.text, textTransform:'uppercase', letterSpacing:'0.5px', display:'flex', alignItems:'center', gap:'6px' }}>
+                          Your Campaigns
+                          {campaigns.length > 0 && <span style={{ fontSize:'10px', background:C.primary, color:'#fff', padding:'1px 5px', borderRadius:'8px' }}>{campaigns.length}</span>}
+                        </span>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.textMuted} strokeWidth="2.5" style={{ transform: campaignsSectionOpen ? 'rotate(180deg)' : 'none', transition:'transform 0.2s' }}><polyline points="6 9 12 15 18 9"/></svg>
+                      </button>
 
-                      {marketplaceTab === 'campaigns' && (<>
+                      {campaignsSectionOpen && (<>
                         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'10px' }}>
                           {campaigns.length > 0 && (
                             <button onClick={() => { persistCampaigns([]); setSharedApplications([]); setDealStates({}); }} style={{ background:'none', border:`1px solid rgba(239,68,68,0.3)`, borderRadius:'6px', padding:'5px 10px', fontSize:'11px', fontWeight:600, color:'#ef4444', cursor:'pointer' }}>Clear all</button>
