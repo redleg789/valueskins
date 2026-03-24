@@ -161,6 +161,20 @@ const BRAND_CATEGORIES: Record<string, { name: string; subCategories: string[] }
 
 const CAMPAIGN_TYPES = ['Product Review', 'Brand Ambassador', 'Sponsored Content', 'Event Coverage', 'Affiliate', 'Whitelabel', 'UGC', 'Podcast'];
 
+// Sensitive content categories requiring explicit disclaimers
+const SENSITIVE_CONTENT_KEYWORDS = [
+  'health', 'skincare', 'medical', 'doctor', 'dermatolog', 'nutrition', 'diet', 'fitness',
+  'mental health', 'therapy', 'supplement', 'vitamin', 'weight loss', 'workout', 'exercise',
+  'legal', 'law', 'attorney', 'financial', 'investment', 'crypto', 'tax', 'insurance',
+  'beauty', 'cosmetic', 'acne', 'skin condition', 'allerg', 'pharmaceutical'
+];
+
+// Helper to detect if content is sensitive
+const isSensitiveContent = (text: string): boolean => {
+  const lowerText = (text || '').toLowerCase();
+  return SENSITIVE_CONTENT_KEYWORDS.some(keyword => lowerText.includes(keyword));
+};
+
 // Opportunity type with full brand brief
 type Opportunity = {
   brand: string;
@@ -2806,12 +2820,29 @@ export default function InstagramDemoPage() {
                                     const uploadPct = uploadPercent;
                                     const approvalPct = approvalPercent;
                                     const refId = `DR-${activeDealKey ? Math.abs(activeDealKey.split('').reduce((a, c) => a + c.charCodeAt(0), 0) % 9000 + 1000) : '0000'}-${opp.brand.replace(/\s/g, '').slice(0, 3).toUpperCase()}`;
+                                    const briefText = `${opp.about || ''} ${opp.requirements?.join(' ') || ''} ${opp.deliverables?.map(d => d.format).join(', ') || ''}`;
+                                    const hasSensitiveContent = isSensitiveContent(briefText) || isSensitiveContent(opp.brand);
                                     return (
                                       <>
                                         <div style={{ fontSize: '11px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '12px' }}>Formal Offer — Review &amp; Accept</div>
                                         <div style={{ fontSize: '11px', color: C.textSecondary, marginBottom: '14px', lineHeight: 1.5 }}>
                                           The brand has submitted their final offer based on your chat negotiation. This document is the binding record of what was agreed.
                                         </div>
+                                        {/* Sensitive content disclaimer */}
+                                        {hasSensitiveContent && (
+                                          <div style={{ background: 'rgba(255,152,0,0.08)', border: '1px solid rgba(255,152,0,0.3)', borderRadius: '8px', padding: '10px', marginBottom: '12px' }}>
+                                            <div style={{ fontSize: '10px', fontWeight: 700, color: '#ff9800', marginBottom: '4px', textTransform: 'uppercase' }}>⚠️ Content Disclaimer Required</div>
+                                            <div style={{ fontSize: '11px', color: C.textSecondary, lineHeight: 1.5 }}>
+                                              This campaign involves regulated or sensitive topics (healthcare, skincare, legal, financial, etc.). <strong>You must include clear disclaimers</strong> in your content such as:
+                                              <ul style={{ margin: '6px 0 0 16px', paddingLeft: 0 }}>
+                                                <li style={{ fontSize: '10px', marginBottom: '3px' }}>"This is my personal opinion/experience—not professional advice"</li>
+                                                <li style={{ fontSize: '10px', marginBottom: '3px' }}>"Based on advice from my [doctor/lawyer/specialist]"</li>
+                                                <li style={{ fontSize: '10px' }}>"Consult a qualified professional before acting on this"</li>
+                                              </ul>
+                                            </div>
+                                            <div style={{ fontSize: '10px', color: C.warning, marginTop: '6px' }}>Failure to include disclaimers may result in account penalties. See <a href="/terms" style={{ color: C.warning, textDecoration: 'underline' }}>Terms &amp; Conditions</a> for details.</div>
+                                          </div>
+                                        )}
 
                                         {/* Price */}
                                         <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: '10px', padding: '12px', marginBottom: '10px' }}>
@@ -5808,14 +5839,29 @@ export default function InstagramDemoPage() {
                                     switch(dealType) {
                                       case 'paid':
                                       case 'c2c_paid':
-                                        return brandDeal?.phase === 'accepted' ? (
-                                          <button
-                                            onClick={() => setBrandApprovalPhase('funding')}
-                                            style={{ width: '100%', background: C.primary, border: 'none', padding: '9px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}
-                                          >
-                                            Fund Escrow to Begin
-                                          </button>
-                                        ) : (
+                                        if (brandDeal?.phase === 'accepted') {
+                                          const briefText = `${brandBriefAbout || ''} ${brandBriefCampaignDesc || ''} ${brandBriefDeliverables || ''}`;
+                                          const hasSensitiveContent = isSensitiveContent(briefText) || isSensitiveContent(brandBriefTitle);
+                                          return (
+                                            <>
+                                              {hasSensitiveContent && (
+                                                <div style={{ background: 'rgba(255,152,0,0.08)', border: '1px solid rgba(255,152,0,0.3)', borderRadius: '8px', padding: '10px', marginBottom: '10px' }}>
+                                                  <div style={{ fontSize: '10px', fontWeight: 700, color: '#ff9800', marginBottom: '4px', textTransform: 'uppercase' }}>⚠️ Verify Disclaimer Compliance</div>
+                                                  <div style={{ fontSize: '11px', color: C.textSecondary, lineHeight: 1.5 }}>
+                                                    This campaign involves regulated topics. <strong>Ensure the creator includes clear disclaimers</strong> in their content (e.g., "personal opinion," "consult a professional"). Review <a href="/terms" style={{ color: C.primary, textDecoration: 'underline' }}>Terms &amp; Conditions</a> for full guidelines.
+                                                  </div>
+                                                </div>
+                                              )}
+                                              <button
+                                                onClick={() => setBrandApprovalPhase('funding')}
+                                                style={{ width: '100%', background: C.primary, border: 'none', padding: '9px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}
+                                              >
+                                                Fund Escrow to Begin
+                                              </button>
+                                            </>
+                                          );
+                                        }
+                                        return (
                                           <div style={{ width: '100%', background: C.bg, border: `1px solid ${C.border}`, padding: '9px', borderRadius: '8px', color: C.textMuted, fontWeight: 600, textAlign: 'center', fontSize: '13px' }}>
                                             Waiting for creator to accept offer
                                           </div>
