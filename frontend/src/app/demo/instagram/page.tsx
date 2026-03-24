@@ -3788,7 +3788,27 @@ export default function InstagramDemoPage() {
                                             );
                                           }
                                           return (
-                                            <div style={{ textAlign:'center', padding:'16px 0' }}>
+                                            <div style={{ padding:'8px 0 16px' }}>
+                                              {/* Phase status bar — creator view */}
+                                              <div style={{ display:'flex', alignItems:'center', gap:'4px', marginBottom:'16px', padding:'8px 10px', background:'rgba(0,149,246,0.06)', borderRadius:'8px', border:'1px solid rgba(0,149,246,0.2)' }}>
+                                                {[
+                                                  { label:'Offer', done: true },
+                                                  { label:'Accepted', done: true },
+                                                  { label:'Brand Funds', done: false, active: true },
+                                                  { label:'Your Work', done: false },
+                                                ].map((s, i) => (
+                                                  <div key={i} style={{ display:'flex', alignItems:'center', gap:'4px', flex: i < 3 ? 'none' : 1 }}>
+                                                    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'2px' }}>
+                                                      <div style={{ width:'18px', height:'18px', borderRadius:'50%', background: s.done ? C.success : s.active ? C.primary : C.border, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'9px', color:'#fff', fontWeight:700 }}>
+                                                        {s.done ? '✓' : i + 1}
+                                                      </div>
+                                                      <div style={{ fontSize:'8px', color: s.done ? C.success : s.active ? C.primary : C.textMuted, fontWeight: s.active ? 700 : 400, whiteSpace:'nowrap' }}>{s.label}</div>
+                                                    </div>
+                                                    {i < 3 && <div style={{ width:'16px', height:'1px', background: s.done ? C.success : C.border, marginBottom:'10px' }} />}
+                                                  </div>
+                                                ))}
+                                              </div>
+                                              <div style={{ textAlign:'center' }}>
                                               <div style={{ width:'44px', height:'44px', borderRadius:'50%', background:C.surfaceAlt, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 12px' }}>
                                                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                                               </div>
@@ -3808,6 +3828,7 @@ export default function InstagramDemoPage() {
                                                   $0 / ${agreedPrice.toLocaleString()} deposited
                                                 </div>
                                               </div>
+                                              </div>{/* end textAlign:center */}
                                             </div>
                                           );
                                         }
@@ -5596,23 +5617,105 @@ export default function InstagramDemoPage() {
                                 </>
                               )}
 
-                              {/* Phase 3a: Soft hold active */}
+                              {/* Phase 3a: Soft hold active — creator accepted, brand must fund escrow */}
                               {brandDealPhase === 'softhold' && (
                                 <>
-                                  <div style={{ textAlign: 'center', padding: '10px 0 14px' }}>
-                                    <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(0,150,136,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px' }}>
-                                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00897B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                                      </svg>
-                                    </div>
-                                    <div style={{ fontSize: '14px', fontWeight: 700, color: C.text, marginBottom: '4px' }}>Slot Reserved</div>
-                                    <div style={{ fontSize: '12px', color: C.textSecondary, lineHeight: 1.5, marginBottom: '4px' }}>
-                                      {creator.name}'s calendar is on hold for {brandSoftHoldHours}h
-                                    </div>
-                                    <div style={{ fontSize: '11px', color: C.textMuted }}>
-                                      No payment required · Expires automatically
-                                    </div>
+                                  {/* Phase status bar */}
+                                  <div style={{ display:'flex', alignItems:'center', gap:'4px', marginBottom:'14px', padding:'8px 10px', background:'rgba(0,150,136,0.06)', borderRadius:'8px', border:'1px solid rgba(0,150,136,0.2)' }}>
+                                    {[
+                                      { label:'Offer Sent', done: true },
+                                      { label:'Creator Accepted', done: true },
+                                      { label:'Fund Escrow', done: brandDeal?.escrowFunded, active: !brandDeal?.escrowFunded },
+                                      { label:'Work & Approve', done: false },
+                                    ].map((s, i) => (
+                                      <div key={i} style={{ display:'flex', alignItems:'center', gap:'4px', flex: i < 3 ? 'none' : 1 }}>
+                                        <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'2px' }}>
+                                          <div style={{ width:'18px', height:'18px', borderRadius:'50%', background: s.done ? C.success : s.active ? C.primary : C.border, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'9px', color:'#fff', fontWeight:700 }}>
+                                            {s.done ? '✓' : i + 1}
+                                          </div>
+                                          <div style={{ fontSize:'8px', color: s.done ? C.success : s.active ? C.primary : C.textMuted, fontWeight: s.active ? 700 : 400, whiteSpace:'nowrap' }}>{s.label}</div>
+                                        </div>
+                                        {i < 3 && <div style={{ width:'16px', height:'1px', background: s.done ? C.success : C.border, marginBottom:'10px' }} />}
+                                      </div>
+                                    ))}
                                   </div>
+
+                                  {!brandDeal?.escrowFunded ? (
+                                    <>
+                                      <div style={{ background:'rgba(0,150,136,0.06)', border:'1px solid rgba(0,150,136,0.2)', borderRadius:'8px', padding:'12px', marginBottom:'12px' }}>
+                                        <div style={{ fontSize:'13px', fontWeight:700, color:C.text, marginBottom:'4px' }}>✅ Creator Accepted Your Offer</div>
+                                        <div style={{ fontSize:'11px', color:C.textSecondary, lineHeight:1.5 }}>
+                                          {creator.name} is ready to begin. Fund escrow to release the advance and start the deal.
+                                        </div>
+                                      </div>
+                                      {(() => {
+                                        const totalAmount = parseInt(brandBudget) || 5000;
+                                        const commission = Math.round(totalAmount * platformCommissionPct / 100);
+                                        const creatorPayout = commissionPaidBy === 'brand' ? totalAmount : totalAmount - commission;
+                                        const brandDeposit = commissionPaidBy === 'brand' ? totalAmount + commission : totalAmount;
+                                        const advanceToCreator = Math.round(creatorPayout * 0.3);
+                                        return (
+                                          <div style={{ background:C.bg, borderRadius:'10px', padding:'14px', border:`1px solid ${C.border}`, marginBottom:'12px' }}>
+                                            <div style={{ fontSize:'11px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'10px' }}>Escrow Breakdown</div>
+                                            <div style={{ display:'flex', justifyContent:'space-between', fontSize:'11px', marginBottom:'6px', padding:'6px 8px', background:'rgba(46,125,50,0.06)', borderRadius:'4px', border:'1px solid rgba(46,125,50,0.15)' }}>
+                                              <span style={{ color:C.success, fontWeight:600 }}>Advance (30%)</span>
+                                              <span style={{ color:C.success, fontWeight:700 }}>${advanceToCreator.toLocaleString()} — paid to creator immediately</span>
+                                            </div>
+                                            <div style={{ display:'flex', justifyContent:'space-between', fontSize:'11px', marginBottom:'4px' }}>
+                                              <span style={{ color:C.textMuted }}>Milestone (40%)</span>
+                                              <span style={{ color:C.text, fontWeight:600 }}>${Math.round(creatorPayout * 0.4).toLocaleString()} — on content delivery</span>
+                                            </div>
+                                            <div style={{ display:'flex', justifyContent:'space-between', fontSize:'11px', marginBottom:'4px' }}>
+                                              <span style={{ color:C.textMuted }}>Completion (30%)</span>
+                                              <span style={{ color:C.text, fontWeight:600 }}>${Math.round(creatorPayout * 0.3).toLocaleString()} — on your approval</span>
+                                            </div>
+                                            {commissionPaidBy === 'brand' && (
+                                              <div style={{ display:'flex', justifyContent:'space-between', fontSize:'11px', marginTop:'6px', padding:'4px 8px', background:'rgba(0,149,246,0.04)', borderRadius:'4px' }}>
+                                                <span style={{ color:C.textMuted }}>Platform fee ({platformCommissionPct}%)</span>
+                                                <span style={{ color:C.textSecondary, fontWeight:600 }}>${commission.toLocaleString()}</span>
+                                              </div>
+                                            )}
+                                            <button
+                                              onClick={() => {
+                                                const now = new Date();
+                                                const timeStr = now.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit', second:'2-digit', hour12:false });
+                                                const advanceMsg = { id: Date.now(), sender: 'brand' as const, text: `Escrow funded: $${totalAmount.toLocaleString()} deposited. Advance of $${advanceToCreator.toLocaleString()} (30%) paid to creator.`, time: timeStr, isoTime: now.toISOString(), seen: false };
+                                                const existingMsgs = brandDeal?.chatMessages || [];
+                                                if (brandDealKey) {
+                                                  updateDeal(brandDealKey, {
+                                                    escrowFunded: true,
+                                                    brandApprovalPhase: 'funded',
+                                                    creatorDealLifecycle: 'deliverables',
+                                                    paymentMilestones: { advance: 'released', upload: 'pending', approval: 'pending' },
+                                                    chatMessages: [...existingMsgs, advanceMsg],
+                                                  });
+                                                }
+                                                firebaseSendNotification(creator.name, 'application', `Advance paid: $${advanceToCreator.toLocaleString()} deposited to your account. Begin your deliverables.`);
+                                                setPurchaseToast(`Escrow funded — $${advanceToCreator.toLocaleString()} advance paid to ${creator.name}`);
+                                                setTimeout(() => setPurchaseToast(null), 4000);
+                                              }}
+                                              style={{ width:'100%', background:C.success, border:'none', padding:'10px', borderRadius:'8px', color:'#fff', fontWeight:700, cursor:'pointer', fontSize:'13px', marginTop:'10px' }}
+                                            >
+                                              Deposit ${brandDeposit.toLocaleString()} into Escrow
+                                            </button>
+                                          </div>
+                                        );
+                                      })()}
+                                    </>
+                                  ) : (
+                                    <div style={{ textAlign:'center', padding:'16px 0' }}>
+                                      <div style={{ width:'44px', height:'44px', borderRadius:'50%', background:'rgba(46,125,50,0.1)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 10px' }}>
+                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={C.success} strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                                      </div>
+                                      <div style={{ fontSize:'14px', fontWeight:700, color:C.success }}>Escrow Funded</div>
+                                      <div style={{ fontSize:'12px', color:C.textSecondary, marginTop:'4px' }}>Creator has been notified to begin work</div>
+                                      {brandDeal?.creatorDealLifecycle === 'submitted' && (
+                                        <div style={{ marginTop:'12px', padding:'10px', background:'rgba(0,149,246,0.08)', border:`1px solid rgba(0,149,246,0.25)`, borderRadius:'8px', fontSize:'12px', color:C.primary, fontWeight:600 }}>
+                                          📎 Creator submitted deliverables — switch to Review tab to approve
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
                                 </>
                               )}
 
