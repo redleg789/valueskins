@@ -3846,7 +3846,7 @@ export default function InstagramDemoPage() {
                                                   const status = deliverableStatuses[di] || 'pending';
                                                   const link = deliverableLinks[di] || '';
                                                   const inputVal = deliverableLinkInputs[di] || '';
-                                                  const isValidIgUrl = (u: string) => /instagram\.com\/(p|reel|tv)\/[A-Za-z0-9_-]+/.test(u);
+                                                  const isValidIgUrl = (u: string) => /instagram\.com\/(p|reels?|tv)\/[A-Za-z0-9_-]+/.test(u);
                                                   const postId = link.match(/instagram\.com\/(?:p|reel|tv)\/([A-Za-z0-9_-]+)/)?.[1];
                                                   return (
                                                     <div key={di} style={{ borderRadius:'8px', marginBottom:'8px', border:`1px solid ${status === 'approved' ? 'rgba(0,212,106,0.25)' : status === 'uploaded' ? 'rgba(0,149,246,0.25)' : C.border}`, overflow:'hidden' }}>
@@ -3898,7 +3898,7 @@ export default function InstagramDemoPage() {
                                                             >Confirm</button>
                                                           </div>
                                                           {inputVal && !isValidIgUrl(inputVal) && (
-                                                            <div style={{ fontSize:'10px', color:'#ef4444', marginTop:'4px' }}>Must be an instagram.com/p/, /reel/, or /tv/ link</div>
+                                                            <div style={{ fontSize:'10px', color:'#ef4444', marginTop:'4px' }}>Must be an instagram.com/p/, /reels/, or /tv/ link</div>
                                                           )}
                                                         </div>
                                                       )}
@@ -4127,10 +4127,10 @@ export default function InstagramDemoPage() {
                                                   value={deliverableLinkInputs[0] || ''}
                                                   onChange={e => setDeliverableLinkInputs(prev => ({ ...prev, 0: e.target.value }))}
                                                   placeholder="https://www.instagram.com/p/..."
-                                                  style={{ width:'100%', background:C.surfaceAlt, border:`1px solid ${/instagram\.com\/(p|reel|tv)\/[A-Za-z0-9_-]+/.test(deliverableLinkInputs[0] || '') ? C.success : C.border}`, borderRadius:'6px', color:C.text, padding:'7px 10px', fontSize:'11px', fontFamily:'inherit', outline:'none', marginBottom:'8px', boxSizing:'border-box' }}
+                                                  style={{ width:'100%', background:C.surfaceAlt, border:`1px solid ${/instagram\.com\/(p|reels?|tv)\/[A-Za-z0-9_-]+/.test(deliverableLinkInputs[0] || '') ? C.success : C.border}`, borderRadius:'6px', color:C.text, padding:'7px 10px', fontSize:'11px', fontFamily:'inherit', outline:'none', marginBottom:'8px', boxSizing:'border-box' }}
                                                 />
                                                 <button
-                                                  disabled={!/instagram\.com\/(p|reel|tv)\/[A-Za-z0-9_-]+/.test(deliverableLinkInputs[0] || '')}
+                                                  disabled={!/instagram\.com\/(p|reels?|tv)\/[A-Za-z0-9_-]+/.test(deliverableLinkInputs[0] || '')}
                                                   onClick={() => {
                                                     setDeliverableLinks(prev => ({ ...prev, 0: deliverableLinkInputs[0] }));
                                                     setGoodsTrackerStatus('content_submitted');
@@ -4141,7 +4141,7 @@ export default function InstagramDemoPage() {
                                                     setPurchaseToast('Content submitted for review');
                                                     setTimeout(() => setPurchaseToast(null), 3000);
                                                   }}
-                                                  style={{ width:'100%', background: /instagram\.com\/(p|reel|tv)\/[A-Za-z0-9_-]+/.test(deliverableLinkInputs[0] || '') ? C.primary : C.border, border:'none', borderRadius:'6px', padding:'8px', color:'#fff', fontWeight:600, cursor: /instagram\.com\/(p|reel|tv)\/[A-Za-z0-9_-]+/.test(deliverableLinkInputs[0] || '') ? 'pointer' : 'not-allowed', opacity: /instagram\.com\/(p|reel|tv)\/[A-Za-z0-9_-]+/.test(deliverableLinkInputs[0] || '') ? 1 : 0.5, fontSize:'11px' }}
+                                                  style={{ width:'100%', background: /instagram\.com\/(p|reels?|tv)\/[A-Za-z0-9_-]+/.test(deliverableLinkInputs[0] || '') ? C.primary : C.border, border:'none', borderRadius:'6px', padding:'8px', color:'#fff', fontWeight:600, cursor: /instagram\.com\/(p|reels?|tv)\/[A-Za-z0-9_-]+/.test(deliverableLinkInputs[0] || '') ? 'pointer' : 'not-allowed', opacity: /instagram\.com\/(p|reels?|tv)\/[A-Za-z0-9_-]+/.test(deliverableLinkInputs[0] || '') ? 1 : 0.5, fontSize:'11px' }}
                                                 >
                                                   Submit Content
                                                 </button>
@@ -4186,10 +4186,10 @@ export default function InstagramDemoPage() {
                                                   value={deliverableLinkInputs[0] || ''}
                                                   onChange={e => setDeliverableLinkInputs(prev => ({ ...prev, 0: e.target.value }))}
                                                   placeholder="https://www.instagram.com/p/..."
-                                                  style={{ width:'100%', background:C.surfaceAlt, border:`1px solid ${/instagram\.com\/(p|reel|tv)\/[A-Za-z0-9_-]+/.test(deliverableLinkInputs[0] || '') ? C.success : C.border}`, borderRadius:'6px', color:C.text, padding:'7px 10px', fontSize:'11px', fontFamily:'inherit', outline:'none', marginBottom:'8px', boxSizing:'border-box' }}
+                                                  style={{ width:'100%', background:C.surfaceAlt, border:`1px solid ${/instagram\.com\/(p|reels?|tv)\/[A-Za-z0-9_-]+/.test(deliverableLinkInputs[0] || '') ? C.success : C.border}`, borderRadius:'6px', color:C.text, padding:'7px 10px', fontSize:'11px', fontFamily:'inherit', outline:'none', marginBottom:'8px', boxSizing:'border-box' }}
                                                 />
                                                 <button
-                                                  disabled={!/instagram\.com\/(p|reel|tv)\/[A-Za-z0-9_-]+/.test(deliverableLinkInputs[0] || '')}
+                                                  disabled={!/instagram\.com\/(p|reels?|tv)\/[A-Za-z0-9_-]+/.test(deliverableLinkInputs[0] || '')}
                                                   onClick={() => {
                                                     setDeliverableLinks(prev => ({ ...prev, 0: deliverableLinkInputs[0] }));
                                                     setC2cContentStatus('content_submitted');
@@ -4200,7 +4200,7 @@ export default function InstagramDemoPage() {
                                                     setPurchaseToast('Content submitted');
                                                     setTimeout(() => setPurchaseToast(null), 3000);
                                                   }}
-                                                  style={{ width:'100%', background: /instagram\.com\/(p|reel|tv)\/[A-Za-z0-9_-]+/.test(deliverableLinkInputs[0] || '') ? C.primary : C.border, border:'none', borderRadius:'6px', padding:'8px', color:'#fff', fontWeight:600, cursor: /instagram\.com\/(p|reel|tv)\/[A-Za-z0-9_-]+/.test(deliverableLinkInputs[0] || '') ? 'pointer' : 'not-allowed', opacity: /instagram\.com\/(p|reel|tv)\/[A-Za-z0-9_-]+/.test(deliverableLinkInputs[0] || '') ? 1 : 0.5, fontSize:'11px' }}
+                                                  style={{ width:'100%', background: /instagram\.com\/(p|reels?|tv)\/[A-Za-z0-9_-]+/.test(deliverableLinkInputs[0] || '') ? C.primary : C.border, border:'none', borderRadius:'6px', padding:'8px', color:'#fff', fontWeight:600, cursor: /instagram\.com\/(p|reels?|tv)\/[A-Za-z0-9_-]+/.test(deliverableLinkInputs[0] || '') ? 'pointer' : 'not-allowed', opacity: /instagram\.com\/(p|reels?|tv)\/[A-Za-z0-9_-]+/.test(deliverableLinkInputs[0] || '') ? 1 : 0.5, fontSize:'11px' }}
                                                 >
                                                   Submit
                                                 </button>
@@ -5919,16 +5919,28 @@ export default function InstagramDemoPage() {
                                   })()}
                                   {(dealType === 'paid' || dealType === 'c2c_paid') && brandApprovalPhase === 'funding' && (() => {
                                     const totalAmount = parseInt(agreedDealAmount) || 5000;
-                                    const commission = Math.round(totalAmount * platformCommissionPct / 100);
-                                    const creatorPayout = commissionPaidBy === 'brand' ? totalAmount : totalAmount - commission;
-                                    const brandDeposit = commissionPaidBy === 'brand' ? totalAmount + commission : totalAmount;
+                                    const originalOffer = parseInt(brandDeal?.offerAmount || brandBudget || '0') || 0;
+                                    const alreadyInEscrow = brandDeal?.escrowFunded ? originalOffer : 0;
+                                    const additionalNeeded = Math.max(0, totalAmount - alreadyInEscrow);
+                                    const commission = Math.round(additionalNeeded * platformCommissionPct / 100);
+                                    const additionalDeposit = commissionPaidBy === 'brand' ? additionalNeeded + commission : additionalNeeded;
+                                    const creatorPayout = commissionPaidBy === 'brand' ? totalAmount : totalAmount - Math.round(totalAmount * platformCommissionPct / 100);
                                     const advanceToCreator = Math.round(creatorPayout * 0.3);
+                                    const isTopUp = alreadyInEscrow > 0 && additionalNeeded > 0;
                                     return (
                                       <div style={{ marginTop:'12px' }}>
                                         <div style={{ fontSize:'11px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'10px' }}>Fund Escrow Account</div>
+                                        {isTopUp && (
+                                          <div style={{ background:'rgba(249,115,22,0.06)', border:'1px solid rgba(249,115,22,0.2)', borderRadius:'8px', padding:'10px', marginBottom:'10px', fontSize:'11px', color:C.textSecondary, lineHeight:1.5 }}>
+                                            <strong style={{ color:'#f59e0b' }}>Counter-offer top-up:</strong> ${alreadyInEscrow.toLocaleString()} already in escrow from original offer. Only the additional <strong style={{ color:C.text }}>${additionalNeeded.toLocaleString()}</strong> is due now.
+                                          </div>
+                                        )}
                                         <div style={{ background:C.bg, borderRadius:'10px', padding:'14px', border:`1px solid ${C.border}`, marginBottom:'12px' }}>
                                           <div style={{ fontSize:'12px', color:C.textSecondary, marginBottom:'10px', lineHeight:1.5 }}>
-                                            Deposit <strong style={{ color:C.text }}>${brandDeposit.toLocaleString()}</strong> into escrow {commissionPaidBy === 'brand' ? `(includes ${platformCommissionPct}% fee: $${commission.toLocaleString()})` : ''}. Creator receives <strong style={{ color:C.success }}>${creatorPayout.toLocaleString()}</strong>.
+                                            {isTopUp
+                                              ? <>Deposit additional <strong style={{ color:C.text }}>${additionalDeposit.toLocaleString()}</strong> {commissionPaidBy === 'brand' ? `(includes ${platformCommissionPct}% fee: $${commission.toLocaleString()})` : ''}. Total deal: <strong style={{ color:C.success }}>${totalAmount.toLocaleString()}</strong>.</>
+                                              : <>Deposit <strong style={{ color:C.text }}>${additionalDeposit.toLocaleString()}</strong> into escrow {commissionPaidBy === 'brand' ? `(includes ${platformCommissionPct}% fee: $${commission.toLocaleString()})` : ''}. Creator receives <strong style={{ color:C.success }}>${creatorPayout.toLocaleString()}</strong>.</>
+                                            }
                                           </div>
                                           <div style={{ display:'flex', justifyContent:'space-between', fontSize:'11px', marginBottom:'6px', padding:'6px 8px', background:'rgba(46,125,50,0.06)', borderRadius:'4px', border:'1px solid rgba(46,125,50,0.15)' }}>
                                             <span style={{ color:C.success, fontWeight:600 }}>Advance (30%)</span>
@@ -5955,7 +5967,7 @@ export default function InstagramDemoPage() {
                                             setBrandApprovalPhase('funded');
                                             const now = new Date();
                                             const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: false });
-                                            const advanceMsg = { id: Date.now(), sender: 'brand' as const, text: `Escrow funded: $${totalAmount.toLocaleString()} deposited. Advance of $${advanceToCreator.toLocaleString()} (30%) paid to creator. Platform fee: $${commission.toLocaleString()} (${platformCommissionPct}%).`, time: timeStr, isoTime: now.toISOString(), seen: false };
+                                            const advanceMsg = { id: Date.now(), sender: 'brand' as const, text: isTopUp ? `Top-up deposited: $${additionalNeeded.toLocaleString()} additional (total escrow: $${totalAmount.toLocaleString()}). Advance of $${advanceToCreator.toLocaleString()} (30%) paid to creator.` : `Escrow funded: $${totalAmount.toLocaleString()} deposited. Advance of $${advanceToCreator.toLocaleString()} (30%) paid to creator. Platform fee: $${commission.toLocaleString()} (${platformCommissionPct}%).`, time: timeStr, isoTime: now.toISOString(), seen: false };
                                             const existingMsgs = brandDeal?.chatMessages || [];
                                             if (brandDealKey) {
                                               updateDeal(brandDealKey, {
@@ -5974,7 +5986,7 @@ export default function InstagramDemoPage() {
                                           }}
                                           style={{ width:'100%', background:C.success, border:'none', padding:'10px', borderRadius:'8px', color:'#fff', fontWeight:700, cursor:'pointer', fontSize:'13px' }}
                                         >
-                                          Deposit ${totalAmount.toLocaleString()} into Escrow
+                                          {isTopUp ? `Deposit Additional $${additionalDeposit.toLocaleString()}` : `Deposit $${additionalDeposit.toLocaleString()} into Escrow`}
                                         </button>
                                       </div>
                                     );
