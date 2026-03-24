@@ -633,14 +633,12 @@ export default function InstagramDemoPage() {
       if (negotiatingOpp !== null) {
         activeDealKey = `${matchingCreator.name}|${selectedMarketplaceSkin}`;
       }
-      // FALLBACK: if no opp selected but there's an active deal with this creator, auto-open it
+      // FALLBACK: if no opp selected but there's an active deal with this creator, use it
       else {
         const potentialKey = `${matchingCreator.name}|${selectedMarketplaceSkin}`;
         const potentialDeal = getOrCreateDeal(potentialKey);
-        // Auto-open deal if: phase is not 'brief' (meaning a brand has already sent an offer)
-        if (potentialDeal && potentialDeal.phase !== 'brief') {
+        if (potentialDeal && potentialDeal.phase && potentialDeal.phase !== 'brief') {
           activeDealKey = potentialKey;
-          setNegotiatingOpp(potentialDeal.opportunityIndex ?? 0); // Auto-select the opp
         }
       }
     }
@@ -804,6 +802,20 @@ export default function InstagramDemoPage() {
 
   const brandDealKey = getBrandDealKey();
   const brandDeal = brandDealKey ? getOrCreateDeal(brandDealKey) : null;
+
+  // AUTO-SYNC: Creator side — auto-open active deal when navigating to marketplace
+  useEffect(() => {
+    if (marketplaceRole === 'creator' && selectedMarketplaceSkin && negotiatingOpp === null) {
+      const matchingCreator = BRAND_MARKETPLACE_CREATORS.find(c => c.valueSkin === selectedMarketplaceSkin);
+      if (matchingCreator) {
+        const potentialKey = `${matchingCreator.name}|${selectedMarketplaceSkin}`;
+        const potentialDeal = dealStates[potentialKey];
+        if (potentialDeal && potentialDeal.phase && potentialDeal.phase !== 'brief') {
+          setNegotiatingOpp(potentialDeal.opportunityIndex ?? 0);
+        }
+      }
+    }
+  }, [marketplaceRole, selectedMarketplaceSkin, negotiatingOpp, dealStates]);
 
   // AUTO-SYNC: Brand side should find open deals if they reload without negotiatingCreator set
   useEffect(() => {
@@ -2653,23 +2665,25 @@ export default function InstagramDemoPage() {
                                     const dealKey = matchingCreator ? `${matchingCreator.name}|${selectedMarketplaceSkin}` : null;
                                     if (!dealKey) return;
                                     setNegotiatingOpp(i);
-                                    updateDeal(dealKey, {
-                                      phase: 'chatroom',
-                                      offerAmount: '',
-                                      counterAmount: '',
-                                      dealType: resolveDealType(opp.compensationType || 'Paid'),
-                                      isInternationalDeal: isInternationalDeal(matchingCreator?.audienceLocation || '', opp.location || ''),
-                                      poc: opp.poc,
-                                      // Save context so brand can find this deal
-                                      opportunityIndex: i,
-                                      creatorName: matchingCreator?.name,
-                                      creatorSkin: selectedMarketplaceSkin,
-                                      creatorMarketplaceIndex: matchingCreator ? BRAND_MARKETPLACE_CREATORS.indexOf(matchingCreator) : undefined,
-                                    });
+                                    // Only reset deal state if starting fresh (no active deal yet)
+                                    if (!existingDeal || existingDeal.phase === 'brief') {
+                                      updateDeal(dealKey, {
+                                        phase: 'chatroom',
+                                        offerAmount: '',
+                                        counterAmount: '',
+                                        dealType: resolveDealType(opp.compensationType || 'Paid'),
+                                        isInternationalDeal: isInternationalDeal(matchingCreator?.audienceLocation || '', opp.location || ''),
+                                        poc: opp.poc,
+                                        opportunityIndex: i,
+                                        creatorName: matchingCreator?.name,
+                                        creatorSkin: selectedMarketplaceSkin,
+                                        creatorMarketplaceIndex: matchingCreator ? BRAND_MARKETPLACE_CREATORS.indexOf(matchingCreator) : undefined,
+                                      });
+                                    }
                                   }}
-                                  style={{ flex: 1, fontSize: '13px', fontWeight: 700, color: '#fff', background: C.primary, border: 'none', padding: '10px', borderRadius: '10px', cursor: 'pointer' }}
+                                  style={{ flex: 1, fontSize: '13px', fontWeight: 700, color: '#fff', background: hasActiveDeal ? C.success : C.primary, border: 'none', padding: '10px', borderRadius: '10px', cursor: 'pointer' }}
                                 >
-                                  View Deal
+                                  {hasActiveDeal ? 'Open Deal' : 'View Deal'}
                                 </button>
                               </div>
 
