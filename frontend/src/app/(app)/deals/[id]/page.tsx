@@ -73,6 +73,9 @@ export default function DealRoomPage() {
   const [brandOfferCents, setBrandOfferCents] = useState(0);
   const [counterSubmitting, setCounterSubmitting] = useState(false);
   const [counterHistory, setCounterHistory] = useState<Array<{ amount: number; by: 'creator' | 'brand'; at: string }>>([]);
+  const [brandCounterMode, setBrandCounterMode] = useState(false);
+  const [brandCounterAmount, setBrandCounterAmount] = useState('');
+  const [userRole, setUserRole] = useState<'creator' | 'brand' | null>(null);
 
   // Currency
   const [creatorCountry, setCreatorCountry] = useState('United States');
@@ -94,6 +97,21 @@ export default function DealRoomPage() {
       return u ? JSON.parse(u).id : null;
     } catch { return null; }
   })();
+
+  // Determine user role
+  useEffect(() => {
+    async function determineRole() {
+      const user = (() => {
+        if (typeof window === 'undefined') return null;
+        try {
+          const u = localStorage.getItem('valueskins_user');
+          return u ? JSON.parse(u) : null;
+        } catch { return null; }
+      })();
+      if (user?.role) setUserRole(user.role as 'creator' | 'brand');
+    }
+    determineRole();
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -527,6 +545,104 @@ export default function DealRoomPage() {
                   </button>
                   <button
                     onClick={() => { setCounterMode(false); setCounterAskCents(0); }}
+                    style={{ padding: '8px 12px', background: 'transparent', border: `1px solid ${C.border}`, borderRadius: 6, color: C.textSecondary, fontSize: 12, cursor: 'pointer' }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Brand's response to creator counter-offer */}
+            {userRole === 'brand' && yourAskCents > 0 && yourAskCents !== brandOfferCents && !brandCounterMode && (
+              <div style={{ marginTop: 10, padding: '10px 12px', background: `${C.orange}15`, borderRadius: 8, border: `1px solid ${C.orange}30` }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: C.orange, marginBottom: 8 }}>Creator's Counter-Offer</div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: C.orange, marginBottom: 10 }}>
+                  {formatCurrency(yourAskCents, displayCurrency)}
+                </div>
+                <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexDirection: 'column' }}>
+                  <button
+                    onClick={async () => {
+                      const result = await api.dealRooms.sendMessage(dealRoomId, `Deal accepted at ${formatCurrency(yourAskCents, displayCurrency)}`);
+                      if (!result.error) await loadMessages(true);
+                    }}
+                    style={{
+                      width: '100%', padding: '9px', background: C.green, border: 'none', borderRadius: 6,
+                      color: '#fff', fontWeight: 600, fontSize: 12, cursor: 'pointer',
+                    }}
+                  >
+                    Accept {formatCurrency(yourAskCents, displayCurrency)}
+                  </button>
+                  <button
+                    onClick={() => setBrandCounterMode(true)}
+                    style={{
+                      width: '100%', padding: '9px', background: C.blue, border: 'none', borderRadius: 6,
+                      color: '#fff', fontWeight: 600, fontSize: 12, cursor: 'pointer',
+                    }}
+                  >
+                    Counter Offer
+                  </button>
+                  <button
+                    onClick={async () => {
+                      const result = await api.dealRooms.sendMessage(dealRoomId, 'Brand has withdrawn from this deal.');
+                      if (!result.error) await loadMessages(true);
+                    }}
+                    style={{
+                      width: '100%', padding: '9px', background: 'transparent', border: `1px solid ${C.red}40`,
+                      color: 'rgba(239,68,68,0.85)', fontWeight: 600, fontSize: 12, cursor: 'pointer', borderRadius: 6,
+                    }}
+                  >
+                    Reject
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Brand sending counter-offer */}
+            {userRole === 'brand' && brandCounterMode && (
+              <div style={{ marginTop: 10, padding: '12px', background: C.card, borderRadius: 8, border: `1px solid ${C.blue}40` }}>
+                <div style={{ fontSize: 11, color: C.blue, fontWeight: 600, marginBottom: 8 }}>Send your counter-offer</div>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}>
+                  <span style={{ fontSize: 13, color: C.textSecondary, fontWeight: 600 }}>{displayCurrency}</span>
+                  <input
+                    type="number"
+                    min="0"
+                    value={brandCounterAmount}
+                    onChange={(e) => setBrandCounterAmount(e.target.value.replace(/[^0-9]/g, ''))}
+                    placeholder="Amount"
+                    style={{
+                      flex: 1, padding: '8px 10px', background: C.bg, border: `1px solid ${C.border}`,
+                      borderRadius: 6, color: C.text, fontSize: 16, fontWeight: 700, outline: 'none',
+                    }}
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    onClick={async () => {
+                      if (brandCounterAmount) {
+                        const result = await api.dealRooms.sendMessage(
+                          dealRoomId,
+                          `Brand counter-offer: ${formatCurrency(Math.round(Number(brandCounterAmount) * 100), displayCurrency)}`,
+                          'counter_offer'
+                        );
+                        if (!result.error) {
+                          setBrandCounterMode(false);
+                          setBrandCounterAmount('');
+                          await loadMessages(true);
+                        }
+                      }
+                    }}
+                    disabled={!brandCounterAmount}
+                    style={{
+                      flex: 1, padding: '8px', background: brandCounterAmount ? C.blue : 'rgba(0,149,246,0.2)',
+                      color: '#fff', border: 'none', borderRadius: 6, fontWeight: 600, fontSize: 12,
+                      cursor: brandCounterAmount ? 'pointer' : 'not-allowed',
+                    }}
+                  >
+                    Send Counter
+                  </button>
+                  <button
+                    onClick={() => { setBrandCounterMode(false); setBrandCounterAmount(''); }}
                     style={{ padding: '8px 12px', background: 'transparent', border: `1px solid ${C.border}`, borderRadius: 6, color: C.textSecondary, fontSize: 12, cursor: 'pointer' }}
                   >
                     Cancel

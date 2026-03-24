@@ -33,6 +33,16 @@
 - `PRODUCTION_SYSTEMS_AUDIT.md` (400+ lines) - Status of all 11 critical systems, implementation roadmap, production readiness checklist
 - Zero hardcoded/mock data anywhere (replaced with API-backed systems)
 
+## Counter-Offer Tab for Brands (March 24, 2026) ✅ RESTORED
+- **Brand counter-offer response UI:** When creator sends a counter-offer, brands now see dedicated accept/reject/counter options
+- **Three action buttons:**
+  1. Accept counter-offer at creator's ask
+  2. Send brand counter-offer (enter custom amount)
+  3. Reject and withdraw from deal
+- **Real-time negotiation:** Counter-offers tracked in negotiation history with timestamps
+- **Works alongside payment preferences:** Brands can also adjust payment milestone splits during negotiation
+- **Replaces demo-only feature:** Restored to production deal room page for brands
+
 ## Latest Session (March 2026)
 
 ### Script Negotiation Workflow
