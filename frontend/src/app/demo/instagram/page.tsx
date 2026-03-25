@@ -2624,20 +2624,20 @@ export default function InstagramDemoPage() {
                             </div>
                           </div>
                         )}
-                        {activeOpportunities.filter(opp => (!filterOppsBarterOnly || opp.willingToBarter) && (!creatorCampaignSearch.trim() || opp.brand.toLowerCase().includes(creatorCampaignSearch.trim().toLowerCase()) || (opp.about||'').toLowerCase().includes(creatorCampaignSearch.trim().toLowerCase()) || (opp.budget||'').toLowerCase().includes(creatorCampaignSearch.trim().toLowerCase()))).map((opp, i) => {
+                        {activeOpportunities.filter(opp => (!filterOppsBarterOnly || opp.willingToBarter) && (!creatorCampaignSearch.trim() || opp.brand.toLowerCase().includes(creatorCampaignSearch.trim().toLowerCase()) || (opp.about||'').toLowerCase().includes(creatorCampaignSearch.trim().toLowerCase()) || (opp.budget||'').toLowerCase().includes(creatorCampaignSearch.trim().toLowerCase()))).map((opp) => {
                           // Deal key format: creatorName|creatorSkin|oppIndex (allows multiple deals per creator)
+                          // Use actual opportunity index from activeOpportunities (not filtered index)
+                          const actualOppIndex = activeOpportunities.indexOf(opp);
                           const matchingCreator = BRAND_MARKETPLACE_CREATORS.find(c => c.valueSkin === selectedMarketplaceSkin);
-                          const dealKey = matchingCreator ? `${matchingCreator.name}|${selectedMarketplaceSkin}|${i}` : null;
-                          // Also store opportunity index in deal for brand side reference
-                          const opportunityIndex = i;
+                          const dealKey = matchingCreator ? `${matchingCreator.name}|${selectedMarketplaceSkin}|${actualOppIndex}` : null;
                           const existingDeal = dealKey ? dealStates[dealKey] : undefined;
                           const hasActiveDeal = existingDeal && existingDeal.phase !== 'brief';
                           const isDealDone = existingDeal && (existingDeal.creatorDealLifecycle === 'approved' || existingDeal.brandApprovalPhase === 'approved');
-                          const isNegotiating = negotiatingOpp === i || hasActiveDeal;
+                          const isNegotiating = negotiatingOpp === actualOppIndex || hasActiveDeal;
                           const brandInitial = opp.brand.charAt(0).toUpperCase();
                           return (
                             <div
-                              key={i}
+                              key={actualOppIndex}
                               style={{ background: C.card, borderRadius: '16px', padding: '16px', marginBottom: '12px', border: `1px solid ${C.border}` }}
                             >
                               {/* Brand header row */}
@@ -2674,9 +2674,8 @@ export default function InstagramDemoPage() {
                                 <button
                                   onClick={() => {
                                     if (isDealDone) return;
-                                    const dealKey = matchingCreator ? `${matchingCreator.name}|${selectedMarketplaceSkin}|${i}` : null;
                                     if (!dealKey) return;
-                                    setNegotiatingOpp(i);
+                                    setNegotiatingOpp(actualOppIndex);
                                     // Only reset deal state if starting fresh (no active deal yet)
                                     if (!existingDeal || existingDeal.phase === 'brief') {
                                       updateDeal(dealKey, {
@@ -2686,7 +2685,7 @@ export default function InstagramDemoPage() {
                                         dealType: resolveDealType(opp.compensationType || 'Paid'),
                                         isInternationalDeal: isInternationalDeal(matchingCreator?.audienceLocation || '', opp.location || ''),
                                         poc: opp.poc,
-                                        opportunityIndex: i,
+                                        opportunityIndex: actualOppIndex,
                                         creatorName: matchingCreator?.name,
                                         creatorSkin: selectedMarketplaceSkin,
                                         creatorMarketplaceIndex: matchingCreator ? BRAND_MARKETPLACE_CREATORS.indexOf(matchingCreator) : undefined,
@@ -2700,7 +2699,7 @@ export default function InstagramDemoPage() {
                               </div>
 
                               {/* Deal Room — shown when: negotiating this opp OR there's an active deal for this opp */}
-                              {(negotiatingOpp === i || hasActiveDeal) && (
+                              {(negotiatingOpp === actualOppIndex || hasActiveDeal) && (
                                 <div style={{ background: C.card, borderRadius: '16px', padding: '16px', border: `1px solid ${C.border}` }}>
                                   {/* Deal Room Back Button */}
                                   <button onClick={() => setNegotiatingOpp(null)} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: C.textSecondary, cursor: 'pointer', fontSize: '12px', fontWeight: 600, padding: '0 0 10px', marginBottom: '2px' }}>
