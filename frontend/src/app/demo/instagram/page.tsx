@@ -811,7 +811,9 @@ export default function InstagramDemoPage() {
         const potentialKey = `${matchingCreator.name}|${selectedMarketplaceSkin}`;
         const potentialDeal = dealStates[potentialKey];
         if (potentialDeal && potentialDeal.phase && potentialDeal.phase !== 'brief') {
-          setNegotiatingOpp(potentialDeal.opportunityIndex ?? 0);
+          // Use stored opportunity index or default to 0
+          const idx = potentialDeal.opportunityIndex ?? 0;
+          setNegotiatingOpp(idx);
         }
       }
     }
@@ -2691,8 +2693,8 @@ export default function InstagramDemoPage() {
                                 </button>
                               </div>
 
-                              {/* Deal Room — shown when negotiating or when there's an active deal */}
-                              {isNegotiating && (negotiatingOpp === i || hasActiveDeal) && (
+                              {/* Deal Room — shown when: negotiating this opp OR there's an active deal for this opp */}
+                              {(negotiatingOpp === i || hasActiveDeal) && (
                                 <div style={{ background: C.card, borderRadius: '16px', padding: '16px', border: `1px solid ${C.border}` }}>
                                   {/* Deal Room Back Button */}
                                   <button onClick={() => setNegotiatingOpp(null)} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: C.textSecondary, cursor: 'pointer', fontSize: '12px', fontWeight: 600, padding: '0 0 10px', marginBottom: '2px' }}>
