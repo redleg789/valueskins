@@ -3021,7 +3021,7 @@ export default function InstagramDemoPage() {
                                                 creatorDealCompletionRate: 95, creatorPortfolio: [],
                                                 creatorAudienceLocation: selectedCountry || 'USA', creatorAudienceAge: '25-34',
                                                 creatorResponseTimeHrs: 6, creatorInstagramUrl: `https://instagram.com/creator_demo`,
-                                                opportunityIndex: i,
+                                                opportunityIndex: actualOppIndex,
                                               };
                                               persistApplications([...sharedApplications, newApp]);
                                             }}
