@@ -2825,6 +2825,24 @@ export default function InstagramDemoPage() {
                                         >
                                           Counter
                                         </button>
+                                        <button
+                                          onClick={() => {
+                                            if (activeDealKey) {
+                                              const now = new Date();
+                                              const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: false });
+                                              const rejectMsg = { id: Date.now(), sender: 'creator' as const, text: 'Creator declined the offer', time: timeStr, isoTime: now.toISOString(), seen: false };
+                                              const existingMsgs = activeDeal?.chatMessages || [];
+                                              setDealRoomPhase('rejected');
+                                              updateDeal(activeDealKey, { phase: 'rejected', chatMessages: [...(existingMsgs as any[]), rejectMsg] });
+                                            }
+                                            setNegotiatingOpp(null);
+                                            setPurchaseToast('Offer rejected');
+                                            setTimeout(() => setPurchaseToast(null), 2000);
+                                          }}
+                                          style={{ flex: 1, background: 'none', border: `1px solid rgba(239,68,68,0.3)`, padding: '9px', borderRadius: '8px', color: '#ef4444', fontWeight: 600, cursor: 'pointer', fontSize: '12px' }}
+                                        >
+                                          Reject
+                                        </button>
                                       </div>
                                     </>
                                   )}
@@ -2835,6 +2853,17 @@ export default function InstagramDemoPage() {
                                       <div style={{ fontSize: '11px', fontWeight: 700, color: '#f59e0b', marginBottom: '6px' }}>Counter Offer Sent</div>
                                       <div style={{ fontSize: '12px', color: C.text, marginBottom: '8px' }}>Your counter-offer of <strong>${parseInt(dealCounterAmount || '0').toLocaleString()}</strong> has been sent to the brand.</div>
                                       <div style={{ fontSize: '11px', color: C.textSecondary, lineHeight: 1.5 }}>Waiting for their response — they can accept, reject, or send a counter-offer back.</div>
+                                    </div>
+                                  )}
+
+                                  {dealRoomPhase === 'rejected' && (
+                                    <div style={{ textAlign: 'center', padding: '20px 12px' }}>
+                                      <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(239,68,68,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                      </div>
+                                      <div style={{ fontSize: '15px', fontWeight: 700, color: C.text, marginBottom: '4px' }}>Deal Rejected</div>
+                                      <div style={{ fontSize: '12px', color: C.textSecondary, marginBottom: '14px' }}>You declined this offer. Return to marketplace to explore other opportunities.</div>
+                                      <button onClick={() => setNegotiatingOpp(null)} style={{ width: '100%', background: C.primary, border: 'none', padding: '10px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '12px' }}>Back to Marketplace</button>
                                     </div>
                                   )}
 
