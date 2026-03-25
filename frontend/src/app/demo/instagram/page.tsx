@@ -809,15 +809,14 @@ export default function InstagramDemoPage() {
       const matchingCreator = BRAND_MARKETPLACE_CREATORS.find(c => c.valueSkin === selectedMarketplaceSkin);
       if (matchingCreator) {
         const potentialKey = `${matchingCreator.name}|${selectedMarketplaceSkin}`;
-        const potentialDeal = dealStates[potentialKey];
+        const potentialDeal = dealStates[potentialKey] || (firebaseState.deals?.[potentialKey]);
         if (potentialDeal && potentialDeal.phase && potentialDeal.phase !== 'brief') {
-          // Use stored opportunity index or default to 0
           const idx = potentialDeal.opportunityIndex ?? 0;
           setNegotiatingOpp(idx);
         }
       }
     }
-  }, [marketplaceRole, selectedMarketplaceSkin, negotiatingOpp, dealStates]);
+  }, [marketplaceRole, selectedMarketplaceSkin, negotiatingOpp, dealStates, firebaseState.deals]);
 
   // AUTO-SYNC: Brand side should find open deals if they reload without negotiatingCreator set
   useEffect(() => {
