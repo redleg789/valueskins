@@ -43,6 +43,13 @@
 - **Works alongside payment preferences:** Brands can also adjust payment milestone splits during negotiation
 - **Replaces demo-only feature:** Restored to production deal room page for brands
 
+## Deal Reviews & Profile Display (March 25, 2026) ✅ ADDED
+- **Creator ratings:** When deal completes, creators rate the brand (1-5 stars + comment)
+- **Brand ratings:** When deal completes, brands rate the creator (1-5 stars + comment)
+- **Profile display toggle:** Both sides choose "Show this review on my ValueSkins profile" after rating
+- **Persistent storage:** Ratings saved to deal state and persisted in Firebase
+- **UI placement:** Ratings shown immediately after deal approval, before withdrawal
+
 ## Latest Session (March 2026)
 
 ### Script Negotiation Workflow

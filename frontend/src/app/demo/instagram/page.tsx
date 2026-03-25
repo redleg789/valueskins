@@ -1175,11 +1175,13 @@ export default function InstagramDemoPage() {
   const [dealRating, setDealRating] = useState(0);
   const [dealRatingComment, setDealRatingComment] = useState('');
   const [ratingSubmitted, setRatingSubmitted] = useState(false);
+  const [displayCreatorRating, setDisplayCreatorRating] = useState(false);
   // Brand-side rating
   const [brandShowRatingModal, setBrandShowRatingModal] = useState(false);
   const [brandDealRating, setBrandDealRating] = useState(0);
   const [brandRatingComment, setBrandRatingComment] = useState('');
   const [brandRatingSubmitted, setBrandRatingSubmitted] = useState(false);
+  const [displayBrandRating, setDisplayBrandRating] = useState(false);
   // Payment milestone tracking — synced from shared deal state for real-time cross-role visibility
   type MilestoneStatus = 'pending'|'released';
   const paymentMilestones: Record<string, MilestoneStatus> = (activeDeal?.paymentMilestones as Record<string, MilestoneStatus>) || { advance: 'pending', upload: 'pending', approval: 'pending' };
@@ -4061,13 +4063,19 @@ export default function InstagramDemoPage() {
                                                       ))}
                                                     </div>
                                                     <textarea value={dealRatingComment} onChange={e => setDealRatingComment(e.target.value)} placeholder="How was working with this brand?" rows={2} style={{ width:'100%', background:C.card, border:`1px solid ${C.border}`, borderRadius:'6px', padding:'8px', fontSize:'12px', color:C.text, resize:'none', boxSizing:'border-box' }} />
-                                                    <button onClick={() => { setRatingSubmitted(true); setPurchaseToast('Rating submitted'); setTimeout(() => setPurchaseToast(null), 3000); }} disabled={dealRating === 0} style={{ width:'100%', background: dealRating > 0 ? C.primary : C.border, border:'none', padding:'8px', borderRadius:'6px', color:'#fff', fontWeight:600, fontSize:'12px', cursor: dealRating > 0 ? 'pointer' : 'not-allowed', marginTop:'8px', opacity: dealRating > 0 ? 1 : 0.5 }}>
+                                                    <button onClick={() => { setRatingSubmitted(true); if (activeDealKey) { updateDeal(activeDealKey, { creatorRating: dealRating, creatorRatingComment: dealRatingComment, displayCreatorRating: false }); } setPurchaseToast('Rating submitted'); setTimeout(() => setPurchaseToast(null), 3000); }} disabled={dealRating === 0} style={{ width:'100%', background: dealRating > 0 ? C.primary : C.border, border:'none', padding:'8px', borderRadius:'6px', color:'#fff', fontWeight:600, fontSize:'12px', cursor: dealRating > 0 ? 'pointer' : 'not-allowed', marginTop:'8px', opacity: dealRating > 0 ? 1 : 0.5 }}>
                                                       Submit Rating
                                                     </button>
                                                   </div>
                                                 ) : (
-                                                  <div style={{ background:'rgba(0,102,204,0.06)', border:`1px solid rgba(0,102,204,0.2)`, borderRadius:'8px', padding:'10px', marginBottom:'14px', fontSize:'12px', color:C.textSecondary }}>
-                                                    Rating submitted: {dealRating}/5
+                                                  <div style={{ background:'rgba(0,102,204,0.06)', border:`1px solid rgba(0,102,204,0.2)`, borderRadius:'8px', padding:'10px', marginBottom:'14px' }}>
+                                                    <div style={{ fontSize:'12px', color:C.textSecondary, marginBottom:'8px' }}>
+                                                      Rating submitted: {dealRating}/5
+                                                    </div>
+                                                    <label style={{ display:'flex', alignItems:'center', gap:'8px', fontSize:'12px', color:C.text, cursor:'pointer' }}>
+                                                      <input type="checkbox" checked={displayCreatorRating} onChange={e => { setDisplayCreatorRating(e.target.checked); if (activeDealKey) { updateDeal(activeDealKey, { displayCreatorRating: e.target.checked }); } }} style={{ cursor:'pointer' }} />
+                                                      Show this review on my ValueSkins profile
+                                                    </label>
                                                   </div>
                                                 )}
                                                 <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', padding:'10px', marginBottom:'10px', textAlign:'left' }}>
@@ -6352,13 +6360,19 @@ export default function InstagramDemoPage() {
                                             ))}
                                           </div>
                                           <textarea value={brandRatingComment} onChange={e => setBrandRatingComment(e.target.value)} placeholder="How was working with this creator?" rows={2} style={{ width:'100%', background:C.card, border:`1px solid ${C.border}`, borderRadius:'6px', padding:'8px', fontSize:'12px', color:C.text, resize:'none', boxSizing:'border-box' }} />
-                                          <button onClick={() => { setBrandRatingSubmitted(true); setPurchaseToast('Rating submitted'); setTimeout(() => setPurchaseToast(null), 3000); }} disabled={brandDealRating === 0} style={{ width:'100%', background: brandDealRating > 0 ? C.primary : C.border, border:'none', padding:'8px', borderRadius:'6px', color:'#fff', fontWeight:600, fontSize:'12px', cursor: brandDealRating > 0 ? 'pointer' : 'not-allowed', marginTop:'8px', opacity: brandDealRating > 0 ? 1 : 0.5 }}>
+                                          <button onClick={() => { setBrandRatingSubmitted(true); if (brandDealKey) { updateDeal(brandDealKey, { brandRating: brandDealRating, brandRatingComment: brandRatingComment, displayBrandRating: false }); } setPurchaseToast('Rating submitted'); setTimeout(() => setPurchaseToast(null), 3000); }} disabled={brandDealRating === 0} style={{ width:'100%', background: brandDealRating > 0 ? C.primary : C.border, border:'none', padding:'8px', borderRadius:'6px', color:'#fff', fontWeight:600, fontSize:'12px', cursor: brandDealRating > 0 ? 'pointer' : 'not-allowed', marginTop:'8px', opacity: brandDealRating > 0 ? 1 : 0.5 }}>
                                             Submit Rating
                                           </button>
                                         </div>
                                       ) : (
-                                        <div style={{ background:'rgba(0,102,204,0.06)', border:`1px solid rgba(0,102,204,0.2)`, borderRadius:'8px', padding:'10px', marginBottom:'12px', fontSize:'12px', color:C.textSecondary }}>
-                                          Rating submitted: {brandDealRating}/5
+                                        <div style={{ background:'rgba(0,102,204,0.06)', border:`1px solid rgba(0,102,204,0.2)`, borderRadius:'8px', padding:'10px', marginBottom:'12px' }}>
+                                          <div style={{ fontSize:'12px', color:C.textSecondary, marginBottom:'8px' }}>
+                                            Rating submitted: {brandDealRating}/5
+                                          </div>
+                                          <label style={{ display:'flex', alignItems:'center', gap:'8px', fontSize:'12px', color:C.text, cursor:'pointer' }}>
+                                            <input type="checkbox" checked={displayBrandRating} onChange={e => { setDisplayBrandRating(e.target.checked); if (brandDealKey) { updateDeal(brandDealKey, { displayBrandRating: e.target.checked }); } }} style={{ cursor:'pointer' }} />
+                                            Show this review on my brand profile
+                                          </label>
                                         </div>
                                       )}
                                       <button onClick={() => { setNegotiatingCreator(null); setBrandDealPhase('brief'); setBrandApprovalPhase('accepted'); setBrandDealRating(0); setBrandRatingComment(''); setBrandRatingSubmitted(false); }} style={{ width:'100%', background:C.primary, border:'none', padding:'8px', borderRadius:'8px', color:'#fff', fontWeight:600, fontSize:'12px', cursor:'pointer' }}>Done</button>
