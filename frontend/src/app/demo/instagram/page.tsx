@@ -2679,8 +2679,8 @@ export default function InstagramDemoPage() {
                                     // Only reset deal state if starting fresh (no active deal yet)
                                     if (!existingDeal || existingDeal.phase === 'brief') {
                                       updateDeal(dealKey, {
-                                        phase: 'chatroom',
-                                        offerAmount: '',
+                                        phase: 'pending',
+                                        offerAmount: opp.budget?.replace(/[^0-9]/g, '') || '5000',
                                         counterAmount: '',
                                         dealType: resolveDealType(opp.compensationType || 'Paid'),
                                         isInternationalDeal: isInternationalDeal(matchingCreator?.audienceLocation || '', opp.location || ''),
@@ -2853,6 +2853,35 @@ export default function InstagramDemoPage() {
                                       <div style={{ fontSize: '11px', fontWeight: 700, color: '#f59e0b', marginBottom: '6px' }}>Counter Offer Sent</div>
                                       <div style={{ fontSize: '12px', color: C.text, marginBottom: '8px' }}>Your counter-offer of <strong>${parseInt(dealCounterAmount || '0').toLocaleString()}</strong> has been sent to the brand.</div>
                                       <div style={{ fontSize: '11px', color: C.textSecondary, lineHeight: 1.5 }}>Waiting for their response — they can accept, reject, or send a counter-offer back.</div>
+                                    </div>
+                                  )}
+
+                                  {/* Brand has accepted creator's counter-offer */}
+                                  {dealRoomPhase === 'pending' && dealCounterAmount && parseInt(dealOfferAmount || '0') === parseInt(dealCounterAmount) && (
+                                    <div style={{ background: 'rgba(76,175,80,0.06)', borderRadius: '8px', padding: '12px', border: `1px solid rgba(76,175,80,0.2)` }}>
+                                      <div style={{ fontSize: '11px', fontWeight: 700, color: C.success, marginBottom: '6px' }}>Counter-Offer Accepted!</div>
+                                      <div style={{ fontSize: '12px', color: C.text, marginBottom: '8px' }}>{opp.brand} accepted your counter-offer of <strong>${parseInt(dealCounterAmount).toLocaleString()}/post</strong></div>
+                                      <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+                                        <button
+                                          onClick={() => {
+                                            const now = new Date();
+                                            const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: false });
+                                            const acceptMsg = { id: Date.now(), sender: 'creator' as const, text: `Creator confirmed agreement at $${parseInt(dealCounterAmount).toLocaleString()}/post`, time: timeStr, isoTime: now.toISOString(), seen: false };
+                                            const existingMsgs = activeDeal?.chatMessages || [];
+                                            updateDeal(activeDealKey!, { phase: 'accepted', chatMessages: [...(existingMsgs as any[]), acceptMsg] });
+                                            setDealRoomPhase('accepted');
+                                          }}
+                                          style={{ flex: 1, background: C.success, border: 'none', padding: '9px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '12px' }}
+                                        >
+                                          Confirm & Accept
+                                        </button>
+                                        <button
+                                          onClick={() => setShowCancelDealModal(true)}
+                                          style={{ flex: 1, background: 'none', border: `1px solid rgba(239,68,68,0.3)`, padding: '9px', borderRadius: '8px', color: '#ef4444', fontWeight: 600, cursor: 'pointer', fontSize: '12px' }}
+                                        >
+                                          Decline
+                                        </button>
+                                      </div>
                                     </div>
                                   )}
 
@@ -4985,7 +5014,7 @@ export default function InstagramDemoPage() {
                           ))}
                           <div style={{ display:'flex', gap:'8px', marginTop:'14px' }}>
                             <button onClick={() => { setShowCancelDealModal(false); setCancelReason(''); }} style={{ flex:1, background:'none', border:`1px solid ${C.border}`, borderRadius:'8px', padding:'10px', color:C.text, fontWeight:600, fontSize:'13px', cursor:'pointer' }}>Keep Deal</button>
-                            <button onClick={() => { if (activeDealKey) { setDealStates(prev => { const next = {...prev}; delete next[activeDealKey]; return next; }); } setNegotiatingOpp(null); setCreatorDealLifecycle('checklist'); setDealUploadSimulated(false); setDeliverableStatuses({}); setDeliverableLinks({}); setDeliverableLinkInputs({}); setPaymentMilestones({ advance:'pending', upload:'pending', approval:'pending' }); setShowCancelDealModal(false); setCancelReason(''); setPurchaseToast('Deal cancelled'); setTimeout(() => setPurchaseToast(null), 3000); }} disabled={!cancelReason} style={{ flex:1, background: cancelReason ? '#ef4444' : C.border, border:'none', borderRadius:'8px', padding:'10px', color:'#fff', fontWeight:600, fontSize:'13px', cursor: cancelReason ? 'pointer' : 'not-allowed', opacity: cancelReason ? 1 : 0.5 }}>Cancel Deal</button>
+                            <button onClick={() => { if (activeDealKey) { setDealStates(prev => { const next = {...prev}; delete next[activeDealKey]; return next; }); } setDealRoomPhase('brief'); setNegotiatingOpp(null); setCreatorDealLifecycle('checklist'); setDealUploadSimulated(false); setDeliverableStatuses({}); setDeliverableLinks({}); setDeliverableLinkInputs({}); setPaymentMilestones({ advance:'pending', upload:'pending', approval:'pending' }); setShowCancelDealModal(false); setCancelReason(''); setPurchaseToast('Deal cancelled'); setTimeout(() => setPurchaseToast(null), 3000); }} disabled={!cancelReason} style={{ flex:1, background: cancelReason ? '#ef4444' : C.border, border:'none', borderRadius:'8px', padding:'10px', color:'#fff', fontWeight:600, fontSize:'13px', cursor: cancelReason ? 'pointer' : 'not-allowed', opacity: cancelReason ? 1 : 0.5 }}>Cancel Deal</button>
                           </div>
                         </div>
                       </div>
@@ -5895,18 +5924,19 @@ export default function InstagramDemoPage() {
                                       onClick={() => {
                                         const now = new Date();
                                         const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: false });
-                                        const acceptMsg = { id: Date.now(), sender: 'brand' as const, text: `Deal accepted at $${parseInt(agreedDealAmount).toLocaleString()}/post`, time: timeStr, isoTime: now.toISOString(), seen: false };
+                                        const acceptMsg = { id: Date.now(), sender: 'brand' as const, text: `Brand accepted offer: $${parseInt(agreedDealAmount).toLocaleString()}/post`, time: timeStr, isoTime: now.toISOString(), seen: false };
                                         const existingMsgs = brandDeal?.chatMessages || [];
                                         if (brandDealKey) {
                                           updateDeal(brandDealKey, {
-                                            phase: 'accepted',
+                                            phase: 'pending',
                                             offerAmount: agreedDealAmount,
+                                            counterAmount: '',
                                             brandApprovalPhase: 'accepted',
                                             chatMessages: [...existingMsgs, acceptMsg],
                                           });
                                         }
                                         setBrandApprovalPhase('accepted');
-                                        setPurchaseToast('Deal accepted — review deliverables when creator uploads');
+                                        setPurchaseToast('Counter-offer accepted — creator will see your acceptance');
                                         setTimeout(() => setPurchaseToast(null), 3000);
                                       }}
                                       style={{ flex: 1, background: C.success, border: 'none', padding: '9px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '12px' }}
