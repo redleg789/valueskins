@@ -75,6 +75,7 @@ export type DealState = {
   backendLastMessageId?: number;
   // Deal type differentiation — determines workflow (escrow vs goods vs content tracking)
   dealType?: 'paid' | 'barter' | 'c2c_paid' | 'c2c_collab';
+  type?: string; // Generic type field for deal display
   // Barter-only: goods lifecycle and tracking number
   goodsTrackerStatus?: 'goods_preparing' | 'goods_shipped' | 'goods_delivered' | 'content_due' | 'content_submitted' | 'content_approved';
   goodsTrackingNumber?: string;
