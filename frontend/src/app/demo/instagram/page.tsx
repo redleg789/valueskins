@@ -2670,7 +2670,7 @@ export default function InstagramDemoPage() {
                                 <button
                                   onClick={() => {
                                     if (isDealDone) return;
-                                    const dealKey = matchingCreator ? `${matchingCreator.name}|${selectedMarketplaceSkin}` : null;
+                                    const dealKey = matchingCreator ? `${matchingCreator.name}|${selectedMarketplaceSkin}|${i}` : null;
                                     if (!dealKey) return;
                                     setNegotiatingOpp(i);
                                     // Only reset deal state if starting fresh (no active deal yet)
@@ -5383,8 +5383,8 @@ export default function InstagramDemoPage() {
                                       if (noBrandSkin) { setPurchaseToast('Get a brand ValueSkin first'); setTimeout(() => setPurchaseToast(null), 3000); return; }
                                       if (!hasMatch) { setPurchaseToast('No shared ValueSkin with this creator'); setTimeout(() => setPurchaseToast(null), 3000); return; }
                                       setNegotiatingCreator(origIdx); setBrandDealPhase('brief'); setBrandBriefTitle(''); setBrandBriefDeliverables(''); setBrandBudget('4000'); setBrandDealIntent('campaign');
-                                      // Initialize deal context when brand opens a creator
-                                      const dealKey = `${creator.name}|${creator.valueSkin}`;
+                                      // Initialize deal context when brand opens a creator (direct outreach, use index 0)
+                                      const dealKey = `${creator.name}|${creator.valueSkin}|0`;
                                       updateDeal(dealKey, {
                                         creatorName: creator.name,
                                         creatorSkin: creator.valueSkin,
