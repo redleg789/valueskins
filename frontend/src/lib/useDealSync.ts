@@ -36,6 +36,7 @@ export type DealState = {
   offerAmount: string;
   counterAmount: string;
   brandResponseAmount: string; // amount brand counter-offered back after creator countered
+  agreementAmount?: string; // final agreed amount after negotiation
   chatMessages: ChatMessage[];
   chatInput: string;
   performanceClause: boolean;
