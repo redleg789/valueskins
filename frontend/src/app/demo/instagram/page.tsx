@@ -3108,7 +3108,7 @@ export default function InstagramDemoPage() {
                                     );
                                   })()}
 
-                                  {dealRoomPhase === 'accepted' && (() => {
+                                  {dealRoomPhase === 'accepted' && marketplaceRole === 'creator' && (() => {
                                     // Render based on deal type
                                     if (dealType === 'barter') {
                                       // BARTER DEAL — product incoming, no money
@@ -3478,7 +3478,7 @@ export default function InstagramDemoPage() {
                                     }
                                   })()}
 
-                                  {dealRoomPhase === 'chatroom' && (
+                                  {(dealRoomPhase === 'chatroom' || dealRoomPhase === 'accepted') && (
                                     <>
                                       {/* Chat + Sidebar layout */}
                                       <div style={{ display: 'flex', gap: '8px', minHeight: '340px' }}>
