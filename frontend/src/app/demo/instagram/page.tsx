@@ -6483,11 +6483,47 @@ export default function InstagramDemoPage() {
 
                       {campaignsSectionOpen && (<>
                         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'10px' }}>
-                          {campaigns.length > 0 && (
-                            <button onClick={() => { persistCampaigns([]); setSharedApplications([]); setDealStates({}); }} style={{ background:'none', border:`1px solid rgba(239,68,68,0.3)`, borderRadius:'6px', padding:'5px 10px', fontSize:'11px', fontWeight:600, color:'#ef4444', cursor:'pointer' }}>Clear all</button>
-                          )}
+                          {campaigns.length > 0 && (() => {
+                            const hasActiveDealCreators = campaigns.some(camp => {
+                              const applicants = sharedApplications.filter(a => a.campaignId === camp.id && a.status !== 'invited');
+                              return applicants.some(app => {
+                                // Find any deal associated with this creator and campaign
+                                const creatorDeal = Object.entries(dealStates).find(([key, deal]) => {
+                                  return deal?.creatorName === app.creatorName && deal?.escrowFunded && ['deliverables', 'submitted', 'approved'].includes(deal?.creatorDealLifecycle || '');
+                                });
+                                return !!creatorDeal;
+                              });
+                            });
+                            return (
+                              <button
+                                disabled={hasActiveDealCreators}
+                                onClick={() => { persistCampaigns([]); setSharedApplications([]); setDealStates({}); }}
+                                title={hasActiveDealCreators ? 'Cannot delete campaigns with active creator work in progress' : ''}
+                                style={{ background:'none', border:`1px solid rgba(239,68,68,0.3)`, borderRadius:'6px', padding:'5px 10px', fontSize:'11px', fontWeight:600, color: hasActiveDealCreators ? '#888' : '#ef4444', cursor: hasActiveDealCreators ? 'not-allowed' : 'pointer', opacity: hasActiveDealCreators ? 0.5 : 1 }}
+                              >
+                                Clear all
+                              </button>
+                            );
+                          })()}
                           <button onClick={() => setShowCampaignCreator(true)} style={{ background:C.primary, border:'none', borderRadius:'6px', padding:'6px 12px', fontSize:'12px', fontWeight:700, color:'#fff', cursor:'pointer', marginLeft:'auto' }}>+ New Campaign</button>
                         </div>
+                        {(() => {
+                          const activeDealCampaigns = campaigns.filter(camp => {
+                            const applicants = sharedApplications.filter(a => a.campaignId === camp.id && a.status !== 'invited');
+                            return applicants.some(app => {
+                              // Find any deal associated with this creator and campaign
+                              const creatorDeal = Object.entries(dealStates).find(([key, deal]) => {
+                                return deal?.creatorName === app.creatorName && deal?.escrowFunded && ['deliverables', 'submitted', 'approved'].includes(deal?.creatorDealLifecycle || '');
+                              });
+                              return !!creatorDeal;
+                            });
+                          });
+                          return activeDealCampaigns.length > 0 ? (
+                            <div style={{ background: 'rgba(237,73,86,0.08)', border: `1px solid rgba(237,73,86,0.25)`, borderRadius:'8px', padding:'10px 12px', marginBottom:'12px', fontSize:'11px', color: C.danger, fontWeight:600 }}>
+                              ⚠️ {activeDealCampaigns.length} campaign{activeDealCampaigns.length !== 1 ? 's have' : ' has'} creators actively working. You cannot delete campaigns with ongoing deals. Complete or cancel work first.
+                            </div>
+                          ) : null;
+                        })()}
                         {campaigns.length === 0 ? (
                           <div style={{ textAlign:'center', padding:'24px 20px', color:C.textMuted }}>
                             <div style={{ fontSize:'13px', marginBottom:'4px' }}>No campaigns yet</div>
