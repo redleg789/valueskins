@@ -5451,10 +5451,14 @@ export default function InstagramDemoPage() {
                                       const existingPrefix = `${creator.name}|${creator.valueSkin}|`;
                                       const existingDealKey = Object.keys(dealStates).find(key => key.startsWith(existingPrefix) && dealStates[key]?.phase && dealStates[key]?.phase !== 'brief');
                                       if (existingDealKey) {
-                                        // Resume existing deal — don't reset anything
+                                        // Resume existing deal — restore all state from deal
                                         const existingOppIdx = parseInt(existingDealKey.split('|')[2] || '0');
+                                        const existingDeal = dealStates[existingDealKey];
                                         setNegotiatingCreator(origIdx);
                                         setBrandCurrentOppIndex(existingOppIdx);
+                                        // Restore brief fields from persisted deal state
+                                        if (existingDeal?.briefTitle) setBrandBriefTitle(existingDeal.briefTitle);
+                                        if (existingDeal?.offerAmount) setBrandBudget(existingDeal.offerAmount);
                                       } else {
                                         // No active deal — start fresh brief
                                         setNegotiatingCreator(origIdx); setBrandCurrentOppIndex(0); setBrandDealPhase('brief'); setBrandBriefTitle(''); setBrandBriefDeliverables(''); setBrandBudget('4000'); setBrandDealIntent('campaign');
