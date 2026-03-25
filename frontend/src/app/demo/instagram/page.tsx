@@ -829,6 +829,9 @@ export default function InstagramDemoPage() {
         if (deal && deal.phase !== 'brief' && deal.creatorMarketplaceIndex !== undefined) {
           // Found an active deal, auto-switch to it
           setNegotiatingCreator(deal.creatorMarketplaceIndex);
+          // Also restore the correct opportunity index from the deal key
+          const oppIdx = parseInt(key.split('|')[2] || '0');
+          setBrandCurrentOppIndex(oppIdx);
           break; // Only auto-open the first active deal
         }
       }
@@ -5444,14 +5447,24 @@ export default function InstagramDemoPage() {
                                     onClick={() => {
                                       if (noBrandSkin) { setPurchaseToast('Get a brand ValueSkin first'); setTimeout(() => setPurchaseToast(null), 3000); return; }
                                       if (!hasMatch) { setPurchaseToast('No shared ValueSkin with this creator'); setTimeout(() => setPurchaseToast(null), 3000); return; }
-                                      setNegotiatingCreator(origIdx); setBrandCurrentOppIndex(0); setBrandDealPhase('brief'); setBrandBriefTitle(''); setBrandBriefDeliverables(''); setBrandBudget('4000'); setBrandDealIntent('campaign');
-                                      // Initialize deal context when brand opens a creator (direct outreach, use index 0)
-                                      const dealKey = `${creator.name}|${creator.valueSkin}|0`;
-                                      updateDeal(dealKey, {
-                                        creatorName: creator.name,
-                                        creatorSkin: creator.valueSkin,
-                                        creatorMarketplaceIndex: origIdx,
-                                      });
+                                      // Check if there's already an active deal with this creator — don't reset to brief if so
+                                      const existingPrefix = `${creator.name}|${creator.valueSkin}|`;
+                                      const existingDealKey = Object.keys(dealStates).find(key => key.startsWith(existingPrefix) && dealStates[key]?.phase && dealStates[key]?.phase !== 'brief');
+                                      if (existingDealKey) {
+                                        // Resume existing deal — don't reset anything
+                                        const existingOppIdx = parseInt(existingDealKey.split('|')[2] || '0');
+                                        setNegotiatingCreator(origIdx);
+                                        setBrandCurrentOppIndex(existingOppIdx);
+                                      } else {
+                                        // No active deal — start fresh brief
+                                        setNegotiatingCreator(origIdx); setBrandCurrentOppIndex(0); setBrandDealPhase('brief'); setBrandBriefTitle(''); setBrandBriefDeliverables(''); setBrandBudget('4000'); setBrandDealIntent('campaign');
+                                        const dealKey = `${creator.name}|${creator.valueSkin}|0`;
+                                        updateDeal(dealKey, {
+                                          creatorName: creator.name,
+                                          creatorSkin: creator.valueSkin,
+                                          creatorMarketplaceIndex: origIdx,
+                                        });
+                                      }
                                     }}
                                     style={{ width:'100%', background: hasMatch ? (creator.featured ? C.primary : C.surfaceAlt) : C.surfaceAlt, border: hasMatch && creator.featured ? 'none' : `1px solid ${hasMatch ? C.border : 'rgba(230,81,0,0.3)'}`, padding: '10px 16px', borderRadius: '8px', color: hasMatch ? '#fff' : C.warning, fontWeight: '600', cursor: 'pointer', fontSize: '14px', opacity: hasMatch ? 1 : 0.7 }}
                                   >
