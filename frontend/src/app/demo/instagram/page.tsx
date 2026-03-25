@@ -631,16 +631,16 @@ export default function InstagramDemoPage() {
     // In the demo, we're simulating this creator interacting with opportunities
     const matchingCreator = BRAND_MARKETPLACE_CREATORS.find(c => c.valueSkin === selectedMarketplaceSkin);
     if (matchingCreator) {
-      // PRIMARY: if user explicitly selected an opp, use it
+      // PRIMARY: if user explicitly selected an opp, use it (with opportunity index)
       if (negotiatingOpp !== null) {
-        activeDealKey = `${matchingCreator.name}|${selectedMarketplaceSkin}`;
+        activeDealKey = `${matchingCreator.name}|${selectedMarketplaceSkin}|${negotiatingOpp}`;
       }
-      // FALLBACK: if no opp selected but there's an active deal with this creator, use it
+      // FALLBACK: if no opp selected but there's an active deal with this creator, find it
       else {
-        const potentialKey = `${matchingCreator.name}|${selectedMarketplaceSkin}`;
-        const potentialDeal = getOrCreateDeal(potentialKey);
-        if (potentialDeal && potentialDeal.phase && potentialDeal.phase !== 'brief') {
-          activeDealKey = potentialKey;
+        const prefix = `${matchingCreator.name}|${selectedMarketplaceSkin}|`;
+        const activeDealKeyFound = Object.keys(dealStates).find(key => key.startsWith(prefix) && dealStates[key]?.phase && dealStates[key]?.phase !== 'brief');
+        if (activeDealKeyFound) {
+          activeDealKey = activeDealKeyFound;
         }
       }
     }
