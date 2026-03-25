@@ -808,15 +808,16 @@ export default function InstagramDemoPage() {
     if (marketplaceRole === 'creator' && selectedMarketplaceSkin && negotiatingOpp === null) {
       const matchingCreator = BRAND_MARKETPLACE_CREATORS.find(c => c.valueSkin === selectedMarketplaceSkin);
       if (matchingCreator) {
-        const potentialKey = `${matchingCreator.name}|${selectedMarketplaceSkin}`;
-        const potentialDeal = dealStates[potentialKey] || (firebaseState.deals?.[potentialKey]);
-        if (potentialDeal && potentialDeal.phase && potentialDeal.phase !== 'brief') {
-          const idx = potentialDeal.opportunityIndex ?? 0;
-          setNegotiatingOpp(idx);
+        // Find first active deal for this creator+skin combo (new format: creatorName|creatorSkin|oppIndex)
+        const prefix = `${matchingCreator.name}|${selectedMarketplaceSkin}|`;
+        const activeDealKey = Object.keys(dealStates).find(key => key.startsWith(prefix) && dealStates[key]?.phase && dealStates[key]?.phase !== 'brief');
+        if (activeDealKey) {
+          const oppIndex = parseInt(activeDealKey.split('|')[2] || '0');
+          setNegotiatingOpp(oppIndex);
         }
       }
     }
-  }, [marketplaceRole, selectedMarketplaceSkin, negotiatingOpp, dealStates, firebaseState.deals]);
+  }, [marketplaceRole, selectedMarketplaceSkin, negotiatingOpp, dealStates]);
 
   // AUTO-SYNC: Brand side should find open deals if they reload without negotiatingCreator set
   useEffect(() => {
@@ -2622,9 +2623,9 @@ export default function InstagramDemoPage() {
                           </div>
                         )}
                         {activeOpportunities.filter(opp => (!filterOppsBarterOnly || opp.willingToBarter) && (!creatorCampaignSearch.trim() || opp.brand.toLowerCase().includes(creatorCampaignSearch.trim().toLowerCase()) || (opp.about||'').toLowerCase().includes(creatorCampaignSearch.trim().toLowerCase()) || (opp.budget||'').toLowerCase().includes(creatorCampaignSearch.trim().toLowerCase()))).map((opp, i) => {
-                          // Deal key format: creatorName|creatorSkin (synced with brand side)
+                          // Deal key format: creatorName|creatorSkin|opportunityIndex (allows multiple deals per creator)
                           const matchingCreator = BRAND_MARKETPLACE_CREATORS.find(c => c.valueSkin === selectedMarketplaceSkin);
-                          const dealKey = matchingCreator ? `${matchingCreator.name}|${selectedMarketplaceSkin}` : null;
+                          const dealKey = matchingCreator ? `${matchingCreator.name}|${selectedMarketplaceSkin}|${i}` : null;
                           const existingDeal = dealKey ? dealStates[dealKey] : undefined;
                           const hasActiveDeal = existingDeal && existingDeal.phase !== 'brief';
                           const isDealDone = existingDeal && (existingDeal.creatorDealLifecycle === 'approved' || existingDeal.brandApprovalPhase === 'approved');
@@ -6660,7 +6661,9 @@ export default function InstagramDemoPage() {
                                 )}
                                 {(() => {
                                   const creatorData = BRAND_MARKETPLACE_CREATORS.find(c => c.handle === app.creatorHandle || c.name === app.creatorName);
-                                  const dealKey = creatorData ? `${creatorData.name}|${creatorData.valueSkin}` : null;
+                                  // Find opportunity index from campaignId
+                                  const oppIdx = activeOpportunities.findIndex(opp => opp.brand === campaigns.find(c=>c.id===app.campaignId)?.title);
+                                  const dealKey = creatorData ? `${creatorData.name}|${creatorData.valueSkin}|${oppIdx >= 0 ? oppIdx : 0}` : null;
                                   const deal = dealKey ? getOrCreateDeal(dealKey) : null;
                                   return deal?.phase === 'counter' ? (
                                     <span style={{ fontSize:'8px', fontWeight:700, color:'#fff', background:C.warning, padding:'2px 6px', borderRadius:'4px', textTransform:'uppercase' }}>Counter waiting</span>
