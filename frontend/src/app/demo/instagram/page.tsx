@@ -527,6 +527,8 @@ export default function InstagramDemoPage() {
   });
   const setNegotiatingCreator = (v: number | null) => { setNegotiatingCreatorRaw(v); if (v === null) localStorage.removeItem('vs_brand_negotiating_creator'); else localStorage.setItem('vs_brand_negotiating_creator', String(v)); };
 
+  const [brandCurrentOppIndex, setBrandCurrentOppIndex] = useState(0);
+
   // Deal sync hook — bridges localStorage with backend API
   const dealSync = useDealSync();
   // Firebase sync — all users share one global namespace
@@ -796,9 +798,9 @@ export default function InstagramDemoPage() {
     if (negotiatingCreator === null) return null;
     const creator = BRAND_MARKETPLACE_CREATORS[negotiatingCreator];
     if (!creator) return null;
-    // Same format as creator: creatorName|creatorSkin — enables two-device sync
-    return `${creator.name}|${creator.valueSkin}`;
-  }, [negotiatingCreator]);
+    // Format: creatorName|creatorSkin|oppIndex — includes opportunity context for multi-deal support
+    return `${creator.name}|${creator.valueSkin}|${brandCurrentOppIndex}`;
+  }, [negotiatingCreator, brandCurrentOppIndex]);
 
   const brandDealKey = getBrandDealKey();
   const brandDeal = brandDealKey ? getOrCreateDeal(brandDealKey) : null;
@@ -3020,6 +3022,7 @@ export default function InstagramDemoPage() {
                                                 creatorDealCompletionRate: 95, creatorPortfolio: [],
                                                 creatorAudienceLocation: selectedCountry || 'USA', creatorAudienceAge: '25-34',
                                                 creatorResponseTimeHrs: 6, creatorInstagramUrl: `https://instagram.com/creator_demo`,
+                                                opportunityIndex: i,
                                               };
                                               persistApplications([...sharedApplications, newApp]);
                                             }}
@@ -4934,7 +4937,7 @@ export default function InstagramDemoPage() {
                           </div>
                           <div style={{ display:'flex', gap:'8px' }}>
                             <button onClick={() => { setShowBatchSendModal(false); setLastCreatedCampaignId(null); setBatchSendCreatorIds(new Set()); }} style={{ flex:1, background:'none', border:`1px solid ${C.border}`, borderRadius:'8px', padding:'11px', color:C.text, fontWeight:700, fontSize:'13px', cursor:'pointer' }}>Cancel</button>
-                            <button onClick={() => { batchSendCreatorIds.forEach(idx => { const creator = BRAND_MARKETPLACE_CREATORS[idx]; const app: SharedApplication = { id:Date.now() + idx, campaignId:lastCreatedCampaignId ?? 0, campaignTitle:campaigns.find(c => c.id === lastCreatedCampaignId)?.title || 'Campaign', creatorProfession:creator.valueSkin || '', creatorHandle:creator.handle || '', creatorName:creator.name, status:'invited' as SharedApplication['status'], appliedAt:new Date().toISOString() }; firebaseCreateApplication(app); firebaseSendNotification(creator.handle || '', 'campaign', `${profileName} invited you to: ${campaigns.find(c => c.id === lastCreatedCampaignId)?.title || 'Campaign'}`); }); setPurchaseToast(`Campaign sent to ${batchSendCreatorIds.size} creator${batchSendCreatorIds.size !== 1 ? 's' : ''}`); setTimeout(() => setPurchaseToast(null), 3000); setShowBatchSendModal(false); setLastCreatedCampaignId(null); setBatchSendCreatorIds(new Set()); }} style={{ flex:1, background:batchSendCreatorIds.size > 0 ? C.primary : C.border, border:'none', borderRadius:'8px', padding:'11px', color:'#fff', fontWeight:700, fontSize:'13px', cursor: batchSendCreatorIds.size > 0 ? 'pointer' : 'not-allowed', opacity: batchSendCreatorIds.size > 0 ? 1 : 0.5 }}>Send to {batchSendCreatorIds.size} Creator{batchSendCreatorIds.size !== 1 ? 's' : ''}</button>
+                            <button onClick={() => { batchSendCreatorIds.forEach(idx => { const creator = BRAND_MARKETPLACE_CREATORS[idx]; const campaign = campaigns.find(c => c.id === lastCreatedCampaignId); const oppIdx = activeOpportunities.findIndex(o => o.brand === campaign?.title); const app: SharedApplication = { id:Date.now() + idx, campaignId:lastCreatedCampaignId ?? 0, campaignTitle:campaign?.title || 'Campaign', creatorProfession:creator.valueSkin || '', creatorHandle:creator.handle || '', creatorName:creator.name, status:'invited' as SharedApplication['status'], appliedAt:new Date().toISOString(), opportunityIndex: oppIdx >= 0 ? oppIdx : 0 }; firebaseCreateApplication(app); firebaseSendNotification(creator.handle || '', 'campaign', `${profileName} invited you to: ${campaign?.title || 'Campaign'}`); }); setPurchaseToast(`Campaign sent to ${batchSendCreatorIds.size} creator${batchSendCreatorIds.size !== 1 ? 's' : ''}`); setTimeout(() => setPurchaseToast(null), 3000); setShowBatchSendModal(false); setLastCreatedCampaignId(null); setBatchSendCreatorIds(new Set()); }} style={{ flex:1, background:batchSendCreatorIds.size > 0 ? C.primary : C.border, border:'none', borderRadius:'8px', padding:'11px', color:'#fff', fontWeight:700, fontSize:'13px', cursor: batchSendCreatorIds.size > 0 ? 'pointer' : 'not-allowed', opacity: batchSendCreatorIds.size > 0 ? 1 : 0.5 }}>Send to {batchSendCreatorIds.size} Creator{batchSendCreatorIds.size !== 1 ? 's' : ''}</button>
                           </div>
                         </div>
                       </div>
@@ -5384,7 +5387,7 @@ export default function InstagramDemoPage() {
                                     onClick={() => {
                                       if (noBrandSkin) { setPurchaseToast('Get a brand ValueSkin first'); setTimeout(() => setPurchaseToast(null), 3000); return; }
                                       if (!hasMatch) { setPurchaseToast('No shared ValueSkin with this creator'); setTimeout(() => setPurchaseToast(null), 3000); return; }
-                                      setNegotiatingCreator(origIdx); setBrandDealPhase('brief'); setBrandBriefTitle(''); setBrandBriefDeliverables(''); setBrandBudget('4000'); setBrandDealIntent('campaign');
+                                      setNegotiatingCreator(origIdx); setBrandCurrentOppIndex(0); setBrandDealPhase('brief'); setBrandBriefTitle(''); setBrandBriefDeliverables(''); setBrandBudget('4000'); setBrandDealIntent('campaign');
                                       // Initialize deal context when brand opens a creator (direct outreach, use index 0)
                                       const dealKey = `${creator.name}|${creator.valueSkin}|0`;
                                       updateDeal(dealKey, {
@@ -6663,13 +6666,8 @@ export default function InstagramDemoPage() {
                                 )}
                                 {(() => {
                                   const creatorData = BRAND_MARKETPLACE_CREATORS.find(c => c.handle === app.creatorHandle || c.name === app.creatorName);
-                                  // Use campaignId to find opportunity - try multiple matches since brand name might differ from campaign title
-                                  const campaign = campaigns.find(c => c.id === app.campaignId);
-                                  let oppIdx = 0;
-                                  if (campaign && creatorData) {
-                                    const creatorOpps = activeOpportunities.filter(o => o.brand.toLowerCase().includes('brand') || o.brand === campaign.title);
-                                    oppIdx = creatorOpps.length > 0 ? activeOpportunities.indexOf(creatorOpps[0]) : 0;
-                                  }
+                                  // Use opportunityIndex from application (set when campaign was sent)
+                                  const oppIdx = app.opportunityIndex ?? 0;
                                   const dealKey = creatorData ? `${creatorData.name}|${creatorData.valueSkin}|${oppIdx}` : null;
                                   const deal = dealKey ? getOrCreateDeal(dealKey) : null;
                                   return deal?.phase === 'counter' ? (
@@ -6692,7 +6690,7 @@ export default function InstagramDemoPage() {
                                   {app.status === 'accepted' && (() => {
                                     const creatorData = BRAND_MARKETPLACE_CREATORS.find(c => c.handle === app.creatorHandle || c.name === app.creatorName);
                                     return creatorData ? (
-                                      <button onClick={() => setNegotiatingCreator(BRAND_MARKETPLACE_CREATORS.indexOf(creatorData))} style={{ background:C.primary, border:'none', borderRadius:'6px', padding:'4px 10px', fontSize:'10px', fontWeight:600, color:'#fff', cursor:'pointer' }}>Deal Room</button>
+                                      <button onClick={() => { setNegotiatingCreator(BRAND_MARKETPLACE_CREATORS.indexOf(creatorData)); setBrandCurrentOppIndex(app.opportunityIndex ?? 0); }} style={{ background:C.primary, border:'none', borderRadius:'6px', padding:'4px 10px', fontSize:'10px', fontWeight:600, color:'#fff', cursor:'pointer' }}>Deal Room</button>
                                     ) : null;
                                   })()}
                                 </>
