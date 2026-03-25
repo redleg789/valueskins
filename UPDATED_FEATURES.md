@@ -50,6 +50,13 @@
 - **Persistent storage:** Ratings saved to deal state and persisted in Firebase
 - **UI placement:** Ratings shown immediately after deal approval, before withdrawal
 
+## Past Deals History (March 25, 2026) ✅ ADDED
+- **Brand side:** "Past Deals" section shows all completed deals with creator, amount, and ratings
+- **Creator side:** "Past Deals" section shows all completed brand collaborations with ratings
+- **Deal details:** Shows deal type, completion date, amount earned/paid, star ratings from both sides
+- **Badge counter:** Shows total number of completed deals in section header
+- **Real-time sync:** Automatically updates as new deals reach approved status
+
 ## Latest Session (March 2026)
 
 ### Script Negotiation Workflow

@@ -1044,7 +1044,7 @@ export default function InstagramDemoPage() {
 
   // No seeded campaigns or applications — only real data from Firebase
 
-  const [marketplaceTab, setMarketplaceTab] = useState<'creators' | 'campaigns' | 'applications' | 'sent'>('creators');
+  const [marketplaceTab, setMarketplaceTab] = useState<'creators' | 'campaigns' | 'applications' | 'sent' | 'pastDeals'>('creators');
   const [hiddenSentDealIds, setHiddenSentDealIds] = useState<Set<number>>(new Set());
   const [showCampaignCreator, setShowCampaignCreator] = useState(false);
   const [newCampaignTitle, setNewCampaignTitle] = useState('');
@@ -4508,6 +4508,49 @@ export default function InstagramDemoPage() {
                           );
                         })}
                         </>}
+                      {/* Past Deals section */}
+                      <div style={{ marginTop:'24px', paddingTop:'20px', borderTop:`1px solid ${C.border}` }}>
+                        <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'16px' }}>
+                          <span style={{ fontSize:'12px', fontWeight:700, color:C.text, textTransform:'uppercase', letterSpacing:'0.5px' }}>Past Deals</span>
+                          <span style={{ fontSize:'10px', background:C.primary, color:'#fff', padding:'2px 6px', borderRadius:'8px' }}>
+                            {Object.values(dealStates).filter(d => d.brandApprovalPhase === 'approved' || d.creatorDealLifecycle === 'approved').length}
+                          </span>
+                        </div>
+                        {(() => {
+                          const completedDeals = Object.entries(dealStates).filter(([_, d]) => d.brandApprovalPhase === 'approved' || d.creatorDealLifecycle === 'approved').map(([key, deal]) => ({key, ...deal}));
+                          if (completedDeals.length === 0) {
+                            return <div style={{ fontSize:'12px', color:C.textSecondary, padding:'16px', textAlign:'center' }}>No completed deals yet</div>;
+                          }
+                          return (
+                            <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
+                              {completedDeals.map((deal) => {
+                                const [creatorName, skinName] = deal.key.split('|');
+                                const dealAmount = deal.agreementAmount || deal.offerAmount || '0';
+                                const creatorRating = deal.creatorRating || 0;
+                                const brandRating = deal.brandRating || 0;
+                                const completedDate = new Date().toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+                                return (
+                                  <div key={deal.key} style={{ background:C.card, borderRadius:'8px', padding:'12px', border:`1px solid ${C.border}` }}>
+                                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'start', marginBottom:'8px' }}>
+                                      <div>
+                                        <div style={{ fontSize:'13px', fontWeight:600, color:C.text, marginBottom:'2px' }}>Brand Deal · {deal.type || 'Unknown'}</div>
+                                        <div style={{ fontSize:'11px', color:C.textSecondary }}>{completedDate}</div>
+                                      </div>
+                                      <div style={{ fontSize:'13px', fontWeight:700, color:C.success }}>${parseInt(dealAmount).toLocaleString()}</div>
+                                    </div>
+                                    {(creatorRating > 0 || brandRating > 0) && (
+                                      <div style={{ display:'flex', gap:'16px', fontSize:'11px', color:C.textSecondary, paddingTop:'8px', borderTop:`1px solid ${C.border}` }}>
+                                        {creatorRating > 0 && <span>You rated: {'★'.repeat(creatorRating)}</span>}
+                                        {brandRating > 0 && <span>Brand rated: {'★'.repeat(brandRating)}</span>}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          );
+                        })()}
+                      </div>
                       </>
                     )}
 
@@ -6657,6 +6700,49 @@ export default function InstagramDemoPage() {
                   </div>
                 </>
               )}
+              {/* Past Deals section */}
+              <div style={{ marginTop:'24px', paddingTop:'20px', borderTop:`1px solid ${C.border}` }}>
+                <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'16px' }}>
+                  <span style={{ fontSize:'12px', fontWeight:700, color:C.text, textTransform:'uppercase', letterSpacing:'0.5px' }}>Past Deals</span>
+                  <span style={{ fontSize:'10px', background:C.primary, color:'#fff', padding:'2px 6px', borderRadius:'8px' }}>
+                    {Object.values(dealStates).filter(d => d.brandApprovalPhase === 'approved' || d.creatorDealLifecycle === 'approved').length}
+                  </span>
+                </div>
+                {(() => {
+                  const completedDeals = Object.entries(dealStates).filter(([_, d]) => d.brandApprovalPhase === 'approved' || d.creatorDealLifecycle === 'approved').map(([key, deal]) => ({key, ...deal}));
+                  if (completedDeals.length === 0) {
+                    return <div style={{ fontSize:'12px', color:C.textSecondary, padding:'16px', textAlign:'center' }}>No completed deals yet</div>;
+                  }
+                  return (
+                    <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
+                      {completedDeals.map((deal) => {
+                        const [creatorName, skinName] = deal.key.split('|');
+                        const dealAmount = deal.agreementAmount || deal.offerAmount || '0';
+                        const creatorRating = deal.creatorRating || 0;
+                        const brandRating = deal.brandRating || 0;
+                        const completedDate = new Date().toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+                        return (
+                          <div key={deal.key} style={{ background:C.card, borderRadius:'8px', padding:'12px', border:`1px solid ${C.border}` }}>
+                            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'start', marginBottom:'8px' }}>
+                              <div>
+                                <div style={{ fontSize:'13px', fontWeight:600, color:C.text, marginBottom:'2px' }}>{creatorName} × {skinName}</div>
+                                <div style={{ fontSize:'11px', color:C.textSecondary }}>{deal.type || 'Deal'} · {completedDate}</div>
+                              </div>
+                              <div style={{ fontSize:'13px', fontWeight:700, color:C.success }}>${parseInt(dealAmount).toLocaleString()}</div>
+                            </div>
+                            {(creatorRating > 0 || brandRating > 0) && (
+                              <div style={{ display:'flex', gap:'16px', fontSize:'11px', color:C.textSecondary, paddingTop:'8px', borderTop:`1px solid ${C.border}` }}>
+                                {creatorRating > 0 && <span>Creator rated: {'★'.repeat(creatorRating)}</span>}
+                                {brandRating > 0 && <span>Brand rated: {'★'.repeat(brandRating)}</span>}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+              </div>
             </>
           )}
 
