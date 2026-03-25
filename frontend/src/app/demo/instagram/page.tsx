@@ -2699,7 +2699,7 @@ export default function InstagramDemoPage() {
                               </div>
 
                               {/* Deal Room — shown when: negotiating this opp OR there's an active deal for this opp */}
-                              {(negotiatingOpp === actualOppIndex || hasActiveDeal) && (
+                              {(negotiatingOpp === actualOppIndex) && (
                                 <div style={{ background: C.card, borderRadius: '16px', padding: '16px', border: `1px solid ${C.border}` }}>
                                   {/* Deal Room Back Button */}
                                   <button onClick={() => setNegotiatingOpp(null)} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: C.textSecondary, cursor: 'pointer', fontSize: '12px', fontWeight: 600, padding: '0 0 10px', marginBottom: '2px' }}>
