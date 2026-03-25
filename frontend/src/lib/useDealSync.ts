@@ -148,6 +148,7 @@ export type SharedApplication = {
   creatorHandle: string;
   status: 'pending' | 'accepted' | 'rejected' | 'invited';
   appliedAt: string;
+  opportunityIndex?: number; // Index in activeOpportunities for deal key lookup
   // Creator insights — visible to brand when reviewing application
   creatorName?: string;
   creatorFollowers?: string;

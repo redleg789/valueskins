@@ -2623,9 +2623,11 @@ export default function InstagramDemoPage() {
                           </div>
                         )}
                         {activeOpportunities.filter(opp => (!filterOppsBarterOnly || opp.willingToBarter) && (!creatorCampaignSearch.trim() || opp.brand.toLowerCase().includes(creatorCampaignSearch.trim().toLowerCase()) || (opp.about||'').toLowerCase().includes(creatorCampaignSearch.trim().toLowerCase()) || (opp.budget||'').toLowerCase().includes(creatorCampaignSearch.trim().toLowerCase()))).map((opp, i) => {
-                          // Deal key format: creatorName|creatorSkin|opportunityIndex (allows multiple deals per creator)
+                          // Deal key format: creatorName|creatorSkin|oppIndex (allows multiple deals per creator)
                           const matchingCreator = BRAND_MARKETPLACE_CREATORS.find(c => c.valueSkin === selectedMarketplaceSkin);
                           const dealKey = matchingCreator ? `${matchingCreator.name}|${selectedMarketplaceSkin}|${i}` : null;
+                          // Also store opportunity index in deal for brand side reference
+                          const opportunityIndex = i;
                           const existingDeal = dealKey ? dealStates[dealKey] : undefined;
                           const hasActiveDeal = existingDeal && existingDeal.phase !== 'brief';
                           const isDealDone = existingDeal && (existingDeal.creatorDealLifecycle === 'approved' || existingDeal.brandApprovalPhase === 'approved');
@@ -6661,9 +6663,14 @@ export default function InstagramDemoPage() {
                                 )}
                                 {(() => {
                                   const creatorData = BRAND_MARKETPLACE_CREATORS.find(c => c.handle === app.creatorHandle || c.name === app.creatorName);
-                                  // Find opportunity index from campaignId
-                                  const oppIdx = activeOpportunities.findIndex(opp => opp.brand === campaigns.find(c=>c.id===app.campaignId)?.title);
-                                  const dealKey = creatorData ? `${creatorData.name}|${creatorData.valueSkin}|${oppIdx >= 0 ? oppIdx : 0}` : null;
+                                  // Use campaignId to find opportunity - try multiple matches since brand name might differ from campaign title
+                                  const campaign = campaigns.find(c => c.id === app.campaignId);
+                                  let oppIdx = 0;
+                                  if (campaign && creatorData) {
+                                    const creatorOpps = activeOpportunities.filter(o => o.brand.toLowerCase().includes('brand') || o.brand === campaign.title);
+                                    oppIdx = creatorOpps.length > 0 ? activeOpportunities.indexOf(creatorOpps[0]) : 0;
+                                  }
+                                  const dealKey = creatorData ? `${creatorData.name}|${creatorData.valueSkin}|${oppIdx}` : null;
                                   const deal = dealKey ? getOrCreateDeal(dealKey) : null;
                                   return deal?.phase === 'counter' ? (
                                     <span style={{ fontSize:'8px', fontWeight:700, color:'#fff', background:C.warning, padding:'2px 6px', borderRadius:'4px', textTransform:'uppercase' }}>Counter waiting</span>
