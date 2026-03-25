@@ -110,6 +110,13 @@ export type DealState = {
   opportunityIndex?: number;        // activeOpportunities array index (creator side)
   creatorName?: string;             // Name of creator from BRAND_MARKETPLACE_CREATORS
   creatorSkin?: string;             // ValueSkin (profession) of creator
+  // Ratings and reviews — both sides rate each other after deal completion
+  creatorRating?: number;           // 1-5 stars from creator to brand
+  creatorRatingComment?: string;    // Creator's review comment
+  displayCreatorRating?: boolean;   // Creator chose to show on profile
+  brandRating?: number;             // 1-5 stars from brand to creator
+  brandRatingComment?: string;      // Brand's review comment
+  displayBrandRating?: boolean;     // Brand chose to show on profile
 };
 
 export type ChatMessage = {
