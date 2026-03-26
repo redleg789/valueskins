@@ -1522,7 +1522,11 @@ export default function InstagramDemoPage() {
       about: c.about || c.description,
       budget: `$${parseInt(c.budget || '0').toLocaleString()}`,
       deadline: c.deadline,
-      deliverables: (c.deliverables || '').split(',').map(d => ({ format: d.trim(), count: 1 })),
+      deliverables: (c.deliverables || '').split(',').map(d => {
+              const trimmed = d.trim();
+              const countMatch = trimmed.match(/^(\d+)[xX]\s*(.+)$/);
+              return countMatch ? { format: countMatch[2].trim(), count: parseInt(countMatch[1]) } : { format: trimmed, count: 1 };
+            }),
       requirements: c.requirements || [],
       exclusivity: c.exclusivity || 'None',
       usageRights: c.usageRights || '30 days, social only',
@@ -3063,6 +3067,9 @@ export default function InstagramDemoPage() {
                                             {!signed && <span>Sign your name to continue.</span>}
                                           </div>
                                         )}
+                                        <div style={{ background: 'rgba(0,149,246,0.06)', border: '1px solid rgba(0,149,246,0.2)', borderRadius: '8px', padding: '10px', marginBottom: '10px', fontSize: '11px', color: C.textSecondary, lineHeight: 1.5 }}>
+                                          ⚠️ Once you accept, terms are locked. Check all details carefully — no edits after signing.
+                                        </div>
                                         <div style={{ display: 'flex', gap: '8px' }}>
                                           <button
                                             disabled={!canAccept}
@@ -3087,11 +3094,7 @@ export default function InstagramDemoPage() {
                                               persistApplications([...sharedApplications, newApp]);
                                             }}
                                             style={{ flex: 2, background: canAccept ? C.success : C.border, border: 'none', padding: '11px', borderRadius: '10px', color: '#fff', fontWeight: 700, cursor: canAccept ? 'pointer' : 'not-allowed', fontSize: '13px', opacity: canAccept ? 1 : 0.5 }}
-                                          >Accept Deal</button>
-                                          <button
-                                            onClick={() => setDealRoomPhase('chatroom')}
-                                            style={{ flex: 1, background: 'transparent', border: `1px solid ${C.border}`, padding: '11px', borderRadius: '10px', color: C.textSecondary, fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}
-                                          >Back to Chat</button>
+                                          >Sign &amp; Accept Deal</button>
                                           <button
                                             onClick={() => {
                                               if (activeDealKey) {
@@ -3481,7 +3484,7 @@ export default function InstagramDemoPage() {
                                     }
                                   })()}
 
-                                  {(dealRoomPhase === 'chatroom' || dealRoomPhase === 'accepted') && (
+                                  {(dealRoomPhase === 'chatroom' || dealRoomPhase === 'accepted' || dealRoomPhase === 'pending' || dealRoomPhase === 'counter' || dealRoomPhase === 'last_offer') && (
                                     <>
                                       {/* Chat + Sidebar layout */}
                                       <div style={{ display: 'flex', gap: '8px', minHeight: '340px' }}>
@@ -3923,9 +3926,16 @@ export default function InstagramDemoPage() {
                                         // Deliverables phase (when escrowFunded && lifecycle==='deliverables')
                                         if (creatorDealLifecycle === 'deliverables') {
                                           const oppDeliverables = opp.deliverables?.length ? opp.deliverables : [{ format: 'Instagram Reel', count: 1 }];
+                                          // Expand deliverables into individual slots: [{format:'Reel',count:2}] → [{format:'Reel',label:'Reel 1 of 2'},{format:'Reel',label:'Reel 2 of 2'}]
+                                          const expandedSlots: { format: string; label: string }[] = oppDeliverables.flatMap((d: {format:string;count:number}) =>
+                                            d.count === 1
+                                              ? [{ format: d.format, label: d.format }]
+                                              : Array.from({ length: d.count }, (_, i) => ({ format: d.format, label: `${d.format} (${i + 1} of ${d.count})` }))
+                                          );
+                                          const totalSlots = expandedSlots.length;
                                           const deadlineStr = opp.deadline ? new Date(opp.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : null;
                                           const daysLeft = opp.deadline ? Math.ceil((new Date(opp.deadline).getTime() - Date.now()) / 86400000) : null;
-                                          const allUploaded = oppDeliverables.every((_d: {format:string;count:number}, i: number) => deliverableStatuses[i] === 'uploaded' || deliverableStatuses[i] === 'approved');
+                                          const allUploaded = totalSlots > 0 && Array.from({ length: totalSlots }, (_, i) => i).every(i => deliverableStatuses[i] === 'uploaded' || deliverableStatuses[i] === 'approved');
                                           return (
                                             <>
                                               <div style={{ fontSize:'11px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.6px', marginBottom:'10px' }}>Upload Deliverables</div>
@@ -3949,8 +3959,8 @@ export default function InstagramDemoPage() {
                                                 <div style={{ fontSize:'11px', color:C.text }}>Revision limit: <strong>{opp.revisionLimit} round{opp.revisionLimit !== 1 ? 's' : ''}</strong></div>
                                               </div>
                                               <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', padding:'10px', marginBottom:'10px' }}>
-                                                <div style={{ fontSize:'10px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.4px', marginBottom:'8px' }}>Deliverables ({oppDeliverables.reduce((a: number, d: {format:string;count:number}) => a + d.count, 0)} items)</div>
-                                                {oppDeliverables.map((d, di) => {
+                                                <div style={{ fontSize:'10px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.4px', marginBottom:'8px' }}>Deliverables ({totalSlots} item{totalSlots !== 1 ? 's' : ''})</div>
+                                                {expandedSlots.map((d, di) => {
                                                   const status = deliverableStatuses[di] || 'pending';
                                                   const link = deliverableLinks[di] || '';
                                                   const inputVal = deliverableLinkInputs[di] || '';
@@ -3963,7 +3973,7 @@ export default function InstagramDemoPage() {
                                                           {status !== 'pending' && status !== 'linking' ? <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg> : <span style={{ fontSize:'10px', color:'#fff', fontWeight:700 }}>{di + 1}</span>}
                                                         </div>
                                                         <div style={{ flex:1 }}>
-                                                          <div style={{ fontSize:'12px', fontWeight:600, color:C.text }}>{d.count}x {d.format}</div>
+                                                          <div style={{ fontSize:'12px', fontWeight:600, color:C.text }}>{d.label}</div>
                                                           <div style={{ fontSize:'10px', color: status === 'approved' ? C.success : status === 'uploaded' ? C.primary : C.textMuted }}>
                                                             {status === 'approved' ? 'Approved by brand' : status === 'uploaded' ? 'Submitted — awaiting review' : status === 'linking' ? 'Enter your Instagram link below' : 'Not yet submitted'}
                                                           </div>
@@ -5654,29 +5664,6 @@ export default function InstagramDemoPage() {
                                       ${brandBudget}/post · {brandCampaignType}<br />
                                       Waiting for {creator.name} to respond
                                     </div>
-                                  </div>
-
-                                  {/* Soft hold option */}
-                                  <div style={{ background: C.bg, borderRadius: '8px', padding: '10px 12px', marginBottom: '12px', border: `1px solid ${C.border}` }}>
-                                    <div style={{ fontSize: '11px', fontWeight: 700, color: C.text, marginBottom: '6px' }}>Reserve this creator's slot?</div>
-                                    <div style={{ fontSize: '11px', color: C.textMuted, marginBottom: '8px', lineHeight: 1.4 }}>
-                                      A soft hold prevents {creator.name} from accepting other deals while you wait. No payment required.
-                                    </div>
-                                    <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
-                                      {([24, 48, 72] as const).map(h => (
-                                        <button
-                                          key={h}
-                                          onClick={() => setBrandSoftHoldHours(h)}
-                                          style={{ flex: 1, padding: '6px 4px', borderRadius: '6px', border: `1px solid ${brandSoftHoldHours === h ? C.warning : C.border}`, background: brandSoftHoldHours === h ? 'rgba(230,81,0,0.1)' : C.bg, color: brandSoftHoldHours === h ? C.warning : C.textSecondary, fontSize: '11px', fontWeight: 600, cursor: 'pointer' }}
-                                        >{h}h</button>
-                                      ))}
-                                    </div>
-                                    <button
-                                      onClick={() => setBrandDealPhase('softhold')}
-                                      style={{ width: '100%', background: 'none', border: `1px solid ${C.border}`, padding: '7px', borderRadius: '8px', color: C.textSecondary, fontWeight: 600, cursor: 'pointer', fontSize: '12px' }}
-                                    >
-                                      Activate Soft Hold ({brandSoftHoldHours}h)
-                                    </button>
                                   </div>
 
                                   <div style={{ textAlign:'center', padding:'8px', fontSize:'11px', color:C.textMuted }}>
