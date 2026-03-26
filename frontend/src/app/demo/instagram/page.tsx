@@ -2906,6 +2906,24 @@ export default function InstagramDemoPage() {
                                   {dealRoomPhase === 'formal_offer' && (() => {
                                     const agreedPrice = dealCounterAmount || dealOfferAmount || opp.budget.replace(/[^0-9]/g, '') || '5000';
                                     const totalPrice = parseInt(agreedPrice) || 5000;
+                                    // Creator submitted this — show waiting screen, not the signing UI
+                                    if (activeDeal?.formalOfferSentByCreator) {
+                                      return (
+                                        <div style={{ textAlign: 'center', padding: '24px 12px' }}>
+                                          <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(0,149,246,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+                                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                          </div>
+                                          <div style={{ fontSize: '14px', fontWeight: 700, color: C.text, marginBottom: '6px' }}>Final Offer Submitted</div>
+                                          <div style={{ fontSize: '12px', color: C.textSecondary, lineHeight: 1.6, marginBottom: '16px' }}>
+                                            Your offer of <strong>${totalPrice.toLocaleString()}</strong> has been sent to {opp.brand}.<br />
+                                            Waiting for them to review and approve.
+                                          </div>
+                                          <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: '8px', padding: '10px', fontSize: '11px', color: C.textMuted }}>
+                                            You cannot edit terms at this stage. If the brand rejects, you can renegotiate.
+                                          </div>
+                                        </div>
+                                      );
+                                    }
                                     const advPct = advancePercent;
                                     const uploadPct = uploadPercent;
                                     const approvalPct = approvalPercent;
@@ -3727,7 +3745,11 @@ export default function InstagramDemoPage() {
                                           <div style={{ background: C.bg, borderRadius: '8px', border: `1px solid ${C.border}`, padding: '8px' }}>
                                             <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Finalize</div>
                                             <button
-                                              onClick={() => setDealRoomPhase('formal_offer')}
+                                              onClick={() => {
+                                                if (activeDealKey) {
+                                                  updateDeal(activeDealKey, { phase: 'formal_offer' as DealRoomPhase, formalOfferSentByCreator: true });
+                                                }
+                                              }}
                                               style={{ width: '100%', background: C.primary, border: 'none', padding: '7px', borderRadius: '6px', color: '#fff', fontWeight: 600, fontSize: '11px', cursor: 'pointer', lineHeight: 1.3 }}
                                             >
                                               Submit Formal Offer
@@ -5965,6 +5987,50 @@ export default function InstagramDemoPage() {
                                   >
                                     Withdraw & close
                                   </button>
+                                </>
+                              )}
+
+                              {/* Phase 4c: Creator submitted formal offer — brand must approve */}
+                              {brandDealPhase === 'formal_offer' && (
+                                <>
+                                  <div style={{ background: 'rgba(0,149,246,0.06)', borderRadius: '8px', padding: '10px 12px', marginBottom: '12px', border: `1px solid rgba(0,149,246,0.2)` }}>
+                                    <div style={{ fontSize: '11px', fontWeight: 700, color: C.primary, marginBottom: '4px' }}>Creator Submitted Final Offer</div>
+                                    <div style={{ fontSize: '22px', fontWeight: 800, color: C.text, marginBottom: '2px' }}>${agreedDealAmount}<span style={{ fontSize: '12px', color: C.textMuted, fontWeight: 400 }}>/post</span></div>
+                                    <div style={{ fontSize: '11px', color: C.textSecondary, lineHeight: 1.4 }}>
+                                      {creator.name} has locked their terms. Review and approve to proceed, or reject to end the negotiation.
+                                    </div>
+                                  </div>
+                                  <div style={{ display: 'flex', gap: '8px' }}>
+                                    <button
+                                      onClick={() => {
+                                        if (brandDealKey) {
+                                          const now = new Date();
+                                          const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: false });
+                                          const approveMsg = { id: Date.now(), sender: 'brand' as const, text: `Brand approved formal offer at $${parseInt(agreedDealAmount).toLocaleString()}/post. Deal is locked.`, time: timeStr, isoTime: now.toISOString(), seen: false };
+                                          const existingMsgs = brandDeal?.chatMessages || [];
+                                          updateDeal(brandDealKey, { phase: 'accepted', brandApprovalPhase: 'accepted', chatMessages: [...existingMsgs, approveMsg] });
+                                        }
+                                      }}
+                                      style={{ flex: 1, background: C.success, border: 'none', padding: '9px', borderRadius: '8px', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: '12px' }}
+                                    >
+                                      Approve &amp; Lock Deal
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        if (brandDealKey) {
+                                          const now = new Date();
+                                          const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: false });
+                                          const rejectMsg = { id: Date.now(), sender: 'brand' as const, text: 'Brand rejected the formal offer.', time: timeStr, isoTime: now.toISOString(), seen: false };
+                                          const existingMsgs = brandDeal?.chatMessages || [];
+                                          updateDeal(brandDealKey, { phase: 'rejected', chatMessages: [...existingMsgs, rejectMsg] });
+                                        }
+                                        setNegotiatingCreator(null);
+                                      }}
+                                      style={{ flex: 1, background: 'none', border: `1px solid rgba(239,68,68,0.4)`, padding: '9px', borderRadius: '8px', color: 'rgba(239,68,68,0.85)', fontWeight: 600, cursor: 'pointer', fontSize: '12px' }}
+                                    >
+                                      Reject
+                                    </button>
+                                  </div>
                                 </>
                               )}
 
