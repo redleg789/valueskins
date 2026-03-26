@@ -5539,95 +5539,18 @@ export default function InstagramDemoPage() {
                                 </div>
                               </div>
 
-                              {/* Phase 1: Mandatory Brief */}
+                              {/* Phase 1: No active deal — prompt to create campaign */}
                               {brandDealPhase === 'brief' && (
                                 <>
-                                  <div style={{ fontSize: '12px', color: C.textSecondary, marginBottom: '12px', lineHeight: 1.5 }}>
-                                    Fill in your campaign brief before contacting {creator.name}. Brands without briefs cannot initiate contact.
-                                  </div>
-
-                                  {/* About brand */}
-                                  <div style={{ marginBottom: '10px' }}>
-                                    <div style={{ fontSize: '11px', color: C.textMuted, marginBottom: '4px', fontWeight: 600 }}>About your brand <span style={{ color: C.textSecondary }}>*</span></div>
-                                    <textarea
-                                      placeholder="What does your brand do? Who is your audience?"
-                                      value={brandBriefAbout}
-                                      onChange={(e) => setBrandBriefAbout(e.target.value)}
-                                      rows={2}
-                                      style={{ width: '100%', background: C.bg, border: `1px solid ${C.border}`, borderRadius: '8px', color: C.text, padding: '7px 10px', fontSize: '12px', fontFamily: 'inherit', outline: 'none', resize: 'none', boxSizing: 'border-box' }}
-                                    />
-                                  </div>
-
-                                  {/* Campaign description */}
-                                  <div style={{ marginBottom: '10px' }}>
-                                    <div style={{ fontSize: '11px', color: C.textMuted, marginBottom: '4px', fontWeight: 600 }}>Campaign / product details <span style={{ color: C.textSecondary }}>*</span></div>
-                                    <textarea
-                                      placeholder="Describe the specific product or campaign you're promoting. What should the creator know?"
-                                      value={brandBriefCampaignDesc}
-                                      onChange={(e) => setBrandBriefCampaignDesc(e.target.value)}
-                                      rows={3}
-                                      style={{ width: '100%', background: C.bg, border: `1px solid ${C.border}`, borderRadius: '8px', color: C.text, padding: '7px 10px', fontSize: '12px', fontFamily: 'inherit', outline: 'none', resize: 'none', boxSizing: 'border-box' }}
-                                    />
-                                  </div>
-
-                                  {/* Brief title */}
-                                  <div style={{ marginBottom: '10px' }}>
-                                    <div style={{ fontSize: '11px', color: C.textMuted, marginBottom: '4px', fontWeight: 600 }}>Campaign title <span style={{ color: C.textSecondary }}>*</span></div>
-                                    <input
-                                      type="text"
-                                      placeholder="e.g. Q2 Product Launch Series"
-                                      value={brandBriefTitle}
-                                      onChange={(e) => setBrandBriefTitle(e.target.value)}
-                                      style={{ width: '100%', background: C.bg, border: `1px solid ${C.border}`, borderRadius: '8px', color: C.text, padding: '7px 10px', fontSize: '12px', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
-                                    />
-                                  </div>
-
-                                  {/* Campaign type */}
-                                  <div style={{ marginBottom: '10px' }}>
-                                    <div style={{ fontSize: '11px', color: C.textMuted, marginBottom: '4px', fontWeight: 600 }}>Campaign type <span style={{ color: C.textSecondary }}>*</span></div>
-                                    <select
-                                      value={brandCampaignType}
-                                      onChange={(e) => setBrandCampaignType(e.target.value)}
-                                      style={{ width: '100%', background: C.bg, border: `1px solid ${C.border}`, borderRadius: '8px', color: C.text, padding: '7px 10px', fontSize: '12px', fontFamily: 'inherit', outline: 'none', cursor: 'pointer' }}
-                                    >
-                                      {CAMPAIGN_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                                    </select>
-                                  </div>
-
-                                  {/* Deliverables */}
-                                  <div style={{ marginBottom: '10px' }}>
-                                    <div style={{ fontSize: '11px', color: C.textMuted, marginBottom: '4px', fontWeight: 600 }}>Deliverables <span style={{ color: C.textSecondary }}>*</span></div>
-                                    <textarea
-                                      placeholder="e.g. 2 × Instagram Reels, 3 × Stories, 1 × static post"
-                                      value={brandBriefDeliverables}
-                                      onChange={(e) => setBrandBriefDeliverables(e.target.value)}
-                                      rows={2}
-                                      style={{ width: '100%', background: C.bg, border: `1px solid ${C.border}`, borderRadius: '8px', color: C.text, padding: '7px 10px', fontSize: '12px', fontFamily: 'inherit', outline: 'none', resize: 'none', boxSizing: 'border-box' }}
-                                    />
-                                  </div>
-
-                                  {/* Non-negotiable toggle */}
-                                  <div style={{ marginBottom: '14px', display: 'flex', alignItems: 'flex-start', gap: '10px', background: brandOfferNonNegotiable ? 'rgba(239,68,68,0.06)' : C.bg, border: `1px solid ${brandOfferNonNegotiable ? 'rgba(239,68,68,0.3)' : C.border}`, borderRadius: '8px', padding: '10px 12px' }}>
-                                    <button
-                                      onClick={() => setBrandOfferNonNegotiable(p => !p)}
-                                      style={{ width: '18px', height: '18px', borderRadius: '4px', border: `2px solid ${brandOfferNonNegotiable ? 'rgba(239,68,68,0.8)' : C.border}`, background: brandOfferNonNegotiable ? 'rgba(239,68,68,0.8)' : 'transparent', cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '1px' }}
-                                    >
-                                      {brandOfferNonNegotiable && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
-                                    </button>
-                                    <div>
-                                      <div style={{ fontSize: '12px', fontWeight: 700, color: brandOfferNonNegotiable ? 'rgba(239,68,68,0.9)' : C.text }}>This is our first, final, and non-negotiable offer</div>
-                                      <div style={{ fontSize: '10px', color: C.textMuted, marginTop: '2px', lineHeight: 1.4 }}>If the creator rejects this offer, they are automatically disqualified from this campaign.</div>
+                                  <div style={{ textAlign: 'center', padding: '24px 12px' }}>
+                                    <div style={{ fontSize: '32px', marginBottom: '12px' }}>📢</div>
+                                    <div style={{ fontSize: '14px', fontWeight: 700, color: C.text, marginBottom: '8px' }}>No active deal with {creator.name}</div>
+                                    <div style={{ fontSize: '12px', color: C.textSecondary, marginBottom: '20px', lineHeight: 1.6 }}>
+                                      Create a campaign and invite {creator.name} to start a deal. Once they accept the invite, you can negotiate and send offers here.
                                     </div>
-                                  </div>
-
-                                  <div style={{ display: 'flex', gap: '8px' }}>
-                                    <button
-                                      onClick={() => { if (brandBriefTitle.trim() && brandBriefDeliverables.trim() && brandBriefAbout.trim() && brandBriefCampaignDesc.trim()) setBrandDealPhase('offer'); }}
-                                      style={{ flex: 1, background: brandBriefTitle.trim() && brandBriefDeliverables.trim() && brandBriefAbout.trim() && brandBriefCampaignDesc.trim() ? C.warning : C.border, border: 'none', padding: '9px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: brandBriefTitle.trim() && brandBriefDeliverables.trim() && brandBriefAbout.trim() && brandBriefCampaignDesc.trim() ? 'pointer' : 'not-allowed', fontSize: '13px' }}
-                                    >
-                                      Continue to Offer
+                                    <button onClick={() => { setNegotiatingCreator(null); setShowCampaignCreator(true); }} style={{ background: C.primary, border: 'none', borderRadius: '8px', padding: '10px 20px', color: '#fff', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}>
+                                      Create Campaign
                                     </button>
-                                    <button onClick={() => setNegotiatingCreator(null)} style={{ background: 'none', border: `1px solid ${C.border}`, padding: '9px 12px', borderRadius: '8px', color: C.textSecondary, cursor: 'pointer', fontSize: '12px' }}>Cancel</button>
                                   </div>
                                 </>
                               )}
