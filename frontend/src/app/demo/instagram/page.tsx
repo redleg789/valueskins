@@ -5447,7 +5447,7 @@ export default function InstagramDemoPage() {
                                     onClick={() => {
                                       if (noBrandSkin) { setPurchaseToast('Get a brand ValueSkin first'); setTimeout(() => setPurchaseToast(null), 3000); return; }
                                       if (!hasMatch) { setPurchaseToast('No shared ValueSkin with this creator'); setTimeout(() => setPurchaseToast(null), 3000); return; }
-                                      // Check if there's already an active deal with this creator — don't reset to brief if so
+                                      // Check if there's already an active deal with this creator
                                       const existingPrefix = `${creator.name}|${creator.valueSkin}|`;
                                       const existingDealKey = Object.keys(dealStates).find(key => key.startsWith(existingPrefix) && dealStates[key]?.phase && dealStates[key]?.phase !== 'brief');
                                       if (existingDealKey) {
@@ -5456,23 +5456,17 @@ export default function InstagramDemoPage() {
                                         const existingDeal = dealStates[existingDealKey];
                                         setNegotiatingCreator(origIdx);
                                         setBrandCurrentOppIndex(existingOppIdx);
-                                        // Restore brief fields from persisted deal state
                                         if (existingDeal?.briefTitle) setBrandBriefTitle(existingDeal.briefTitle);
                                         if (existingDeal?.offerAmount) setBrandBudget(existingDeal.offerAmount);
                                       } else {
-                                        // No active deal — start fresh brief
-                                        setNegotiatingCreator(origIdx); setBrandCurrentOppIndex(0); setBrandDealPhase('brief'); setBrandBriefTitle(''); setBrandBriefDeliverables(''); setBrandBudget('4000'); setBrandDealIntent('campaign');
-                                        const dealKey = `${creator.name}|${creator.valueSkin}|0`;
-                                        updateDeal(dealKey, {
-                                          creatorName: creator.name,
-                                          creatorSkin: creator.valueSkin,
-                                          creatorMarketplaceIndex: origIdx,
-                                        });
+                                        // No active deal — brands must create a campaign first
+                                        setPurchaseToast('Create a campaign first to reach this creator');
+                                        setTimeout(() => setPurchaseToast(null), 3000);
                                       }
                                     }}
                                     style={{ width:'100%', background: hasMatch ? (creator.featured ? C.primary : C.surfaceAlt) : C.surfaceAlt, border: hasMatch && creator.featured ? 'none' : `1px solid ${hasMatch ? C.border : 'rgba(230,81,0,0.3)'}`, padding: '10px 16px', borderRadius: '8px', color: hasMatch ? '#fff' : C.warning, fontWeight: '600', cursor: 'pointer', fontSize: '14px', opacity: hasMatch ? 1 : 0.7 }}
                                   >
-                                    {noBrandSkin ? 'No ValueSkin' : hasMatch ? 'Send Proposal' : 'No Shared ValueSkin'}
+                                    {noBrandSkin ? 'No ValueSkin' : hasMatch ? (Object.keys(dealStates).find(key => key.startsWith(`${creator.name}|${creator.valueSkin}|`) && dealStates[key]?.phase && dealStates[key]?.phase !== 'brief') ? 'View Deal' : 'Create Campaign') : 'No Shared ValueSkin'}
                                   </button>
                                 </div>
                               );
