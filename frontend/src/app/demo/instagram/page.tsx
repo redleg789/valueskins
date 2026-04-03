@@ -5803,7 +5803,9 @@ export default function InstagramDemoPage() {
                                     <div style={{ textAlign:'center', padding:'16px 0' }}>
                                       {(() => {
                                         const dealPhase = brandDealPhase;
-                                        const isFunded = brandDeal?.escrowFunded;
+                                        const freshDeal = brandDealKey ? dealStates[brandDealKey] : null;
+                                        const isFunded = freshDeal?.escrowFunded ?? brandDeal?.escrowFunded;
+                                        const creatorLifecycle = freshDeal?.creatorDealLifecycle ?? brandDeal?.creatorDealLifecycle;
                                         let statusTitle = 'Escrow Funded';
                                         let statusMsg = 'Creator has been notified to begin work';
                                         let statusIcon = C.success;
@@ -5824,11 +5826,11 @@ export default function InstagramDemoPage() {
                                           statusTitle = 'Deal Accepted';
                                           statusMsg = 'Creator is ready. Fund escrow to begin.';
                                           statusIcon = C.success;
-                                        } else if (dealPhase === 'softhold' && isFunded && brandDeal?.creatorDealLifecycle === 'deliverables') {
+                                        } else if (dealPhase === 'softhold' && isFunded && creatorLifecycle === 'deliverables') {
                                           statusTitle = 'Awaiting Deliverables';
                                           statusMsg = 'Creator is preparing content...';
                                           statusIcon = C.primary;
-                                        } else if (dealPhase === 'softhold' && isFunded && brandDeal?.creatorDealLifecycle === 'submitted') {
+                                        } else if (dealPhase === 'softhold' && isFunded && creatorLifecycle === 'submitted') {
                                           statusTitle = 'Reviewing Deliverables';
                                           statusMsg = 'Creator has submitted their work';
                                           statusIcon = C.primary;
@@ -5848,8 +5850,13 @@ export default function InstagramDemoPage() {
                                           </>
                                         );
                                       })()}
-                                      {brandDeal?.creatorDealLifecycle === 'submitted' && brandDeal?.brandApprovalPhase !== 'approved' && (() => {
-                                        const bdLinks = (brandDeal?.deliverableLinks || {}) as Record<number, string>;
+                                      {(() => {
+                                        const freshDeal = brandDealKey ? dealStates[brandDealKey] : null;
+                                        const creatorLifecycle = freshDeal?.creatorDealLifecycle ?? brandDeal?.creatorDealLifecycle;
+                                        return creatorLifecycle === 'submitted' && (freshDeal?.brandApprovalPhase ?? brandDeal?.brandApprovalPhase) !== 'approved';
+                                      })() && (() => {
+                                        const freshDeal = brandDealKey ? dealStates[brandDealKey] : null;
+                                        const bdLinks = (freshDeal?.deliverableLinks || brandDeal?.deliverableLinks || {}) as Record<number, string>;
                                         const agreedAmt = parseInt(agreedDealAmount || brandBudget || '5000');
                                         const approvalAmt = Math.round(agreedAmt * 0.3);
                                         return (
