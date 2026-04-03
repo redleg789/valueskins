@@ -806,6 +806,24 @@ export default function InstagramDemoPage() {
   const brandDealKey = getBrandDealKey();
   const brandDeal = brandDealKey ? getOrCreateDeal(brandDealKey) : null;
 
+  // AUTO-SYNC: Brand side — when switching to brand role, sync to active deal from creator side
+  useEffect(() => {
+    if (marketplaceRole === 'brand' && negotiatingCreator === null && activeDealKey) {
+      // Extract creator index and opp from activeDealKey when switching from creator to brand
+      const parts = activeDealKey.split('|');
+      if (parts.length === 3) {
+        const creatorName = parts[0];
+        const skinName = parts[1];
+        const oppIdx = parseInt(parts[2]);
+        const creatorIdx = BRAND_MARKETPLACE_CREATORS.findIndex(c => c.name === creatorName && c.valueSkin === skinName);
+        if (creatorIdx >= 0) {
+          setNegotiatingCreator(creatorIdx);
+          setBrandCurrentOppIndex(oppIdx);
+        }
+      }
+    }
+  }, [marketplaceRole, activeDealKey, negotiatingCreator, dealStates]);
+
   // AUTO-SYNC: Creator side — auto-open active deal when navigating to marketplace
   useEffect(() => {
     if (marketplaceRole === 'creator' && selectedMarketplaceSkin && negotiatingOpp === null) {
