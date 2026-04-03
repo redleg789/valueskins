@@ -277,6 +277,7 @@ export default function InstagramDemoPage() {
   const [profileBio, setProfileBio] = useState('Creator, builder, thinker. Tap Edit to make this yours.');
   const [profileAvatar, setProfileAvatar] = useState<string | null>(null);
   const [editingProfile, setEditingProfile] = useState(false);
+  const [portfolioImage, setPortfolioImage] = useState<string | null>(null);
 
   // Notifications
   const [notifications, setNotifications] = useState<Array<{ id: number; type: string; text: string; time: string; read: boolean }>>([]);
@@ -2089,6 +2090,18 @@ export default function InstagramDemoPage() {
                     );
                   })}
                 </div>
+
+                {/* Portfolio Image */}
+                {portfolioImage && (
+                  <div style={{ marginTop: '16px', borderRadius: '12px', overflow: 'hidden', border: `1px solid ${C.border}` }}>
+                    <div style={{ width: '100%', height: '240px', background: C.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                      <img src={portfolioImage} alt="Why hire me" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                    </div>
+                    <div style={{ padding: '12px 14px', background: C.surface, fontSize: '12px', color: C.textMuted, fontWeight: '600' }}>
+                      Why brands should hire {profileName || 'this creator'}
+                    </div>
+                  </div>
+                )}
 
               </div>
 
@@ -4023,6 +4036,11 @@ export default function InstagramDemoPage() {
                                                             <button
                                                               disabled={!isValidIgUrl(inputVal)}
                                                               onClick={() => {
+                                                                const isDuplicate = Object.values(deliverableLinks).some((existingLink, idx) => existingLink === inputVal && idx !== di);
+                                                                if (isDuplicate) {
+                                                                  alert('This link has already been submitted for another deliverable. Please use a different post.');
+                                                                  return;
+                                                                }
                                                                 setDeliverableLinks(prev => ({ ...prev, [di]: inputVal }));
                                                                 setDeliverableStatuses(prev => ({ ...prev, [di]: 'uploaded' }));
                                                                 setDeliverableLinkInputs(prev => ({ ...prev, [di]: '' }));
@@ -5783,11 +5801,53 @@ export default function InstagramDemoPage() {
                                     </>
                                   ) : (
                                     <div style={{ textAlign:'center', padding:'16px 0' }}>
-                                      <div style={{ width:'44px', height:'44px', borderRadius:'50%', background:'rgba(46,125,50,0.1)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 10px' }}>
-                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={C.success} strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                                      </div>
-                                      <div style={{ fontSize:'14px', fontWeight:700, color:C.success }}>Escrow Funded</div>
-                                      <div style={{ fontSize:'12px', color:C.textSecondary, marginTop:'4px' }}>Creator has been notified to begin work</div>
+                                      {(() => {
+                                        const dealPhase = brandDealPhase;
+                                        const isFunded = brandDeal?.escrowFunded;
+                                        let statusTitle = 'Escrow Funded';
+                                        let statusMsg = 'Creator has been notified to begin work';
+                                        let statusIcon = C.success;
+
+                                        if (dealPhase === 'offer_sent') {
+                                          statusTitle = 'Waiting for Creator';
+                                          statusMsg = 'Creator is reviewing your offer...';
+                                          statusIcon = C.primary;
+                                        } else if (dealPhase === 'counter' || dealPhase === 'negotiation') {
+                                          statusTitle = 'Negotiating';
+                                          statusMsg = 'Creator is countering your offer...';
+                                          statusIcon = C.primary;
+                                        } else if (dealPhase === 'last_offer') {
+                                          statusTitle = 'Final Negotiation';
+                                          statusMsg = 'Creator has submitted a counter-offer. Review to proceed.';
+                                          statusIcon = C.primary;
+                                        } else if (dealPhase === 'softhold' && !isFunded) {
+                                          statusTitle = 'Deal Accepted';
+                                          statusMsg = 'Creator is ready. Fund escrow to begin.';
+                                          statusIcon = C.success;
+                                        } else if (dealPhase === 'softhold' && isFunded && brandDeal?.creatorDealLifecycle === 'deliverables') {
+                                          statusTitle = 'Awaiting Deliverables';
+                                          statusMsg = 'Creator is preparing content...';
+                                          statusIcon = C.primary;
+                                        } else if (dealPhase === 'softhold' && isFunded && brandDeal?.creatorDealLifecycle === 'submitted') {
+                                          statusTitle = 'Reviewing Deliverables';
+                                          statusMsg = 'Creator has submitted their work';
+                                          statusIcon = C.primary;
+                                        }
+
+                                        return (
+                                          <>
+                                            <div style={{ width:'44px', height:'44px', borderRadius:'50%', background:`${statusIcon === C.warning ? 'rgba(255,171,0,0.1)' : statusIcon === C.primary ? 'rgba(0,149,246,0.1)' : 'rgba(46,125,50,0.1)'}`, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 10px' }}>
+                                              {statusIcon === C.warning ? (
+                                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={statusIcon} strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                              ) : (
+                                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={statusIcon} strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                                              )}
+                                            </div>
+                                            <div style={{ fontSize:'14px', fontWeight:700, color:statusIcon }}>{statusTitle}</div>
+                                            <div style={{ fontSize:'12px', color:C.textSecondary, marginTop:'4px' }}>{statusMsg}</div>
+                                          </>
+                                        );
+                                      })()}
                                       {brandDeal?.creatorDealLifecycle === 'submitted' && brandDeal?.brandApprovalPhase !== 'approved' && (() => {
                                         const bdLinks = (brandDeal?.deliverableLinks || {}) as Record<number, string>;
                                         const agreedAmt = parseInt(agreedDealAmount || brandBudget || '5000');
@@ -8875,6 +8935,72 @@ export default function InstagramDemoPage() {
                       </div>
                     );
                   })()}
+                </div>
+
+                {/* ── PORTFOLIO IMAGE ────────────────────────────── */}
+                <div style={{ marginBottom: '16px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: 700, color: C.textMuted, letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: '12px' }}>
+                    Why Brands Should Hire You
+                  </div>
+                  {portfolioImage ? (
+                    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: '12px', overflow: 'hidden' }}>
+                      <div style={{ width: '100%', height: '200px', background: C.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                        <img src={portfolioImage} alt="Portfolio" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                      </div>
+                      <div style={{ padding: '12px 14px', borderTop: `1px solid ${C.border}`, display: 'flex', gap: '8px' }}>
+                        <button
+                          onClick={() => {
+                            const input = document.createElement('input');
+                            input.type = 'file';
+                            input.accept = 'image/*';
+                            input.onchange = (e: any) => {
+                              const file = e.target.files[0];
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onload = (evt: any) => setPortfolioImage(evt.target.result);
+                                reader.readAsDataURL(file);
+                              }
+                            };
+                            input.click();
+                          }}
+                          style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', background: C.bg, border: `1px solid ${C.border}`, color: C.text }}
+                        >
+                          Change Photo
+                        </button>
+                        <button
+                          onClick={() => setPortfolioImage(null)}
+                          style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', background: `${C.danger}15`, border: `1px solid ${C.danger}40`, color: C.danger }}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: '12px', padding: '20px 16px', textAlign: 'center' }}>
+                      <div style={{ fontSize: '12px', color: C.textSecondary, marginBottom: '12px' }}>
+                        Upload a photo showing why brands should hire you. This appears on your creator profile.
+                      </div>
+                      <button
+                        onClick={() => {
+                          const input = document.createElement('input');
+                          input.type = 'file';
+                          input.accept = 'image/*';
+                          input.onchange = (e: any) => {
+                            const file = e.target.files[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onload = (evt: any) => setPortfolioImage(evt.target.result);
+                              reader.readAsDataURL(file);
+                            }
+                          };
+                          input.click();
+                        }}
+                        style={{ padding: '10px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', background: C.primary, border: 'none', color: '#fff' }}
+                      >
+                        Upload Photo
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 </>)}
