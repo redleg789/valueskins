@@ -4703,17 +4703,6 @@ export default function InstagramDemoPage() {
                     </div>
                   </div>
                   <div style={{ padding: '0 16px 16px' }}>
-                    {/* Prominent New Campaign CTA */}
-                    {!showCampaignCreator && activeBrandSkin && (
-                      <button
-                        onClick={() => setShowCampaignCreator(true)}
-                        style={{ width: '100%', background: C.primary, border: 'none', borderRadius: '10px', padding: '14px', color: '#fff', fontWeight: 700, fontSize: '14px', cursor: 'pointer', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                        Create New Campaign
-                      </button>
-                    )}
-
                     {/* New Campaign Creator Modal */}
                     {showCampaignCreator && (
                       <div style={{ position:'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.75)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:9999 }}>
