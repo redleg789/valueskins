@@ -1,18 +1,38 @@
-# Imitate Claude - Engineering System Prompt + Product Context
+# Imitate Claude - Founder Context + Product Vision (NOT Engineering Law)
 
-## CRITICAL: Two-Document System
+## CRITICAL: This is Context, Not Rules
 
-This file serves **TWO purposes**, which must be kept separate:
-1. **Engineering Standards** (Part 1) - Safety, correctness, compliance first
-2. **Product Context** (Parts 2-3) - Speed, workflow clarity, business priorities
+**This document is founder mindset and product knowledge, NOT binding engineering policy.**
 
-**Rule: Always apply Part 1 first. Parts 2-3 inform priorities, not safety.**
+**For engineering standards,** see `ENGINEERING_STANDARDS.md` (binding, enforced at code review).
+
+**This document explains:**
+1. How Claude thinks (context for decision-making)
+2. Product vision and workflows (what we're building)
+3. Founder mentality (why we do things this way)
+
+**Use this to understand:**
+- What decisions matter to Saketh
+- Why we prioritize certain things
+- Product context when building features
+
+**Do NOT use this to:**
+- Skip engineering standards
+- Justify code quality shortcuts
+- Avoid testing/documentation
+- Ignore security/compliance
+
+If something here conflicts with `ENGINEERING_STANDARDS.md`, **ENGINEERING_STANDARDS.md wins.**
 
 ---
 
-## Part 1: Claude Engineering Standards (MANDATORY)
+## Part 1: How Claude Thinks (Context for AI Assistants)
 
-### Core Operating Principles (Safety-First)
+**NOTE: This is context for understanding Claude's decision-making, not rules you must follow.**
+
+**For actual rules, see ENGINEERING_STANDARDS.md**
+
+### Core Operating Principles
 
 #### 1. **Correctness Always Precedes Speed**
 - Broken code never ships, regardless of urgency
@@ -148,7 +168,11 @@ When something breaks:
 
 ---
 
-## Part 2: ValueSkins Product Context (Detailed)
+## Part 2: Product Context and Workflows
+
+**This part is accurate product knowledge. Use it when building features.**
+
+**But follow ENGINEERING_STANDARDS.md for HOW you build it.**
 
 ### Core Concept (Business Layer)
 
@@ -463,7 +487,11 @@ const [marketplaceRole, setMarketplaceRole] = useState<'creator' | 'brand'>('cre
 
 ---
 
-## Part 3: About Saketh - Product Instincts (Context, Not Rules)
+## Part 3: About Saketh - Founder Mentality (Context, Not Rules)
+
+**This explains HOW Saketh thinks, not engineering rules you must follow.**
+
+**Saketh values speed and clarity, but ALWAYS within the guardrails of ENGINEERING_STANDARDS.md**
 
 ### Core Philosophy
 
@@ -532,35 +560,56 @@ const [marketplaceRole, setMarketplaceRole] = useState<'creator' | 'brand'>('cre
 
 ---
 
-## Part 4: Using This Document
+## Part 4: How to Use These Two Documents
+
+### ENGINEERING_STANDARDS.md (Binding)
+- ✅ TypeScript errors block PRs
+- ✅ Tests required before merge
+- ✅ Security gaps block deployment
+- ✅ Code review enforces standards
+- ✅ Violations have consequences
+
+**This is the law.**
+
+### imitateclaude.md (Context)
+- ✅ Explains why we build certain ways
+- ✅ Product knowledge for decision-making
+- ✅ Founder priorities and thinking
+- ✅ Understanding the "why" behind features
+- ✅ Context for tradeoff decisions
+
+**This is the "why," not the law.**
 
 ### For Claude (or Other LLMs)
 
-**Hierarchy of rules:**
-1. **Part 1 (Engineering)** = ALWAYS apply (non-negotiable)
-2. **Part 2 (Product)** = Context for decisions (informs priorities)
-3. **Part 3 (Personality)** = Understand the person (don't emulate robotically)
+**Hierarchy:**
+1. **ENGINEERING_STANDARDS.md** = ALWAYS apply (non-negotiable)
+2. **imitateclaude.md Part 2** = Product context for decisions
+3. **imitateclaude.md Part 3** = Understand founder mentality
 
 **When in doubt:**
-- Re-read Part 1 (safety first)
-- Check working code for patterns (copy existing style)
+- Check ENGINEERING_STANDARDS.md first
+- Use product context to understand tradeoffs
 - Test before pushing (no exceptions)
-- Ask if unclear about workflow impact
+- Ask if unclear about standards
 
 ### For Contributors
 
-**This document is:**
-- ✅ Truth for what ValueSkins does
-- ✅ Rules for how code gets written
-- ✅ Context for why decisions get made
+**This repository has:**
+- ✅ Binding engineering standards (ENGINEERING_STANDARDS.md)
+- ✅ Product knowledge for context (imitateclaude.md)
+- ✅ Clear workflow requirements
+- ✅ Security and compliance requirements
 
-**This document is NOT:**
-- ❌ Justification to skip tests
-- ❌ Permission to break workflows
-- ❌ Excuse to avoid documentation
-- ❌ Reason to ignore security/compliance
+**When you see "move fast":** It means "move fast within ENGINEERING_STANDARDS.md"
 
-**When you see "move fast":** It means "move fast + safely"
+**Never interpret speed guidance as permission to:**
+- ❌ Skip tests
+- ❌ Ignore TypeScript errors
+- ❌ Violate security/compliance
+- ❌ Break existing workflows
+- ❌ Skip code review
+- ❌ Duplicate code instead of refactor
 
 ### For Audits and Reviews
 
@@ -618,14 +667,47 @@ See `META_INTEGRATION.md` for complete list.
 
 ## Final Summary
 
-**Part 1 (Engineering):** Rules. Don't break them.
+### The Two-Document System
 
-**Part 2 (Product):** Context. Use it to make smarter tradeoff decisions.
+**ENGINEERING_STANDARDS.md (Binding):**
+- TypeScript compiles
+- Tests pass
+- Security/compliance met
+- Code review approved
+- No exceptions
 
-**Part 3 (Personality):** Understand who you're building for. Don't mimic robotically.
+**imitateclaude.md (Context):**
+- Product workflows
+- Why we prioritize things
+- Founder mentality
+- Decision framework
+- Understanding over rules
 
-**When shipping:** Does it pass Part 1? Does it make sense for Part 2? Does it solve what Part 3 cares about? If yes to all three: ship it.
+### Decision Framework
 
-**When stuck:** Re-read the relevant part, check the code, test it, commit it. Don't overthink.
+When building a feature:
+1. **Read the product context** (imitateclaude.md Part 2) - understand what you're building
+2. **Check the standards** (ENGINEERING_STANDARDS.md) - understand HOW to build safely
+3. **Understand the founder priorities** (imitateclaude.md Part 3) - understand why it matters
+4. **Write the code** following standards
+5. **Code review** against standards
+6. **Ship** when standards are met
 
-ValueSkins is shipping. Make decisions that keep it shipping.
+### The Real Velocity Equation
+
+```
+True Velocity = (Features Shipped * Code Quality) / Technical Debt
+
+ValueSkins needs sustainable long-term velocity, not short-term hacks.
+
+Speed without safety = debt.
+Safety without speed = stagnation.
+
+Both at once = winning.
+```
+
+---
+
+**Read ENGINEERING_STANDARDS.md. Follow it. Ship safely.**
+
+This document explains the "why." The other document enforces the "how."
