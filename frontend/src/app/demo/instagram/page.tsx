@@ -3873,7 +3873,14 @@ export default function InstagramDemoPage() {
                                           {item.req && <span style={{ fontSize: '9px', color: C.primary, fontWeight: 700, textTransform: 'uppercase' }}>Required</span>}
                                         </div>
                                       ))}
-                                      <button onClick={() => { setDealRoomPhase('softhold'); setEscrowFunded(false); setEscrowFundingInProgress(false); }} style={{ width: '100%', background: C.primary, border: 'none', padding: '10px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px', marginTop: '12px' }}>
+                                      <button onClick={() => {
+                                        setDealRoomPhase('softhold');
+                                        setEscrowFunded(false);
+                                        setEscrowFundingInProgress(false);
+                                        if (activeDealKey) {
+                                          updateDeal(activeDealKey, { phase: 'softhold' });
+                                        }
+                                      }} style={{ width: '100%', background: C.primary, border: 'none', padding: '10px', borderRadius: '8px', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px', marginTop: '12px' }}>
                                         Confirm &amp; Finalise Deal
                                       </button>
                                     </>
@@ -3898,6 +3905,9 @@ export default function InstagramDemoPage() {
                                             setTimeout(() => {
                                               setEscrowFunded(true);
                                               setCreatorDealLifecycle('deliverables');
+                                              if (activeDealKey) {
+                                                updateDeal(activeDealKey, { creatorDealLifecycle: 'deliverables' });
+                                              }
                                             }, 0);
                                             const advanceAmt = Math.round(agreedPrice * 0.3);
                                             return (
