@@ -3627,8 +3627,8 @@ export default function InstagramDemoPage() {
                                             ))}
                                           </div>
 
-                                          {/* Counter-offer */}
-                                          <div style={{ background: C.bg, borderRadius: '8px', border: `1px solid ${C.border}`, padding: '8px' }}>
+                                          {/* Counter-offer — hidden once formal offer sent */}
+                                          {!activeDeal?.formalOfferSentByCreator && <div style={{ background: C.bg, borderRadius: '8px', border: `1px solid ${C.border}`, padding: '8px' }}>
                                             <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Your Counter</div>
                                             <div style={{ fontSize: '10px', color: C.textSecondary, marginBottom: '4px' }}>
                                               Brand offer: <strong style={{ color: C.text }}>${parseInt(dealOfferAmount || opp.budget.replace(/[^0-9]/g, '') || '0').toLocaleString()}</strong>
@@ -3701,7 +3701,7 @@ export default function InstagramDemoPage() {
                                             >
                                               Send Counter
                                             </button>
-                                          </div>
+                                          </div>}
 
                                           {/* Payment split */}
                                           <div style={{ background: C.bg, borderRadius: '8px', border: `1px solid ${C.border}`, padding: '8px' }}>
@@ -3741,7 +3741,8 @@ export default function InstagramDemoPage() {
                                             )}
                                           </div>
 
-                                          {/* Brand submits formal offer */}
+                                          {/* Brand submits formal offer — hidden once submitted */}
+                                          {!activeDeal?.formalOfferSentByCreator && (
                                           <div style={{ background: C.bg, borderRadius: '8px', border: `1px solid ${C.border}`, padding: '8px' }}>
                                             <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Finalize</div>
                                             <button
@@ -3755,6 +3756,7 @@ export default function InstagramDemoPage() {
                                               Submit Formal Offer
                                             </button>
                                           </div>
+                                          )}
 
                                           {/* Reject brand */}
                                           <button
