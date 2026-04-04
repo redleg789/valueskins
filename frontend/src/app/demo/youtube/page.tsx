@@ -1,6 +1,6 @@
 'use client';
 // ARCHITECTURE: See ARCHITECTURE_GUIDE.txt for codebase overview
-// FILE PURPOSE: Main Instagram demo page - shows creator & brand workflow
+// FILE PURPOSE: Main YouTube demo page - shows creator & brand workflow
 // ROLE IN SYSTEM: Frontend UI component that displays marketplace, deals, chat, script negotiation
 // DATA SOURCE: useDealSync.ts (local state) + api.ts (backend calls) + Firebase (real-time)
 // OUTPUT: Interactive UI where creators browse offers and negotiate with brands
@@ -259,7 +259,7 @@ const MOCK_REPUTATION = {
   maxDealSize: 2000,
 };
 
-export default function InstagramDemoPage() {
+export default function YouTubeDemoPage() {
   const [activeView, setActiveView] = useState<'profile' | 'mim' | 'store' | 'admin' | 'messages' | 'settings' | 'explore' | 'notifications'>('profile');
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
@@ -1705,7 +1705,7 @@ export default function InstagramDemoPage() {
                 {askModalOpp.brand.charAt(0)}
               </div>
               <div>
-                <a href={askModalOpp.instagramUrl || `https://instagram.com/${askModalOpp.brand.replace(/\s+/g, '').toLowerCase()}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '16px', fontWeight: 700, color: C.text, textDecoration: 'none', display: 'block' }}>{askModalOpp.brand}</a>
+                <a href={askModalOpp.instagramUrl || `https://youtube.com/@${askModalOpp.brand.replace(/\s+/g, '').toLowerCase()}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: '16px', fontWeight: 700, color: C.text, textDecoration: 'none', display: 'block' }}>{askModalOpp.brand}</a>
                 <div style={{ fontSize: '12px', color: C.textSecondary }}>{askModalOpp.type}</div>
               </div>
             </div>
@@ -1853,7 +1853,7 @@ export default function InstagramDemoPage() {
       {!isMobile && (
         <div style={{ width: '240px', borderRight: `1px solid ${C.border}`, padding: '20px 16px', display: 'flex', flexDirection: 'column', gap: '16px', height: '100vh', overflowY: 'auto', position: 'sticky', top: 0, background: C.bg, flexShrink: 0 }}>
           <Link href="/" style={{ textDecoration: 'none' }}>
-            <div style={{ fontSize: '22px', fontWeight: 700, color: C.text, marginBottom: '16px', cursor: 'pointer', fontStyle: 'italic' }}>Instagram</div>
+            <div style={{ fontSize: '22px', fontWeight: 700, color: C.text, marginBottom: '16px', cursor: 'pointer', fontStyle: 'italic' }}>YouTube</div>
           </Link>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             <NavItem label="Home" active={false} onClick={() => {}} />
@@ -2107,7 +2107,7 @@ export default function InstagramDemoPage() {
 
               {/* Tabs */}
               <div style={{ borderTop: `1px solid ${C.border}`, display: 'flex' }}>
-                {['posts', 'reels', 'tagged', 'insights', 'deals', 'uploaded'].map((tab) => (
+                {['videos', 'shorts', 'playlists', 'insights', 'deals', 'uploaded'].map((tab) => (
                   <div key={tab} onClick={() => setActiveTab(tab)} style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', height: '44px', borderTop: activeTab === tab ? `2px solid ${tab === 'insights' ? C.primary : C.text}` : '2px solid transparent', color: activeTab === tab ? (tab === 'insights' ? C.primary : C.text) : C.textMuted, cursor: 'pointer', fontWeight: activeTab === tab ? '600' : 'normal', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                     {tab}
                   </div>
@@ -2413,7 +2413,7 @@ export default function InstagramDemoPage() {
                     <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
                       {([
                         { role: 'creator' as const, title: 'Login as Creator', desc: 'Find brand deals matched to your ValueSkins', icon: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2' },
-                        { role: 'brand' as const, title: 'Login as Brand', desc: 'Find creators for your campaigns', icon: 'M22 12h-4l-3 9L9 3l-3 9H2' },
+                        { role: 'brand' as const, title: 'Login as Brand', desc: 'Find long-form creators with proven depth and retention', icon: 'M22 12h-4l-3 9L9 3l-3 9H2' },
                       ]).map(({ role, title, desc, icon }) => (
                         <button
                           key={role}
@@ -2666,7 +2666,7 @@ export default function InstagramDemoPage() {
                                   <span style={{ fontSize: '16px', fontWeight: 700, color: '#fff' }}>{brandInitial}</span>
                                 </div>
                                 <div style={{ flex: 1, minWidth: 0 }}>
-                                  <a href={opp.instagramUrl || `https://instagram.com/${opp.brand.replace(/\s+/g, '')}`} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontSize: '15px', fontWeight: 700, color: C.text, textDecoration: 'none', display: 'block' }}>{opp.brand}</a>
+                                  <a href={opp.instagramUrl || `https://youtube.com/@${opp.brand.replace(/\s+/g, '')}`} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontSize: '15px', fontWeight: 700, color: C.text, textDecoration: 'none', display: 'block' }}>{opp.brand}</a>
                                   <div style={{ fontSize: '13px', color: C.textSecondary }}>{opp.type}</div>
                                 </div>
                                 <div style={{ fontSize: '14px', fontWeight: 700, color: C.primary }}>{opp.match}</div>
@@ -2735,7 +2735,7 @@ export default function InstagramDemoPage() {
                                     </div>
                                     <div style={{ flex: 1 }}>
                                       <div style={{ fontSize: '15px', fontWeight: 700, color: C.text }}>
-                                        Deal Room · <a href={opp.instagramUrl || `https://instagram.com/${opp.brand.replace(/\s+/g, '')}`} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ color: C.primary, textDecoration: 'none' }}>{opp.brand}</a>
+                                        Deal Room · <a href={opp.instagramUrl || `https://youtube.com/@${opp.brand.replace(/\s+/g, '')}`} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ color: C.primary, textDecoration: 'none' }}>{opp.brand}</a>
                                       </div>
                                       <div style={{ fontSize: '12px', color: C.textMuted }}>
                                         {dealRoomPhase === 'accepted' ? 'Deal accepted — terms locked' : dealRoomPhase === 'formal_offer' ? 'Review formal offer' : 'Negotiate freely — price, terms, everything'}
@@ -3119,7 +3119,7 @@ export default function InstagramDemoPage() {
                                                 creatorMatchScore: '94%', creatorRate: rateCard.reel ? `$${rateCard.reel}` : '$3,000',
                                                 creatorDealCompletionRate: 95, creatorPortfolio: [],
                                                 creatorAudienceLocation: selectedCountry || 'USA', creatorAudienceAge: '25-34',
-                                                creatorResponseTimeHrs: 6, creatorInstagramUrl: `https://instagram.com/creator_demo`,
+                                                creatorResponseTimeHrs: 6, creatorInstagramUrl: `https://youtube.com/@creator_demo`,
                                                 opportunityIndex: actualOppIndex,
                                               };
                                               persistApplications([...sharedApplications, newApp]);
@@ -3962,7 +3962,7 @@ export default function InstagramDemoPage() {
 
                                         // Deliverables phase (when escrowFunded && lifecycle==='deliverables')
                                         if (creatorDealLifecycle === 'deliverables') {
-                                          const oppDeliverables = opp.deliverables?.length ? opp.deliverables : [{ format: 'Instagram Reel', count: 1 }];
+                                          const oppDeliverables = opp.deliverables?.length ? opp.deliverables : [{ format: 'YouTube Video', count: 1 }];
                                           // Expand deliverables into individual slots: [{format:'Reel',count:2}] → [{format:'Reel',label:'Reel 1 of 2'},{format:'Reel',label:'Reel 2 of 2'}]
                                           const expandedSlots: { format: string; label: string }[] = oppDeliverables.flatMap((d: {format:string;count:number}) =>
                                             d.count === 1
@@ -4012,7 +4012,7 @@ export default function InstagramDemoPage() {
                                                         <div style={{ flex:1 }}>
                                                           <div style={{ fontSize:'12px', fontWeight:600, color:C.text }}>{d.label}</div>
                                                           <div style={{ fontSize:'10px', color: status === 'approved' ? C.success : status === 'uploaded' ? C.primary : C.textMuted }}>
-                                                            {status === 'approved' ? 'Approved by brand' : status === 'uploaded' ? 'Submitted — awaiting review' : status === 'linking' ? 'Enter your Instagram link below' : 'Not yet submitted'}
+                                                            {status === 'approved' ? 'Approved by brand' : status === 'uploaded' ? 'Submitted — awaiting review' : status === 'linking' ? 'Enter your YouTube video link below' : 'Not yet submitted'}
                                                           </div>
                                                         </div>
                                                         {status === 'pending' && (
@@ -4024,13 +4024,13 @@ export default function InstagramDemoPage() {
                                                       </div>
                                                       {status === 'linking' && (
                                                         <div style={{ padding:'10px', borderTop:`1px solid ${C.border}`, background:C.bg }}>
-                                                          <div style={{ fontSize:'10px', color:C.textMuted, marginBottom:'6px' }}>Paste the link to your published Instagram post or reel</div>
+                                                          <div style={{ fontSize:'10px', color:C.textMuted, marginBottom:'6px' }}>Paste the link to your published YouTube video</div>
                                                           <div style={{ display:'flex', gap:'6px' }}>
                                                             <input
                                                               type="text"
                                                               value={inputVal}
                                                               onChange={e => setDeliverableLinkInputs(prev => ({ ...prev, [di]: e.target.value }))}
-                                                              placeholder="https://www.instagram.com/p/..."
+                                                              placeholder="https://www.youtube.com/watch?v=..."
                                                               style={{ flex:1, background:C.surfaceAlt, border:`1px solid ${isValidIgUrl(inputVal) ? C.success : C.border}`, borderRadius:'6px', color:C.text, padding:'7px 10px', fontSize:'11px', fontFamily:'inherit', outline:'none' }}
                                                             />
                                                             <button
@@ -4058,7 +4058,7 @@ export default function InstagramDemoPage() {
                                                             >Confirm</button>
                                                           </div>
                                                           {inputVal && !isValidIgUrl(inputVal) && (
-                                                            <div style={{ fontSize:'10px', color:'#ef4444', marginTop:'4px' }}>Must be an instagram.com/p/, /reels/, or /tv/ link</div>
+                                                            <div style={{ fontSize:'10px', color:'#ef4444', marginTop:'4px' }}>Must be a youtube.com/watch?v= or youtu.be link</div>
                                                           )}
                                                         </div>
                                                       )}
@@ -4069,7 +4069,7 @@ export default function InstagramDemoPage() {
                                                           </div>
                                                           <div style={{ flex:1, minWidth:0 }}>
                                                             <div style={{ fontSize:'10px', fontWeight:700, color:C.textMuted, marginBottom:'2px', textTransform:'uppercase', letterSpacing:'0.4px' }}>Instagram {d.format.toLowerCase().includes('reel') ? 'Reel' : 'Post'}</div>
-                                                            <a href={link} target="_blank" rel="noopener noreferrer" style={{ fontSize:'10px', color:C.primary, textDecoration:'none', display:'block', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{postId ? `instagram.com/p/${postId}` : link}</a>
+                                                            <a href={link} target="_blank" rel="noopener noreferrer" style={{ fontSize:'10px', color:C.primary, textDecoration:'none', display:'block', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{postId ? `youtube.com/watch?v=${postId}` : link}</a>
                                                             <div style={{ fontSize:'9px', color:C.textMuted, marginTop:'3px' }}>Submitted {new Date().toLocaleDateString('en-US', { month:'short', day:'numeric' })}</div>
                                                           </div>
                                                           {status === 'approved' && (
@@ -4295,12 +4295,12 @@ export default function InstagramDemoPage() {
                                             {status === 'content_due' && (
                                               <div style={{ background:'rgba(59,130,246,0.06)', border:`1px solid rgba(59,130,246,0.2)`, borderRadius:'8px', padding:'12px', marginBottom:'12px' }}>
                                                 <div style={{ fontSize:'13px', fontWeight:700, color:C.text, marginBottom:'4px' }}>Create Content</div>
-                                                <div style={{ fontSize:'11px', color:C.textSecondary, marginBottom:'8px' }}>Submit a link to your Instagram post or reel featuring the product</div>
+                                                <div style={{ fontSize:'11px', color:C.textSecondary, marginBottom:'8px' }}>Submit a link to your YouTube video featuring the product</div>
                                                 <input
                                                   type="text"
                                                   value={deliverableLinkInputs[0] || ''}
                                                   onChange={e => setDeliverableLinkInputs(prev => ({ ...prev, 0: e.target.value }))}
-                                                  placeholder="https://www.instagram.com/p/..."
+                                                  placeholder="https://www.youtube.com/watch?v=..."
                                                   style={{ width:'100%', background:C.surfaceAlt, border:`1px solid ${/instagram\.com\/(p|reels?|tv)\/[A-Za-z0-9_-]+/.test(deliverableLinkInputs[0] || '') ? C.success : C.border}`, borderRadius:'6px', color:C.text, padding:'7px 10px', fontSize:'11px', fontFamily:'inherit', outline:'none', marginBottom:'8px', boxSizing:'border-box' }}
                                                 />
                                                 <button
@@ -4359,7 +4359,7 @@ export default function InstagramDemoPage() {
                                                   type="text"
                                                   value={deliverableLinkInputs[0] || ''}
                                                   onChange={e => setDeliverableLinkInputs(prev => ({ ...prev, 0: e.target.value }))}
-                                                  placeholder="https://www.instagram.com/p/..."
+                                                  placeholder="https://www.youtube.com/watch?v=..."
                                                   style={{ width:'100%', background:C.surfaceAlt, border:`1px solid ${/instagram\.com\/(p|reels?|tv)\/[A-Za-z0-9_-]+/.test(deliverableLinkInputs[0] || '') ? C.success : C.border}`, borderRadius:'6px', color:C.text, padding:'7px 10px', fontSize:'11px', fontFamily:'inherit', outline:'none', marginBottom:'8px', boxSizing:'border-box' }}
                                                 />
                                                 <button
@@ -4421,9 +4421,9 @@ export default function InstagramDemoPage() {
                                           onClick={() => {
                                             const pocHandle = activeDeal.poc?.instagramHandle?.replace('@', '') || '';
                                             if (pocHandle) {
-                                              window.open(`https://instagram.com/${pocHandle}`, '_blank');
+                                              window.open(`https://youtube.com/@${pocHandle}`, '_blank');
                                             }
-                                            setPurchaseToast(`Opening ${activeDeal.poc?.name || 'POC'} on Instagram`);
+                                            setPurchaseToast(`Opening ${activeDeal.poc?.name || 'POC'} on YouTube`);
                                             setTimeout(() => setPurchaseToast(null), 2000);
                                           }}
                                           style={{ background: C.primary, border: 'none', borderRadius: '6px', padding: '5px 12px', color: '#fff', fontSize: '10px', fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}
@@ -4700,7 +4700,7 @@ export default function InstagramDemoPage() {
                         style={{ width: '100%', background: C.primary, border: 'none', borderRadius: '10px', padding: '14px', color: '#fff', fontWeight: 700, fontSize: '14px', cursor: 'pointer', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                       >
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                        Create New Campaign
+                        Create Long-Form Collaboration
                       </button>
                     )}
 
@@ -4709,7 +4709,7 @@ export default function InstagramDemoPage() {
                       <div style={{ position:'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.75)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:9999 }}>
                         <div style={{ background:C.surface, borderRadius:'16px', padding:'24px', maxWidth:'480px', width:'95vw', maxHeight:'90vh', overflowY:'auto', border:`1px solid ${C.border}`, position:'relative' }}>
                           <button onClick={() => setShowCampaignCreator(false)} style={{ position:'absolute', top:'16px', right:'16px', background:'none', border:'none', color:C.textMuted, fontSize:'22px', cursor:'pointer', lineHeight:1 }}>x</button>
-                          <div style={{ fontSize:'16px', fontWeight:700, color:C.text, marginBottom:'16px' }}>Create Campaign</div>
+                          <div style={{ fontSize:'16px', fontWeight:700, color:C.text, marginBottom:'16px' }}>Create Long-Form Collaboration</div>
                           <div style={{ marginBottom:'12px' }}>
                             <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>Brand name *</div>
                             <input type="text" value={profileName} onChange={e=>setProfileName(e.target.value)} placeholder="Your brand name" style={{ width:'100%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', color:C.text, padding:'8px 10px', fontSize:'13px', fontFamily:'inherit', outline:'none', boxSizing:'border-box' as const }} />
@@ -4719,18 +4719,18 @@ export default function InstagramDemoPage() {
                             <input type="text" value={newCampaignTitle} onChange={e=>setNewCampaignTitle(e.target.value)} placeholder="e.g. Spring Product Launch" style={{ width:'100%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', color:C.text, padding:'8px 10px', fontSize:'13px', fontFamily:'inherit', outline:'none', boxSizing:'border-box' as const }} />
                           </div>
                           <div style={{ marginBottom:'12px' }}>
-                            <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>About your product / campaign *</div>
+                            <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>About your video collaboration *</div>
                             <div style={{ fontSize:'10px', color:C.textMuted, marginBottom:'6px' }}>Creators need to understand what they are promoting. Be specific — what is the product, who is it for, and what makes it worth their audience's trust.</div>
                             <textarea value={newCampaignAbout} onChange={e=>setNewCampaignAbout(e.target.value)} rows={4} placeholder="e.g. We build CI/CD tooling for startups. 50K+ teams use our pipeline automation. Looking for authentic dev voices to demo our v3 launch features." style={{ width:'100%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', color:C.text, padding:'8px 10px', fontSize:'13px', fontFamily:'inherit', outline:'none', resize:'none', boxSizing:'border-box' as const }} />
                           </div>
                           <div style={{ marginBottom:'12px' }}>
-                            <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>Campaign description *</div>
-                            <textarea value={newCampaignDesc} onChange={e=>setNewCampaignDesc(e.target.value)} rows={2} placeholder="Briefly describe the type of content and goal of this campaign" style={{ width:'100%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', color:C.text, padding:'8px 10px', fontSize:'13px', fontFamily:'inherit', outline:'none', resize:'none', boxSizing:'border-box' as const }} />
+                            <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>Video collaboration brief *</div>
+                            <textarea value={newCampaignDesc} onChange={e=>setNewCampaignDesc(e.target.value)} rows={2} placeholder="Describe the long-form video format, audience intent, and success goals" style={{ width:'100%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', color:C.text, padding:'8px 10px', fontSize:'13px', fontFamily:'inherit', outline:'none', resize:'none', boxSizing:'border-box' as const }} />
                           </div>
                           <div style={{ marginBottom:'12px', background:`${C.primary}08`, border:`1px solid ${C.primary}30`, borderRadius:'8px', padding:'10px 12px' }}>
-                            <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>Targeting creators with</div>
+                            <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>Targeting long-form creators with</div>
                             <div style={{ fontSize:'14px', fontWeight:700, color:C.primary }}>{activeBrandSkin}</div>
-                            <div style={{ fontSize:'10px', color:C.textMuted, marginTop:'3px' }}>Auto-matched from your selected ValueSkin. Only creators with this skin will see your campaign.</div>
+                            <div style={{ fontSize:'10px', color:C.textMuted, marginTop:'3px' }}>Auto-matched from your selected ValueSkin. Only creators with this ValueSkin will see this long-form collaboration.</div>
                           </div>
                           <div style={{ marginBottom:'12px' }}>
                             <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>Creator level range *</div>
@@ -5135,7 +5135,7 @@ export default function InstagramDemoPage() {
                             <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${selectedProfileCreator.name.replace(/\s/g,'')}`} alt={selectedProfileCreator.name} style={{ width:'60px', height:'60px', borderRadius:'50%', background:C.surfaceAlt }} />
                             <div style={{ flex:1 }}>
                               <div style={{ fontSize:'16px', fontWeight:700, color:C.text, marginBottom:'4px' }}>{selectedProfileCreator.name}</div>
-                              <a href={`https://instagram.com/${selectedProfileCreator.handle.replace('@', '')}`} target="_blank" rel="noopener noreferrer" style={{ fontSize:'12px', color:C.primary, textDecoration:'none' }}>{selectedProfileCreator.handle}</a>
+                              <a href={`https://youtube.com/@${selectedProfileCreator.handle.replace('@', '')}`} target="_blank" rel="noopener noreferrer" style={{ fontSize:'12px', color:C.primary, textDecoration:'none' }}>{selectedProfileCreator.handle}</a>
                               <div style={{ fontSize:'11px', color:C.textSecondary, marginTop:'4px' }}>4.8★ rating from {(selectedProfileCreator.name.charCodeAt(0) % 15) + 5} deals</div>
                             </div>
                           </div>
@@ -5251,6 +5251,15 @@ export default function InstagramDemoPage() {
                       <div>
                         <div style={{ fontSize: '12px', fontWeight: 700, color: C.text }}>ValueSkin Matching Active</div>
                         <div style={{ fontSize: '11px', color: C.textSecondary }}>Only creators holding the ValueSkin you select below will appear. Matching is deterministic and server-enforced.</div>
+                      </div>
+                    </div>
+                    <div style={{ background:'rgba(239,68,68,0.06)', border:`1px solid rgba(239,68,68,0.2)`, borderRadius:'10px', padding:'12px 16px', marginBottom:'16px' }}>
+                      <div style={{ fontSize:'12px', fontWeight:700, color:C.text, marginBottom:'4px' }}>YouTube Long-Form Quality System</div>
+                      <div style={{ fontSize:'11px', color:C.textSecondary, marginBottom:'6px' }}>
+                        ValueSkins here optimize for long-form trust: retention quality, episode consistency, and deep topic clarity.
+                      </div>
+                      <div style={{ fontSize:'11px', color:C.textSecondary }}>
+                        Brands discover creators by ValueSkin plus long-form reliability, so collaborations prioritize watch-time quality over short-term viral spikes.
                       </div>
                     </div>
 
@@ -5425,7 +5434,7 @@ export default function InstagramDemoPage() {
                       // Show creators with valueSkin matching the active brand skin
                       // Preserve original index (_origIdx) so deal room lookup works after filtering
                       const creatorsForSkin = activeBrandSkin
-                        ? BRAND_MARKETPLACE_CREATORS.map((c, idx) => ({ ...c, valueSkin: activeBrandSkin, _origIdx: idx }))
+                        ? BRAND_MARKETPLACE_CREATORS.map((c, idx) => ({ ...c, _origIdx: idx })).filter(c => c.valueSkin === activeBrandSkin)
                         : [] as (typeof BRAND_MARKETPLACE_CREATORS[0] & { _origIdx: number })[];
                       let results = creatorsForSkin.filter(c =>
                         (!filterBarterOnly || c.willingToBarter) &&
@@ -5473,7 +5482,7 @@ export default function InstagramDemoPage() {
                           />
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontWeight: 600, fontSize: '13px', color: C.text }}>{creator.name}</div>
-                            <a href={`https://instagram.com/${creator.handle.replace('@', '')}`} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontSize: '11px', color: C.primary, textDecoration: 'none' }}>{creator.handle}</a>
+                            <a href={`https://youtube.com/@${creator.handle.replace('@', '')}`} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ fontSize: '11px', color: C.primary, textDecoration: 'none' }}>{creator.handle}</a>
                           </div>
                           <div style={{ textAlign: 'right', flexShrink: 0 }}>
                             <div style={{ fontWeight: 700, fontSize: '12px', color: C.text }}>{creator.rate}</div>
@@ -5518,7 +5527,7 @@ export default function InstagramDemoPage() {
                                     }}
                                     style={{ width:'100%', background: hasMatch ? (creator.featured ? C.primary : C.surfaceAlt) : C.surfaceAlt, border: hasMatch && creator.featured ? 'none' : `1px solid ${hasMatch ? C.border : 'rgba(230,81,0,0.3)'}`, padding: '10px 16px', borderRadius: '8px', color: hasMatch ? '#fff' : C.warning, fontWeight: '600', cursor: 'pointer', fontSize: '14px', opacity: hasMatch ? 1 : 0.7 }}
                                   >
-                                    {noBrandSkin ? 'No ValueSkin' : hasMatch ? (Object.keys(dealStates).find(key => key.startsWith(`${creator.name}|${creator.valueSkin}|`) && dealStates[key]?.phase && dealStates[key]?.phase !== 'brief') ? 'View Deal' : 'Create Campaign') : 'No Shared ValueSkin'}
+                                    {noBrandSkin ? 'No ValueSkin' : hasMatch ? (Object.keys(dealStates).find(key => key.startsWith(`${creator.name}|${creator.valueSkin}|`) && dealStates[key]?.phase && dealStates[key]?.phase !== 'brief') ? 'View Deal' : 'Create Long-Form Collaboration') : 'No Shared ValueSkin'}
                                   </button>
                                 </div>
                               );
@@ -5546,7 +5555,7 @@ export default function InstagramDemoPage() {
                                       <span style={{ fontSize: '11px', fontWeight: 700, color: C.textSecondary, textTransform: 'uppercase', letterSpacing: '0.6px' }}>Deal Room</span>
                                     </div>
                                     <a
-                                      href={`https://instagram.com/${creator.handle.replace('@', '')}`}
+                                      href={`https://youtube.com/@${creator.handle.replace('@', '')}`}
                                       target="_blank"
                                       rel="noopener noreferrer"
                                       style={{ fontSize:'12px', fontWeight:700, color:C.text, textDecoration:'none', display:'block', marginTop:'2px' }}
@@ -5601,7 +5610,7 @@ export default function InstagramDemoPage() {
                                       Create a campaign and invite {creator.name} to start a deal. Once they accept the invite, you can negotiate and send offers here.
                                     </div>
                                     <button onClick={() => { setNegotiatingCreator(null); setShowCampaignCreator(true); }} style={{ background: C.primary, border: 'none', borderRadius: '8px', padding: '10px 20px', color: '#fff', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}>
-                                      Create Campaign
+                                      Create Long-Form Collaboration
                                     </button>
                                   </div>
                                 </>
@@ -6458,7 +6467,7 @@ export default function InstagramDemoPage() {
                                           <div style={{ fontSize:'11px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'10px' }}>Review Content</div>
                                           {contentLink ? (
                                             <div style={{ background:C.bg, borderRadius:'8px', padding:'12px', border:`1px solid ${C.border}`, marginBottom:'10px' }}>
-                                              <div style={{ fontSize:'12px', fontWeight:600, color:C.text, marginBottom:'4px' }}>Instagram Post</div>
+                                              <div style={{ fontSize:'12px', fontWeight:600, color:C.text, marginBottom:'4px' }}>YouTube Video</div>
                                               <div style={{ fontSize:'11px', color:C.textSecondary, marginBottom:'8px' }}>Submitted {new Date().toLocaleDateString('en-US', { month:'short', day:'numeric' })}</div>
                                               <a href={contentLink} target="_blank" rel="noopener noreferrer" style={{ fontSize:'10px', color:C.primary, textDecoration:'none', display:'block', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', marginBottom:'8px' }}>{contentLink}</a>
                                             </div>
@@ -6595,9 +6604,9 @@ export default function InstagramDemoPage() {
                                           onClick={() => {
                                             const pocHandle = brandDeal.poc?.instagramHandle?.replace('@', '') || '';
                                             if (pocHandle) {
-                                              window.open(`https://instagram.com/${pocHandle}`, '_blank');
+                                              window.open(`https://youtube.com/@${pocHandle}`, '_blank');
                                             }
-                                            setPurchaseToast(`Opening ${brandDeal.poc?.name || 'POC'} on Instagram`);
+                                            setPurchaseToast(`Opening ${brandDeal.poc?.name || 'POC'} on YouTube`);
                                             setTimeout(() => setPurchaseToast(null), 2000);
                                           }}
                                           style={{ background: C.primary, border: 'none', borderRadius: '6px', padding: '5px 12px', color: '#fff', fontSize: '10px', fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}
@@ -6748,12 +6757,12 @@ export default function InstagramDemoPage() {
                       {sharedApplications.filter(a => a.status !== 'invited').length === 0 ? (
                         <div style={{ textAlign:'center', padding:'24px 20px', color:C.textMuted }}>
                           <div style={{ fontSize:'13px', marginBottom:'4px' }}>No proposals yet</div>
-                          <div style={{ fontSize:'11px' }}>Creators will appear here once they enter negotiations or apply to campaigns.</div>
+                          <div style={{ fontSize:'11px' }}>Creators will appear here once they apply to your long-form collaboration.</div>
                         </div>
                       ) : sharedApplications.filter(a => a.status !== 'invited').slice(0, 15).map((app,i) => {
                         const camp = campaigns.find(c=>c.id===app.campaignId);
                         const displayName = app.creatorName || app.creatorHandle;
-                        const igUrl = app.creatorInstagramUrl || `https://instagram.com/${app.creatorHandle.replace('@', '')}`;
+                        const igUrl = app.creatorInstagramUrl || `https://youtube.com/@${app.creatorHandle.replace('@', '')}`;
                         const allApps = sharedApplications.filter(a => a.status !== 'invited');
                         return (
                           <div key={i} style={{ display:'flex', alignItems:'center', gap:'10px', padding:'12px 0', borderBottom: i < Math.min(15, allApps.length) - 1 ? `1px solid ${C.border}` : 'none' }}>
@@ -7809,7 +7818,7 @@ export default function InstagramDemoPage() {
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <div style={{ fontSize: '14px', fontWeight: 700, color: C.text }}>Platform DMs (Instagram, etc.)</div>
+                    <div style={{ fontSize: '14px', fontWeight: 700, color: C.text }}>Platform DMs (YouTube)</div>
                     <div style={{ width: '20px', height: '20px', borderRadius: '50%', border: `2px solid ${dealCommMode === 'platform_dms' ? C.primary : C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       {dealCommMode === 'platform_dms' && <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: C.primary }} />}
                     </div>
@@ -8114,7 +8123,7 @@ export default function InstagramDemoPage() {
                       { title: 'AI-Powered Content Creation', desc: 'Creators using AI tools are seeing 3x engagement growth', tag: 'Technology', views: '24K' },
                       { title: 'Fitness Creators Dominating Reels', desc: 'Short-form workout content up 180% this quarter', tag: 'Sports', views: '18K' },
                       { title: 'Brand Deals Going Long-Term', desc: 'Ambassador programs replace one-off sponsorships', tag: 'Business', views: '12K' },
-                      { title: 'Design Portfolios on Instagram', desc: 'UX designers showcase work through carousel posts', tag: 'Art & Design', views: '9K' },
+                      { title: 'Design Portfolios on YouTube', desc: 'UX designers showcase work through carousel posts', tag: 'Art & Design', views: '9K' },
                       { title: 'Finance Creators Hit Mainstream', desc: 'Budgeting and investing content reaches Gen Z', tag: 'Finance', views: '15K' },
                     ].map((item, i) => (
                       <div key={i} style={{ background: C.card, borderRadius: '10px', padding: '14px', border: `1px solid ${C.border}` }}>
@@ -8263,7 +8272,7 @@ export default function InstagramDemoPage() {
                 )}
                 {/* Actions */}
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  <a href={`https://instagram.com/${previewCreator.handle.replace('@', '')}`} target="_blank" rel="noopener noreferrer" style={{ flex: 1, padding: '12px', borderRadius: '8px', border: `1px solid ${C.border}`, background: C.surfaceAlt, color: C.primary, fontSize: '14px', fontWeight: 600, cursor: 'pointer', textAlign: 'center', textDecoration: 'none' }}>Visit Instagram</a>
+                  <a href={`https://youtube.com/@${previewCreator.handle.replace('@', '')}`} target="_blank" rel="noopener noreferrer" style={{ flex: 1, padding: '12px', borderRadius: '8px', border: `1px solid ${C.border}`, background: C.surfaceAlt, color: C.primary, fontSize: '14px', fontWeight: 600, cursor: 'pointer', textAlign: 'center', textDecoration: 'none' }}>Visit YouTube</a>
                   <button onClick={() => { setPreviewCreator(null); setActiveView('mim'); }}
                     style={{ flex: 1, padding: '12px', borderRadius: '8px', border: 'none', background: C.primary, color: '#fff', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>
                     Back to Marketplace
