@@ -2724,9 +2724,18 @@ export default function InstagramDemoPage() {
                           const actualOppIndex = activeOpportunities.indexOf(opp);
                           const matchingCreator = BRAND_MARKETPLACE_CREATORS.find(c => c.valueSkin === selectedMarketplaceSkin);
                           const dealKey = matchingCreator ? `${matchingCreator.name}|${selectedMarketplaceSkin}|${actualOppIndex}` : null;
-                          const existingDeal = dealKey ? dealStates[dealKey] : undefined;
-                          const hasActiveDeal = existingDeal && existingDeal.phase !== 'brief';
-                          const isDealDone = existingDeal && (existingDeal.creatorDealLifecycle === 'approved' || existingDeal.brandApprovalPhase === 'approved');
+                          const relatedDealEntries = matchingCreator
+                            ? Object.entries(dealStates).filter(([k, d]) =>
+                                k.startsWith(`${matchingCreator.name}|${selectedMarketplaceSkin}|`) ||
+                                (d?.creatorName === matchingCreator.name && d?.creatorSkin === selectedMarketplaceSkin)
+                              )
+                            : [];
+                          const existingDealEntry =
+                            relatedDealEntries.find(([k, d]) => k === dealKey || d?.opportunityIndex === actualOppIndex) ||
+                            (dealKey && dealStates[dealKey] ? [dealKey, dealStates[dealKey]] as [string, typeof dealStates[string]] : undefined);
+                          const existingDeal = existingDealEntry?.[1];
+                          const hasActiveDeal = !!existingDeal && existingDeal.phase !== 'brief';
+                          const isDealDone = !!existingDeal && (existingDeal.creatorDealLifecycle === 'approved' || existingDeal.brandApprovalPhase === 'approved');
                           const isNegotiating = negotiatingOpp === actualOppIndex || hasActiveDeal;
                           const brandInitial = opp.brand.charAt(0).toUpperCase();
                           return (
@@ -2767,7 +2776,11 @@ export default function InstagramDemoPage() {
                                 </button>
                                 <button
                                   onClick={() => {
-                                    if (isDealDone) return;
+                                    if (isDealDone) {
+                                      setPurchaseToast('This deal is already completed and locked.');
+                                      setTimeout(() => setPurchaseToast(null), 2500);
+                                      return;
+                                    }
                                     if (!dealKey) return;
                                     setNegotiatingOpp(actualOppIndex);
                                     // Only reset deal state if starting fresh (no active deal yet)
