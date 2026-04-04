@@ -5823,6 +5823,7 @@ export default function InstagramDemoPage() {
                                         const freshDeal = brandDealKey ? dealStates[brandDealKey] : null;
                                         const isFunded = freshDeal?.escrowFunded ?? brandDeal?.escrowFunded;
                                         const creatorLifecycle = freshDeal?.creatorDealLifecycle ?? brandDeal?.creatorDealLifecycle;
+                                        const hasSubmittedDeliverables = Object.keys((freshDeal?.deliverableLinks || brandDeal?.deliverableLinks || {}) as Record<number, string>).length > 0;
                                         let statusTitle = 'Escrow Funded';
                                         let statusMsg = 'Creator has been notified to begin work';
                                         let statusIcon = C.success;
@@ -5843,11 +5844,11 @@ export default function InstagramDemoPage() {
                                           statusTitle = 'Deal Accepted';
                                           statusMsg = 'Creator is ready. Fund escrow to begin.';
                                           statusIcon = C.success;
-                                        } else if (dealPhase === 'softhold' && isFunded && creatorLifecycle === 'deliverables') {
+                                        } else if (dealPhase === 'softhold' && isFunded && creatorLifecycle === 'deliverables' && !hasSubmittedDeliverables) {
                                           statusTitle = 'Awaiting Deliverables';
                                           statusMsg = 'Creator is preparing content...';
                                           statusIcon = C.primary;
-                                        } else if (dealPhase === 'softhold' && isFunded && creatorLifecycle === 'submitted') {
+                                        } else if (dealPhase === 'softhold' && isFunded && (creatorLifecycle === 'submitted' || hasSubmittedDeliverables)) {
                                           statusTitle = 'Reviewing Deliverables';
                                           statusMsg = 'Creator has submitted their work';
                                           statusIcon = C.primary;
@@ -5870,7 +5871,9 @@ export default function InstagramDemoPage() {
                                       {(() => {
                                         const freshDeal = brandDealKey ? dealStates[brandDealKey] : null;
                                         const creatorLifecycle = freshDeal?.creatorDealLifecycle ?? brandDeal?.creatorDealLifecycle;
-                                        return creatorLifecycle === 'submitted' && (freshDeal?.brandApprovalPhase ?? brandDeal?.brandApprovalPhase) !== 'approved';
+                                        const bdLinks = (freshDeal?.deliverableLinks || brandDeal?.deliverableLinks || {}) as Record<number, string>;
+                                        const hasSubmittedDeliverables = Object.keys(bdLinks).length > 0;
+                                        return (creatorLifecycle === 'submitted' || hasSubmittedDeliverables) && (freshDeal?.brandApprovalPhase ?? brandDeal?.brandApprovalPhase) !== 'approved';
                                       })() && (() => {
                                         const freshDeal = brandDealKey ? dealStates[brandDealKey] : null;
                                         const bdLinks = (freshDeal?.deliverableLinks || brandDeal?.deliverableLinks || {}) as Record<number, string>;
@@ -6412,6 +6415,7 @@ export default function InstagramDemoPage() {
 
                                     if (dealType === 'paid' || dealType === 'c2c_paid') {
                                       const hasSubmissions = Object.keys(bdLinks).length > 0;
+                                      const canApprove = bdLifecycle === 'submitted' || hasSubmissions;
                                       return (
                                         <div style={{ marginTop:'12px' }}>
                                           <div style={{ fontSize:'11px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'10px' }}>Review Creator Deliverables</div>
@@ -6439,7 +6443,7 @@ export default function InstagramDemoPage() {
                                           )}
                                           <div style={{ display:'flex', gap:'8px' }}>
                                             <button
-                                              disabled={bdLifecycle !== 'submitted'}
+                                              disabled={!canApprove}
                                               onClick={() => {
                                                 const agreedAmt = parseInt(agreedDealAmount || '5000');
                                                 const approvalAmt = Math.round(agreedAmt * 0.3);
@@ -6455,7 +6459,7 @@ export default function InstagramDemoPage() {
                                                 setPurchaseToast(`Deliverable approved — $${approvalAmt.toLocaleString()} approval payment released to creator`);
                                                 setTimeout(() => setPurchaseToast(null), 3500);
                                               }}
-                                              style={{ flex:1, background: bdLifecycle === 'submitted' ? C.success : C.border, border:'none', padding:'9px', borderRadius:'8px', color:'#fff', fontWeight:600, cursor: bdLifecycle === 'submitted' ? 'pointer' : 'not-allowed', fontSize:'13px', opacity: bdLifecycle === 'submitted' ? 1 : 0.5 }}
+                                              style={{ flex:1, background: canApprove ? C.success : C.border, border:'none', padding:'9px', borderRadius:'8px', color:'#fff', fontWeight:600, cursor: canApprove ? 'pointer' : 'not-allowed', fontSize:'13px', opacity: canApprove ? 1 : 0.5 }}
                                             >
                                               Approve
                                             </button>

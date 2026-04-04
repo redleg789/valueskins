@@ -5824,11 +5824,11 @@ export default function InstagramDemoPage() {
                                           statusTitle = 'Deal Accepted';
                                           statusMsg = 'Creator is ready. Fund escrow to begin.';
                                           statusIcon = C.success;
-                                        } else if (dealPhase === 'softhold' && isFunded && brandDeal?.creatorDealLifecycle === 'deliverables') {
+                                        } else if (dealPhase === 'softhold' && isFunded && brandDeal?.creatorDealLifecycle === 'deliverables' && Object.keys((brandDeal?.deliverableLinks || {}) as Record<number, string>).length === 0) {
                                           statusTitle = 'Awaiting Deliverables';
                                           statusMsg = 'Creator is preparing content...';
                                           statusIcon = C.primary;
-                                        } else if (dealPhase === 'softhold' && isFunded && brandDeal?.creatorDealLifecycle === 'submitted') {
+                                        } else if (dealPhase === 'softhold' && isFunded && (brandDeal?.creatorDealLifecycle === 'submitted' || Object.keys((brandDeal?.deliverableLinks || {}) as Record<number, string>).length > 0)) {
                                           statusTitle = 'Reviewing Deliverables';
                                           statusMsg = 'Creator has submitted their work';
                                           statusIcon = C.primary;
@@ -5848,7 +5848,7 @@ export default function InstagramDemoPage() {
                                           </>
                                         );
                                       })()}
-                                      {brandDeal?.creatorDealLifecycle === 'submitted' && brandDeal?.brandApprovalPhase !== 'approved' && (() => {
+                                      {(brandDeal?.creatorDealLifecycle === 'submitted' || Object.keys((brandDeal?.deliverableLinks || {}) as Record<number, string>).length > 0) && brandDeal?.brandApprovalPhase !== 'approved' && (() => {
                                         const bdLinks = (brandDeal?.deliverableLinks || {}) as Record<number, string>;
                                         const agreedAmt = parseInt(agreedDealAmount || brandBudget || '5000');
                                         const approvalAmt = Math.round(agreedAmt * 0.3);
@@ -6388,6 +6388,7 @@ export default function InstagramDemoPage() {
 
                                     if (dealType === 'paid' || dealType === 'c2c_paid') {
                                       const hasSubmissions = Object.keys(bdLinks).length > 0;
+                                      const canApprove = bdLifecycle === 'submitted' || hasSubmissions;
                                       return (
                                         <div style={{ marginTop:'12px' }}>
                                           <div style={{ fontSize:'11px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'10px' }}>Review Creator Deliverables</div>
@@ -6415,7 +6416,7 @@ export default function InstagramDemoPage() {
                                           )}
                                           <div style={{ display:'flex', gap:'8px' }}>
                                             <button
-                                              disabled={bdLifecycle !== 'submitted'}
+                                              disabled={!canApprove}
                                               onClick={() => {
                                                 const agreedAmt = parseInt(agreedDealAmount || '5000');
                                                 const approvalAmt = Math.round(agreedAmt * 0.3);
@@ -6431,7 +6432,7 @@ export default function InstagramDemoPage() {
                                                 setPurchaseToast(`Deliverable approved — $${approvalAmt.toLocaleString()} approval payment released to creator`);
                                                 setTimeout(() => setPurchaseToast(null), 3500);
                                               }}
-                                              style={{ flex:1, background: bdLifecycle === 'submitted' ? C.success : C.border, border:'none', padding:'9px', borderRadius:'8px', color:'#fff', fontWeight:600, cursor: bdLifecycle === 'submitted' ? 'pointer' : 'not-allowed', fontSize:'13px', opacity: bdLifecycle === 'submitted' ? 1 : 0.5 }}
+                                              style={{ flex:1, background: canApprove ? C.success : C.border, border:'none', padding:'9px', borderRadius:'8px', color:'#fff', fontWeight:600, cursor: canApprove ? 'pointer' : 'not-allowed', fontSize:'13px', opacity: canApprove ? 1 : 0.5 }}
                                             >
                                               Approve
                                             </button>
