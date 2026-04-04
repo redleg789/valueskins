@@ -3,7 +3,7 @@
 // FILE PURPOSE: Main LinkedIn demo page - shows creator & brand workflow
 // ROLE IN SYSTEM: Frontend UI component that displays marketplace, deals, chat, script negotiation
 // DATA SOURCE: useDealSync.ts (local state) + api.ts (backend calls) + Firebase (real-time)
-// OUTPUT: Interactive UI where creators browse offers and negotiate with brands
+// OUTPUT: Interactive UI where candidates browse offers and negotiate with hiring teams
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
@@ -69,21 +69,21 @@ function isInternationalDeal(creatorLocation: string, campaignLocation: string):
 }
 
 const DEAL_LABELS = {
-  paid:       { proposer: 'Brand', receiver: 'Creator' },
-  barter:     { proposer: 'Brand', receiver: 'Creator' },
+  paid:       { proposer: 'Hiring Team', receiver: 'Candidate' },
+  barter:     { proposer: 'Hiring Team', receiver: 'Candidate' },
   c2c_paid:   { proposer: 'Proposer', receiver: 'Collaborator' },
   c2c_collab: { proposer: 'Initiator', receiver: 'Collaborator' },
 } as const;
 
 const PROFESSIONS = {
-  'Fashion':        { name: 'Fashion',        subProfessions: ['Fashion Influencer','Stylist','Fashion Designer','Model','Personal Shopper','Fashion Photographer','Streetwear Creator','Sustainable Fashion Advocate'] },
+  'Fashion':        { name: 'Fashion',        subProfessions: ['Fashion Influencer','Stylist','Fashion Designer','Model','Personal Shopper','Fashion Photographer','Streetwear Candidate','Sustainable Fashion Advocate'] },
   'Beauty':         { name: 'Beauty',         subProfessions: ['Makeup Artist','Skincare Specialist','Hair Stylist','Nail Artist','Beauty Reviewer','Fragrance Enthusiast','Esthetician','Beauty Educator'] },
-  'Travel':         { name: 'Travel',         subProfessions: ['Travel Blogger','Adventure Creator','Luxury Travel','Budget Travel','Solo Travel','Travel Photographer','Digital Nomad','Hotel Reviewer'] },
-  'Food & Beverage':{ name: 'Food & Beverage',subProfessions: ['Chef','Food Photographer','Recipe Creator','Restaurant Reviewer','Pastry Chef','Nutritionist','Food Stylist','Culinary Student'] },
+  'Travel':         { name: 'Travel',         subProfessions: ['Travel Blogger','Adventure Candidate','Luxury Travel','Budget Travel','Solo Travel','Travel Photographer','Digital Nomad','Hotel Reviewer'] },
+  'Food & Beverage':{ name: 'Food & Beverage',subProfessions: ['Chef','Food Photographer','Recipe Candidate','Restaurant Reviewer','Pastry Chef','Nutritionist','Food Stylist','Culinary Student'] },
   'Fitness':        { name: 'Fitness',        subProfessions: ['Personal Trainer','Yoga Instructor','Fitness Coach','CrossFit Athlete','Pilates Instructor','Bodybuilder','Marathon Runner','Sports Nutritionist'] },
-  'Lifestyle':      { name: 'Lifestyle',      subProfessions: ['Lifestyle Blogger','Minimalist','Wellness Coach','Self-Care Advocate','Productivity Creator','Journal Creator','Morning Routine Creator','Slow Living Advocate'] },
-  'Photography':    { name: 'Photography',    subProfessions: ['Portrait Photographer','Street Photographer','Landscape Photographer','Product Photographer','Wedding Photographer','Drone Photographer','Photo Editor','Analog Film Creator'] },
-  'Interior Design':{ name: 'Interior Design',subProfessions: ['Interior Designer','Home Decor Creator','DIY Home','Minimalist Home','Plant Parent','Organization Expert','Furniture Designer','Renovation Creator'] },
+  'Lifestyle':      { name: 'Lifestyle',      subProfessions: ['Lifestyle Blogger','Minimalist','Wellness Coach','Self-Care Advocate','Productivity Candidate','Journal Candidate','Morning Routine Candidate','Slow Living Advocate'] },
+  'Photography':    { name: 'Photography',    subProfessions: ['Portrait Photographer','Street Photographer','Landscape Photographer','Product Photographer','Wedding Photographer','Drone Photographer','Photo Editor','Analog Film Candidate'] },
+  'Interior Design':{ name: 'Interior Design',subProfessions: ['Interior Designer','Home Decor Candidate','DIY Home','Minimalist Home','Plant Parent','Organization Expert','Furniture Designer','Renovation Candidate'] },
   'Technology':     { name: 'Technology',     subProfessions: ['Software Engineer','Full Stack Developer','Data Scientist','Product Manager','DevOps Engineer','UX/UI Designer','Tech Entrepreneur','AI/ML Specialist'] },
   'Entertainment':  { name: 'Entertainment',  subProfessions: ['Actor','Comedian','Musician','Producer','Director','Screenwriter','Animator','Voice Actor','Podcast Host','DJ','Streamer','Stunt Performer'] },
   'Sports':         { name: 'Sports',         subProfessions: ['Professional Athlete','Fitness Coach','Sports Coach','Yoga Instructor','Nutritionist','Sports Analyst','Personal Trainer','Physical Therapist'] },
@@ -154,12 +154,12 @@ const BRAND_MARKETPLACE_CREATORS = [
 ];
 
 const BRAND_CATEGORIES: Record<string, { name: string; subCategories: string[] }> = {
-  'Company Size':  { name: 'Company Size',  subCategories: ['Startup', 'SMB', 'Mid-Market', 'Enterprise', 'Agency', 'Solo Brand', 'Non-Profit', 'Government'] },
-  'Campaign Type': { name: 'Campaign Type', subCategories: ['Product Review', 'Brand Ambassador', 'Sponsored Content', 'Event Coverage', 'Affiliate', 'Whitelabel', 'UGC', 'Podcast'] },
+  'Company Size':  { name: 'Company Size',  subCategories: ['Startup', 'SMB', 'Mid-Market', 'Enterprise', 'Agency', 'Solo Hiring Team', 'Non-Profit', 'Government'] },
+  'Campaign Type': { name: 'Campaign Type', subCategories: ['Product Review', 'Hiring Team Ambassador', 'Sponsored Content', 'Event Coverage', 'Affiliate', 'Whitelabel', 'UGC', 'Podcast'] },
   'Budget Tier':   { name: 'Budget Tier',   subCategories: ['Micro ($500-2K)', 'Standard ($2K-10K)', 'Premium ($10K-50K)', 'Enterprise ($50K+)'] },
 };
 
-const CAMPAIGN_TYPES = ['Product Review', 'Brand Ambassador', 'Sponsored Content', 'Event Coverage', 'Affiliate', 'Whitelabel', 'UGC', 'Podcast'];
+const CAMPAIGN_TYPES = ['Product Review', 'Hiring Team Ambassador', 'Sponsored Content', 'Event Coverage', 'Affiliate', 'Whitelabel', 'UGC', 'Podcast'];
 
 // Sensitive content categories requiring explicit disclaimers
 const SENSITIVE_CONTENT_KEYWORDS = [
@@ -183,7 +183,7 @@ type Opportunity = {
   match: string;
   featured: boolean;
   willingToBarter: boolean;
-  // Brand brief — what the "Ask" button reveals
+  // Hiring Team brief — what the "Ask" button reveals
   about: string;
   budget: string;
   deadline: string;
@@ -202,7 +202,7 @@ type Opportunity = {
   poc?: { name: string; instagramHandle: string; role: string };
 };
 
-// Opportunities vary by profession — different brands want different skills
+// Opportunities vary by profession — different hiring teams want different skills
 // No hardcoded opportunities — only real brand-created campaigns from Firebase appear
 
 const SLOTS: ValueSkinSlot[] = ['profession', 'passion', 'hobby'];
@@ -274,7 +274,7 @@ export default function LinkedInDemoPage() {
 
   // Editable profile
   const [profileName, setProfileName] = useState('Your Name');
-  const [profileBio, setProfileBio] = useState('Creator, builder, thinker. Tap Edit to make this yours.');
+  const [profileBio, setProfileBio] = useState('Candidate, builder, thinker. Tap Edit to make this yours.');
   const [profileAvatar, setProfileAvatar] = useState<string | null>(null);
   const [editingProfile, setEditingProfile] = useState(false);
   const [portfolioImage, setPortfolioImage] = useState<string | null>(null);
@@ -283,11 +283,11 @@ export default function LinkedInDemoPage() {
   const [notifications, setNotifications] = useState<Array<{ id: number; type: string; text: string; time: string; read: boolean }>>([]);
 
   // Onboarding
-  // Creator profile preview (from brand marketplace)
+  // Candidate profile preview (from brand marketplace)
   const [previewCreator, setPreviewCreator] = useState<typeof BRAND_MARKETPLACE_CREATORS[0] | null>(null);
 
   // Explore
-  const [exploreTab, setExploreTab] = useState<'trending' | 'skins' | 'creators'>('trending');
+  const [exploreTab, setExploreTab] = useState<'trending' | 'skins' | 'candidates'>('trending');
 
   // DM messages state — mutable copy so sending works
   const [dmMessages, setDmMessages] = useState<Record<number, Array<{ id: number; sender: 'me' | 'them'; text: string; time: string }>>>({
@@ -463,13 +463,13 @@ export default function LinkedInDemoPage() {
   const [brandValueSkins, setBrandValueSkins] = useState<string[]>([]);
   const [activeBrandSkin, setActiveBrandSkin] = useState<string | null>(null);
 
-  // Brand ValueSkin as marketing — brands can promote products/campaigns via their skin
+  // Hiring Team ValueSkin as marketing — hiring teams can promote products/campaigns via their skin
   const [brandProfileSelections, setBrandProfileSelections] = useState<Record<string, string>>({});
   const [brandSkinMode, setBrandSkinMode] = useState<'static' | 'promo'>('static');
   const [brandPromoText, setBrandPromoText] = useState('');
   const [brandPromoUrl, setBrandPromoUrl] = useState('');
 
-  // Creator ValueSkin showcase — creators can add a pitch video + text to their skin
+  // Candidate ValueSkin showcase — candidates can add a pitch video + text to their skin
   const [creatorSkinMode, setCreatorSkinMode] = useState<'static' | 'showcase'>('showcase');
   // Per-skin pitch text and video — keyed by profession name
   const [skinPitchTexts, setSkinPitchTexts] = useState<Record<string, string>>({});
@@ -603,7 +603,7 @@ export default function LinkedInDemoPage() {
     if (deal.paymentMilestones) {
       setPaymentMilestones(deal.paymentMilestones);
     }
-    // Creator deal lifecycle: sync from dealStates
+    // Candidate deal lifecycle: sync from dealStates
     if (deal.creatorDealLifecycle) {
       setCreatorDealLifecycle(deal.creatorDealLifecycle as CreatorDealLifecycle);
     }
@@ -611,7 +611,7 @@ export default function LinkedInDemoPage() {
     if (deal.deliverableStatuses) {
       setDeliverableStatuses(deal.deliverableStatuses);
     }
-    // Brand approval phase: sync from dealStates
+    // Hiring Team approval phase: sync from dealStates
     if (deal.brandApprovalPhase) {
       setBrandApprovalPhase(deal.brandApprovalPhase as BrandApprovalPhase);
     }
@@ -658,13 +658,13 @@ export default function LinkedInDemoPage() {
       const opp = activeOpportunities[negotiatingOpp ?? 0];
       const phaseNames: Record<DealRoomPhase, string> = {
         brief: 'Deal initiated',
-        offer: 'Brand sent offer',
+        offer: 'Hiring Team sent offer',
         pending: 'Offer pending',
-        counter: 'Creator countered',
-        brand_considering: 'Brand reviewing',
-        brand_countered: 'Brand countered',
-        brand_rejected: 'Brand rejected',
-        brand_reviewing: 'Brand reviewing',
+        counter: 'Candidate countered',
+        brand_considering: 'Hiring Team reviewing',
+        brand_countered: 'Hiring Team countered',
+        brand_rejected: 'Hiring Team rejected',
+        brand_reviewing: 'Hiring Team reviewing',
         last_offer: 'Last offer',
         rejected: 'Rejected',
         chatroom: 'In negotiation',
@@ -673,7 +673,7 @@ export default function LinkedInDemoPage() {
         accepted: 'Deal accepted',
         softhold: 'Escrow hold',
       };
-      firebaseSendNotification(opp?.brand || 'Brand', 'application', `${phaseNames[p]} · ${opp?.brand} & you are now at: ${phaseNames[p]}`);
+      firebaseSendNotification(opp?.brand || 'Hiring Team', 'application', `${phaseNames[p]} · ${opp?.brand} & you are now at: ${phaseNames[p]}`);
       setPurchaseToast(`Deal moved to: ${phaseNames[p]}`);
       setTimeout(() => setPurchaseToast(null), 2500);
     }
@@ -713,11 +713,11 @@ export default function LinkedInDemoPage() {
       if (outcome === 'accept') {
         updateDeal(key, { phase: 'accepted', brandResponseAmount: String(creatorCounter) });
       } else if (outcome === 'counter') {
-        // Brand meets halfway
+        // Hiring Team meets halfway
         const midpoint = Math.round((creatorCounter + brandOffer) / 2 / 50) * 50;
         updateDeal(key, { phase: 'brand_countered', brandResponseAmount: String(midpoint) });
       } else if (outcome === 'last_offer') {
-        // Brand slightly above original but below midpoint
+        // Hiring Team slightly above original but below midpoint
         const lastOffer = Math.round((brandOffer + (creatorCounter - brandOffer) * 0.25) / 50) * 50;
         updateDeal(key, { phase: 'brand_countered', brandResponseAmount: String(lastOffer) });
       } else {
@@ -785,15 +785,15 @@ export default function LinkedInDemoPage() {
   // Soft hold active
   const [softHoldActive, setSoftHoldActive] = useState(false);
 
-  // Creator pricing (editable in marketplace)
+  // Candidate pricing (editable in marketplace)
   const [creatorRate, setCreatorRate] = useState('5000');
 
-  // Brand offer details (editable in marketplace)
+  // Hiring Team offer details (editable in marketplace)
   const [brandBudget, setBrandBudget] = useState('4000');
-  const [brandCampaignDesc, setBrandCampaignDesc] = useState('Looking for authentic content creators to showcase our product');
+  const [brandCampaignDesc, setBrandCampaignDesc] = useState('Looking for authentic content candidates to showcase our product');
   const [brandCampaignType, setBrandCampaignType] = useState('Product Review');
 
-  // Brand-side deal room state — uses dealStates for real-time sync (was: localStorage-only)
+  // Hiring Team-side deal room state — uses dealStates for real-time sync (was: localStorage-only)
   // Key format MUST match creator side: creatorName|creatorSkin
   const getBrandDealKey = useCallback(() => {
     if (negotiatingCreator === null) return null;
@@ -806,7 +806,7 @@ export default function LinkedInDemoPage() {
   const brandDealKey = getBrandDealKey();
   const brandDeal = brandDealKey ? getOrCreateDeal(brandDealKey) : null;
 
-  // AUTO-SYNC: Creator side — auto-open active deal when navigating to marketplace
+  // AUTO-SYNC: Candidate side — auto-open active deal when navigating to marketplace
   useEffect(() => {
     if (marketplaceRole === 'creator' && selectedMarketplaceSkin && negotiatingOpp === null) {
       const matchingCreator = BRAND_MARKETPLACE_CREATORS.find(c => c.valueSkin === selectedMarketplaceSkin);
@@ -822,7 +822,7 @@ export default function LinkedInDemoPage() {
     }
   }, [marketplaceRole, selectedMarketplaceSkin, negotiatingOpp, dealStates]);
 
-  // AUTO-SYNC: Brand side should find open deals if they reload without negotiatingCreator set
+  // AUTO-SYNC: Hiring Team side should find open deals if they reload without negotiatingCreator set
   useEffect(() => {
     if (marketplaceRole === 'brand' && negotiatingCreator === null) {
       // Search through all deals to find one that has been initiated by a creator
@@ -890,7 +890,7 @@ export default function LinkedInDemoPage() {
     breakdown: true,
   });
 
-  // Creator reputation & verification
+  // Candidate reputation & verification
   const [showCredentialForm, setShowCredentialForm] = useState(false);
   const [credentials, setCredentials] = useState<{ platform: string; handle: string }[]>([]);
   const [identityProofs, setIdentityProofs] = useState<Array<{platform: string; handle: string; verified: boolean}>>([]);
@@ -909,7 +909,7 @@ export default function LinkedInDemoPage() {
   const [dealCommMode, setDealCommMode] = useState<DealCommMode>('valueskins_chatroom');
   const [safetyNewBrandDealCount, setSafetyNewBrandDealCount] = useState(0);
   const [savedSafetyToast, setSavedSafetyToast] = useState(false);
-  // Creator-side safety controls
+  // Candidate-side safety controls
   const [creatorAllowedNiches, setCreatorAllowedNiches] = useState<string[]>([]);
   const [creatorBlockedBrands, setCreatorBlockedBrands] = useState<string[]>([]);
   const [creatorShowSafetySettings, setCreatorShowSafetySettings] = useState(false);
@@ -935,7 +935,7 @@ export default function LinkedInDemoPage() {
   const [c2cDealType, setC2cDealType] = useState<'c2c'>('c2c');
   const [firebaseNotifications, setFirebaseNotifications] = useState<Array<{id: string; type: 'campaign' | 'application' | 'message'; message: string; createdAt: number; read: boolean}>>([]);
 
-  // Brand field filter — which ValueSkin profession the brand wants to target
+  // Hiring Team field filter — which ValueSkin profession the brand wants to target
   const [brandSearchQuery, setBrandSearchQuery] = useState('');
   const [brandSearchMode, setBrandSearchMode] = useState<'profession' | 'name' | 'general'>('profession');
   const [filterAudienceAge, setFilterAudienceAge] = useState<string | null>(null);
@@ -1051,7 +1051,7 @@ export default function LinkedInDemoPage() {
 
   // No seeded campaigns or applications — only real data from Firebase
 
-  const [marketplaceTab, setMarketplaceTab] = useState<'creators' | 'campaigns' | 'applications' | 'sent' | 'pastDeals'>('creators');
+  const [marketplaceTab, setMarketplaceTab] = useState<'candidates' | 'campaigns' | 'applications' | 'sent' | 'pastDeals'>('candidates');
   const [hiddenSentDealIds, setHiddenSentDealIds] = useState<Set<number>>(new Set());
   const [showCampaignCreator, setShowCampaignCreator] = useState(false);
   const [newCampaignTitle, setNewCampaignTitle] = useState('');
@@ -1122,7 +1122,7 @@ export default function LinkedInDemoPage() {
   const [batchSendCreatorIds, setBatchSendCreatorIds] = useState<Set<number>>(new Set());
   const [lastCreatedCampaignId, setLastCreatedCampaignId] = useState<number | null>(null);
 
-  // Feature 2: Creator profile display
+  // Feature 2: Candidate profile display
   const [showCreatorProfileModal, setShowCreatorProfileModal] = useState(false);
   const [selectedProfileCreator, setSelectedProfileCreator] = useState<typeof BRAND_MARKETPLACE_CREATORS[0] | null>(null);
 
@@ -1168,7 +1168,7 @@ export default function LinkedInDemoPage() {
   const [availableForDeals, setAvailableForDeals] = useState(true);
   // Feature 3: Market rates panel
   const [showMarketRates, setShowMarketRates] = useState(false);
-  // Feature 6: Creator pipeline view
+  // Feature 6: Candidate pipeline view
   const [creatorMarketplaceTab, setCreatorMarketplaceTab] = useState<'opportunities'|'pipeline'>('opportunities');
   // Feature 7: Public profile link copied
   const [profileLinkCopied, setProfileLinkCopied] = useState(false);
@@ -1183,7 +1183,7 @@ export default function LinkedInDemoPage() {
   const [dealRatingComment, setDealRatingComment] = useState('');
   const [ratingSubmitted, setRatingSubmitted] = useState(false);
   const [displayCreatorRating, setDisplayCreatorRating] = useState(false);
-  // Brand-side rating
+  // Hiring Team-side rating
   const [brandShowRatingModal, setBrandShowRatingModal] = useState(false);
   const [brandDealRating, setBrandDealRating] = useState(0);
   const [brandRatingComment, setBrandRatingComment] = useState('');
@@ -1283,7 +1283,7 @@ export default function LinkedInDemoPage() {
   // Simulate purchase: assign profession to the chosen slot, show toast
   const purchaseProfession = (profession: string) => {
     if (marketplaceRole === 'brand') {
-      // Brand purchase — add to global pool (max 3 per device)
+      // Hiring Team purchase — add to global pool (max 3 per device)
       if (brandValueSkins.includes(profession)) {
         setPurchaseToast(`You already own ${profession}`);
         setTimeout(() => setPurchaseToast(null), 3000);
@@ -1313,7 +1313,7 @@ export default function LinkedInDemoPage() {
       setTimeout(() => setPurchaseToast(null), 3000);
       return;
     }
-    // Creator purchase — assign to slot
+    // Candidate purchase — assign to slot
     if (!assigningSlot) {
       setPurchaseToast('Select a slot first');
       setTimeout(() => setPurchaseToast(null), 3000);
@@ -1413,7 +1413,7 @@ export default function LinkedInDemoPage() {
   const handleScriptApprove = () => {
     if (!activeDealKey) return;
     const isCreator = marketplaceRole === 'creator';
-    const otherParty = isCreator ? (askModalOpp?.brand || 'Brand') : 'Creator';
+    const otherParty = isCreator ? (askModalOpp?.brand || 'Hiring Team') : 'Candidate';
     const bothApproved = (isCreator && brandScriptApproved) || (!isCreator && creatorScriptApproved);
     const payload: any = {
       [isCreator ? 'creatorScriptApproved' : 'brandScriptApproved']: true,
@@ -1425,7 +1425,7 @@ export default function LinkedInDemoPage() {
       firebaseSendNotification(otherParty, 'application', 'Both parties approved the script! Ready to move to deliverables.');
       setPurchaseToast('Script approved by both parties');
     } else {
-      firebaseSendNotification(otherParty, 'application', `${isCreator ? 'Creator' : 'Brand'} approved the script. Awaiting your approval to proceed.`);
+      firebaseSendNotification(otherParty, 'application', `${isCreator ? 'Candidate' : 'Hiring Team'} approved the script. Awaiting your approval to proceed.`);
       setPurchaseToast(`Script approved by ${isCreator ? 'you' : 'brand'}`);
     }
     updateDeal(activeDealKey, payload);
@@ -1510,12 +1510,12 @@ export default function LinkedInDemoPage() {
   const campaignOpportunities: Opportunity[] = liveCampaigns
     .filter(c => {
       if (c.status !== 'open' || !selectedMarketplaceSkin) return false;
-      // Get the current creator's data if available (from marketplace creators)
+      // Get the current creator's data if available (from marketplace candidates)
       const currentCreator = BRAND_MARKETPLACE_CREATORS.find(cr => cr.valueSkin === selectedMarketplaceSkin);
       return creatorMatchesCampaignRequirements(c, selectedMarketplaceSkin, currentCreator);
     })
     .map(c => ({
-      brand: c.brandName || 'Brand',
+      brand: c.brandName || 'Hiring Team',
       type: c.title,
       match: '100%',
       featured: true,
@@ -1615,7 +1615,7 @@ export default function LinkedInDemoPage() {
                 {/* Video upload section */}
                 <div style={{ marginBottom:16 }}>
                   <div style={{ fontSize:'11px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:8 }}>Pitch Video</div>
-                  <div style={{ fontSize:'11px', color:C.textSecondary, marginBottom:8 }}>Record a short video explaining why brands should work with you. This plays when they click your skin.</div>
+                  <div style={{ fontSize:'11px', color:C.textSecondary, marginBottom:8 }}>Record a short video explaining why hiring teams should work with you. This plays when they click your skin.</div>
 
                   {!creatorPitchVideoUrl ? (
                     <label style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:8, padding:'24px', background:C.bg, border:`2px dashed ${C.border}`, borderRadius:10, cursor:'pointer', transition:'border-color 0.2s' }}>
@@ -1665,7 +1665,7 @@ export default function LinkedInDemoPage() {
                   <textarea
                     value={creatorPitchText}
                     onChange={e => setCreatorPitchText(e.target.value)}
-                    placeholder={`Why should brands hire you as a ${showSkinShowcaseModal}? e.g. "I've built products used by 50K+ devs..."`}
+                    placeholder={`Why should hiring teams hire you as a ${showSkinShowcaseModal}? e.g. "I've built products used by 50K+ devs..."`}
                     rows={3}
                     style={{ width:'100%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, color:C.text, padding:'10px', fontSize:13, fontFamily:'inherit', outline:'none', resize:'none', boxSizing:'border-box' as const }}
                   />
@@ -1674,7 +1674,7 @@ export default function LinkedInDemoPage() {
                 {/* Preview card */}
                 {(creatorPitchVideoUrl || creatorPitchText) && (
                   <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:10, padding:12, marginBottom:8 }}>
-                    <div style={{ fontSize:10, fontWeight:700, color:C.textSecondary, textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:8 }}>How brands see your skin</div>
+                    <div style={{ fontSize:10, fontWeight:700, color:C.textSecondary, textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:8 }}>How hiring teams see your skin</div>
                     {creatorPitchVideoUrl && (
                       <video src={creatorPitchVideoUrl} controls style={{ width:'100%', borderRadius:8, maxHeight:160, background:'#000', marginBottom:8 }} />
                     )}
@@ -1686,7 +1686,7 @@ export default function LinkedInDemoPage() {
               </>
             )}
 
-            <button onClick={() => { setShowSkinShowcaseModal(null); setPurchaseToast(creatorSkinMode === 'showcase' ? 'Showcase saved — brands will see your pitch' : 'Skin set to static'); setTimeout(()=>setPurchaseToast(null),3000); }} style={{ width:'100%', background:creatorSkinMode==='showcase'?C.primary:C.primary, border:'none', borderRadius:8, padding:'12px', color:'#fff', fontWeight:700, fontSize:14, cursor:'pointer', marginTop:8 }}>
+            <button onClick={() => { setShowSkinShowcaseModal(null); setPurchaseToast(creatorSkinMode === 'showcase' ? 'Showcase saved — hiring teams will see your pitch' : 'Skin set to static'); setTimeout(()=>setPurchaseToast(null),3000); }} style={{ width:'100%', background:creatorSkinMode==='showcase'?C.primary:C.primary, border:'none', borderRadius:8, padding:'12px', color:'#fff', fontWeight:700, fontSize:14, cursor:'pointer', marginTop:8 }}>
               {creatorSkinMode === 'showcase' ? 'Save Showcase' : 'Done'}
             </button>
           </div>
@@ -1699,7 +1699,7 @@ export default function LinkedInDemoPage() {
           <div style={{ background: C.surface, borderRadius: '16px', padding: '24px', maxWidth: '480px', width: '95vw', maxHeight: '90vh', overflowY: 'auto', border: `1px solid ${C.border}`, position: 'relative' }} onClick={(e) => e.stopPropagation()}>
             <button onClick={() => setAskModalOpp(null)} style={{ position: 'absolute', top: '14px', right: '16px', background: 'none', border: 'none', color: C.textMuted, fontSize: '22px', cursor: 'pointer', lineHeight: 1 }}>x</button>
 
-            {/* Brand header */}
+            {/* Hiring Team header */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
               <div style={{ width: 44, height: 44, borderRadius: '10px', background: `linear-gradient(135deg, ${C.primary}, ${C.primary})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700, color: '#fff' }}>
                 {askModalOpp.brand.charAt(0)}
@@ -2098,7 +2098,7 @@ export default function LinkedInDemoPage() {
                       <img src={portfolioImage} alt="Why hire me" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
                     </div>
                     <div style={{ padding: '12px 14px', background: C.surface, fontSize: '12px', color: C.textMuted, fontWeight: '600' }}>
-                      Why brands should hire {profileName || 'this creator'}
+                      Why hiring teams should hire {profileName || 'this creator'}
                     </div>
                   </div>
                 )}
@@ -2255,7 +2255,7 @@ export default function LinkedInDemoPage() {
                       {factors.map((factor) => {
                         const factorScores: Record<string, number> = {
                           'Content Consistency': 82, 'Audience Engagement': 91,
-                          'Brand Partnerships': 78, 'On-time Delivery': 99,
+                          'Hiring Team Partnerships': 78, 'On-time Delivery': 99,
                           'Community Trust': 85, 'Profile Completeness': 95,
                         };
                         const earned = factorScores[factor.name] ?? Math.round(factor.maxPoints * 0.8);
@@ -2280,7 +2280,7 @@ export default function LinkedInDemoPage() {
                     </div>
                   )}
 
-                  {/* Creator Score Card */}
+                  {/* Candidate Score Card */}
                   <div style={{
                     borderRadius: '12px',
                     border: `1px solid ${C.borderLight}`,
@@ -2288,7 +2288,7 @@ export default function LinkedInDemoPage() {
                     marginTop: '20px',
                     backgroundColor: C.bg,
                   }}>
-                    <h3 style={{ marginTop: 0, marginBottom: '16px', color: C.text }}>Creator Score</h3>
+                    <h3 style={{ marginTop: 0, marginBottom: '16px', color: C.text }}>Candidate Score</h3>
 
                     {/* Overall Score */}
                     <div style={{
@@ -2338,7 +2338,7 @@ export default function LinkedInDemoPage() {
                       { label: 'Avg Rating', value: MOCK_REPUTATION.avgRating / 5 },
                       { label: 'Response Score', value: MOCK_REPUTATION.responseScore },
                       { label: 'Revision Efficiency', value: MOCK_REPUTATION.revisionEfficiency },
-                      { label: 'Repeat Brand Rate', value: MOCK_REPUTATION.repeatBrandRate },
+                      { label: 'Repeat Hiring Team Rate', value: MOCK_REPUTATION.repeatBrandRate },
                     ].map((dim, i) => (
                       <div key={i} style={{ marginBottom: '12px' }}>
                         <div style={{
@@ -2412,8 +2412,8 @@ export default function LinkedInDemoPage() {
                     </div>
                     <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
                       {([
-                        { role: 'creator' as const, title: 'Login as Creator', desc: 'Find brand deals matched to your ValueSkins', icon: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2' },
-                        { role: 'brand' as const, title: 'Login as Brand', desc: 'Find verified experts for hiring and professional collaborations', icon: 'M22 12h-4l-3 9L9 3l-3 9H2' },
+                        { role: 'creator' as const, title: 'Login as Candidate', desc: 'Find brand deals matched to your ValueSkins', icon: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2' },
+                        { role: 'brand' as const, title: 'Login as Hiring Team', desc: 'Find verified experts for hiring and professional collaborations', icon: 'M22 12h-4l-3 9L9 3l-3 9H2' },
                       ]).map(({ role, title, desc, icon }) => (
                         <button
                           key={role}
@@ -2440,7 +2440,7 @@ export default function LinkedInDemoPage() {
                 </>
               )}
 
-              {/* Layer 3a: Creator Marketplace */}
+              {/* Layer 3a: Candidate Marketplace */}
               {hasValueSkin && marketplaceRole === 'creator' && (
                 <>
                   {/* Marketplace header — Instagram style */}
@@ -2450,7 +2450,7 @@ export default function LinkedInDemoPage() {
                       <button onClick={() => { setMarketplaceRole('none'); setSelectedMarketplaceSkin(null); setNegotiatingOpp(null); }} style={{ background: 'none', border: 'none', fontSize: '13px', color: C.textSecondary, cursor: 'pointer', padding: '4px 0' }}>Switch</button>
                     </div>
 
-                    {/* Brand Deals / Creator Collabs tab toggle */}
+                    {/* Hiring Team Deals / Candidate Collabs tab toggle */}
                     <div style={{ display: 'flex', background: C.card, borderRadius: '10px', padding: '3px', marginBottom: '14px' }}>
                       {(['brand', 'collab'] as const).map(mode => (
                         <button
@@ -2463,7 +2463,7 @@ export default function LinkedInDemoPage() {
                             fontWeight: 600, fontSize: '14px', cursor: 'pointer', transition: 'all 0.15s',
                           }}
                         >
-                          {mode === 'brand' ? 'Brand Deals' : 'Creator Collabs'}
+                          {mode === 'brand' ? 'Hiring Team Deals' : 'Candidate Collabs'}
                         </button>
                       ))}
                     </div>
@@ -2577,7 +2577,7 @@ export default function LinkedInDemoPage() {
                       );
                     })()}
 
-                    {/* Feature 6: Creator Pipeline View (Meta data source: deal states from backend) */}
+                    {/* Feature 6: Candidate Pipeline View (Meta data source: deal states from backend) */}
                     {selectedMarketplaceSkin && creatorMarketplaceTab === 'pipeline' && (() => {
                       // Find deals for current creator skin (key format: creatorName|creatorSkin)
                       const matchingCreator = BRAND_MARKETPLACE_CREATORS.find(c => c.valueSkin === selectedMarketplaceSkin);
@@ -2627,7 +2627,7 @@ export default function LinkedInDemoPage() {
                           {pipelineDeals.length === 0 && (
                             <div style={{ textAlign: 'center', padding: '40px 20px', color: C.textMuted }}>
                               <div style={{ fontSize: '14px', marginBottom: '4px' }}>No active deals</div>
-                              <div style={{ fontSize: '12px' }}>Switch to Opportunities to find new brands to work with.</div>
+                              <div style={{ fontSize: '12px' }}>Switch to Opportunities to find new hiring teams to work with.</div>
                             </div>
                           )}
                         </div>
@@ -2660,7 +2660,7 @@ export default function LinkedInDemoPage() {
                               key={actualOppIndex}
                               style={{ background: C.card, borderRadius: '16px', padding: '16px', marginBottom: '12px', border: `1px solid ${C.border}` }}
                             >
-                              {/* Brand header row */}
+                              {/* Hiring Team header row */}
                               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
                                 <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: `linear-gradient(135deg, ${C.primary}, #7C3AED)`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                   <span style={{ fontSize: '16px', fontWeight: 700, color: '#fff' }}>{brandInitial}</span>
@@ -2774,7 +2774,7 @@ export default function LinkedInDemoPage() {
                                     <span style={{ fontSize: '11px', color: C.textSecondary }}>All messages logged with UTC timestamps</span>
                                   </div>
 
-                                  {/* Brand identity + intent */}
+                                  {/* Hiring Team identity + intent */}
                                   <div style={{ fontSize: '11px', color: C.textMuted, marginBottom: '10px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                                     <span
                                       onMouseEnter={() => setHoveredTooltip('intent')}
@@ -2803,7 +2803,7 @@ export default function LinkedInDemoPage() {
                                           <strong>Campaign Types:</strong><br/>
                                           <span style={{ color: C.textSecondary }}>Product Review</span> — showcase/review their product<br/>
                                           <span style={{ color: C.primary }}>Sponsored Content</span> — branded post/reel<br/>
-                                          <span style={{ color: '#22c55e' }}>Brand Ambassador</span> — represent the brand over time<br/>
+                                          <span style={{ color: '#22c55e' }}>Hiring Team Ambassador</span> — represent the brand over time<br/>
                                           <span style={{ color: '#f59e0b' }}>UGC</span> — user-generated content for their ads<br/>
                                           <span style={{ color: C.textMuted }}>Affiliate</span> — earn per sale/click you drive
                                         </div>
@@ -2811,11 +2811,11 @@ export default function LinkedInDemoPage() {
                                     </span>
                                   </div>
 
-                                  {/* Creator sees brand's offer — respond with accept or counter */}
+                                  {/* Candidate sees brand's offer — respond with accept or counter */}
                                   {dealRoomPhase === 'pending' && (
                                     <>
                                       <div style={{ background: 'rgba(0,149,246,0.06)', borderRadius: '8px', padding: '12px', marginBottom: '12px', border: `1px solid rgba(0,149,246,0.2)` }}>
-                                        <div style={{ fontSize: '11px', fontWeight: 700, color: C.primary, marginBottom: '6px' }}>Brand Offer Received</div>
+                                        <div style={{ fontSize: '11px', fontWeight: 700, color: C.primary, marginBottom: '6px' }}>Hiring Team Offer Received</div>
                                         <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '4px' }}>
                                           <span style={{ fontSize: '22px', fontWeight: 800, color: C.text }}>${parseInt(dealOfferAmount || '0').toLocaleString()}</span>
                                           <span style={{ fontSize: '12px', color: C.textMuted }}>/post</span>
@@ -2828,7 +2828,7 @@ export default function LinkedInDemoPage() {
                                             if (activeDealKey) {
                                               const now = new Date();
                                               const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: false });
-                                              const acceptMsg = { id: Date.now(), sender: 'creator' as const, text: `Creator accepted offer: $${parseInt(dealOfferAmount || '0').toLocaleString()}/post`, time: timeStr, isoTime: now.toISOString(), seen: false };
+                                              const acceptMsg = { id: Date.now(), sender: 'creator' as const, text: `Candidate accepted offer: $${parseInt(dealOfferAmount || '0').toLocaleString()}/post`, time: timeStr, isoTime: now.toISOString(), seen: false };
                                               const existingMsgs = activeDeal?.chatMessages || [];
                                               updateDeal(activeDealKey, { phase: 'accepted', chatMessages: [...(existingMsgs as any[]), acceptMsg] });
                                             }
@@ -2850,7 +2850,7 @@ export default function LinkedInDemoPage() {
                                             if (activeDealKey) {
                                               const now = new Date();
                                               const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: false });
-                                              const rejectMsg = { id: Date.now(), sender: 'creator' as const, text: 'Creator declined the offer', time: timeStr, isoTime: now.toISOString(), seen: false };
+                                              const rejectMsg = { id: Date.now(), sender: 'creator' as const, text: 'Candidate declined the offer', time: timeStr, isoTime: now.toISOString(), seen: false };
                                               const existingMsgs = activeDeal?.chatMessages || [];
                                               setDealRoomPhase('rejected');
                                               updateDeal(activeDealKey, { phase: 'rejected', chatMessages: [...(existingMsgs as any[]), rejectMsg] });
@@ -2867,7 +2867,7 @@ export default function LinkedInDemoPage() {
                                     </>
                                   )}
 
-                                  {/* Creator has sent counter, waiting for brand response */}
+                                  {/* Candidate has sent counter, waiting for brand response */}
                                   {dealRoomPhase === 'counter' && (
                                     <div style={{ background: 'rgba(255,193,7,0.06)', borderRadius: '8px', padding: '12px', border: `1px solid rgba(255,193,7,0.2)` }}>
                                       <div style={{ fontSize: '11px', fontWeight: 700, color: '#f59e0b', marginBottom: '6px' }}>Counter Offer Sent</div>
@@ -2876,7 +2876,7 @@ export default function LinkedInDemoPage() {
                                     </div>
                                   )}
 
-                                  {/* Brand has accepted creator's counter-offer */}
+                                  {/* Hiring Team has accepted creator's counter-offer */}
                                   {dealRoomPhase === 'pending' && dealCounterAmount && parseInt(dealOfferAmount || '0') === parseInt(dealCounterAmount) && (
                                     <div style={{ background: 'rgba(76,175,80,0.06)', borderRadius: '8px', padding: '12px', border: `1px solid rgba(76,175,80,0.2)` }}>
                                       <div style={{ fontSize: '11px', fontWeight: 700, color: C.success, marginBottom: '6px' }}>Counter-Offer Accepted!</div>
@@ -2886,7 +2886,7 @@ export default function LinkedInDemoPage() {
                                           onClick={() => {
                                             const now = new Date();
                                             const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: false });
-                                            const acceptMsg = { id: Date.now(), sender: 'creator' as const, text: `Creator confirmed agreement at $${parseInt(dealCounterAmount).toLocaleString()}/post`, time: timeStr, isoTime: now.toISOString(), seen: false };
+                                            const acceptMsg = { id: Date.now(), sender: 'creator' as const, text: `Candidate confirmed agreement at $${parseInt(dealCounterAmount).toLocaleString()}/post`, time: timeStr, isoTime: now.toISOString(), seen: false };
                                             const existingMsgs = activeDeal?.chatMessages || [];
                                             updateDeal(activeDealKey!, { phase: 'accepted', chatMessages: [...(existingMsgs as any[]), acceptMsg] });
                                             setDealRoomPhase('accepted');
@@ -2919,7 +2919,7 @@ export default function LinkedInDemoPage() {
                                   {dealRoomPhase === 'formal_offer' && (() => {
                                     const agreedPrice = dealCounterAmount || dealOfferAmount || opp.budget.replace(/[^0-9]/g, '') || '5000';
                                     const totalPrice = parseInt(agreedPrice) || 5000;
-                                    // Creator submitted this — show waiting screen, not the signing UI
+                                    // Candidate submitted this — show waiting screen, not the signing UI
                                     if (activeDeal?.formalOfferSentByCreator) {
                                       return (
                                         <div style={{ textAlign: 'center', padding: '24px 12px' }}>
@@ -2972,7 +2972,7 @@ export default function LinkedInDemoPage() {
                                           <div style={{ fontSize: '11px', color: C.textSecondary, marginTop: '2px' }}>{opp.type}</div>
                                           {/* Rate intelligence */}
                                           {(() => {
-                                            const rate = getMarketRate(selectedMarketplaceSkin || 'Creator');
+                                            const rate = getMarketRate(selectedMarketplaceSkin || 'Candidate');
                                             const isBelow = totalPrice < rate.low;
                                             const isAbove = totalPrice > rate.high;
                                             const isWithin = !isBelow && !isAbove;
@@ -3051,8 +3051,8 @@ export default function LinkedInDemoPage() {
                                           {[
                                             { key: 'deliverables', label: `I agree to deliver ${opp.deliverables.map(d => `${d.count}x ${d.format}`).join(', ')} by ${new Date(opp.deadline).toLocaleDateString('en-US', { month:'short', day:'numeric' })}` },
                                             { key: 'payment', label: `Payment of $${totalPrice.toLocaleString()} split as: ${advPct}% advance, ${uploadPct}% on upload, ${approvalPct}% on approval` },
-                                            { key: 'usage', label: `Brand may use content for ${opp.usageRights || 'agreed period'} per usage rights terms` },
-                                            { key: 'exclusivity', label: `Exclusivity: ${opp.exclusivity || 'None'} — I will not promote competing brands during this period` },
+                                            { key: 'usage', label: `Hiring Team may use content for ${opp.usageRights || 'agreed period'} per usage rights terms` },
+                                            { key: 'exclusivity', label: `Exclusivity: ${opp.exclusivity || 'None'} — I will not promote competing hiring teams during this period` },
                                             { key: 'revisions', label: `Up to ${opp.revisionLimit} revision round${opp.revisionLimit !== 1 ? 's' : ''} included at no extra cost` },
                                           ].map(term => (
                                             <div key={term.key} onClick={() => setContractChecks(prev => ({ ...prev, [term.key]: !prev[term.key] }))} style={{ display:'flex', alignItems:'flex-start', gap:'10px', padding:'8px 0', borderBottom:`1px solid ${C.border}`, cursor:'pointer', fontSize:'11px', color: contractChecks[term.key] ? C.text : C.textSecondary, lineHeight:1.4, transition:'color 0.15s' }}>
@@ -3112,7 +3112,7 @@ export default function LinkedInDemoPage() {
                                                 creatorProfession: selectedMarketplaceSkin || '',
                                                 creatorHandle: '@creator_demo', status: 'accepted',
                                                 appliedAt: new Date().toLocaleDateString(),
-                                                creatorName: profileName || 'Demo Creator',
+                                                creatorName: profileName || 'Demo Candidate',
                                                 creatorFollowers: `${(metrics.followers / 1000).toFixed(metrics.followers >= 1000000 ? 1 : 0)}${metrics.followers >= 1000000 ? 'M' : 'K'}`,
                                                 creatorEngagement: `${metrics.engagement.toFixed(1)}%`,
                                                 creatorLevel: ownedSkins.length > 0 ? getSkinLevel(selectedMarketplaceSkin || ownedSkins[0].profession, metrics.followers, ownedSkins.length) : 1,
@@ -3206,7 +3206,7 @@ export default function LinkedInDemoPage() {
                                             </button>
                                             {showScriptEditorCreator && (
                                               <>
-                                                <div style={{ fontSize:'9px', color:C.textMuted, marginBottom:'4px' }}>{scriptMode === 'non_negotiable' ? 'Non-negotiable (locked)' : scriptMode === 'discussion' ? 'Discussion' : 'Creator freedom'}</div>
+                                                <div style={{ fontSize:'9px', color:C.textMuted, marginBottom:'4px' }}>{scriptMode === 'non_negotiable' ? 'Non-negotiable (locked)' : scriptMode === 'discussion' ? 'Discussion' : 'Candidate freedom'}</div>
                                                 {scriptMode === 'non_negotiable' ? (
                                                   <div style={{ fontSize:'10px', color:C.text, background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:'6px', padding:'6px', marginBottom:'6px', whiteSpace:'pre-wrap', lineHeight:1.4, maxHeight:'100px', overflowY:'auto' }}>
                                                     {brandScriptText || 'No script provided'}
@@ -3241,13 +3241,13 @@ export default function LinkedInDemoPage() {
                                                         {creatorScriptApproved ? '✓' : '○'} You {creatorScriptApproved ? 'approved' : 'not approved'}
                                                       </div>
                                                       <div style={{ fontSize:'8px', color:brandScriptApproved ? C.success : C.textSecondary, marginBottom:'3px' }}>
-                                                        {brandScriptApproved ? '✓' : '○'} Brand {brandScriptApproved ? 'approved' : 'not approved'}
+                                                        {brandScriptApproved ? '✓' : '○'} Hiring Team {brandScriptApproved ? 'approved' : 'not approved'}
                                                       </div>
                                                     </>
                                                   ) : (
                                                     <>
                                                       <div style={{ fontSize:'8px', color:C.textSecondary, marginBottom:'3px' }}>
-                                                        {creatorScriptApproved ? '✓' : '○'} Creator {creatorScriptApproved ? 'approved' : 'not approved'}
+                                                        {creatorScriptApproved ? '✓' : '○'} Candidate {creatorScriptApproved ? 'approved' : 'not approved'}
                                                       </div>
                                                       <div style={{ fontSize:'8px', color:brandScriptApproved ? C.success : C.textSecondary, marginBottom:'3px' }}>
                                                         {brandScriptApproved ? '✓' : '○'} You {brandScriptApproved ? 'approved' : 'not approved'}
@@ -3286,7 +3286,7 @@ export default function LinkedInDemoPage() {
                                                   <div style={{ fontSize:'8px', color:C.textSecondary, background:C.surfaceAlt, borderRadius:'4px', padding:'4px', marginTop:'4px', maxHeight:'120px', overflowY:'auto' }}>
                                                     {scriptVersionHistory.slice(-3).reverse().map((v: any, i: number) => (
                                                       <div key={i} style={{ marginBottom:'6px', paddingBottom:'4px', borderBottom: i < 2 ? `1px solid ${C.border}` : 'none' }}>
-                                                        <div style={{ fontWeight:700 }}>v{v.version} · {v.editedBy === 'creator' ? 'You' : 'Brand'}</div>
+                                                        <div style={{ fontWeight:700 }}>v{v.version} · {v.editedBy === 'creator' ? 'You' : 'Hiring Team'}</div>
                                                         <div>{new Date(v.editedAt).toLocaleTimeString()}</div>
                                                         {v.reason && <div style={{color:C.textMuted}}>"{v.reason}"</div>}
                                                       </div>
@@ -3378,7 +3378,7 @@ export default function LinkedInDemoPage() {
                                             </button>
                                             {showScriptEditorCreator && (
                                               <>
-                                                <div style={{ fontSize:'9px', color:C.textMuted, marginBottom:'4px' }}>{scriptMode === 'non_negotiable' ? 'Non-negotiable (locked)' : scriptMode === 'discussion' ? 'Discussion' : 'Creator freedom'}</div>
+                                                <div style={{ fontSize:'9px', color:C.textMuted, marginBottom:'4px' }}>{scriptMode === 'non_negotiable' ? 'Non-negotiable (locked)' : scriptMode === 'discussion' ? 'Discussion' : 'Candidate freedom'}</div>
                                                 {scriptMode === 'non_negotiable' ? (
                                                   <div style={{ fontSize:'10px', color:C.text, background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:'6px', padding:'6px', marginBottom:'6px', whiteSpace:'pre-wrap', lineHeight:1.4, maxHeight:'100px', overflowY:'auto' }}>
                                                     {brandScriptText || 'No script provided'}
@@ -3413,13 +3413,13 @@ export default function LinkedInDemoPage() {
                                                         {creatorScriptApproved ? '✓' : '○'} You {creatorScriptApproved ? 'approved' : 'not approved'}
                                                       </div>
                                                       <div style={{ fontSize:'8px', color:brandScriptApproved ? C.success : C.textSecondary, marginBottom:'3px' }}>
-                                                        {brandScriptApproved ? '✓' : '○'} Brand {brandScriptApproved ? 'approved' : 'not approved'}
+                                                        {brandScriptApproved ? '✓' : '○'} Hiring Team {brandScriptApproved ? 'approved' : 'not approved'}
                                                       </div>
                                                     </>
                                                   ) : (
                                                     <>
                                                       <div style={{ fontSize:'8px', color:C.textSecondary, marginBottom:'3px' }}>
-                                                        {creatorScriptApproved ? '✓' : '○'} Creator {creatorScriptApproved ? 'approved' : 'not approved'}
+                                                        {creatorScriptApproved ? '✓' : '○'} Candidate {creatorScriptApproved ? 'approved' : 'not approved'}
                                                       </div>
                                                       <div style={{ fontSize:'8px', color:brandScriptApproved ? C.success : C.textSecondary, marginBottom:'3px' }}>
                                                         {brandScriptApproved ? '✓' : '○'} You {brandScriptApproved ? 'approved' : 'not approved'}
@@ -3458,7 +3458,7 @@ export default function LinkedInDemoPage() {
                                                   <div style={{ fontSize:'8px', color:C.textSecondary, background:C.surfaceAlt, borderRadius:'4px', padding:'4px', marginTop:'4px', maxHeight:'120px', overflowY:'auto' }}>
                                                     {scriptVersionHistory.slice(-3).reverse().map((v: any, i: number) => (
                                                       <div key={i} style={{ marginBottom:'6px', paddingBottom:'4px', borderBottom: i < 2 ? `1px solid ${C.border}` : 'none' }}>
-                                                        <div style={{ fontWeight:700 }}>v{v.version} · {v.editedBy === 'creator' ? 'You' : 'Brand'}</div>
+                                                        <div style={{ fontWeight:700 }}>v{v.version} · {v.editedBy === 'creator' ? 'You' : 'Hiring Team'}</div>
                                                         <div>{new Date(v.editedAt).toLocaleTimeString()}</div>
                                                         {v.reason && <div style={{color:C.textMuted}}>"{v.reason}"</div>}
                                                       </div>
@@ -3644,7 +3644,7 @@ export default function LinkedInDemoPage() {
                                           {!activeDeal?.formalOfferSentByCreator && <div style={{ background: C.bg, borderRadius: '8px', border: `1px solid ${C.border}`, padding: '8px' }}>
                                             <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Your Counter</div>
                                             <div style={{ fontSize: '10px', color: C.textSecondary, marginBottom: '4px' }}>
-                                              Brand offer: <strong style={{ color: C.text }}>${parseInt(dealOfferAmount || opp.budget.replace(/[^0-9]/g, '') || '0').toLocaleString()}</strong>
+                                              Hiring Team offer: <strong style={{ color: C.text }}>${parseInt(dealOfferAmount || opp.budget.replace(/[^0-9]/g, '') || '0').toLocaleString()}</strong>
                                             </div>
                                             {/* Feature 4: Fair counter-offer suggestion */}
                                             {(() => {
@@ -3656,15 +3656,15 @@ export default function LinkedInDemoPage() {
                                               let suggestedPrice = brandOffer;
                                               let reason = 'Market-aligned';
                                               if (brandOffer < creatorRate * 0.9) {
-                                                // Brand offer is 10%+ below creator's rate — suggest creator's standard
+                                                // Hiring Team offer is 10%+ below creator's rate — suggest creator's standard
                                                 suggestedPrice = creatorRate;
                                                 reason = 'Your standard rate';
                                               } else if (brandOffer >= creatorRate * 0.95 && brandOffer <= creatorRate * 1.1) {
-                                                // Brand offer is within 5-10% of creator's rate — fair, no adjustment needed
+                                                // Hiring Team offer is within 5-10% of creator's rate — fair, no adjustment needed
                                                 suggestedPrice = brandOffer;
                                                 reason = 'Fair offer — accept or negotiate minimally';
                                               } else if (brandOffer > creatorRate * 1.1) {
-                                                // Brand offer is 10%+ above rate — it's generous, accept it
+                                                // Hiring Team offer is 10%+ above rate — it's generous, accept it
                                                 suggestedPrice = brandOffer;
                                                 reason = 'Above standard — consider accepting';
                                               } else {
@@ -3706,7 +3706,7 @@ export default function LinkedInDemoPage() {
                                                     chatMessages: [...existingMsgs, counterMsg],
                                                   });
                                                 }
-                                                firebaseSendNotification(opp?.brand || 'Brand', 'message', `Creator countered: $${creatorAsk.toLocaleString()} (you offered $${brandOffer.toLocaleString()})`);
+                                                firebaseSendNotification(opp?.brand || 'Hiring Team', 'message', `Candidate countered: $${creatorAsk.toLocaleString()} (you offered $${brandOffer.toLocaleString()})`);
                                                 setPurchaseToast(`Counter sent: $${creatorAsk.toLocaleString()}`);
                                                 setTimeout(() => setPurchaseToast(null), 2000);
                                               }}
@@ -3754,7 +3754,7 @@ export default function LinkedInDemoPage() {
                                             )}
                                           </div>
 
-                                          {/* Brand submits formal offer — hidden once submitted */}
+                                          {/* Hiring Team submits formal offer — hidden once submitted */}
                                           {!activeDeal?.formalOfferSentByCreator && (
                                           <div style={{ background: C.bg, borderRadius: '8px', border: `1px solid ${C.border}`, padding: '8px' }}>
                                             <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>Finalize</div>
@@ -3783,18 +3783,18 @@ export default function LinkedInDemoPage() {
                                             }}
                                             style={{ width: '100%', background: 'none', border: `1px solid rgba(239,68,68,0.3)`, padding: '7px', borderRadius: '6px', color: 'rgba(239,68,68,0.85)', fontWeight: 600, fontSize: '10px', cursor: 'pointer', marginTop: '4px' }}
                                           >
-                                            Reject Brand
+                                            Reject Hiring Team
                                           </button>
                                         </div>
                                       </div>
                                     </>
                                   )}
 
-                                  {/* Creator sees brand's last offer — accept or walk away */}
+                                  {/* Candidate sees brand's last offer — accept or walk away */}
                                   {dealRoomPhase === 'last_offer' && (
                                     <>
                                       <div style={{ background: 'rgba(230,81,0,0.06)', borderRadius: '8px', padding: '12px', marginBottom: '12px', border: `1px solid rgba(230,81,0,0.2)` }}>
-                                        <div style={{ fontSize: '11px', fontWeight: 700, color: C.warning, marginBottom: '6px' }}>Final Offer from Brand</div>
+                                        <div style={{ fontSize: '11px', fontWeight: 700, color: C.warning, marginBottom: '6px' }}>Final Offer from Hiring Team</div>
                                         <div style={{ fontSize: '22px', fontWeight: 800, color: C.text, marginBottom: '4px' }}>${parseInt(dealOfferAmount || '0').toLocaleString()}<span style={{ fontSize: '12px', color: C.textMuted, fontWeight: 400 }}>/post</span></div>
                                         <div style={{ fontSize: '11px', color: C.textSecondary, lineHeight: 1.4 }}>The brand has indicated this is their final offer. You can accept or decline.</div>
                                       </div>
@@ -3804,7 +3804,7 @@ export default function LinkedInDemoPage() {
                                             if (activeDealKey) {
                                               const now = new Date();
                                               const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: false });
-                                              const acceptMsg = { id: Date.now(), sender: 'creator' as const, text: `Creator accepted final offer: $${parseInt(dealOfferAmount || '0').toLocaleString()}/post`, time: timeStr, isoTime: now.toISOString(), seen: false };
+                                              const acceptMsg = { id: Date.now(), sender: 'creator' as const, text: `Candidate accepted final offer: $${parseInt(dealOfferAmount || '0').toLocaleString()}/post`, time: timeStr, isoTime: now.toISOString(), seen: false };
                                               const existingMsgs = activeDeal?.chatMessages || [];
                                               updateDeal(activeDealKey, { phase: 'accepted', offerAmount: dealOfferAmount, chatMessages: [...(existingMsgs as any[]), acceptMsg] });
                                             }
@@ -3820,7 +3820,7 @@ export default function LinkedInDemoPage() {
                                             if (activeDealKey) {
                                               const now = new Date();
                                               const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: false });
-                                              const declineMsg = { id: Date.now(), sender: 'creator' as const, text: 'Creator declined the final offer.', time: timeStr, isoTime: now.toISOString(), seen: false };
+                                              const declineMsg = { id: Date.now(), sender: 'creator' as const, text: 'Candidate declined the final offer.', time: timeStr, isoTime: now.toISOString(), seen: false };
                                               const existingMsgs = activeDeal?.chatMessages || [];
                                               updateDeal(activeDealKey, { phase: 'rejected', chatMessages: [...(existingMsgs as any[]), declineMsg] });
                                             }
@@ -3836,7 +3836,7 @@ export default function LinkedInDemoPage() {
                                     </>
                                   )}
 
-                                  {/* Creator sees brand withdrawal */}
+                                  {/* Candidate sees brand withdrawal */}
                                   {dealRoomPhase === 'rejected' && (
                                     <div style={{ textAlign: 'center', padding: '20px 0' }}>
                                       <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(239,68,68,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px' }}>
@@ -3894,7 +3894,7 @@ export default function LinkedInDemoPage() {
                                         if (!escrowFunded && creatorDealLifecycle === 'checklist') {
                                           // Check if brand has funded escrow via shared deal state
                                           if (activeDeal?.escrowFunded) {
-                                            // Brand funded — auto-advance creator to deliverables phase
+                                            // Hiring Team funded — auto-advance creator to deliverables phase
                                             setTimeout(() => {
                                               setEscrowFunded(true);
                                               setCreatorDealLifecycle('deliverables');
@@ -3906,7 +3906,7 @@ export default function LinkedInDemoPage() {
                                                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={C.success} strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                                                 </div>
                                                 <div style={{ fontSize:'14px', fontWeight:700, color:C.success, marginBottom:'4px' }}>Escrow Funded</div>
-                                                <div style={{ fontSize:'12px', color:C.textSecondary, marginBottom:'8px' }}>Brand deposited ${agreedPrice.toLocaleString()} into escrow.</div>
+                                                <div style={{ fontSize:'12px', color:C.textSecondary, marginBottom:'8px' }}>Hiring Team deposited ${agreedPrice.toLocaleString()} into escrow.</div>
                                                 <div style={{ background:'rgba(46,125,50,0.06)', border:'1px solid rgba(46,125,50,0.2)', borderRadius:'8px', padding:'10px', marginBottom:'8px' }}>
                                                   <div style={{ fontSize:'13px', fontWeight:700, color:C.success }}>Advance paid: ${advanceAmt.toLocaleString()}</div>
                                                   <div style={{ fontSize:'11px', color:C.textSecondary, marginTop:'2px' }}>30% advance deposited to your account. Begin deliverables to unlock remaining milestones.</div>
@@ -3921,7 +3921,7 @@ export default function LinkedInDemoPage() {
                                                 {[
                                                   { label:'Offer', done: true },
                                                   { label:'Accepted', done: true },
-                                                  { label:'Brand Funds', done: false, active: true },
+                                                  { label:'Hiring Team Funds', done: false, active: true },
                                                   { label:'Your Work', done: false },
                                                 ].map((s, i) => (
                                                   <div key={i} style={{ display:'flex', alignItems:'center', gap:'4px', flex: i < 3 ? 'none' : 1 }}>
@@ -4101,7 +4101,7 @@ export default function LinkedInDemoPage() {
                                                 ))}
                                               </div>
                                               <div style={{ background:'rgba(46,125,50,0.06)', border:'1px solid rgba(46,125,50,0.2)', borderRadius:'8px', padding:'10px', marginBottom:'12px', fontSize:'11px', color:C.textSecondary }}>
-                                                Brand payment on-hold: ${agreedPrice.toLocaleString()} — released per milestones above
+                                                Hiring Team payment on-hold: ${agreedPrice.toLocaleString()} — released per milestones above
                                               </div>
                                               {allUploaded && !submittedForReview && activeDeal?.creatorDealLifecycle !== 'submitted' && activeDeal?.creatorDealLifecycle !== 'approved' && (
                                                 <button onClick={() => {
@@ -4117,7 +4117,7 @@ export default function LinkedInDemoPage() {
                                                       deliverableStatuses: deliverableStatuses,
                                                       deliverableLinks: deliverableLinks,
                                                     });
-                                                    firebaseSendNotification(opp?.brand || 'Brand', 'application', `Deliverables submitted: ${agreedAmt.toLocaleString()} – Advance & upload milestones released. Awaiting approval.`);
+                                                    firebaseSendNotification(opp?.brand || 'Hiring Team', 'application', `Deliverables submitted: ${agreedAmt.toLocaleString()} – Advance & upload milestones released. Awaiting approval.`);
                                                   }
                                                   setPurchaseToast(`Submitted for review — $${Math.round(agreedAmt * (advancePercent + uploadPercent) / 100).toLocaleString()} released, $${Math.round(agreedAmt * approvalPercent / 100).toLocaleString()} pending approval`);
                                                   setTimeout(() => setPurchaseToast(null), 4000);
@@ -4149,7 +4149,7 @@ export default function LinkedInDemoPage() {
                                                 <div style={{ fontSize:'10px', color:C.textMuted }}>Approval milestone: <span style={{ color:'#f59e0b', fontWeight:600 }}>Pending brand approval</span></div>
                                               </div>
                                               <div style={{ textAlign:'center', padding:'8px', fontSize:'11px', color:C.textMuted }}>
-                                                Brand will review and approve from their deal room
+                                                Hiring Team will review and approve from their deal room
                                               </div>
                                             </>
                                           );
@@ -4254,7 +4254,7 @@ export default function LinkedInDemoPage() {
                                             <div style={{ fontSize:'11px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.6px', marginBottom:'10px' }}>Goods Tracking</div>
                                             {status === 'goods_preparing' && (
                                               <div style={{ background:'rgba(59,130,246,0.06)', border:`1px solid rgba(59,130,246,0.2)`, borderRadius:'8px', padding:'12px', marginBottom:'12px' }}>
-                                                <div style={{ fontSize:'13px', fontWeight:700, color:C.text, marginBottom:'4px' }}>Brand is Preparing Your Product</div>
+                                                <div style={{ fontSize:'13px', fontWeight:700, color:C.text, marginBottom:'4px' }}>Hiring Team is Preparing Your Product</div>
                                                 <div style={{ fontSize:'11px', color:C.textSecondary }}>Your product is being selected and packaged. You will receive tracking information once it ships.</div>
                                               </div>
                                             )}
@@ -4333,7 +4333,7 @@ export default function LinkedInDemoPage() {
                                                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={C.success} strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
                                                 </div>
                                                 <div style={{ fontSize:'15px', fontWeight:700, color:C.text, marginBottom:'4px' }}>Deal Complete</div>
-                                                <div style={{ fontSize:'12px', color:C.textSecondary, marginBottom:'16px' }}>Brand approved your content. Barter deal finished.</div>
+                                                <div style={{ fontSize:'12px', color:C.textSecondary, marginBottom:'16px' }}>Hiring Team approved your content. Barter deal finished.</div>
                                                 <div style={{ display:'flex', gap:'8px' }}>
                                                   <button onClick={() => { if (activeDealKey) { setDealStates(prev => { const next = {...prev}; delete next[activeDealKey]; return next; }); } setNegotiatingOpp(null); }} style={{ flex:1, background:C.primary, border:'none', padding:'10px', borderRadius:'8px', color:'#fff', fontWeight:600, cursor:'pointer', fontSize:'12px' }}>
                                                     Close
@@ -4446,7 +4446,7 @@ export default function LinkedInDemoPage() {
                     )}
                     </>)}
 
-                    {/* Creator Collab Mode */}
+                    {/* Candidate Collab Mode */}
                     {creatorMarketplaceMode === 'collab' && (
                       <>
                         {/* Browse / Sent tabs */}
@@ -4651,7 +4651,7 @@ export default function LinkedInDemoPage() {
                                   <div key={deal.key} style={{ background:C.card, borderRadius:'8px', padding:'12px', border:`1px solid ${C.border}` }}>
                                     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'start', marginBottom:'8px' }}>
                                       <div>
-                                        <div style={{ fontSize:'13px', fontWeight:600, color:C.text, marginBottom:'2px' }}>Brand Deal · {deal.type || 'Unknown'}</div>
+                                        <div style={{ fontSize:'13px', fontWeight:600, color:C.text, marginBottom:'2px' }}>Hiring Team Deal · {deal.type || 'Unknown'}</div>
                                         <div style={{ fontSize:'11px', color:C.textSecondary }}>{completedDate}</div>
                                       </div>
                                       <div style={{ fontSize:'13px', fontWeight:700, color:C.success }}>${parseInt(dealAmount).toLocaleString()}</div>
@@ -4659,7 +4659,7 @@ export default function LinkedInDemoPage() {
                                     {(creatorRating > 0 || brandRating > 0) && (
                                       <div style={{ display:'flex', gap:'16px', fontSize:'11px', color:C.textSecondary, paddingTop:'8px', borderTop:`1px solid ${C.border}` }}>
                                         {creatorRating > 0 && <span>You rated: {'★'.repeat(creatorRating)}</span>}
-                                        {brandRating > 0 && <span>Brand rated: {'★'.repeat(brandRating)}</span>}
+                                        {brandRating > 0 && <span>Hiring Team rated: {'★'.repeat(brandRating)}</span>}
                                       </div>
                                     )}
                                   </div>
@@ -4676,12 +4676,12 @@ export default function LinkedInDemoPage() {
                 </>
               )}
 
-              {/* Layer 3b: Brand Marketplace */}
+              {/* Layer 3b: Hiring Team Marketplace */}
               {hasAnySkin && marketplaceRole === 'brand' && (
                 <>
                   <div style={{ padding: '12px 16px 0', position: 'sticky', top: 0, background: C.bg, zIndex: 10 }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-                      <span style={{ fontSize: '22px', fontWeight: 700, color: C.text }}>Brand Dashboard</span>
+                      <span style={{ fontSize: '22px', fontWeight: 700, color: C.text }}>Hiring Team Dashboard</span>
                       <button onClick={() => { setMarketplaceRole('none'); setNegotiatingCreator(null); }} style={{ background: 'none', border: 'none', fontSize: '13px', color: C.textSecondary, cursor: 'pointer' }}>Switch</button>
                     </div>
                     {/* Search bar */}
@@ -4689,7 +4689,7 @@ export default function LinkedInDemoPage() {
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }}>
                         <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
                       </svg>
-                      <input type="text" placeholder="Search creators..." style={{ width: '100%', background: C.card, border: 'none', borderRadius: '12px', padding: '12px 12px 12px 40px', color: C.text, fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
+                      <input type="text" placeholder="Search candidates..." style={{ width: '100%', background: C.card, border: 'none', borderRadius: '12px', padding: '12px 12px 12px 40px', color: C.text, fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
                     </div>
                   </div>
                   <div style={{ padding: '0 16px 16px' }}>
@@ -4704,14 +4704,14 @@ export default function LinkedInDemoPage() {
                       </button>
                     )}
 
-                    {/* New Campaign Creator Modal */}
+                    {/* New Campaign Candidate Modal */}
                     {showCampaignCreator && (
                       <div style={{ position:'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.75)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:9999 }}>
                         <div style={{ background:C.surface, borderRadius:'16px', padding:'24px', maxWidth:'480px', width:'95vw', maxHeight:'90vh', overflowY:'auto', border:`1px solid ${C.border}`, position:'relative' }}>
                           <button onClick={() => setShowCampaignCreator(false)} style={{ position:'absolute', top:'16px', right:'16px', background:'none', border:'none', color:C.textMuted, fontSize:'22px', cursor:'pointer', lineHeight:1 }}>x</button>
                           <div style={{ fontSize:'16px', fontWeight:700, color:C.text, marginBottom:'16px' }}>Create Hiring Brief</div>
                           <div style={{ marginBottom:'12px' }}>
-                            <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>Brand name *</div>
+                            <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>Hiring Team name *</div>
                             <input type="text" value={profileName} onChange={e=>setProfileName(e.target.value)} placeholder="Your brand name" style={{ width:'100%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', color:C.text, padding:'8px 10px', fontSize:'13px', fontFamily:'inherit', outline:'none', boxSizing:'border-box' as const }} />
                           </div>
                           <div style={{ marginBottom:'12px' }}>
@@ -4733,8 +4733,8 @@ export default function LinkedInDemoPage() {
                             <div style={{ fontSize:'10px', color:C.textMuted, marginTop:'3px' }}>Auto-matched from your selected ValueSkin. Only professionals with this ValueSkin will see this hiring brief.</div>
                           </div>
                           <div style={{ marginBottom:'12px' }}>
-                            <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>Creator level range *</div>
-                            <div style={{ fontSize:'10px', color:C.textMuted, marginBottom:'6px' }}>Select min and max level. Only creators within this range can apply.</div>
+                            <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>Candidate level range *</div>
+                            <div style={{ fontSize:'10px', color:C.textMuted, marginBottom:'6px' }}>Select min and max level. Only candidates within this range can apply.</div>
                             <div style={{ display:'flex', gap:'6px', alignItems:'center' }}>
                               <span style={{ fontSize:'10px', color:C.textMuted, fontWeight:600, width:24 }}>Min</span>
                               {[1,2,3,4,5].map(l => (
@@ -4806,15 +4806,15 @@ export default function LinkedInDemoPage() {
                             <div style={{ display:'flex', flexDirection:'column', gap:'6px' }}>
                               <button onClick={()=>setNewCampaignScriptMode('non_negotiable')} style={{ padding:'10px 12px', borderRadius:'8px', textAlign:'left', background:newCampaignScriptMode==='non_negotiable'?`${C.primary}15`:C.bg, border:`1px solid ${newCampaignScriptMode==='non_negotiable'?C.primary:C.border}`, cursor:'pointer' }}>
                                 <div style={{ fontSize:'12px', fontWeight:700, color:newCampaignScriptMode==='non_negotiable'?C.primary:C.text, marginBottom:'2px' }}>Non-negotiable (Locked)</div>
-                                <div style={{ fontSize:'10px', color:C.textMuted }}>You provide the exact script creators must use</div>
+                                <div style={{ fontSize:'10px', color:C.textMuted }}>You provide the exact script candidates must use</div>
                               </button>
                               <button onClick={()=>setNewCampaignScriptMode('discussion')} style={{ padding:'10px 12px', borderRadius:'8px', textAlign:'left', background:newCampaignScriptMode==='discussion'?`${C.primary}15`:C.bg, border:`1px solid ${newCampaignScriptMode==='discussion'?C.primary:C.border}`, cursor:'pointer' }}>
                                 <div style={{ fontSize:'12px', fontWeight:700, color:newCampaignScriptMode==='discussion'?C.primary:C.text, marginBottom:'2px' }}>Collaborative (Both Edit)</div>
                                 <div style={{ fontSize:'10px', color:C.textMuted }}>Both parties negotiate and edit the script together</div>
                               </button>
                               <button onClick={()=>setNewCampaignScriptMode('creator_freedom')} style={{ padding:'10px 12px', borderRadius:'8px', textAlign:'left', background:newCampaignScriptMode==='creator_freedom'?`${C.primary}15`:C.bg, border:`1px solid ${newCampaignScriptMode==='creator_freedom'?C.primary:C.border}`, cursor:'pointer' }}>
-                                <div style={{ fontSize:'12px', fontWeight:700, color:newCampaignScriptMode==='creator_freedom'?C.primary:C.text, marginBottom:'2px' }}>Creator Freedom</div>
-                                <div style={{ fontSize:'10px', color:C.textMuted }}>Creator has complete freedom; you only review and approve</div>
+                                <div style={{ fontSize:'12px', fontWeight:700, color:newCampaignScriptMode==='creator_freedom'?C.primary:C.text, marginBottom:'2px' }}>Candidate Freedom</div>
+                                <div style={{ fontSize:'10px', color:C.textMuted }}>Candidate has complete freedom; you only review and approve</div>
                               </button>
                             </div>
                           </div>
@@ -4823,7 +4823,7 @@ export default function LinkedInDemoPage() {
                           {newCampaignScriptMode === 'non_negotiable' && (
                             <div style={{ marginBottom:'12px' }}>
                               <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>Script to provide (locked) *</div>
-                              <textarea value={newCampaignScriptText} onChange={e=>setNewCampaignScriptText(e.target.value)} rows={3} placeholder="Paste the exact script creators must follow..." style={{ width:'100%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', color:C.text, padding:'8px 10px', fontSize:'12px', fontFamily:'inherit', outline:'none', resize:'none', boxSizing:'border-box' as const }} />
+                              <textarea value={newCampaignScriptText} onChange={e=>setNewCampaignScriptText(e.target.value)} rows={3} placeholder="Paste the exact script candidates must follow..." style={{ width:'100%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', color:C.text, padding:'8px 10px', fontSize:'12px', fontFamily:'inherit', outline:'none', resize:'none', boxSizing:'border-box' as const }} />
                             </div>
                           )}
 
@@ -4831,7 +4831,7 @@ export default function LinkedInDemoPage() {
                           {newCampaignScriptMode === 'discussion' && (
                             <div style={{ marginBottom:'12px' }}>
                               <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>Starting script (optional)</div>
-                              <textarea value={newCampaignScriptText} onChange={e=>setNewCampaignScriptText(e.target.value)} rows={3} placeholder="Provide a starting point — creators can edit and suggest changes..." style={{ width:'100%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', color:C.text, padding:'8px 10px', fontSize:'12px', fontFamily:'inherit', outline:'none', resize:'none', boxSizing:'border-box' as const }} />
+                              <textarea value={newCampaignScriptText} onChange={e=>setNewCampaignScriptText(e.target.value)} rows={3} placeholder="Provide a starting point — candidates can edit and suggest changes..." style={{ width:'100%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', color:C.text, padding:'8px 10px', fontSize:'12px', fontFamily:'inherit', outline:'none', resize:'none', boxSizing:'border-box' as const }} />
                             </div>
                           )}
 
@@ -4864,9 +4864,9 @@ export default function LinkedInDemoPage() {
                             <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>Target audience *</div>
                             <input type="text" value={newCampaignAudienceTarget} onChange={e=>setNewCampaignAudienceTarget(e.target.value)} placeholder="e.g. Developers, 25-40" style={{ width:'100%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', color:C.text, padding:'8px 10px', fontSize:'12px', fontFamily:'inherit', outline:'none', boxSizing:'border-box' as const }} />
                           </div>
-                          {/* Requirements — what creators must meet */}
+                          {/* Requirements — what candidates must meet */}
                           <div style={{ marginBottom:'12px' }}>
-                            <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>Creator requirements</div>
+                            <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'4px' }}>Candidate requirements</div>
                             <div style={{ fontSize:'10px', color:C.textMuted, marginBottom:'6px' }}>Creators must match these to see the campaign. Include audience age, language, or specific requirements.</div>
                             <div style={{ fontSize:'9px', color:C.textMuted, marginBottom:'6px', fontStyle:'italic' }}>Examples: "Audience age 25-34", "English speaking", "Must have 100K+ followers"</div>
                             <div style={{ display:'flex', gap:'6px', marginBottom:'6px' }}>
@@ -4893,7 +4893,7 @@ export default function LinkedInDemoPage() {
                           {/* Point of Contact */}
                           <div style={{ marginBottom:'16px' }}>
                             <div style={{ fontSize:'11px', color:C.textMuted, fontWeight:600, marginBottom:'2px' }}>Point of Contact</div>
-                            <div style={{ fontSize:'10px', color:C.textMuted, marginBottom:'8px' }}>The person creators should reference for this campaign. Shown to both parties in the deal room.</div>
+                            <div style={{ fontSize:'10px', color:C.textMuted, marginBottom:'8px' }}>The person candidates should reference for this campaign. Shown to both parties in the deal room.</div>
                             <input type="text" value={newCampaignPocName} onChange={e=>setNewCampaignPocName(e.target.value)} placeholder="Full name" style={{ width:'100%', background:C.bg, border:`1px solid ${C.border}`, borderRadius:'8px', color:C.text, padding:'8px 10px', fontSize:'12px', fontFamily:'inherit', outline:'none', boxSizing:'border-box' as const, marginBottom:'8px' }} />
                             <div style={{ position:'relative', marginBottom:'8px' }}>
                               <span style={{ position:'absolute', left:'10px', top:'50%', transform:'translateY(-50%)', color:C.textMuted, fontSize:'13px' }}>@</span>
@@ -4949,7 +4949,7 @@ export default function LinkedInDemoPage() {
                             <div style={{ fontSize:'16px', fontWeight:700, color:C.text }}>Fund Escrow</div>
                           </div>
                           <div style={{ fontSize:'12px', color:C.textSecondary, marginBottom:'20px', lineHeight:1.5 }}>
-                            Deposit funds upfront to cover all creators in this campaign. Funds are held securely and released per each creator's agreed payment milestones. Unused funds are returned if fewer creators are hired.
+                            Deposit funds upfront to cover all candidates in this campaign. Funds are held securely and released per each creator's agreed payment milestones. Unused funds are returned if fewer candidates are hired.
                           </div>
 
                           {/* Campaign summary */}
@@ -5031,7 +5031,7 @@ export default function LinkedInDemoPage() {
                         <div style={{ background:C.surface, borderRadius:'16px', padding:'24px', maxWidth:'480px', width:'95vw', maxHeight:'90vh', overflowY:'auto', border:`1px solid ${C.border}`, position:'relative' }}>
                           {/* No close button — must select at least one creator */}
                           <div style={{ fontSize:'16px', fontWeight:700, color:C.text, marginBottom:'4px' }}>Send Campaign to Creators</div>
-                          <div style={{ fontSize:'12px', color:C.textSecondary, marginBottom:'16px' }}>Select creators to invite to "{campaigns.find(c => c.id === lastCreatedCampaignId)?.title || 'Campaign'}"</div>
+                          <div style={{ fontSize:'12px', color:C.textSecondary, marginBottom:'16px' }}>Select candidates to invite to "{campaigns.find(c => c.id === lastCreatedCampaignId)?.title || 'Campaign'}"</div>
                           <div style={{ maxHeight:'400px', overflowY:'auto', marginBottom:'16px', border:`1px solid ${C.border}`, borderRadius:'8px', background:C.bg }}>
                             {BRAND_MARKETPLACE_CREATORS.map((creator, idx) => (
                               <div key={creator.name} style={{ padding:'12px 12px', borderBottom: idx < BRAND_MARKETPLACE_CREATORS.length - 1 ? `1px solid ${C.border}` : 'none', display:'flex', gap:'10px', alignItems:'center', cursor:'pointer', background: batchSendCreatorIds.has(idx) ? `${C.primary}10` : 'transparent', borderLeft: batchSendCreatorIds.has(idx) ? `3px solid ${C.primary}` : '3px solid transparent', transition:'background 0.15s, border-color 0.15s' }} onClick={() => { setBatchSendCreatorIds(prev => { const newSet = new Set(prev); if (newSet.has(idx)) newSet.delete(idx); else newSet.add(idx); return newSet; }); }}>
@@ -5049,7 +5049,7 @@ export default function LinkedInDemoPage() {
                           </div>
                           <div style={{ display:'flex', gap:'8px' }}>
                             <button onClick={() => { setShowBatchSendModal(false); setLastCreatedCampaignId(null); setBatchSendCreatorIds(new Set()); }} style={{ flex:1, background:'none', border:`1px solid ${C.border}`, borderRadius:'8px', padding:'11px', color:C.text, fontWeight:700, fontSize:'13px', cursor:'pointer' }}>Cancel</button>
-                            <button onClick={() => { batchSendCreatorIds.forEach(idx => { const creator = BRAND_MARKETPLACE_CREATORS[idx]; const campaign = campaigns.find(c => c.id === lastCreatedCampaignId); const oppIdx = activeOpportunities.findIndex(o => o.brand === campaign?.title); const app: SharedApplication = { id:Date.now() + idx, campaignId:lastCreatedCampaignId ?? 0, campaignTitle:campaign?.title || 'Campaign', creatorProfession:creator.valueSkin || '', creatorHandle:creator.handle || '', creatorName:creator.name, status:'invited' as SharedApplication['status'], appliedAt:new Date().toISOString(), opportunityIndex: oppIdx >= 0 ? oppIdx : 0 }; firebaseCreateApplication(app); firebaseSendNotification(creator.handle || '', 'campaign', `${profileName} invited you to: ${campaign?.title || 'Campaign'}`); }); setPurchaseToast(`Campaign sent to ${batchSendCreatorIds.size} creator${batchSendCreatorIds.size !== 1 ? 's' : ''}`); setTimeout(() => setPurchaseToast(null), 3000); setShowBatchSendModal(false); setLastCreatedCampaignId(null); setBatchSendCreatorIds(new Set()); }} style={{ flex:1, background:batchSendCreatorIds.size > 0 ? C.primary : C.border, border:'none', borderRadius:'8px', padding:'11px', color:'#fff', fontWeight:700, fontSize:'13px', cursor: batchSendCreatorIds.size > 0 ? 'pointer' : 'not-allowed', opacity: batchSendCreatorIds.size > 0 ? 1 : 0.5 }}>Send to {batchSendCreatorIds.size} Creator{batchSendCreatorIds.size !== 1 ? 's' : ''}</button>
+                            <button onClick={() => { batchSendCreatorIds.forEach(idx => { const creator = BRAND_MARKETPLACE_CREATORS[idx]; const campaign = campaigns.find(c => c.id === lastCreatedCampaignId); const oppIdx = activeOpportunities.findIndex(o => o.brand === campaign?.title); const app: SharedApplication = { id:Date.now() + idx, campaignId:lastCreatedCampaignId ?? 0, campaignTitle:campaign?.title || 'Campaign', creatorProfession:creator.valueSkin || '', creatorHandle:creator.handle || '', creatorName:creator.name, status:'invited' as SharedApplication['status'], appliedAt:new Date().toISOString(), opportunityIndex: oppIdx >= 0 ? oppIdx : 0 }; firebaseCreateApplication(app); firebaseSendNotification(creator.handle || '', 'campaign', `${profileName} invited you to: ${campaign?.title || 'Campaign'}`); }); setPurchaseToast(`Campaign sent to ${batchSendCreatorIds.size} creator${batchSendCreatorIds.size !== 1 ? 's' : ''}`); setTimeout(() => setPurchaseToast(null), 3000); setShowBatchSendModal(false); setLastCreatedCampaignId(null); setBatchSendCreatorIds(new Set()); }} style={{ flex:1, background:batchSendCreatorIds.size > 0 ? C.primary : C.border, border:'none', borderRadius:'8px', padding:'11px', color:'#fff', fontWeight:700, fontSize:'13px', cursor: batchSendCreatorIds.size > 0 ? 'pointer' : 'not-allowed', opacity: batchSendCreatorIds.size > 0 ? 1 : 0.5 }}>Send to {batchSendCreatorIds.size} Candidate{batchSendCreatorIds.size !== 1 ? 's' : ''}</button>
                           </div>
                         </div>
                       </div>
@@ -5062,7 +5062,7 @@ export default function LinkedInDemoPage() {
                           <div style={{ fontSize:'15px', fontWeight:700, color:C.text, marginBottom:'4px' }}>Cancel this deal?</div>
                           <div style={{ fontSize:'12px', color:C.textSecondary, marginBottom:'14px' }}>This action cannot be undone. The brand will be notified.</div>
                           <div style={{ fontSize:'11px', fontWeight:600, color:C.textMuted, marginBottom:'6px' }}>Reason</div>
-                          {['Scheduling conflict', 'Terms changed after agreement', 'Found better opportunity', 'Brand unresponsive', 'Personal reasons', 'Other'].map(reason => (
+                          {['Scheduling conflict', 'Terms changed after agreement', 'Found better opportunity', 'Hiring Team unresponsive', 'Personal reasons', 'Other'].map(reason => (
                             <button key={reason} onClick={() => setCancelReason(reason)} style={{ display:'block', width:'100%', textAlign:'left', background: cancelReason === reason ? `${C.primary}12` : C.card, border: `1px solid ${cancelReason === reason ? C.primary : C.border}`, borderRadius:'8px', padding:'9px 12px', fontSize:'12px', color:C.text, cursor:'pointer', marginBottom:'4px', fontWeight: cancelReason === reason ? 600 : 400 }}>
                               {reason}
                             </button>
@@ -5075,7 +5075,7 @@ export default function LinkedInDemoPage() {
                       </div>
                     )}
 
-                    {/* Feature 2: Creator Profile Modal */}
+                    {/* Feature 2: Candidate Profile Modal */}
                     {/* Dispute Modal */}
                     {showDisputeModal !== null && (
                       <div style={{ position:'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.6)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:9999, padding:'16px' }}>
@@ -5083,7 +5083,7 @@ export default function LinkedInDemoPage() {
                           <div style={{ fontSize:'15px', fontWeight:700, color:C.text, marginBottom:'4px' }}>File a Dispute</div>
                           <div style={{ fontSize:'12px', color:C.textSecondary, marginBottom:'14px' }}>Disputes are reviewed within 48 hours. Provide evidence to support your claim.</div>
                           <div style={{ fontSize:'11px', fontWeight:600, color:C.textMuted, marginBottom:'6px' }}>Reason</div>
-                          {['Brand did not pay after approval', 'Brand used content beyond agreed rights', 'Brand violated exclusivity terms', 'Content was used without credit', 'Payment amount was incorrect', 'Other'].map(reason => (
+                          {['Hiring Team did not pay after approval', 'Hiring Team used content beyond agreed rights', 'Hiring Team violated exclusivity terms', 'Content was used without credit', 'Payment amount was incorrect', 'Other'].map(reason => (
                             <button key={reason} onClick={() => setDisputeReason(reason)} style={{ display:'block', width:'100%', textAlign:'left', background: disputeReason === reason ? `${C.primary}12` : C.card, border: `1px solid ${disputeReason === reason ? C.primary : C.border}`, borderRadius:'8px', padding:'9px 12px', fontSize:'12px', color:C.text, cursor:'pointer', marginBottom:'4px', fontWeight: disputeReason === reason ? 600 : 400 }}>
                               {reason}
                             </button>
@@ -5191,7 +5191,7 @@ export default function LinkedInDemoPage() {
                       </div>
                     )}
 
-                    {/* Brand Identity — skin selector or redirect to store */}
+                    {/* Hiring Team Identity — skin selector or redirect to store */}
                     {brandValueSkins.length > 0 ? (
                       <div style={{ background:C.card, border:`1px solid rgba(230,81,0,0.3)`, borderRadius:'12px', padding:'14px 16px', marginBottom:'14px' }}>
                         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'10px' }}>
@@ -5236,21 +5236,21 @@ export default function LinkedInDemoPage() {
                       </div>
                     ) : (
                       <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:'12px', padding:'14px 16px', marginBottom:'14px' }}>
-                        <div style={{ fontSize:'10px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.6px', marginBottom:'8px' }}>Your Brand Identity</div>
+                        <div style={{ fontSize:'10px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.6px', marginBottom:'8px' }}>Your Hiring Team Identity</div>
                         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                          <div style={{ fontSize:'12px', color:C.textMuted }}>Purchase a ValueSkin to start contacting creators</div>
+                          <div style={{ fontSize:'12px', color:C.textMuted }}>Purchase a ValueSkin to start contacting candidates</div>
                           <button onClick={() => setActiveView('store')} style={{ background:C.primary, border:'none', borderRadius:'6px', padding:'6px 12px', fontSize:'11px', fontWeight:700, color:'#fff', cursor:'pointer' }}>Get ValueSkin</button>
                         </div>
                       </div>
                     )}
 
-                    {marketplaceTab === 'creators' && (<>
+                    {marketplaceTab === 'candidates' && (<>
                     {/* Matching Rule Banner */}
                     <div style={{ background: 'rgba(0,102,204,0.06)', border: `1px solid rgba(0,102,204,0.15)`, borderRadius: '10px', padding: '12px 16px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                       <div>
                         <div style={{ fontSize: '12px', fontWeight: 700, color: C.text }}>ValueSkin Matching Active</div>
-                        <div style={{ fontSize: '11px', color: C.textSecondary }}>Only creators holding the ValueSkin you select below will appear. Matching is deterministic and server-enforced.</div>
+                        <div style={{ fontSize: '11px', color: C.textSecondary }}>Only candidates holding the ValueSkin you select below will appear. Matching is deterministic and server-enforced.</div>
                       </div>
                     </div>
                     <div style={{ background:'rgba(16,185,129,0.06)', border:`1px solid rgba(16,185,129,0.2)`, borderRadius:'10px', padding:'12px 16px', marginBottom:'16px' }}>
@@ -5259,7 +5259,7 @@ export default function LinkedInDemoPage() {
                         Use ValueSkins to hire verified experts for webinars, product explainers, and professional content where trust matters more than follower count.
                       </div>
                       <div style={{ fontSize:'11px', color:C.textSecondary }}>
-                        Skill Creator League: creators who consistently publish high-value posts in one ValueSkin get extra feed distribution, premium discovery, and priority brand intro slots.
+                        Skill Candidate League: candidates who consistently publish high-value posts in one ValueSkin get extra feed distribution, premium discovery, and priority brand intro slots.
                       </div>
                     </div>
 
@@ -5318,7 +5318,7 @@ export default function LinkedInDemoPage() {
                           placeholder={
                             brandSearchMode === 'profession' ? 'Search by profession (e.g. Piano Player, Fitness Coach...)' :
                             brandSearchMode === 'name' ? 'Search by creator name or handle...' :
-                            'Search creators, professions, or handles...'
+                            'Search candidates, professions, or handles...'
                           }
                           style={{ width: '100%', padding: '10px 36px 10px 12px', background: C.card, border: `1px solid ${brandSearchQuery ? C.primary : C.border}`, borderRadius: '10px', color: C.text, fontSize: '13px', boxSizing: 'border-box' as const, outline: 'none' }}
                         />
@@ -5431,7 +5431,7 @@ export default function LinkedInDemoPage() {
                     </div>
                     {(() => {
                       const q = brandSearchQuery.trim().toLowerCase();
-                      // Show creators with valueSkin matching the active brand skin
+                      // Show candidates with valueSkin matching the active brand skin
                       // Preserve original index (_origIdx) so deal room lookup works after filtering
                       const creatorsForSkin = activeBrandSkin
                         ? BRAND_MARKETPLACE_CREATORS.map((c, idx) => ({ ...c, _origIdx: idx })).filter(c => c.valueSkin === activeBrandSkin)
@@ -5463,7 +5463,7 @@ export default function LinkedInDemoPage() {
                         <>
                           {results.length === 0 && (
                             <div style={{ textAlign: 'center', padding: '30px 20px', color: C.textMuted }}>
-                              <div style={{ fontSize: '14px', marginBottom: '4px' }}>No creators found</div>
+                              <div style={{ fontSize: '14px', marginBottom: '4px' }}>No candidates found</div>
                               <div style={{ fontSize: '11px' }}>Try a different search term or clear filters.</div>
                             </div>
                           )}
@@ -5501,7 +5501,7 @@ export default function LinkedInDemoPage() {
                                   )}
                                   {noBrandSkin && (
                                     <div style={{ background:'rgba(230,81,0,0.06)', border:'1px solid rgba(230,81,0,0.2)', borderRadius:'8px', padding:'8px 10px', marginBottom:'8px', fontSize:'11px', color:C.textSecondary }}>
-                                      Get a brand ValueSkin to contact creators
+                                      Get a brand ValueSkin to contact candidates
                                     </div>
                                   )}
                                   <button
@@ -5520,7 +5520,7 @@ export default function LinkedInDemoPage() {
                                         if (existingDeal?.briefTitle) setBrandBriefTitle(existingDeal.briefTitle);
                                         if (existingDeal?.offerAmount) setBrandBudget(existingDeal.offerAmount);
                                       } else {
-                                        // No active deal — brands must create a campaign first
+                                        // No active deal — hiring teams must create a campaign first
                                         setPurchaseToast('Create a hiring brief first to reach this expert');
                                         setTimeout(() => setPurchaseToast(null), 3000);
                                       }
@@ -5534,10 +5534,10 @@ export default function LinkedInDemoPage() {
                             })()
                           ) : (
                             <div style={{ background: C.surfaceAlt, borderRadius: '10px', padding: '14px', border: `1px solid rgba(230,81,0,0.3)` }}>
-                              {/* Brand Deal Room Back Button */}
+                              {/* Hiring Team Deal Room Back Button */}
                               <button onClick={() => setNegotiatingCreator(null)} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: C.textSecondary, cursor: 'pointer', fontSize: '11px', fontWeight: 600, padding: '0 0 8px' }}>
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.textSecondary} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-                                Back to creators
+                                Back to candidates
                               </button>
                               {/* Deal Room Header */}
                               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
@@ -5624,14 +5624,14 @@ export default function LinkedInDemoPage() {
                                     <div style={{ fontSize: '10px', color: C.textMuted, fontWeight: 700, textTransform: 'uppercase', marginBottom: '4px' }}>Brief</div>
                                     <div style={{ fontSize: '12px', fontWeight: 600, color: C.text }}>{brandBriefTitle}</div>
                                     <div style={{ fontSize: '11px', color: C.textSecondary, marginTop: '2px' }}>{brandCampaignType}</div>
-                                    {brandBriefAbout && <div style={{ fontSize: '11px', color: C.textMuted, marginTop: '4px', lineHeight: 1.4 }}><span style={{ fontWeight: 600, color: C.textSecondary }}>Brand: </span>{brandBriefAbout}</div>}
+                                    {brandBriefAbout && <div style={{ fontSize: '11px', color: C.textMuted, marginTop: '4px', lineHeight: 1.4 }}><span style={{ fontWeight: 600, color: C.textSecondary }}>Hiring Team: </span>{brandBriefAbout}</div>}
                                     {brandBriefCampaignDesc && <div style={{ fontSize: '11px', color: C.textMuted, marginTop: '3px', lineHeight: 1.4 }}><span style={{ fontWeight: 600, color: C.textSecondary }}>Campaign: </span>{brandBriefCampaignDesc}</div>}
                                     <div style={{ fontSize: '11px', color: C.textMuted, marginTop: '4px', lineHeight: 1.4 }}>{brandBriefDeliverables}</div>
                                     {brandOfferNonNegotiable && <div style={{ fontSize: '10px', fontWeight: 700, color: 'rgba(239,68,68,0.85)', marginTop: '6px', padding: '3px 6px', background: 'rgba(239,68,68,0.07)', borderRadius: '4px', display: 'inline-block' }}>Non-negotiable offer</div>}
                                   </div>
 
                                   <div style={{ marginBottom: '12px' }}>
-                                    <div style={{ fontSize: '11px', color: C.textMuted, marginBottom: '8px', fontWeight: 600 }}>Creator's rate card</div>
+                                    <div style={{ fontSize: '11px', color: C.textMuted, marginBottom: '8px', fontWeight: 600 }}>Candidate's rate card</div>
                                     <div style={{ background: C.bg, borderRadius: '8px', padding: '10px', marginBottom: '12px', border: `1px solid ${C.border}` }}>
                                       {creator.rateCard && Object.entries(creator.rateCard).length > 0 ? (
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -5677,7 +5677,7 @@ export default function LinkedInDemoPage() {
                                         if (brandDealKey) {
                                           const now = new Date();
                                           const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: false });
-                                          const offerMsg = { id: Date.now(), sender: 'brand' as const, text: `Brand offer: $${parseInt(brandBudget).toLocaleString()}/post for ${brandBriefTitle}`, time: timeStr, isoTime: now.toISOString(), seen: false };
+                                          const offerMsg = { id: Date.now(), sender: 'brand' as const, text: `Hiring Team offer: $${parseInt(brandBudget).toLocaleString()}/post for ${brandBriefTitle}`, time: timeStr, isoTime: now.toISOString(), seen: false };
                                           const existingMsgs = brandDeal?.chatMessages || [];
                                           updateDeal(brandDealKey, {
                                             phase: 'pending',
@@ -5718,7 +5718,7 @@ export default function LinkedInDemoPage() {
                                   </div>
 
                                   <div style={{ textAlign:'center', padding:'8px', fontSize:'11px', color:C.textMuted }}>
-                                    Creator will respond from their deal room
+                                    Candidate will respond from their deal room
                                   </div>
                                 </>
                               )}
@@ -5730,7 +5730,7 @@ export default function LinkedInDemoPage() {
                                   <div style={{ display:'flex', alignItems:'center', gap:'4px', marginBottom:'14px', padding:'8px 10px', background:'rgba(0,150,136,0.06)', borderRadius:'8px', border:'1px solid rgba(0,150,136,0.2)' }}>
                                     {[
                                       { label:'Offer Sent', done: true },
-                                      { label:'Creator Accepted', done: true },
+                                      { label:'Candidate Accepted', done: true },
                                       { label:'Fund Escrow', done: brandDeal?.escrowFunded, active: !brandDeal?.escrowFunded },
                                       { label:'Work & Approve', done: false },
                                     ].map((s, i) => (
@@ -5749,7 +5749,7 @@ export default function LinkedInDemoPage() {
                                   {!brandDeal?.escrowFunded ? (
                                     <>
                                       <div style={{ background:'rgba(0,150,136,0.06)', border:'1px solid rgba(0,150,136,0.2)', borderRadius:'8px', padding:'12px', marginBottom:'12px' }}>
-                                        <div style={{ fontSize:'13px', fontWeight:700, color:C.text, marginBottom:'4px' }}>✅ Creator Accepted Your Offer</div>
+                                        <div style={{ fontSize:'13px', fontWeight:700, color:C.text, marginBottom:'4px' }}>✅ Candidate Accepted Your Offer</div>
                                         <div style={{ fontSize:'11px', color:C.textSecondary, lineHeight:1.5 }}>
                                           {creator.name} is ready to begin. Fund escrow to release the advance and start the deal.
                                         </div>
@@ -5814,32 +5814,32 @@ export default function LinkedInDemoPage() {
                                         const dealPhase = brandDealPhase;
                                         const isFunded = brandDeal?.escrowFunded;
                                         let statusTitle = 'Escrow Funded';
-                                        let statusMsg = 'Creator has been notified to begin work';
+                                        let statusMsg = 'Candidate has been notified to begin work';
                                         let statusIcon = C.success;
 
                                         if (dealPhase === 'offer_sent') {
-                                          statusTitle = 'Waiting for Creator';
-                                          statusMsg = 'Creator is reviewing your offer...';
+                                          statusTitle = 'Waiting for Candidate';
+                                          statusMsg = 'Candidate is reviewing your offer...';
                                           statusIcon = C.primary;
                                         } else if (dealPhase === 'counter' || dealPhase === 'negotiation') {
                                           statusTitle = 'Negotiating';
-                                          statusMsg = 'Creator is countering your offer...';
+                                          statusMsg = 'Candidate is countering your offer...';
                                           statusIcon = C.primary;
                                         } else if (dealPhase === 'last_offer') {
                                           statusTitle = 'Final Negotiation';
-                                          statusMsg = 'Creator has submitted a counter-offer. Review to proceed.';
+                                          statusMsg = 'Candidate has submitted a counter-offer. Review to proceed.';
                                           statusIcon = C.primary;
                                         } else if (dealPhase === 'softhold' && !isFunded) {
                                           statusTitle = 'Deal Accepted';
-                                          statusMsg = 'Creator is ready. Fund escrow to begin.';
+                                          statusMsg = 'Candidate is ready. Fund escrow to begin.';
                                           statusIcon = C.success;
                                         } else if (dealPhase === 'softhold' && isFunded && brandDeal?.creatorDealLifecycle === 'deliverables' && Object.keys((brandDeal?.deliverableLinks || {}) as Record<number, string>).length === 0) {
                                           statusTitle = 'Awaiting Deliverables';
-                                          statusMsg = 'Creator is preparing content...';
+                                          statusMsg = 'Candidate is preparing content...';
                                           statusIcon = C.primary;
                                         } else if (dealPhase === 'softhold' && isFunded && (brandDeal?.creatorDealLifecycle === 'submitted' || Object.keys((brandDeal?.deliverableLinks || {}) as Record<number, string>).length > 0)) {
                                           statusTitle = 'Reviewing Deliverables';
-                                          statusMsg = 'Creator has submitted their work';
+                                          statusMsg = 'Candidate has submitted their work';
                                           statusIcon = C.primary;
                                         }
 
@@ -5871,7 +5871,7 @@ export default function LinkedInDemoPage() {
                                               </div>
                                             )) : (
                                               <div style={{ background:C.bg, borderRadius:'8px', padding:'10px', border:`1px solid ${C.border}`, marginBottom:'8px', fontSize:'11px', color:C.textSecondary }}>
-                                                Creator submitted deliverables — review pending
+                                                Candidate submitted deliverables — review pending
                                               </div>
                                             )}
                                             <div style={{ display:'flex', gap:'8px', marginTop:'10px' }}>
@@ -5884,7 +5884,7 @@ export default function LinkedInDemoPage() {
                                                       creatorDealLifecycle: 'approved'
                                                     });
                                                     setBrandApprovalPhase('approved');
-                                                    firebaseSendNotification('Creator', 'application', `Deliverables approved! Final payment released: $${approvalAmt.toLocaleString()}`);
+                                                    firebaseSendNotification('Candidate', 'application', `Deliverables approved! Final payment released: $${approvalAmt.toLocaleString()}`);
                                                   }
                                                   setPurchaseToast(`Approved — $${approvalAmt.toLocaleString()} released to creator`);
                                                   setTimeout(() => setPurchaseToast(null), 3500);
@@ -5896,7 +5896,7 @@ export default function LinkedInDemoPage() {
                                               <button
                                                 onClick={() => {
                                                   if (brandDealKey) {
-                                                    firebaseSendNotification('Creator', 'application', 'Brand requested revision — please update your deliverables');
+                                                    firebaseSendNotification('Candidate', 'application', 'Hiring Team requested revision — please update your deliverables');
                                                   }
                                                   setPurchaseToast('Revision requested — creator notified');
                                                   setTimeout(() => setPurchaseToast(null), 3000);
@@ -5938,7 +5938,7 @@ export default function LinkedInDemoPage() {
                                       onClick={() => {
                                         const now = new Date();
                                         const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: false });
-                                        const acceptMsg = { id: Date.now(), sender: 'brand' as const, text: `Brand accepted offer: $${parseInt(agreedDealAmount).toLocaleString()}/post`, time: timeStr, isoTime: now.toISOString(), seen: false };
+                                        const acceptMsg = { id: Date.now(), sender: 'brand' as const, text: `Hiring Team accepted offer: $${parseInt(agreedDealAmount).toLocaleString()}/post`, time: timeStr, isoTime: now.toISOString(), seen: false };
                                         const existingMsgs = brandDeal?.chatMessages || [];
                                         if (brandDealKey) {
                                           updateDeal(brandDealKey, {
@@ -5984,7 +5984,7 @@ export default function LinkedInDemoPage() {
                                         if (brandDealKey) {
                                           const now = new Date();
                                           const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: false });
-                                          const rejectMsg = { id: Date.now(), sender: 'brand' as const, text: 'Brand has withdrawn from this deal.', time: timeStr, isoTime: now.toISOString(), seen: false };
+                                          const rejectMsg = { id: Date.now(), sender: 'brand' as const, text: 'Hiring Team has withdrawn from this deal.', time: timeStr, isoTime: now.toISOString(), seen: false };
                                           const existingMsgs = brandDeal?.chatMessages || [];
                                           updateDeal(brandDealKey, { phase: 'rejected', chatMessages: [...existingMsgs, rejectMsg] });
                                         }
@@ -5998,7 +5998,7 @@ export default function LinkedInDemoPage() {
                                 </>
                               )}
 
-                              {/* Phase 4a: Brand sends counter */}
+                              {/* Phase 4a: Hiring Team sends counter */}
                               {brandDealPhase === 'brand_reviewing' && (
                                 <>
                                   <div style={{ fontSize: '12px', fontWeight: 700, color: C.text, marginBottom: '10px' }}>Send your counter</div>
@@ -6020,7 +6020,7 @@ export default function LinkedInDemoPage() {
                                         if (brandCounterAmount && brandDealKey) {
                                           const now = new Date();
                                           const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: false });
-                                          const counterMsg = { id: Date.now(), sender: 'brand' as const, text: `Brand counter-offer: $${parseInt(brandCounterAmount).toLocaleString()}/post`, time: timeStr, isoTime: now.toISOString(), seen: false };
+                                          const counterMsg = { id: Date.now(), sender: 'brand' as const, text: `Hiring Team counter-offer: $${parseInt(brandCounterAmount).toLocaleString()}/post`, time: timeStr, isoTime: now.toISOString(), seen: false };
                                           const existingMsgs = brandDeal?.chatMessages || [];
                                           updateDeal(brandDealKey, {
                                             phase: 'pending',
@@ -6061,11 +6061,11 @@ export default function LinkedInDemoPage() {
                                 </>
                               )}
 
-                              {/* Phase 4c: Creator submitted formal offer — brand must approve */}
+                              {/* Phase 4c: Candidate submitted formal offer — brand must approve */}
                               {brandDealPhase === 'formal_offer' && (
                                 <>
                                   <div style={{ background: 'rgba(0,149,246,0.06)', borderRadius: '8px', padding: '10px 12px', marginBottom: '12px', border: `1px solid rgba(0,149,246,0.2)` }}>
-                                    <div style={{ fontSize: '11px', fontWeight: 700, color: C.primary, marginBottom: '4px' }}>Creator Submitted Final Offer</div>
+                                    <div style={{ fontSize: '11px', fontWeight: 700, color: C.primary, marginBottom: '4px' }}>Candidate Submitted Final Offer</div>
                                     <div style={{ fontSize: '22px', fontWeight: 800, color: C.text, marginBottom: '2px' }}>${agreedDealAmount}<span style={{ fontSize: '12px', color: C.textMuted, fontWeight: 400 }}>/post</span></div>
                                     <div style={{ fontSize: '11px', color: C.textSecondary, lineHeight: 1.4 }}>
                                       {creator.name} has locked their terms. Review and approve to proceed, or reject to end the negotiation.
@@ -6077,7 +6077,7 @@ export default function LinkedInDemoPage() {
                                         if (brandDealKey) {
                                           const now = new Date();
                                           const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: false });
-                                          const approveMsg = { id: Date.now(), sender: 'brand' as const, text: `Brand approved formal offer at $${parseInt(agreedDealAmount).toLocaleString()}/post. Deal is locked.`, time: timeStr, isoTime: now.toISOString(), seen: false };
+                                          const approveMsg = { id: Date.now(), sender: 'brand' as const, text: `Hiring Team approved formal offer at $${parseInt(agreedDealAmount).toLocaleString()}/post. Deal is locked.`, time: timeStr, isoTime: now.toISOString(), seen: false };
                                           const existingMsgs = brandDeal?.chatMessages || [];
                                           updateDeal(brandDealKey, { phase: 'accepted', brandApprovalPhase: 'accepted', chatMessages: [...existingMsgs, approveMsg] });
                                         }
@@ -6091,7 +6091,7 @@ export default function LinkedInDemoPage() {
                                         if (brandDealKey) {
                                           const now = new Date();
                                           const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: false });
-                                          const rejectMsg = { id: Date.now(), sender: 'brand' as const, text: 'Brand rejected the formal offer.', time: timeStr, isoTime: now.toISOString(), seen: false };
+                                          const rejectMsg = { id: Date.now(), sender: 'brand' as const, text: 'Hiring Team rejected the formal offer.', time: timeStr, isoTime: now.toISOString(), seen: false };
                                           const existingMsgs = brandDeal?.chatMessages || [];
                                           updateDeal(brandDealKey, { phase: 'rejected', chatMessages: [...existingMsgs, rejectMsg] });
                                         }
@@ -6135,7 +6135,7 @@ export default function LinkedInDemoPage() {
                                           </div>
                                           <div style={{ textAlign:'right' }}>
                                             <div style={{ fontSize:'14px', fontWeight:800, color:C.text }}>${commissionPaidBy === 'brand' ? (totalDeal + commission).toLocaleString() : totalDeal.toLocaleString()}</div>
-                                            <div style={{ fontSize:'10px', color:C.success }}>Creator gets ${creatorPayout.toLocaleString()}</div>
+                                            <div style={{ fontSize:'10px', color:C.success }}>Candidate gets ${creatorPayout.toLocaleString()}</div>
                                           </div>
                                         </div>
                                         {/* Milestone stages */}
@@ -6294,7 +6294,7 @@ export default function LinkedInDemoPage() {
                                           <div style={{ fontSize:'12px', color:C.textSecondary, marginBottom:'10px', lineHeight:1.5 }}>
                                             {isTopUp
                                               ? <>Deposit additional <strong style={{ color:C.text }}>${additionalDeposit.toLocaleString()}</strong> {commissionPaidBy === 'brand' ? `(includes ${platformCommissionPct}% fee: $${commission.toLocaleString()})` : ''}. Total deal: <strong style={{ color:C.success }}>${totalAmount.toLocaleString()}</strong>.</>
-                                              : <>Deposit <strong style={{ color:C.text }}>${additionalDeposit.toLocaleString()}</strong> into escrow {commissionPaidBy === 'brand' ? `(includes ${platformCommissionPct}% fee: $${commission.toLocaleString()})` : ''}. Creator receives <strong style={{ color:C.success }}>${creatorPayout.toLocaleString()}</strong>.</>
+                                              : <>Deposit <strong style={{ color:C.text }}>${additionalDeposit.toLocaleString()}</strong> into escrow {commissionPaidBy === 'brand' ? `(includes ${platformCommissionPct}% fee: $${commission.toLocaleString()})` : ''}. Candidate receives <strong style={{ color:C.success }}>${creatorPayout.toLocaleString()}</strong>.</>
                                             }
                                           </div>
                                           <div style={{ display:'flex', justifyContent:'space-between', fontSize:'11px', marginBottom:'6px', padding:'6px 8px', background:'rgba(46,125,50,0.06)', borderRadius:'4px', border:'1px solid rgba(46,125,50,0.15)' }}>
@@ -6352,7 +6352,7 @@ export default function LinkedInDemoPage() {
                                         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={C.success} strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
                                       </div>
                                       <div style={{ fontSize:'14px', fontWeight:700, color:C.success }}>Escrow Funded</div>
-                                      <div style={{ fontSize:'12px', color:C.textSecondary, marginTop:'4px' }}>Creator has been notified to begin work</div>
+                                      <div style={{ fontSize:'12px', color:C.textSecondary, marginTop:'4px' }}>Candidate has been notified to begin work</div>
                                     </div>
                                   )}
                                   {dealType === 'barter' && brandApprovalPhase === 'funding' && (
@@ -6366,7 +6366,7 @@ export default function LinkedInDemoPage() {
                                           if (brandDealKey) {
                                             updateDeal(brandDealKey, { goodsTrackerStatus: 'goods_shipped' });
                                           }
-                                          setTimeout(() => setPurchaseToast('Creator will confirm receipt'), 2000);
+                                          setTimeout(() => setPurchaseToast('Candidate will confirm receipt'), 2000);
                                         }}
                                         style={{ width:'100%', background:C.success, border:'none', padding:'8px', borderRadius:'6px', color:'#fff', fontWeight:600, cursor:'pointer', fontSize:'11px' }}
                                       >
@@ -6400,7 +6400,7 @@ export default function LinkedInDemoPage() {
                                       const canApprove = bdLifecycle === 'submitted' || hasSubmissions;
                                       return (
                                         <div style={{ marginTop:'12px' }}>
-                                          <div style={{ fontSize:'11px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'10px' }}>Review Creator Deliverables</div>
+                                          <div style={{ fontSize:'11px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'10px' }}>Review Candidate Deliverables</div>
                                           {bdLifecycle === 'submitted' || hasSubmissions ? (
                                             <>
                                               {Object.entries(bdLinks).map(([idx, link]) => (
@@ -6414,13 +6414,13 @@ export default function LinkedInDemoPage() {
                                               ))}
                                               {Object.keys(bdLinks).length === 0 && (
                                                 <div style={{ background:C.bg, borderRadius:'8px', padding:'12px', border:`1px solid ${C.border}`, marginBottom:'10px', fontSize:'11px', color:C.textSecondary }}>
-                                                  Creator submitted deliverables — review pending
+                                                  Candidate submitted deliverables — review pending
                                                 </div>
                                               )}
                                             </>
                                           ) : (
                                             <div style={{ background:'rgba(245,158,11,0.06)', border:`1px solid rgba(245,158,11,0.2)`, borderRadius:'8px', padding:'12px', marginBottom:'10px' }}>
-                                              <div style={{ fontSize:'11px', color:'#f59e0b' }}>Creator has not yet submitted deliverables</div>
+                                              <div style={{ fontSize:'11px', color:'#f59e0b' }}>Candidate has not yet submitted deliverables</div>
                                             </div>
                                           )}
                                           <div style={{ display:'flex', gap:'8px' }}>
@@ -6436,7 +6436,7 @@ export default function LinkedInDemoPage() {
                                                     paymentMilestones: { advance: 'released', upload: 'released', approval: 'released' },
                                                     creatorDealLifecycle: 'approved'
                                                   });
-                                                  firebaseSendNotification('Creator', 'application', `Deliverables approved! Final payment released: $${approvalAmt.toLocaleString()}`);
+                                                  firebaseSendNotification('Candidate', 'application', `Deliverables approved! Final payment released: $${approvalAmt.toLocaleString()}`);
                                                 }
                                                 setPurchaseToast(`Deliverable approved — $${approvalAmt.toLocaleString()} approval payment released to creator`);
                                                 setTimeout(() => setPurchaseToast(null), 3500);
@@ -6448,7 +6448,7 @@ export default function LinkedInDemoPage() {
                                             <button
                                               onClick={() => {
                                                 if (brandDealKey) {
-                                                  firebaseSendNotification('Creator', 'application', `Brand requested revision — please update your deliverables`);
+                                                  firebaseSendNotification('Candidate', 'application', `Hiring Team requested revision — please update your deliverables`);
                                                 }
                                                 setPurchaseToast('Revision requested — creator notified');
                                                 setTimeout(() => setPurchaseToast(null), 3000);
@@ -6493,7 +6493,7 @@ export default function LinkedInDemoPage() {
                                                     updateDeal(brandDealKey, { c2cContentStatus: 'content_approved', brandApprovalPhase: 'approved' });
                                                   }
                                                 }
-                                                firebaseSendNotification('Creator', 'application', 'Content approved!');
+                                                firebaseSendNotification('Candidate', 'application', 'Content approved!');
                                                 setPurchaseToast('Content approved');
                                                 setTimeout(() => setPurchaseToast(null), 3000);
                                               }}
@@ -6514,7 +6514,7 @@ export default function LinkedInDemoPage() {
                                       </div>
                                       <div style={{ fontSize:'14px', fontWeight:700, color:C.text, marginBottom:'4px' }}>Deal Complete</div>
                                       <div style={{ fontSize:'12px', color:C.textSecondary, marginBottom:'12px' }}>Payment released: ${parseInt(agreedDealAmount).toLocaleString()}</div>
-                                      {/* Brand rating for creator */}
+                                      {/* Hiring Team rating for creator */}
                                       {!brandRatingSubmitted ? (
                                         <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:'10px', padding:'14px', marginBottom:'12px', textAlign:'left' }}>
                                           <div style={{ fontSize:'11px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.4px', marginBottom:'8px' }}>Rate this creator</div>
@@ -6567,7 +6567,7 @@ export default function LinkedInDemoPage() {
                                             ))}
                                           </div>
                                         )}
-                                        {/* Brand chat input — negotiate terms, deliverables, timeline */}
+                                        {/* Hiring Team chat input — negotiate terms, deliverables, timeline */}
                                         <form onSubmit={(e) => {
                                           e.preventDefault();
                                           if (!brandChatInput.trim() || !brandDealKey) return;
@@ -6701,7 +6701,7 @@ export default function LinkedInDemoPage() {
                           });
                           return activeDealCampaigns.length > 0 ? (
                             <div style={{ background: 'rgba(237,73,86,0.08)', border: `1px solid rgba(237,73,86,0.25)`, borderRadius:'8px', padding:'10px 12px', marginBottom:'12px', fontSize:'11px', color: C.danger, fontWeight:600 }}>
-                              ⚠️ {activeDealCampaigns.length} campaign{activeDealCampaigns.length !== 1 ? 's have' : ' has'} creators actively working. You cannot delete campaigns with ongoing deals. Complete or cancel work first.
+                              ⚠️ {activeDealCampaigns.length} campaign{activeDealCampaigns.length !== 1 ? 's have' : ' has'} candidates actively working. You cannot delete campaigns with ongoing deals. Complete or cancel work first.
                             </div>
                           ) : null;
                         })()}
@@ -6857,8 +6857,8 @@ export default function LinkedInDemoPage() {
                             </div>
                             {(creatorRating > 0 || brandRating > 0) && (
                               <div style={{ display:'flex', gap:'16px', fontSize:'11px', color:C.textSecondary, paddingTop:'8px', borderTop:`1px solid ${C.border}` }}>
-                                {creatorRating > 0 && <span>Creator rated: {'★'.repeat(creatorRating)}</span>}
-                                {brandRating > 0 && <span>Brand rated: {'★'.repeat(brandRating)}</span>}
+                                {creatorRating > 0 && <span>Candidate rated: {'★'.repeat(creatorRating)}</span>}
+                                {brandRating > 0 && <span>Hiring Team rated: {'★'.repeat(brandRating)}</span>}
                               </div>
                             )}
                           </div>
@@ -7249,7 +7249,7 @@ export default function LinkedInDemoPage() {
                       { key: 'engagement', label: 'Engagement Rate', description: 'Audience engagement percentage metric' },
                       { key: 'onTime', label: 'On-Time Delivery', description: 'Reliability metric for brand partnerships' },
                       { key: 'deals', label: 'Deals Completed', description: 'Total number of completed brand deals' },
-                      { key: 'rating', label: 'Brand Rating', description: 'Average rating from brand partnerships' },
+                      { key: 'rating', label: 'Hiring Team Rating', description: 'Average rating from brand partnerships' },
                       { key: 'trustLevel', label: 'Trust Level', description: 'Visual trust level indicator (1-5)' },
                       { key: 'breakdown', label: 'Score Breakdown', description: 'Detailed factor-by-factor score analysis' },
                     ] as const).map(({ key, label, description }) => (
@@ -7381,7 +7381,7 @@ export default function LinkedInDemoPage() {
                           transition: 'all 0.2s',
                         }}
                       >
-                        Brand (Creator keeps full amount)
+                        Hiring Team (Candidate keeps full amount)
                       </button>
                       <button
                         onClick={() => setCommissionPaidBy('creator')}
@@ -7398,7 +7398,7 @@ export default function LinkedInDemoPage() {
                           transition: 'all 0.2s',
                         }}
                       >
-                        Creator (Deducted from payout)
+                        Candidate (Deducted from payout)
                       </button>
                     </div>
                   </div>
@@ -7440,11 +7440,11 @@ export default function LinkedInDemoPage() {
                       {commissionPaidBy === 'brand' ? (
                         <>
                           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '3px' }}>
-                            <span style={{ color: C.textSecondary }}>Creator receives</span>
+                            <span style={{ color: C.textSecondary }}>Candidate receives</span>
                             <span style={{ color: C.success, fontWeight: 700 }}>$10,000</span>
                           </div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
-                            <span style={{ color: C.textSecondary }}>Brand pays (total)</span>
+                            <span style={{ color: C.textSecondary }}>Hiring Team pays (total)</span>
                             <span style={{ color: C.primary, fontWeight: 700 }}>${(10000 + 10000 * platformCommissionPct / 100).toLocaleString()}</span>
                           </div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginTop: '3px', paddingTop: '3px', borderTop: `1px solid ${C.border}`, color: C.textMuted }}>
@@ -7455,11 +7455,11 @@ export default function LinkedInDemoPage() {
                       ) : (
                         <>
                           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '3px' }}>
-                            <span style={{ color: C.textSecondary }}>Creator receives</span>
+                            <span style={{ color: C.textSecondary }}>Candidate receives</span>
                             <span style={{ color: C.success, fontWeight: 700 }}>${(10000 - 10000 * platformCommissionPct / 100).toLocaleString()}</span>
                           </div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
-                            <span style={{ color: C.textSecondary }}>Brand pays (total)</span>
+                            <span style={{ color: C.textSecondary }}>Hiring Team pays (total)</span>
                             <span style={{ color: C.primary, fontWeight: 700 }}>$10,000</span>
                           </div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginTop: '3px', paddingTop: '3px', borderTop: `1px solid ${C.border}`, color: C.textMuted }}>
@@ -7566,7 +7566,7 @@ export default function LinkedInDemoPage() {
               <div style={{ padding: '20px', borderTop: `1px solid ${C.border}` }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                  <div style={{ fontSize: '13px', fontWeight: 700, color: C.text }}>Creator Safety Controls</div>
+                  <div style={{ fontSize: '13px', fontWeight: 700, color: C.text }}>Candidate Safety Controls</div>
                 </div>
                 <div style={{ fontSize: '11px', color: C.textSecondary, marginBottom: '18px', lineHeight: 1.5 }}>
                   Platform-level rules enforced on all outreach. Creators cannot override these — they set the floor. Brands that violate are throttled or suspended.
@@ -7576,8 +7576,8 @@ export default function LinkedInDemoPage() {
                 <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: '10px', padding: '14px 16px', marginBottom: '10px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
                     <div>
-                      <div style={{ fontSize: '13px', fontWeight: 700, color: C.text }}>Brand Outreach Rate Limit</div>
-                      <div style={{ fontSize: '11px', color: C.textSecondary, marginTop: '2px' }}>Max proposals a brand can send per day across all creators</div>
+                      <div style={{ fontSize: '13px', fontWeight: 700, color: C.text }}>Hiring Team Outreach Rate Limit</div>
+                      <div style={{ fontSize: '11px', color: C.textSecondary, marginTop: '2px' }}>Max proposals a brand can send per day across all candidates</div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <button onClick={() => setSafetyDmRateLimit(Math.max(1, safetyDmRateLimit - 1))} style={{ width: '24px', height: '24px', borderRadius: '4px', border: `1px solid ${C.border}`, background: C.bg, color: C.text, cursor: 'pointer', fontSize: '14px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>−</button>
@@ -7616,7 +7616,7 @@ export default function LinkedInDemoPage() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
                       <div style={{ fontSize: '13px', fontWeight: 700, color: C.text }}>Auto-Throttle Threshold</div>
-                      <div style={{ fontSize: '11px', color: C.textSecondary, marginTop: '2px' }}>Reports needed from creators before brand outreach is auto-suspended</div>
+                      <div style={{ fontSize: '11px', color: C.textSecondary, marginTop: '2px' }}>Reports needed from candidates before brand outreach is auto-suspended</div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       {[1, 2, 3, 5, 10].map(n => (
@@ -7633,7 +7633,7 @@ export default function LinkedInDemoPage() {
 
                 {/* Min brand trust score to contact */}
                 <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: '10px', padding: '14px 16px', marginBottom: '10px' }}>
-                  <div style={{ fontSize: '13px', fontWeight: 700, color: C.text, marginBottom: '4px' }}>Minimum Brand Trust Score to Contact</div>
+                  <div style={{ fontSize: '13px', fontWeight: 700, color: C.text, marginBottom: '4px' }}>Minimum Hiring Team Trust Score to Contact</div>
                   <div style={{ fontSize: '11px', color: C.textSecondary, marginBottom: '10px' }}>Brands below this score see creator profiles but cannot initiate contact</div>
                   <div style={{ display: 'flex', gap: '6px' }}>
                     {[1, 2, 3, 4, 5].map(n => (
@@ -7646,7 +7646,7 @@ export default function LinkedInDemoPage() {
                     ))}
                   </div>
                   <div style={{ fontSize: '10px', color: C.textMuted, marginTop: '6px', textAlign: 'center' }}>
-                    Current: min {safetyMinBrandTrust}★ — brands below are read-only
+                    Current: min {safetyMinBrandTrust}★ — hiring teams below are read-only
                   </div>
                 </div>
 
@@ -7654,7 +7654,7 @@ export default function LinkedInDemoPage() {
                 <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: '10px', padding: '14px 16px', marginBottom: '10px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                     <div>
-                      <div style={{ fontSize: '13px', fontWeight: 700, color: C.text }}>New Brand Warm Intro Gate</div>
+                      <div style={{ fontSize: '13px', fontWeight: 700, color: C.text }}>New Hiring Team Warm Intro Gate</div>
                       <div style={{ fontSize: '11px', color: C.textSecondary, marginTop: '2px' }}>Brands with fewer than N completed deals must be vouched before cold outreach</div>
                     </div>
                     <button onClick={() => setSafetyNewBrandWarmIntro(p => !p)}
@@ -7664,7 +7664,7 @@ export default function LinkedInDemoPage() {
                   </div>
                   {safetyNewBrandWarmIntro && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '11px', color: C.textSecondary }}>Gate brands with fewer than</span>
+                      <span style={{ fontSize: '11px', color: C.textSecondary }}>Gate hiring teams with fewer than</span>
                       <div style={{ display: 'flex', gap: '4px' }}>
                         {[0, 1, 3, 5, 10].map(n => (
                           <button key={n} onClick={() => setSafetyNewBrandDealCount(n)}
@@ -7684,7 +7684,7 @@ export default function LinkedInDemoPage() {
                 <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: '10px', padding: '14px 16px', marginBottom: '16px' }}>
                   <div style={{ fontSize: '11px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '12px' }}>Platform-Wide Enforcement</div>
                   {([
-                    { label: 'Require verified Brand ValueSkin to contact', desc: 'Unverified brands cannot initiate any outreach', value: safetyRequireVerifiedBrand, set: setSafetyRequireVerifiedBrand },
+                    { label: 'Require verified Hiring Team ValueSkin to contact', desc: 'Unverified hiring teams cannot initiate any outreach', value: safetyRequireVerifiedBrand, set: setSafetyRequireVerifiedBrand },
                     { label: 'Proposal form required (no free-text cold DMs)', desc: 'All contact must be a structured brief — not a message', value: safetyRequireBrief, set: setSafetyRequireBrief },
                     { label: 'Block off-platform contact requests', desc: 'Auto-flag messages asking for phone/email/WhatsApp', value: safetyOffPlatformBlock, set: setSafetyOffPlatformBlock },
                   ] as const).map(({ label, desc, value, set }) => (
@@ -7717,7 +7717,7 @@ export default function LinkedInDemoPage() {
                   • Auto-suspended after <strong style={{ color: C.text }}>{safetyReportThreshold}</strong> creator report{safetyReportThreshold !== 1 ? 's' : ''}<br/>
                   • Minimum brand trust to contact: <strong style={{ color: C.text }}>{'★'.repeat(safetyMinBrandTrust)}</strong><br/>
                   {safetyNewBrandWarmIntro && <>• Brands with &lt;{safetyNewBrandDealCount} deals need warm intro<br/></>}
-                  {safetyRequireVerifiedBrand && <>• Verified Brand ValueSkin required<br/></>}
+                  {safetyRequireVerifiedBrand && <>• Verified Hiring Team ValueSkin required<br/></>}
                   {safetyRequireBrief && <>• Proposal form mandatory — no cold DMs<br/></>}
                   {safetyOffPlatformBlock && <>• Off-platform contact requests auto-flagged<br/></>}
                 </div>
@@ -7733,24 +7733,24 @@ export default function LinkedInDemoPage() {
                   <span style={{ fontSize: '10px', color: C.textMuted }}>Toggle any feature platform-wide</span>
                 </div>
                 <div style={{ fontSize: '11px', color: C.textSecondary, marginBottom: '16px' }}>
-                  All features are on by default. Turn off to hide from all creators and brands instantly.
+                  All features are on by default. Turn off to hide from all candidates and hiring teams instantly.
                 </div>
 
                 {([
                   { label: 'Rate Card', desc: 'Per-format pricing (Reel/Story/Post) visible on creator cards', value: adminShowRateCard, set: setAdminShowRateCard },
-                  { label: 'Availability Calendar', desc: 'Creator "available from" date shown on cards and in search', value: adminShowAvailabilityCalendar, set: setAdminShowAvailabilityCalendar },
+                  { label: 'Availability Calendar', desc: 'Candidate "available from" date shown on cards and in search', value: adminShowAvailabilityCalendar, set: setAdminShowAvailabilityCalendar },
                   { label: 'Portfolio Samples', desc: 'Past brand work visible on creator cards', value: adminShowPortfolio, set: setAdminShowPortfolio },
-                  { label: 'Deal Completion Rate', desc: 'Creator % of started deals finished — penalises ghosting', value: adminShowDealCompletion, set: setAdminShowDealCompletion },
+                  { label: 'Deal Completion Rate', desc: 'Candidate % of started deals finished — penalises ghosting', value: adminShowDealCompletion, set: setAdminShowDealCompletion },
                   { label: 'Verified Income Tier', desc: 'Trust badge showing lifetime earnings tier ($10K+, $50K+, etc)', value: adminShowIncomeTier, set: setAdminShowIncomeTier },
-                  { label: 'First-Deal Badge', desc: 'Badge shown on creators open to discounted first collaboration', value: adminShowFirstDealBadge, set: setAdminShowFirstDealBadge },
+                  { label: 'First-Deal Badge', desc: 'Badge shown on candidates open to discounted first collaboration', value: adminShowFirstDealBadge, set: setAdminShowFirstDealBadge },
                   { label: 'Exclusivity Slot Signal', desc: 'Shows "Slot taken until [date]" when creator is exclusive with a brand', value: adminShowExclusivitySignal, set: setAdminShowExclusivitySignal },
                   { label: 'Revision Limit Display', desc: 'Number of revisions included shown upfront on creator cards', value: adminShowRevisionLimit, set: setAdminShowRevisionLimit },
                   { label: 'Usage Rights Duration', desc: 'Days of usage rights shown before deal accepted', value: adminShowUsageRightsDuration, set: setAdminShowUsageRightsDuration },
-                  { label: 'Brand Track Record', desc: 'Brand deals completed + avg payment time + creator ratings of brand', value: adminShowBrandTrackRecord, set: setAdminShowBrandTrackRecord },
+                  { label: 'Hiring Team Track Record', desc: 'Hiring Team deals completed + avg payment time + creator ratings of brand', value: adminShowBrandTrackRecord, set: setAdminShowBrandTrackRecord },
                   { label: 'Mutual Rating System', desc: 'Both parties rate each other after deal close', value: adminShowMutualRating, set: setAdminShowMutualRating },
                   { label: 'Deal Templates', desc: 'Brands can save and reuse campaign brief templates', value: adminShowDealTemplates, set: setAdminShowDealTemplates },
                   { label: 'Saved Searches', desc: 'Brands get notified when a matching creator joins', value: adminShowSavedSearches, set: setAdminShowSavedSearches },
-                  { label: 'Similar Creators', desc: 'Suggest creators similar to ones a brand already worked with', value: adminShowSimilarCreators, set: setAdminShowSimilarCreators },
+                  { label: 'Similar Creators', desc: 'Suggest candidates similar to ones a brand already worked with', value: adminShowSimilarCreators, set: setAdminShowSimilarCreators },
                   { label: 'Long-Term Contracts', desc: 'Multi-month ambassador deals with recurring escrow milestones', value: adminAllowLongTermContracts, set: setAdminAllowLongTermContracts },
                 ] as const).map(({ label, desc, value, set }) => (
                   <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '10px 0', borderTop: `1px solid ${C.border}` }}>
@@ -7824,7 +7824,7 @@ export default function LinkedInDemoPage() {
                     </div>
                   </div>
                   <div style={{ fontSize: '11px', color: C.textSecondary, lineHeight: 1.6 }}>
-                    Route deal conversations through the platform's existing DM system. Creators and brands communicate in the same inbox they already use. ValueSkins injects a compliance layer on top.
+                    Route deal conversations through the platform's existing DM system. Creators and hiring teams communicate in the same inbox they already use. ValueSkins injects a compliance layer on top.
                   </div>
                   <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '10px' }}>
                     {['Familiar UX', 'No context switching', 'Existing notification system'].map(f => (
@@ -7964,7 +7964,7 @@ export default function LinkedInDemoPage() {
                   </div>
                 )}
 
-                {/* Brand: owned skins summary */}
+                {/* Hiring Team: owned skins summary */}
                 {marketplaceRole === 'brand' && (
                   <div style={{ marginBottom: '16px' }}>
                     <div style={{ fontSize: '13px', fontWeight: 600, color: C.textSecondary, marginBottom: '8px' }}>Your ValueSkins ({brandValueSkins.length}/3)</div>
@@ -8106,7 +8106,7 @@ export default function LinkedInDemoPage() {
               </div>
               {/* Tabs */}
               <div style={{ display: 'flex', borderBottom: `1px solid ${C.border}` }}>
-                {(['trending', 'skins', 'creators'] as const).map(tab => (
+                {(['trending', 'skins', 'candidates'] as const).map(tab => (
                   <button key={tab} onClick={() => setExploreTab(tab)}
                     style={{ flex: 1, padding: '12px 0', fontSize: '13px', fontWeight: exploreTab === tab ? 700 : 500,
                       color: exploreTab === tab ? C.text : C.textMuted, background: 'none', border: 'none',
@@ -8122,7 +8122,7 @@ export default function LinkedInDemoPage() {
                     {[
                       { title: 'AI-Powered Content Creation', desc: 'Creators using AI tools are seeing 3x engagement growth', tag: 'Technology', views: '24K' },
                       { title: 'Fitness Creators Dominating Reels', desc: 'Short-form workout content up 180% this quarter', tag: 'Sports', views: '18K' },
-                      { title: 'Brand Deals Going Long-Term', desc: 'Ambassador programs replace one-off sponsorships', tag: 'Business', views: '12K' },
+                      { title: 'Hiring Team Deals Going Long-Term', desc: 'Ambassador programs replace one-off sponsorships', tag: 'Business', views: '12K' },
                       { title: 'Design Portfolios on LinkedIn', desc: 'UX designers showcase work through carousel posts', tag: 'Art & Design', views: '9K' },
                       { title: 'Finance Creators Hit Mainstream', desc: 'Budgeting and investing content reaches Gen Z', tag: 'Finance', views: '15K' },
                     ].map((item, i) => (
@@ -8159,9 +8159,9 @@ export default function LinkedInDemoPage() {
                     ))}
                   </div>
                 )}
-                {exploreTab === 'creators' && (
+                {exploreTab === 'candidates' && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    <div style={{ fontSize: '12px', color: C.textMuted, marginBottom: '4px' }}>Top creators by engagement</div>
+                    <div style={{ fontSize: '12px', color: C.textMuted, marginBottom: '4px' }}>Top candidates by engagement</div>
                     {BRAND_MARKETPLACE_CREATORS.map((c, i) => {
                       return (
                         <div key={i} onClick={() => setPreviewCreator(c)}
@@ -8294,13 +8294,13 @@ export default function LinkedInDemoPage() {
               </div>
               <div style={{ padding: '20px' }}>
 
-                {/* Brand Settings — only shown when logged in as brand */}
+                {/* Hiring Team Settings — only shown when logged in as brand */}
                 {marketplaceRole === 'brand' && (
                   <div style={{ marginBottom: '24px' }}>
-                    <div style={{ fontSize: '12px', fontWeight: 700, color: C.textMuted, letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: '12px' }}>Brand Settings</div>
+                    <div style={{ fontSize: '12px', fontWeight: 700, color: C.textMuted, letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: '12px' }}>Hiring Team Settings</div>
                     <div style={{ background: C.card, border: `1px solid rgba(230,81,0,0.25)`, borderRadius: '12px', padding: '14px 16px', marginBottom: '10px' }}>
-                      <div style={{ fontSize: '13px', fontWeight: 700, color: C.text, marginBottom: '2px' }}>Brand Identity</div>
-                      <div style={{ fontSize: '12px', color: C.textSecondary, marginBottom: '12px' }}>Your ValueSkin determines which creators you can contact. Only creators with the same profession will see your proposals.</div>
+                      <div style={{ fontSize: '13px', fontWeight: 700, color: C.text, marginBottom: '2px' }}>Hiring Team Identity</div>
+                      <div style={{ fontSize: '12px', color: C.textSecondary, marginBottom: '12px' }}>Your ValueSkin determines which candidates you can contact. Only candidates with the same profession will see your proposals.</div>
                       {brandValueSkins.length > 0 ? (
                         <div>
                           <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px' }}>
@@ -8315,7 +8315,7 @@ export default function LinkedInDemoPage() {
                         </div>
                       ) : (
                         <button onClick={() => setActiveView('store')} style={{ width: '100%', background: C.warning, border: 'none', borderRadius: '8px', padding: '10px', fontSize: '13px', fontWeight: 700, color: '#fff', cursor: 'pointer' }}>
-                          Get Brand ValueSkin
+                          Get Hiring Team ValueSkin
                         </button>
                       )}
                     </div>
@@ -8334,7 +8334,7 @@ export default function LinkedInDemoPage() {
                   </div>
                 )}
 
-                {/* Brand Profile — category selection, only for brands */}
+                {/* Hiring Team Profile — category selection, only for hiring teams */}
                 {marketplaceRole === 'brand' && (
                   <div style={{ marginBottom: '24px' }}>
                     {(() => {
@@ -8342,13 +8342,13 @@ export default function LinkedInDemoPage() {
                       return (
                         <>
                           <button onClick={() => setCreatorSettingsOpen(open ? null : 'brandProfile' as any)} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: C.card, border: `1px solid ${C.border}`, borderRadius: open ? '10px 10px 0 0' : '10px', padding: '12px 14px', cursor: 'pointer', color: C.text }}>
-                            <span style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.textMuted }}>Brand Profile</span>
+                            <span style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '0.8px', textTransform: 'uppercase', color: C.textMuted }}>Hiring Team Profile</span>
                             <span style={{ fontSize: '14px', color: C.textMuted }}>{open ? '\u25B2' : '\u25BC'}</span>
                           </button>
                           {open && (
                             <div style={{ background: C.card, border: `1px solid ${C.border}`, borderTop: 'none', borderRadius: '0 0 10px 10px', padding: '14px' }}>
                               <div style={{ fontSize: '11px', color: C.textSecondary, marginBottom: '12px', lineHeight: 1.5 }}>
-                                Define your brand profile so creators understand who you are. Select one option from each category.
+                                Define your brand profile so candidates understand who you are. Select one option from each category.
                               </div>
                               {Object.values(BRAND_CATEGORIES).map((cat) => {
                                 const currentSelection = brandProfileSelections[cat.name];
@@ -8652,7 +8652,7 @@ export default function LinkedInDemoPage() {
                       {open && (
                         <div style={{ background: C.card, border: `1px solid ${C.border}`, borderTop: 'none', borderRadius: '0 0 10px 10px', padding: '14px' }}>
                           <div style={{ fontSize: '11px', color: C.textSecondary, marginBottom: '10px', lineHeight: 1.5 }}>
-                            When showcase mode is on, brands see your video pitch and bio when they click your ValueSkin on your profile.
+                            When showcase mode is on, hiring teams see your video pitch and bio when they click your ValueSkin on your profile.
                           </div>
 
                           {/* Mode toggle */}
@@ -8727,11 +8727,11 @@ export default function LinkedInDemoPage() {
                         )}
                       </div>
 
-                      {/* Blocked brands */}
+                      {/* Blocked hiring teams */}
                       <div style={{ marginBottom: '4px' }}>
                         <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, marginBottom: '6px', textTransform: 'uppercase' }}>Blocked Brands</div>
                         {creatorBlockedBrands.length === 0 ? (
-                          <div style={{ fontSize: '11px', color: C.textMuted, padding: '8px', background: C.bg, borderRadius: '7px', textAlign: 'center' }}>No brands blocked</div>
+                          <div style={{ fontSize: '11px', color: C.textMuted, padding: '8px', background: C.bg, borderRadius: '7px', textAlign: 'center' }}>No hiring teams blocked</div>
                         ) : (
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
                             {creatorBlockedBrands.map(b => (
@@ -8767,7 +8767,7 @@ export default function LinkedInDemoPage() {
                       </button>
                       {open && (
                         <div style={{ background: C.card, border: `1px solid ${C.border}`, borderTop: 'none', borderRadius: '0 0 10px 10px', padding: '14px' }}>
-                          <div style={{ fontSize: '10px', color: C.textSecondary, marginBottom: '10px' }}>Set your price per content format. These are shown to brands before they send a proposal.</div>
+                          <div style={{ fontSize: '10px', color: C.textSecondary, marginBottom: '10px' }}>Set your price per content format. These are shown to hiring teams before they send a proposal.</div>
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginBottom: '10px' }}>
                             {(Object.keys(rateCard) as Array<keyof typeof rateCard>).map(fmt => (
                               <div key={fmt}>
@@ -8824,7 +8824,7 @@ export default function LinkedInDemoPage() {
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderTop: `1px solid ${C.border}` }}>
                             <div>
                               <div style={{ fontSize: '12px', fontWeight: 600, color: C.text }}>Open to first-deal (discounted collab)</div>
-                              <div style={{ fontSize: '10px', color: C.textSecondary }}>Badge shown to brands — signals you'll do a discounted first collab to build your record</div>
+                              <div style={{ fontSize: '10px', color: C.textSecondary }}>Badge shown to hiring teams — signals you'll do a discounted first collab to build your record</div>
                             </div>
                             <button onClick={() => setIsFirstDealOpen(p => !p)} style={{ width: '40px', height: '22px', borderRadius: '11px', border: 'none', backgroundColor: isFirstDealOpen ? C.primary : 'rgba(255,255,255,0.12)', cursor: 'pointer', position: 'relative', flexShrink: 0, transition: 'background-color 0.2s' }}>
                               <div style={{ width: '18px', height: '18px', borderRadius: '50%', backgroundColor: '#fff', position: 'absolute', top: '2px', left: isFirstDealOpen ? '20px' : '2px', transition: 'left 0.2s' }} />
@@ -8988,7 +8988,7 @@ export default function LinkedInDemoPage() {
                   ) : (
                     <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: '12px', padding: '20px 16px', textAlign: 'center' }}>
                       <div style={{ fontSize: '12px', color: C.textSecondary, marginBottom: '12px' }}>
-                        Upload a photo showing why brands should hire you. This appears on your creator profile.
+                        Upload a photo showing why hiring teams should hire you. This appears on your creator profile.
                       </div>
                       <button
                         onClick={() => {
@@ -9150,7 +9150,7 @@ export default function LinkedInDemoPage() {
             <MetricInput label="Deals Completed" value={metrics.dealsCompleted} onChange={(v) => updateMetric('dealsCompleted', v)} />
             <MetricInput label="Average Deal Value ($)" value={metrics.avgDealValue} onChange={(v) => updateMetric('avgDealValue', v)} />
             <MetricInput label="On-Time Rate (%)" value={metrics.onTimeRate} onChange={(v) => updateMetric('onTimeRate', v)} />
-            <MetricInput label="Brand Rating" value={metrics.brandRating} onChange={(v) => updateMetric('brandRating', v)} />
+            <MetricInput label="Hiring Team Rating" value={metrics.brandRating} onChange={(v) => updateMetric('brandRating', v)} />
           </div>
           <div style={{ background: C.primary, borderRadius: '12px', padding: '16px', marginTop: '20px', textAlign: 'center', color: '#fff' }}>
             <div style={{ fontSize: '14px', opacity: 0.9, marginBottom: '4px' }}>Highest Skin Level</div>
@@ -9169,7 +9169,7 @@ export default function LinkedInDemoPage() {
         const factorScores: Record<string, number> = {
           'Content Consistency': 82,
           'Audience Engagement': 91,
-          'Brand Partnerships': 78,
+          'Hiring Team Partnerships': 78,
           'On-time Delivery': 99,
           'Community Trust': 85,
           'Profile Completeness': 95,
@@ -9186,7 +9186,7 @@ export default function LinkedInDemoPage() {
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: C.textMuted, marginTop: '4px', fontWeight: 600 }}>
                 <span>0</span>
-                <span style={{ color: pct >= 80 ? C.success : C.textSecondary }}>Top {100 - pct + 3}% of creators</span>
+                <span style={{ color: pct >= 80 ? C.success : C.textSecondary }}>Top {100 - pct + 3}% of candidates</span>
                 <span>{totalMax}</span>
               </div>
             </div>
@@ -9320,8 +9320,8 @@ export default function LinkedInDemoPage() {
         </Modal>
       )}
 
-      {/* Brand Store Modal */}
-      {/* Brand Store Modal — this is now unused since brands buy skins from the main store like creators */}
+      {/* Hiring Team Store Modal */}
+      {/* Hiring Team Store Modal — this is now unused since hiring teams buy skins from the main store like candidates */}
 
       {/* ValueSkin Management Modal */}
       {showSkinManageModal && (
