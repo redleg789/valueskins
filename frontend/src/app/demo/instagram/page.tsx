@@ -876,6 +876,62 @@ export default function InstagramDemoPage() {
   const brandDealCounterAmount = brandDeal?.counterAmount || '';
   // Agreed amount = latest counter or original offer
   const agreedDealAmount = brandDealCounterAmount || brandDeal?.offerAmount || brandBudget || '5000';
+  const downloadDealSummary = useCallback((dealKey: string, deal: any) => {
+    if (typeof window === 'undefined' || !deal) return;
+    const nowIso = new Date().toISOString();
+    const agreedAmount = deal.agreementAmount || deal.counterAmount || deal.offerAmount || agreedDealAmount || '0';
+    const messages = (deal.chatMessages || []) as Array<{ sender?: string; text?: string; time?: string; isoTime?: string }>;
+    const deliverableLinks = (deal.deliverableLinks || {}) as Record<number, string>;
+    const statuses = (deal.deliverableStatuses || {}) as Record<number, string>;
+    const milestones = deal.paymentMilestones || { advance: 'pending', upload: 'pending', approval: 'pending' };
+    const lines = [
+      'VALUESKINS DEAL SUMMARY (EVIDENCE RECORD)',
+      '----------------------------------------',
+      `Generated At: ${nowIso}`,
+      `Deal Key: ${dealKey}`,
+      `Final Status: ${deal.creatorDealLifecycle === 'approved' || deal.brandApprovalPhase === 'approved' ? 'Approved and Deal Completed' : 'In Progress'}`,
+      '',
+      'PARTIES',
+      `Creator: ${deal.creatorName || 'N/A'}`,
+      `Brand: ${deal.brandName || profileName || 'N/A'}`,
+      `Creator Skin: ${deal.creatorSkin || selectedMarketplaceSkin || 'N/A'}`,
+      '',
+      'COMMERCIAL TERMS',
+      `Agreed Amount (USD): ${agreedAmount}`,
+      `Deal Type: ${deal.dealType || 'paid'}`,
+      `Offer Amount: ${deal.offerAmount || 'N/A'}`,
+      `Counter Amount: ${deal.counterAmount || 'N/A'}`,
+      `Agreement Amount: ${deal.agreementAmount || 'N/A'}`,
+      '',
+      'PAYMENT MILESTONES',
+      `Advance: ${milestones.advance || 'pending'}`,
+      `Upload: ${milestones.upload || 'pending'}`,
+      `Approval: ${milestones.approval || 'pending'}`,
+      '',
+      'DELIVERABLES SUBMITTED',
+      ...(Object.keys(deliverableLinks).length > 0
+        ? Object.entries(deliverableLinks).map(([idx, link]) => `#${parseInt(idx) + 1} | Status: ${statuses[parseInt(idx)] || 'uploaded'} | Link: ${link}`)
+        : ['None']),
+      '',
+      'CHAT / NEGOTIATION LOG',
+      ...(messages.length > 0
+        ? messages.map((m, i) => `${i + 1}. [${m.isoTime || m.time || 'N/A'}] ${String(m.sender || 'unknown').toUpperCase()}: ${m.text || ''}`)
+        : ['No messages recorded']),
+      '',
+      'LEGAL NOTE',
+      'This document is an exported platform summary for dispute review and record-keeping.',
+    ];
+
+    const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `valueskins-deal-summary-${dealKey.replace(/\|/g, '-')}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }, [agreedDealAmount, profileName, selectedMarketplaceSkin]);
 
   // Messages state (DMs + Communities)
   const [messagesTab, setMessagesTab] = useState<'dms' | 'communities' | 'create'>('dms');
@@ -2732,7 +2788,7 @@ export default function InstagramDemoPage() {
                                   }}
                                   style={{ flex: 1, fontSize: '13px', fontWeight: 700, color: '#fff', background: isDealDone ? C.textMuted : hasActiveDeal ? C.success : C.primary, border: 'none', padding: '10px', borderRadius: '10px', cursor: isDealDone ? 'default' : 'pointer', opacity: isDealDone ? 0.6 : 1 }}
                                 >
-                                  {isDealDone ? 'Deal Complete' : hasActiveDeal ? 'Open Deal' : 'View Deal'}
+                                  {isDealDone ? 'Approved and Deal Completed' : hasActiveDeal ? 'Open Deal' : 'View Deal'}
                                 </button>
                               </div>
 
@@ -4191,8 +4247,14 @@ export default function InstagramDemoPage() {
                                                 <div style={{ width:'40px', height:'40px', borderRadius:'50%', background:C.surfaceAlt, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 10px' }}>
                                                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={C.textSecondary} strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
                                                 </div>
-                                                <div style={{ fontSize:'15px', fontWeight:700, color:C.text, marginBottom:'4px' }}>Deal Complete</div>
+                                                <div style={{ fontSize:'15px', fontWeight:700, color:C.text, marginBottom:'4px' }}>Approved and Deal Completed</div>
                                                 <div style={{ fontSize:'12px', color:C.textSecondary, marginBottom:'16px' }}>All deliverables approved. All milestones paid.</div>
+                                                <button
+                                                  onClick={() => { if (activeDealKey && activeDeal) downloadDealSummary(activeDealKey, activeDeal); }}
+                                                  style={{ width:'100%', background:C.primary, border:'none', borderRadius:'8px', padding:'9px', color:'#fff', fontWeight:700, cursor:'pointer', fontSize:'12px', marginBottom:'12px' }}
+                                                >
+                                                  Download Legal Deal Summary
+                                                </button>
                                                 <div style={{ background:'rgba(46,125,50,0.06)', border:'1px solid rgba(46,125,50,0.2)', borderRadius:'8px', padding:'12px', marginBottom:'14px' }}>
                                                   <div style={{ fontSize:'11px', color:C.textMuted, marginBottom:'2px' }}>Total Earnings</div>
                                                   <div style={{ fontSize:'22px', fontWeight:800, color:C.success }}>${parseInt(dealCounterAmount || '5000').toLocaleString()}</div>
@@ -4360,7 +4422,7 @@ export default function InstagramDemoPage() {
                                                 <div style={{ width:'40px', height:'40px', borderRadius:'50%', background:C.surfaceAlt, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 10px' }}>
                                                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={C.success} strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
                                                 </div>
-                                                <div style={{ fontSize:'15px', fontWeight:700, color:C.text, marginBottom:'4px' }}>Deal Complete</div>
+                                                <div style={{ fontSize:'15px', fontWeight:700, color:C.text, marginBottom:'4px' }}>Approved and Deal Completed</div>
                                                 <div style={{ fontSize:'12px', color:C.textSecondary, marginBottom:'16px' }}>Brand approved your content. Barter deal finished.</div>
                                                 <div style={{ display:'flex', gap:'8px' }}>
                                                   <button onClick={() => { if (activeDealKey) { setDealStates(prev => { const next = {...prev}; delete next[activeDealKey]; return next; }); } setNegotiatingOpp(null); }} style={{ flex:1, background:C.primary, border:'none', padding:'10px', borderRadius:'8px', color:'#fff', fontWeight:600, cursor:'pointer', fontSize:'12px' }}>
@@ -6456,7 +6518,7 @@ export default function InstagramDemoPage() {
                                                   });
                                                   firebaseSendNotification('Creator', 'application', `Deliverables approved! Final payment released: $${approvalAmt.toLocaleString()}`);
                                                 }
-                                                setPurchaseToast(`Deliverable approved — $${approvalAmt.toLocaleString()} approval payment released to creator`);
+                                                setPurchaseToast(`Approved and deal completed — $${approvalAmt.toLocaleString()} approval payment released to creator`);
                                                 setTimeout(() => setPurchaseToast(null), 3500);
                                               }}
                                               style={{ flex:1, background: canApprove ? C.success : C.border, border:'none', padding:'9px', borderRadius:'8px', color:'#fff', fontWeight:600, cursor: canApprove ? 'pointer' : 'not-allowed', fontSize:'13px', opacity: canApprove ? 1 : 0.5 }}
@@ -6512,7 +6574,7 @@ export default function InstagramDemoPage() {
                                                   }
                                                 }
                                                 firebaseSendNotification('Creator', 'application', 'Content approved!');
-                                                setPurchaseToast('Content approved');
+                                                setPurchaseToast('Approved and deal completed');
                                                 setTimeout(() => setPurchaseToast(null), 3000);
                                               }}
                                               style={{ flex:1, background: contentLink ? C.success : C.border, border:'none', padding:'9px', borderRadius:'8px', color:'#fff', fontWeight:600, cursor: contentLink ? 'pointer' : 'not-allowed', fontSize:'13px', opacity: contentLink ? 1 : 0.5 }}
@@ -6530,8 +6592,14 @@ export default function InstagramDemoPage() {
                                       <div style={{ width:'36px', height:'36px', borderRadius:'50%', background:C.surfaceAlt, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 8px' }}>
                                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.textSecondary} strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
                                       </div>
-                                      <div style={{ fontSize:'14px', fontWeight:700, color:C.text, marginBottom:'4px' }}>Deal Complete</div>
+                                      <div style={{ fontSize:'14px', fontWeight:700, color:C.text, marginBottom:'4px' }}>Approved and Deal Completed</div>
                                       <div style={{ fontSize:'12px', color:C.textSecondary, marginBottom:'12px' }}>Payment released: ${parseInt(agreedDealAmount).toLocaleString()}</div>
+                                      <button
+                                        onClick={() => { if (brandDealKey && brandDeal) downloadDealSummary(brandDealKey, brandDeal); }}
+                                        style={{ width:'100%', background:C.primary, border:'none', borderRadius:'8px', padding:'9px', color:'#fff', fontWeight:700, cursor:'pointer', fontSize:'12px', marginBottom:'12px' }}
+                                      >
+                                        Download Legal Deal Summary
+                                      </button>
                                       {/* Brand rating for creator */}
                                       {!brandRatingSubmitted ? (
                                         <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:'10px', padding:'14px', marginBottom:'12px', textAlign:'left' }}>
