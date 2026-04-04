@@ -260,7 +260,7 @@ const MOCK_REPUTATION = {
 };
 
 export default function InstagramDemoPage() {
-  const [activeView, setActiveView] = useState<'profile' | 'mim' | 'store' | 'admin' | 'messages' | 'settings' | 'explore' | 'notifications'>('profile');
+  const [activeView, setActiveView] = useState<'home' | 'profile' | 'mim' | 'store' | 'admin' | 'messages' | 'settings' | 'explore' | 'notifications'>('home');
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 480);
@@ -1849,14 +1849,71 @@ export default function InstagramDemoPage() {
         </div>
       )}
 
+      {activeView === 'home' && (
+        <button
+          onClick={() => {
+            setMarketplaceRole('none');
+            setActiveView('mim');
+            setPurchaseToast('Opening TikTok Marketplace');
+            setTimeout(() => setPurchaseToast(null), 2200);
+          }}
+          style={{
+            position: 'fixed',
+            top: isMobile ? '10px' : '14px',
+            right: isMobile ? '12px' : '18px',
+            zIndex: 100000,
+            border: '1px solid #FE2C55',
+            background: '#121212',
+            color: '#FE2C55',
+            borderRadius: '999px',
+            fontSize: isMobile ? '11px' : '12px',
+            fontWeight: 700,
+            padding: isMobile ? '8px 12px' : '10px 16px',
+            cursor: 'pointer',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
+            letterSpacing: '0.2px',
+          }}
+        >
+          Marketplace
+        </button>
+      )}
+
+      {activeView === 'home' && (
+        <button
+          onClick={() => {
+            setActiveView('store');
+            setPurchaseToast('Opening ValueSkins');
+            setTimeout(() => setPurchaseToast(null), 2200);
+          }}
+          style={{
+            position: 'fixed',
+            top: isMobile ? '10px' : '14px',
+            right: isMobile ? '126px' : '152px',
+            zIndex: 100000,
+            border: '1px solid #3A3A3A',
+            background: '#181818',
+            color: '#F1F1F1',
+            borderRadius: '999px',
+            fontSize: isMobile ? '11px' : '12px',
+            fontWeight: 700,
+            padding: isMobile ? '8px 12px' : '10px 16px',
+            cursor: 'pointer',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
+            letterSpacing: '0.2px',
+          }}
+        >
+          ValueSkins
+        </button>
+      )}
+
       {/* Left Sidebar — desktop only */}
       {!isMobile && (
         <div style={{ width: '240px', borderRight: `1px solid ${C.border}`, padding: '20px 16px', display: 'flex', flexDirection: 'column', gap: '16px', height: '100vh', overflowY: 'auto', position: 'sticky', top: 0, background: C.bg, flexShrink: 0 }}>
           <Link href="/" style={{ textDecoration: 'none' }}>
-            <div style={{ fontSize: '22px', fontWeight: 700, color: C.text, marginBottom: '16px', cursor: 'pointer', fontStyle: 'italic' }}>Instagram</div>
+            <div style={{ fontSize: '22px', fontWeight: 700, color: C.text, marginBottom: '16px', cursor: 'pointer', fontStyle: 'italic' }}>TikTok</div>
           </Link>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            <NavItem label="Home" active={false} onClick={() => {}} />
+            <NavItem label="Home" active={activeView === 'home'} onClick={() => setActiveView('home')} />
             <NavItem label="Explore" active={activeView === 'explore'} onClick={() => setActiveView('explore')} />
             <NavItem label="Messages" active={activeView === 'messages'} onClick={() => { setActiveCommunity(null); setActiveDmId(null); setActiveView('messages'); }} />
             <NavItem label="Notifications" active={activeView === 'notifications'} badgeCount={notifications.filter(n => !n.read).length} onClick={() => { setNotifications(prev => prev.map(n => ({ ...n, read: true }))); setActiveView('notifications'); }} />
@@ -1875,6 +1932,23 @@ export default function InstagramDemoPage() {
       {/* Main Content */}
       <div style={{ flex: 1, display: 'flex', justifyContent: 'center', overflowX: 'hidden', paddingBottom: isMobile ? '60px' : 0 }}>
         <div style={{ width: '100%', maxWidth: (activeView === 'store' || activeView === 'mim' || activeView === 'admin') ? '900px' : '600px', borderLeft: isMobile ? 'none' : `1px solid ${C.border}`, borderRight: isMobile ? 'none' : `1px solid ${C.border}`, background: C.bg, overflowX: 'hidden' }}>
+
+          {/* ── HOME VIEW (FIGMA CLONE BASE) ─────────────────── */}
+          {activeView === 'home' && (
+            <div style={{ position: 'relative', width: '100%', minHeight: '100vh', background: '#0F0F0F' }}>
+              <img
+                src="/mockups/tiktok-home-for-you.png"
+                alt="TikTok home clone"
+                style={{
+                  width: '100%',
+                  height: 'auto',
+                  display: 'block',
+                  objectFit: 'contain',
+                  background: '#0F0F0F',
+                }}
+              />
+            </div>
+          )}
 
           {/* ── PROFILE VIEW ──────────────────────────────────── */}
           {activeView === 'profile' && (
