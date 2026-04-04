@@ -1206,6 +1206,41 @@ export default function InstagramDemoPage() {
     setSharedApplications(updated);
     updated.forEach(a => firebaseCreateApplication(a));
   };
+  const resetMvpDemoState = () => {
+    // Full MVP reset: clear in-memory state and persisted demo storage.
+    setDealStates({});
+    setSharedApplications([]);
+    setCampaigns([]);
+    setCompletedDeals([]);
+    setUploadedItems([]);
+    setNegotiatingOpp(null);
+    setNegotiatingCreator(null);
+    setSelectedMarketplaceSkin(null);
+    setCreatorMarketplaceTab('opportunities');
+    setMarketplaceTab('creators');
+    setCreatorCampaignSearch('');
+    setNewCampaignTitle('');
+    setNewCampaignDesc('');
+    setNewCampaignBudget('');
+    setNewCampaignDeadline('');
+    setNewCampaignDeliverables('');
+    setPurchaseToast('MVP reset complete — demo restarted from beginning');
+    setTimeout(() => setPurchaseToast(null), 2500);
+    if (typeof window !== 'undefined') {
+      const keys = [
+        'vs_demo_persist',
+        'vs_demo_deal_sync',
+        'vs_demo_value_skins',
+        'vs_demo_hidden_skins',
+        'vs_demo_campaigns',
+        'vs_demo_applications',
+        'vs_brand_negotiating_creator',
+      ];
+      keys.forEach(k => localStorage.removeItem(k));
+      // Reload to guarantee every derived state starts fresh for pitch flow.
+      window.location.reload();
+    }
+  };
 
   // Keep legacy myApplications wired to sharedApplications for creator view
   const myApplications = sharedApplications;
@@ -2609,7 +2644,10 @@ export default function InstagramDemoPage() {
                             {activeDeals.map(([k]) => { const [skin] = k.split(':'); return skin; }).filter((v,i,a)=>a.indexOf(v)===i).join(', ')}
                           </div>
                         </div>
-                        <button onClick={() => { setDealStates({}); setNegotiatingOpp(null); }} style={{ background:'none', border:`1px solid rgba(239,68,68,0.3)`, borderRadius:'6px', padding:'4px 10px', fontSize:'11px', fontWeight:600, color:'#ef4444', cursor:'pointer', flexShrink:0 }}>Clear all</button>
+                        <div style={{ display:'flex', gap:'6px', flexShrink:0 }}>
+                          <button onClick={() => { setDealStates({}); setNegotiatingOpp(null); }} style={{ background:'none', border:`1px solid rgba(239,68,68,0.3)`, borderRadius:'6px', padding:'4px 10px', fontSize:'11px', fontWeight:600, color:'#ef4444', cursor:'pointer' }}>Clear all</button>
+                          <button onClick={resetMvpDemoState} style={{ background:'#ef4444', border:'none', borderRadius:'6px', padding:'4px 10px', fontSize:'11px', fontWeight:700, color:'#fff', cursor:'pointer' }}>MVP Reset</button>
+                        </div>
                       </div>
                     )}
 
