@@ -211,35 +211,37 @@ export default function TwitchDemoPage() {
             ))}
           </div>
 
-          <div className="sidebarTools">
-            <div className="toolsLabel">ValueSkins on Twitch</div>
-            <button type="button" className={`toolBtn ${view === 'mim' ? 'active' : ''}`} onClick={() => setView('mim')}>
-              Network
-            </button>
-            <button type="button" className={`toolBtn ${view === 'store' ? 'active' : ''}`} onClick={() => setView('store')}>
-              Loadout
-            </button>
-            <button
-              type="button"
-              className="toolBtn"
-              onClick={() => {
-                setRole('creator');
-                setView('mim');
-              }}
-            >
-              Streamer view
-            </button>
-            <button
-              type="button"
-              className="toolBtn"
-              onClick={() => {
-                setRole('brand');
-                setView('mim');
-              }}
-            >
-              Sponsor view
-            </button>
-          </div>
+          {view !== 'browse' && (
+            <div className="sidebarTools">
+              <div className="toolsLabel">ValueSkins on Twitch</div>
+              <button type="button" className={`toolBtn ${view === 'mim' ? 'active' : ''}`} onClick={() => setView('mim')}>
+                Network
+              </button>
+              <button type="button" className={`toolBtn ${view === 'store' ? 'active' : ''}`} onClick={() => setView('store')}>
+                Loadout
+              </button>
+              <button
+                type="button"
+                className="toolBtn"
+                onClick={() => {
+                  setRole('creator');
+                  setView('mim');
+                }}
+              >
+                Streamer view
+              </button>
+              <button
+                type="button"
+                className="toolBtn"
+                onClick={() => {
+                  setRole('brand');
+                  setView('mim');
+                }}
+              >
+                Sponsor view
+              </button>
+            </div>
+          )}
         </aside>
 
         <main className="content">
@@ -322,17 +324,9 @@ export default function TwitchDemoPage() {
                       <button type="button" className="pill primaryPill">Follow</button>
                       <button type="button" className="pill mutedPill">Subscribe</button>
                       <button type="button" className="pill mutedPill">Gift a Sub</button>
+                      <button type="button" className="pill mutedPill" onClick={() => setView('mim')}>ValueSkins Network</button>
+                      <button type="button" className="pill mutedPill" onClick={() => setView('store')}>ValueSkins Loadout</button>
                     </div>
-                  </div>
-                  <div className="featureStrip">
-                    <button type="button" className="featureCard" onClick={() => setView('mim')}>
-                      <span>ValueSkins Network</span>
-                      <strong>Open sponsor activations</strong>
-                    </button>
-                    <button type="button" className="featureCard" onClick={() => setView('store')}>
-                      <span>ValueSkins Loadout</span>
-                      <strong>Turn on channel trust signals</strong>
-                    </button>
                   </div>
                 </div>
               </div>
@@ -468,7 +462,6 @@ export default function TwitchDemoPage() {
         .showAllBtn,
         .buyBtn,
         .pill,
-        .featureCard,
         .streamCard,
         .channelRow,
         .roleCard,
@@ -598,7 +591,6 @@ export default function TwitchDemoPage() {
         .channelRow:hover,
         .toolBtn:hover,
         .streamCard:hover,
-        .featureCard:hover,
         .roleCard:hover {
           background: rgba(255, 255, 255, 0.04);
         }
@@ -886,15 +878,10 @@ export default function TwitchDemoPage() {
           font-size: 26px;
         }
 
-        .watchActions,
-        .featureStrip {
+        .watchActions {
           display: flex;
           gap: 10px;
           flex-wrap: wrap;
-        }
-
-        .featureStrip {
-          margin-top: 18px;
         }
 
         .pill {
@@ -912,23 +899,6 @@ export default function TwitchDemoPage() {
 
         .mutedPill {
           background: #2d2d35;
-        }
-
-        .featureCard {
-          flex: 1;
-          min-width: 220px;
-          padding: 16px;
-          border-radius: 14px;
-          background: #18181b;
-          color: #efeff1;
-          text-align: left;
-        }
-
-        .featureCard span {
-          display: block;
-          color: #adadb8;
-          font-size: 13px;
-          margin-bottom: 6px;
         }
 
         .chatHeader {
@@ -1106,7 +1076,7 @@ export default function TwitchDemoPage() {
           height: 48px;
           border-radius: 12px;
           background: rgba(255, 255, 255, 0.16);
-          font-size: 16px;
+          font-size: 14px;
           font-weight: 900;
         }
 
