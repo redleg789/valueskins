@@ -2408,12 +2408,12 @@ export default function LinkedInDemoPage() {
                   <div style={{ padding: '40px 16px' }}>
                     <div style={{ textAlign: 'center', marginBottom: '28px' }}>
                       <h2 style={{ fontSize: '20px', fontWeight: 700, color: C.text, marginBottom: '6px' }}>Choose your role</h2>
-                      <p style={{ fontSize: '14px', color: C.textSecondary }}>Select how you want to use the marketplace</p>
+                      <p style={{ fontSize: '14px', color: C.textSecondary }}>Choose your LinkedIn-side workflow</p>
                     </div>
                     <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
                       {([
-                        { role: 'creator' as const, title: 'Login as Candidate', desc: 'Find brand deals matched to your ValueSkins', icon: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2' },
-                        { role: 'brand' as const, title: 'Login as Hiring Team', desc: 'Find verified experts for hiring and professional collaborations', icon: 'M22 12h-4l-3 9L9 3l-3 9H2' },
+                        { role: 'creator' as const, title: 'Login as Professional', desc: 'Find roles and advisory briefs matched to your ValueSkins', icon: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2' },
+                        { role: 'brand' as const, title: 'Login as Hiring Team', desc: 'Find verified experts for hiring, projects, and advisory work', icon: 'M22 12h-4l-3 9L9 3l-3 9H2' },
                       ]).map(({ role, title, desc, icon }) => (
                         <button
                           key={role}

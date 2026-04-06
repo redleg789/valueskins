@@ -1,6 +1,6 @@
 'use client';
 // ARCHITECTURE: See ARCHITECTURE_GUIDE.txt for codebase overview
-// FILE PURPOSE: Main Instagram demo page - shows creator & brand workflow
+// FILE PURPOSE: Main TikTok demo page - shows creator & brand workflow
 // ROLE IN SYSTEM: Frontend UI component that displays marketplace, deals, chat, script negotiation
 // DATA SOURCE: useDealSync.ts (local state) + api.ts (backend calls) + Firebase (real-time)
 // OUTPUT: Interactive UI where creators browse offers and negotiate with brands
@@ -2482,12 +2482,12 @@ export default function InstagramDemoPage() {
                   <div style={{ padding: '40px 16px' }}>
                     <div style={{ textAlign: 'center', marginBottom: '28px' }}>
                       <h2 style={{ fontSize: '20px', fontWeight: 700, color: C.text, marginBottom: '6px' }}>Choose your role</h2>
-                      <p style={{ fontSize: '14px', color: C.textSecondary }}>Select how you want to use the marketplace</p>
+                      <p style={{ fontSize: '14px', color: C.textSecondary }}>Choose your TikTok-side workflow</p>
                     </div>
                     <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
                       {([
-                        { role: 'creator' as const, title: 'Login as Creator', desc: 'Find brand deals matched to your ValueSkins', icon: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2' },
-                        { role: 'brand' as const, title: 'Login as Brand', desc: 'Find creators for your campaigns', icon: 'M22 12h-4l-3 9L9 3l-3 9H2' },
+                        { role: 'creator' as const, title: 'Login as Creator', desc: 'Find campaign briefs matched to your ValueSkins', icon: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2' },
+                        { role: 'brand' as const, title: 'Login as Brand', desc: 'Find creators for trend-led campaigns and launches', icon: 'M22 12h-4l-3 9L9 3l-3 9H2' },
                       ]).map(({ role, title, desc, icon }) => (
                         <button
                           key={role}
@@ -7966,7 +7966,7 @@ export default function InstagramDemoPage() {
             <>
               {/* Store header */}
               <div style={{ padding: '12px 16px 0', position: 'sticky', top: 0, background: C.bg, zIndex: 10 }}>
-                <span style={{ fontSize: '22px', fontWeight: 700, color: C.text, display: 'block', marginBottom: '14px' }}>ValueSkins Store</span>
+                <span style={{ fontSize: '22px', fontWeight: 700, color: C.text, display: 'block', marginBottom: '14px' }}>ValueSkins Drop</span>
                 {/* Search bar */}
                 <div style={{ position: 'relative', marginBottom: '14px' }}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }}>
