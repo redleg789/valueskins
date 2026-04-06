@@ -147,7 +147,7 @@ export default function TwitchDemoPage() {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search streams, categories, or creators"
+            placeholder="Search channels, categories, or streamers"
             className="searchInput"
           />
           <button type="button" className="searchBtn" aria-label="Search">
@@ -214,7 +214,7 @@ export default function TwitchDemoPage() {
               }}
               className="sidebarAction"
             >
-              Creator view
+              Streamer view
             </button>
             <button
               type="button"
@@ -224,7 +224,7 @@ export default function TwitchDemoPage() {
               }}
               className="sidebarAction"
             >
-              Brand view
+              Sponsor view
             </button>
           </div>
         </aside>
@@ -232,16 +232,16 @@ export default function TwitchDemoPage() {
         <main className="mainContent">
           <div className="hero">
             <div>
-              <div className="eyebrow">Live commerce for streamers</div>
+              <div className="eyebrow">Live channel growth for Twitch</div>
               <h1 className="heroTitle">A Twitch-style layout with ValueSkins folded in naturally.</h1>
               <p className="heroText">
-                Streamers discover sponsorships and storefront value without the page breaking out of familiar Twitch patterns.
+                Streamers get discovery, sponsor trust, and channel-level signals without breaking the native Twitch feel.
               </p>
             </div>
             <div className="heroStats">
               <div className="heroStat">
                 <strong>2 sides</strong>
-                <span>Creators and sponsors</span>
+                <span>Streamers and sponsors</span>
               </div>
               <div className="heroStat">
                 <strong>6 live demos</strong>
@@ -329,12 +329,12 @@ export default function TwitchDemoPage() {
 
                   <div className="featureStrip">
                     <button type="button" onClick={() => setView('mim')} className="featureCard">
-                      <span>ValueSkins Marketplace</span>
-                      <strong>Launch sponsor flow</strong>
+                      <span>ValueSkins Network</span>
+                      <strong>Open sponsor activations</strong>
                     </button>
                     <button type="button" onClick={() => setView('store')} className="featureCard">
-                      <span>ValueSkins Store</span>
-                      <strong>Sell creator identity packs</strong>
+                      <span>ValueSkins Loadout</span>
+                      <strong>Turn on channel trust signals</strong>
                     </button>
                   </div>
                 </div>
@@ -361,27 +361,27 @@ export default function TwitchDemoPage() {
 
           {view === 'mim' && (
             <section className="pageSection">
-              <div className="sectionTitle">ValueSkins Marketplace</div>
+              <div className="sectionTitle">ValueSkins Network</div>
               <div className="marketIntro">
-                The two sides for Twitch should be streamers on one side and brands, game publishers, or sponsors on the other.
+                On Twitch, the two sides are streamers and sponsors, including brands, publishers, and event partners.
               </div>
 
               {role === 'none' ? (
                 <div className="roleGrid">
                   <button type="button" onClick={() => setRole('creator')} className="roleCard">
-                    <span className="roleBadge">Creator</span>
-                    <div className="roleTitle">See inbound sponsor deals</div>
-                    <div className="roleText">Streamers review paid activations, audience fit, and trust signals.</div>
+                    <span className="roleBadge">Streamer</span>
+                    <div className="roleTitle">See inbound activations</div>
+                    <div className="roleText">Streamers review paid stream integrations, audience fit, and trust signals.</div>
                   </button>
                   <button type="button" onClick={() => setRole('brand')} className="roleCard">
-                    <span className="roleBadge alt">Brand</span>
-                    <div className="roleTitle">Search streamers by audience quality</div>
-                    <div className="roleText">Sponsors find trusted creators by game, category, and chat retention.</div>
+                    <span className="roleBadge alt">Sponsor</span>
+                    <div className="roleTitle">Find channels with real traction</div>
+                    <div className="roleText">Sponsors find trusted streamers by game, category, and chat retention.</div>
                   </button>
                 </div>
               ) : role === 'creator' ? (
                 <div className="panel">
-                  <div className="statusLabel creator">Creator mode active</div>
+                  <div className="statusLabel creator">Streamer mode active</div>
                   {MARKETPLACE_DEALS.map((deal) => (
                     <div key={deal} className="listItem">
                       {deal}
@@ -390,7 +390,7 @@ export default function TwitchDemoPage() {
                 </div>
               ) : (
                 <div className="panel">
-                  <div className="statusLabel brand">Brand mode active</div>
+                  <div className="statusLabel brand">Sponsor mode active</div>
                   {BRAND_MATCHES.map((creator) => (
                     <div key={creator} className="listItem">
                       {creator}
@@ -403,17 +403,17 @@ export default function TwitchDemoPage() {
 
           {view === 'store' && (
             <section className="pageSection">
-              <div className="sectionTitle">ValueSkins Store</div>
-              <div className="sectionSubtext">Identity packs creators can buy to signal niche, quality, and deal readiness.</div>
+              <div className="sectionTitle">ValueSkins Loadout</div>
+              <div className="sectionSubtext">Channel badges streamers can turn on to signal niche, trust, and sponsor readiness.</div>
               <div className="storeGrid">
                 {STORE_SKINS.map((skin) => (
                   <div key={skin} className="storeCard">
                     <div className="storeTop">
-                      <span className="storeTag">ValueSkin</span>
+                      <span className="storeTag">Channel Badge</span>
                       <span className="storePrice">$29</span>
                     </div>
                     <div className="storeTitle">{skin}</div>
-                    <div className="storeText">Use this skin to unlock more targeted matches and storefront positioning.</div>
+                    <div className="storeText">Use this badge to unlock more targeted matches and stronger sponsor positioning.</div>
                     <button type="button" className="buyBtn">
                       Buy now
                     </button>
