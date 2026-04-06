@@ -11,6 +11,7 @@ type StreamCard = {
   creator: string;
   game: string;
   viewers: string;
+  category: string;
   thumb: string;
 };
 
@@ -21,6 +22,7 @@ const STREAMS: StreamCard[] = [
     creator: 'Mande',
     game: 'Just Chatting',
     viewers: '4.1K',
+    category: 'IRL',
     thumb: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1200&q=80',
   },
   {
@@ -29,6 +31,7 @@ const STREAMS: StreamCard[] = [
     creator: 'eggsterr',
     game: 'VALORANT',
     viewers: '1.1K',
+    category: 'Competitive',
     thumb: 'https://images.unsplash.com/photo-1542751110-97427bbecf20?auto=format&fit=crop&w=1200&q=80',
   },
   {
@@ -37,6 +40,7 @@ const STREAMS: StreamCard[] = [
     creator: 'ESLCS',
     game: 'Counter-Strike',
     viewers: '285',
+    category: 'Esports',
     thumb: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=1200&q=80',
   },
   {
@@ -45,6 +49,7 @@ const STREAMS: StreamCard[] = [
     creator: 'Lacy',
     game: 'Just Chatting',
     viewers: '15.2K',
+    category: 'Community',
     thumb: 'https://images.unsplash.com/photo-1504593811423-6dd665756598?auto=format&fit=crop&w=1200&q=80',
   },
   {
@@ -53,6 +58,7 @@ const STREAMS: StreamCard[] = [
     creator: 'TenZ',
     game: 'VALORANT',
     viewers: '6.8K',
+    category: 'FPS',
     thumb: 'https://images.unsplash.com/photo-1603481546238-487240415921?auto=format&fit=crop&w=1200&q=80',
   },
   {
@@ -61,6 +67,7 @@ const STREAMS: StreamCard[] = [
     creator: 'ion2x',
     game: 'VALORANT',
     viewers: '334',
+    category: 'Challenge',
     thumb: 'https://images.unsplash.com/photo-1560253023-3ec5d502959f?auto=format&fit=crop&w=1200&q=80',
   },
 ];
@@ -74,6 +81,34 @@ const CHANNELS = [
   { name: 'CDAwg', game: 'Just Chatting', viewers: '24.4K' },
 ];
 
+const MARKETPLACE_DEALS = [
+  'HyperX: 2 sponsored streams + clip package ($3,000)',
+  'Razer: Gear showcase with pinned command CTA ($1,800)',
+  'Corsair: Live gear review + giveaway activation ($2,100)',
+];
+
+const BRAND_MATCHES = [
+  'TenZ · VALORANT · 6.8K live viewers · Trust tier A',
+  'CDAwg · Just Chatting · 24.4K viewers · Brand safe',
+  'ion2x · VALORANT · 334 viewers · High chat conversion',
+];
+
+const STORE_SKINS = [
+  'FPS Pro',
+  'Chat Magnet',
+  'Brand Safe',
+  'Speedrunner',
+  'Esports Analyst',
+  'Community Builder',
+];
+
+const CHAT_MESSAGES = [
+  { user: 'noukhii', text: 'Sens and setup posted above.' },
+  { user: 'fpsfan_21', text: 'clutch incoming' },
+  { user: 'brandwatch', text: 'this streamer has insane retention' },
+  { user: 'mod_mira', text: 'drop your favorite loadout in chat' },
+];
+
 export default function TwitchDemoPage() {
   const [query, setQuery] = useState('');
   const [view, setView] = useState<View>('browse');
@@ -83,229 +118,1119 @@ export default function TwitchDemoPage() {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return STREAMS;
-    return STREAMS.filter((s) => `${s.title} ${s.creator} ${s.game}`.toLowerCase().includes(q));
+    return STREAMS.filter((stream) =>
+      `${stream.title} ${stream.creator} ${stream.game} ${stream.category}`.toLowerCase().includes(q)
+    );
   }, [query]);
 
+  const openStream = (stream: StreamCard) => {
+    setSelected(stream);
+    setView('watch');
+  };
+
   return (
-    <div className="twitch-page">
+    <div className="twitchPage">
       <header className="topbar">
-        <div className="logo">T</div>
-        <div className="browse">Browse</div>
-        <div className="searchWrap">
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search" className="searchInput" />
-          <button className="searchBtn">⌕</button>
+        <div className="topbarLeft">
+          <button type="button" className="logo" onClick={() => setView('browse')} aria-label="Open home">
+            <span>glitch</span>
+          </button>
+          <button type="button" className="navLink" onClick={() => setView('browse')}>
+            Following
+          </button>
+          <button type="button" className="navLink" onClick={() => setView('browse')}>
+            Browse
+          </button>
         </div>
-        <button className="ghost">Log In</button>
-        <button className="primary">Sign Up</button>
+
+        <div className="searchWrap">
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search streams, categories, or creators"
+            className="searchInput"
+          />
+          <button type="button" className="searchBtn" aria-label="Search">
+            Search
+          </button>
+        </div>
+
+        <div className="topbarRight">
+          <button type="button" className="ghostBtn">
+            Log In
+          </button>
+          <button type="button" className="primaryBtn">
+            Sign Up
+          </button>
+        </div>
       </header>
 
       <div className="layout">
-        <aside className="leftRail">
-          <div className="railTitle">Live Channels</div>
-          {CHANNELS.map((ch) => (
-            <button key={ch.name} onClick={() => setView('watch')} className="channelBtn">
-              <div>
-                <div className="channelName">{ch.name}</div>
-                <div className="channelGame">{ch.game}</div>
-              </div>
-              <div className="channelViewers">• {ch.viewers}</div>
-            </button>
-          ))}
+        <aside className="sidebar">
+          <div className="sidebarSection">
+            <div className="sectionHeader">Followed Channels</div>
+            {CHANNELS.map((channel) => (
+              <button
+                key={channel.name}
+                type="button"
+                onClick={() => {
+                  const matchingStream = STREAMS.find((stream) => stream.creator.toLowerCase() === channel.name.toLowerCase());
+                  if (matchingStream) {
+                    openStream(matchingStream);
+                    return;
+                  }
+                  setView('watch');
+                }}
+                className="channelBtn"
+              >
+                <div className="channelIdentity">
+                  <div className="channelAvatar">{channel.name.slice(0, 2).toUpperCase()}</div>
+                  <div>
+                    <div className="channelName">{channel.name}</div>
+                    <div className="channelGame">{channel.game}</div>
+                  </div>
+                </div>
+                <div className="channelStats">
+                  <span className="liveDot" />
+                  {channel.viewers}
+                </div>
+              </button>
+            ))}
+          </div>
 
-          <div className="divider" />
-          <div className="valueSkinsTitle">ValueSkins</div>
-          <button onClick={() => setView('mim')} className={`vsBtn ${view === 'mim' ? 'active' : ''}`}>Marketplace</button>
-          <button onClick={() => setView('store')} className={`vsBtn ${view === 'store' ? 'active' : ''}`}>Store</button>
-          <button onClick={() => { setView('mim'); setRole('creator'); }} className="vsBtn">Login as Creator</button>
-          <button onClick={() => { setView('mim'); setRole('brand'); }} className="vsBtn">Login as Brand</button>
+          <div className="sidebarSection">
+            <div className="sectionHeader accent">ValueSkins on Twitch</div>
+            <button type="button" onClick={() => setView('mim')} className={`sidebarAction ${view === 'mim' ? 'active' : ''}`}>
+              Marketplace
+            </button>
+            <button type="button" onClick={() => setView('store')} className={`sidebarAction ${view === 'store' ? 'active' : ''}`}>
+              Store
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setRole('creator');
+                setView('mim');
+              }}
+              className="sidebarAction"
+            >
+              Creator view
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setRole('brand');
+                setView('mim');
+              }}
+              className="sidebarAction"
+            >
+              Brand view
+            </button>
+          </div>
         </aside>
 
-        <main className="content">
+        <main className="mainContent">
+          <div className="hero">
+            <div>
+              <div className="eyebrow">Live commerce for streamers</div>
+              <h1 className="heroTitle">A Twitch-style layout with ValueSkins folded in naturally.</h1>
+              <p className="heroText">
+                Streamers discover sponsorships and storefront value without the page breaking out of familiar Twitch patterns.
+              </p>
+            </div>
+            <div className="heroStats">
+              <div className="heroStat">
+                <strong>2 sides</strong>
+                <span>Creators and sponsors</span>
+              </div>
+              <div className="heroStat">
+                <strong>6 live demos</strong>
+                <span>Browse, watch, marketplace, store</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="contentTabs">
+            <button type="button" className={`tab ${view === 'browse' ? 'active' : ''}`} onClick={() => setView('browse')}>
+              Home
+            </button>
+            <button type="button" className={`tab ${view === 'watch' ? 'active' : ''}`} onClick={() => setView('watch')}>
+              Watch
+            </button>
+            <button type="button" className={`tab ${view === 'mim' ? 'active' : ''}`} onClick={() => setView('mim')}>
+              Marketplace
+            </button>
+            <button type="button" className={`tab ${view === 'store' ? 'active' : ''}`} onClick={() => setView('store')}>
+              Store
+            </button>
+          </div>
+
           {view === 'browse' && (
-            <>
-              <div className="sectionTitle">Recommended Streams</div>
-              <div className="grid">
-                {filtered.map((s) => (
-                  <button key={s.id} onClick={() => { setSelected(s); setView('watch'); }} className="card">
-                    <div className="thumbWrap">
-                      <img src={s.thumb} alt={s.title} className="thumb" />
-                      <span className="live">LIVE</span>
-                      <span className="viewerBadge">{s.viewers} viewers</span>
+            <section className="pageSection">
+              <div className="sectionTitleRow">
+                <div>
+                  <div className="sectionTitle">Recommended live channels</div>
+                  <div className="sectionSubtext">Clean cards, readable metadata, and the normal Twitch browse rhythm.</div>
+                </div>
+                <div className="resultsBadge">{filtered.length} live now</div>
+              </div>
+
+              <div className="streamGrid">
+                {filtered.map((stream) => (
+                  <button key={stream.id} type="button" onClick={() => openStream(stream)} className="streamCard">
+                    <div className="streamThumbWrap">
+                      <img src={stream.thumb} alt={stream.title} className="streamThumb" />
+                      <span className="liveBadge">LIVE</span>
+                      <span className="viewerBadge">{stream.viewers} viewers</span>
                     </div>
-                    <div className="cardTitle">{s.title}</div>
-                    <div className="cardMeta">{s.creator}</div>
-                    <div className="cardMeta">{s.game}</div>
+                    <div className="streamMeta">
+                      <div className="streamAvatar">{stream.creator.slice(0, 2).toUpperCase()}</div>
+                      <div className="streamText">
+                        <div className="streamTitle">{stream.title}</div>
+                        <div className="streamCreator">{stream.creator}</div>
+                        <div className="streamGame">
+                          {stream.game} · {stream.category}
+                        </div>
+                      </div>
+                    </div>
                   </button>
                 ))}
               </div>
-            </>
+            </section>
           )}
 
           {view === 'watch' && (
-            <>
-              <div className="playerWrap">
-                <img src={selected.thumb} alt={selected.title} className="player" />
-              </div>
-              <div className="watchInfo">
-                <div className="watchTitle">{selected.title}</div>
-                <div className="watchMeta">{selected.creator} · {selected.game} · {selected.viewers} viewers</div>
-                <div className="watchActions">
-                  <button className="pill purple">Follow</button>
-                  <button className="pill dark">Gift a Sub</button>
-                  <button className="pill dark">Subscribe</button>
-                  <button onClick={() => setView('mim')} className="pill blue">ValueSkins Marketplace</button>
-                  <button onClick={() => setView('store')} className="pill violet">ValueSkins Store</button>
+            <section className="watchLayout">
+              <div className="watchMain">
+                <div className="playerCard">
+                  <img src={selected.thumb} alt={selected.title} className="player" />
+                </div>
+
+                <div className="watchInfo">
+                  <div className="watchHeadingRow">
+                    <div>
+                      <div className="watchTitle">{selected.title}</div>
+                      <div className="watchMeta">
+                        {selected.creator} · {selected.game} · {selected.viewers} viewers
+                      </div>
+                    </div>
+                    <div className="watchButtons">
+                      <button type="button" className="pill primaryPill">
+                        Follow
+                      </button>
+                      <button type="button" className="pill mutedPill">
+                        Subscribe
+                      </button>
+                      <button type="button" className="pill mutedPill">
+                        Gift a Sub
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="featureStrip">
+                    <button type="button" onClick={() => setView('mim')} className="featureCard">
+                      <span>ValueSkins Marketplace</span>
+                      <strong>Launch sponsor flow</strong>
+                    </button>
+                    <button type="button" onClick={() => setView('store')} className="featureCard">
+                      <span>ValueSkins Store</span>
+                      <strong>Sell creator identity packs</strong>
+                    </button>
+                  </div>
                 </div>
               </div>
-            </>
+
+              <aside className="chatRail">
+                <div className="chatCard">
+                  <div className="chatHeader">
+                    <div>Stream Chat</div>
+                    <span>{selected.viewers} here</span>
+                  </div>
+                  <div className="chatMessages">
+                    {CHAT_MESSAGES.map((message) => (
+                      <div key={`${message.user}-${message.text}`} className="chatMsg">
+                        <strong>{message.user}</strong> {message.text}
+                      </div>
+                    ))}
+                  </div>
+                  <input placeholder="Send a message" className="chatInput" />
+                </div>
+              </aside>
+            </section>
           )}
 
           {view === 'mim' && (
-            <div className="panel">
-              <div className="panelTitle">ValueSkins Marketplace</div>
+            <section className="pageSection">
+              <div className="sectionTitle">ValueSkins Marketplace</div>
+              <div className="marketIntro">
+                The two sides for Twitch should be streamers on one side and brands, game publishers, or sponsors on the other.
+              </div>
+
               {role === 'none' ? (
                 <div className="roleGrid">
-                  <button onClick={() => setRole('creator')} className="roleCard">
-                    <div className="roleTitle">Login as Creator</div>
-                    <div className="roleText">See matched brand deals and paid collabs.</div>
+                  <button type="button" onClick={() => setRole('creator')} className="roleCard">
+                    <span className="roleBadge">Creator</span>
+                    <div className="roleTitle">See inbound sponsor deals</div>
+                    <div className="roleText">Streamers review paid activations, audience fit, and trust signals.</div>
                   </button>
-                  <button onClick={() => setRole('brand')} className="roleCard">
-                    <div className="roleTitle">Login as Brand</div>
-                    <div className="roleText">Find streamers by game, audience, and trust.</div>
+                  <button type="button" onClick={() => setRole('brand')} className="roleCard">
+                    <span className="roleBadge alt">Brand</span>
+                    <div className="roleTitle">Search streamers by audience quality</div>
+                    <div className="roleText">Sponsors find trusted creators by game, category, and chat retention.</div>
                   </button>
                 </div>
               ) : role === 'creator' ? (
-                <>
-                  <div className="statusGreen">Creator mode active</div>
-                  {['HyperX: 2 sponsored streams ($3,000)', 'Razer: Product showcase + highlights ($1,800)', 'Corsair: Live gear review + giveaway ($2,100)'].map((deal) => (
-                    <div key={deal} className="listItem">{deal}</div>
+                <div className="panel">
+                  <div className="statusLabel creator">Creator mode active</div>
+                  {MARKETPLACE_DEALS.map((deal) => (
+                    <div key={deal} className="listItem">
+                      {deal}
+                    </div>
                   ))}
-                </>
+                </div>
               ) : (
-                <>
-                  <div className="statusBlue">Brand mode active</div>
-                  {['TenZ (VALORANT) - 6.8K live viewers', 'CDAwg (Just Chatting) - 24.4K viewers', 'ion2x (VALORANT) - 334 viewers'].map((creator) => (
-                    <div key={creator} className="listItem">{creator}</div>
+                <div className="panel">
+                  <div className="statusLabel brand">Brand mode active</div>
+                  {BRAND_MATCHES.map((creator) => (
+                    <div key={creator} className="listItem">
+                      {creator}
+                    </div>
                   ))}
-                </>
+                </div>
               )}
-            </div>
+            </section>
           )}
 
           {view === 'store' && (
-            <div className="panel">
-              <div className="panelTitle">ValueSkins Store</div>
+            <section className="pageSection">
+              <div className="sectionTitle">ValueSkins Store</div>
+              <div className="sectionSubtext">Identity packs creators can buy to signal niche, quality, and deal readiness.</div>
               <div className="storeGrid">
-                {['FPS Pro', 'Chat Magnet', 'Brand Safe', 'Speedrunner', 'Esports Analyst', 'Community Builder'].map((skin) => (
+                {STORE_SKINS.map((skin) => (
                   <div key={skin} className="storeCard">
+                    <div className="storeTop">
+                      <span className="storeTag">ValueSkin</span>
+                      <span className="storePrice">$29</span>
+                    </div>
                     <div className="storeTitle">{skin}</div>
-                    <div className="storeText">Use this skin to unlock targeted deals.</div>
-                    <button className="buyBtn">Buy</button>
+                    <div className="storeText">Use this skin to unlock more targeted matches and storefront positioning.</div>
+                    <button type="button" className="buyBtn">
+                      Buy now
+                    </button>
                   </div>
                 ))}
               </div>
-            </div>
+            </section>
           )}
         </main>
-
-        <aside className="rightRail">
-          <div className="railTitle">Stream Chat</div>
-          <div className="chatBox">
-            <div className="chatMsg"><strong>noukhii:</strong> Sens and setup posted above.</div>
-            <div className="chatMsg"><strong>fpsfan_21:</strong> clutch incoming</div>
-            <div className="chatMsg"><strong>brandwatch:</strong> this streamer has insane retention</div>
-          </div>
-          <input placeholder="Send a message" className="chatInput" />
-        </aside>
       </div>
 
       <style jsx>{`
-        .twitch-page { min-height: 100vh; background: #0e0e10; color: #efeff1; }
-        .topbar { height: 56px; border-bottom: 1px solid #2f2f35; display: flex; align-items: center; gap: 10px; padding: 0 10px; }
-        .logo { width: 26px; height: 26px; border-radius: 4px; background: #9146ff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; }
-        .browse { font-size: 22px; font-weight: 700; }
-        .searchWrap { flex: 1; display: flex; justify-content: center; max-width: 620px; margin: 0 auto; }
-        .searchInput { flex: 1; height: 38px; border: 1px solid #3a3a40; border-right: none; border-radius: 8px 0 0 8px; background: #18181b; color: #efeff1; padding: 0 12px; font-size: 14px; outline: none; }
-        .searchBtn { width: 46px; border: 1px solid #3a3a40; border-radius: 0 8px 8px 0; background: #2a2a31; color: #fff; font-size: 15px; }
-        .ghost, .primary { border: none; border-radius: 999px; padding: 8px 12px; font-size: 13px; font-weight: 700; cursor: pointer; }
-        .ghost { background: #232329; color: #efeff1; }
-        .primary { background: #9146ff; color: #fff; }
-
-        .layout { display: grid; grid-template-columns: 260px 1fr 340px; min-height: calc(100vh - 56px); }
-        .leftRail, .rightRail { padding: 10px; }
-        .leftRail { border-right: 1px solid #2f2f35; }
-        .rightRail { border-left: 1px solid #2f2f35; }
-        .railTitle { font-size: 20px; font-weight: 800; margin-bottom: 8px; }
-
-        .channelBtn { width: 100%; background: transparent; border: none; color: #efeff1; text-align: left; padding: 8px 0; cursor: pointer; display: flex; justify-content: space-between; gap: 8px; }
-        .channelName { font-size: 16px; font-weight: 700; }
-        .channelGame { font-size: 14px; color: #adadb8; }
-        .channelViewers { font-size: 13px; color: #efeff1; white-space: nowrap; }
-
-        .divider { height: 1px; background: #2f2f35; margin: 10px 0; }
-        .valueSkinsTitle { font-size: 16px; font-weight: 800; color: #a970ff; margin-bottom: 6px; }
-        .vsBtn { width: 100%; text-align: left; border: 1px solid #2f2f35; background: #18181b; color: #efeff1; border-radius: 8px; padding: 8px 10px; margin-bottom: 8px; cursor: pointer; font-weight: 700; font-size: 13px; }
-        .vsBtn.active { background: #2e1a52; }
-
-        .content { padding: 10px; overflow: auto; }
-        .sectionTitle { font-size: 22px; font-weight: 800; color: #bf94ff; margin-bottom: 10px; }
-        .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-        .card { border: none; background: transparent; color: #efeff1; text-align: left; padding: 0; cursor: pointer; }
-        .thumbWrap { position: relative; border: 2px solid #9146ff; border-radius: 4px; overflow: hidden; }
-        .thumb { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; }
-        .live { position: absolute; top: 8px; left: 8px; background: #e91916; color: #fff; border-radius: 4px; padding: 2px 6px; font-weight: 800; font-size: 11px; }
-        .viewerBadge { position: absolute; bottom: 8px; left: 8px; background: rgba(0,0,0,0.8); color: #fff; border-radius: 4px; padding: 2px 6px; font-size: 11px; }
-        .cardTitle { margin-top: 8px; font-size: 16px; font-weight: 700; line-height: 1.3; }
-        .cardMeta { font-size: 14px; color: #adadb8; }
-
-        .playerWrap { border: 1px solid #2f2f35; border-radius: 6px; overflow: hidden; }
-        .player { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; }
-        .watchInfo { margin-top: 10px; background: #111116; border: 1px solid #2f2f35; border-radius: 8px; padding: 12px; }
-        .watchTitle { font-size: 22px; font-weight: 800; }
-        .watchMeta { margin-top: 4px; color: #adadb8; font-size: 14px; }
-        .watchActions { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
-        .pill { border: none; color: #fff; border-radius: 999px; padding: 8px 12px; font-weight: 700; cursor: pointer; font-size: 13px; }
-        .pill.purple { background: #9146ff; }
-        .pill.dark { background: #30303a; }
-        .pill.blue { background: #1f3a64; }
-        .pill.violet { background: #3a2a52; }
-
-        .panel { background: #111116; border: 1px solid #2f2f35; border-radius: 10px; padding: 16px; }
-        .panelTitle { font-size: 24px; font-weight: 800; margin-bottom: 10px; }
-        .roleGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .roleCard { background: #1a1a22; border: 1px solid #2f2f35; border-radius: 10px; text-align: left; color: #efeff1; padding: 14px; cursor: pointer; }
-        .roleTitle { font-size: 18px; font-weight: 800; }
-        .roleText { color: #adadb8; margin-top: 6px; font-size: 14px; }
-        .statusGreen { color: #00d68f; margin-bottom: 10px; font-weight: 700; font-size: 15px; }
-        .statusBlue { color: #56ccf2; margin-bottom: 10px; font-weight: 700; font-size: 15px; }
-        .listItem { background: #1a1a22; border: 1px solid #2f2f35; border-radius: 8px; padding: 12px; margin-bottom: 8px; font-size: 14px; }
-
-        .storeGrid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; }
-        .storeCard { background: #1a1a22; border: 1px solid #2f2f35; border-radius: 8px; padding: 12px; }
-        .storeTitle { font-weight: 700; font-size: 16px; }
-        .storeText { color: #adadb8; margin-top: 4px; font-size: 13px; }
-        .buyBtn { margin-top: 8px; border: none; background: #9146ff; color: #fff; border-radius: 6px; padding: 8px 10px; font-weight: 700; font-size: 13px; }
-
-        .chatBox { background: #111116; border: 1px solid #2f2f35; border-radius: 8px; padding: 10px; min-height: 360px; }
-        .chatMsg { margin-bottom: 8px; font-size: 14px; }
-        .chatMsg strong { color: #a970ff; }
-        .chatInput { margin-top: 10px; width: 100%; height: 40px; background: #18181b; color: #efeff1; border: 1px solid #3a3a40; border-radius: 8px; padding: 0 10px; outline: none; font-size: 14px; }
-
-        @media (max-width: 1200px) {
-          .layout { grid-template-columns: 220px 1fr; }
-          .rightRail { display: none; }
-          .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-          .storeGrid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+        .twitchPage {
+          min-height: 100vh;
+          background:
+            radial-gradient(circle at top, rgba(145, 70, 255, 0.18), transparent 34%),
+            #0e0e10;
+          color: #efeff1;
         }
 
-        @media (max-width: 860px) {
-          .layout { grid-template-columns: 1fr; }
-          .leftRail { display: none; }
-          .topbar { gap: 8px; }
-          .browse { font-size: 18px; }
-          .searchWrap { max-width: none; }
-          .ghost, .primary { font-size: 12px; padding: 7px 10px; }
-          .grid, .storeGrid, .roleGrid { grid-template-columns: 1fr; }
+        .topbar {
+          position: sticky;
+          top: 0;
+          z-index: 20;
+          display: grid;
+          grid-template-columns: auto minmax(280px, 560px) auto;
+          align-items: center;
+          gap: 16px;
+          padding: 12px 20px;
+          border-bottom: 1px solid #232328;
+          background: rgba(24, 24, 27, 0.92);
+          backdrop-filter: blur(14px);
+        }
+
+        .topbarLeft,
+        .topbarRight {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .logo {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          min-width: 40px;
+          height: 40px;
+          padding: 0 12px;
+          border: 0;
+          border-radius: 12px;
+          background: linear-gradient(135deg, #9146ff, #772ce8);
+          color: #ffffff;
+          font-size: 11px;
+          font-weight: 900;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          cursor: pointer;
+        }
+
+        .navLink,
+        .ghostBtn,
+        .primaryBtn,
+        .searchBtn {
+          border: 0;
+          cursor: pointer;
+          font-weight: 700;
+        }
+
+        .navLink {
+          background: transparent;
+          color: #efeff1;
+          padding: 10px 12px;
+          border-radius: 10px;
+          font-size: 14px;
+        }
+
+        .navLink:hover,
+        .sidebarAction:hover,
+        .tab:hover {
+          background: #232329;
+        }
+
+        .searchWrap {
+          display: grid;
+          grid-template-columns: 1fr auto;
+          width: 100%;
+        }
+
+        .searchInput {
+          width: 100%;
+          height: 42px;
+          padding: 0 14px;
+          border: 1px solid #31313a;
+          border-right: 0;
+          border-radius: 12px 0 0 12px;
+          background: #18181b;
+          color: #efeff1;
+          outline: none;
+          font-size: 14px;
+        }
+
+        .searchBtn {
+          height: 42px;
+          padding: 0 16px;
+          border-radius: 0 12px 12px 0;
+          background: #2c2c35;
+          color: #efeff1;
+          font-size: 13px;
+        }
+
+        .ghostBtn,
+        .primaryBtn {
+          height: 40px;
+          padding: 0 16px;
+          border-radius: 999px;
+          font-size: 13px;
+        }
+
+        .ghostBtn {
+          background: #232329;
+          color: #efeff1;
+        }
+
+        .primaryBtn {
+          background: #9146ff;
+          color: #ffffff;
+        }
+
+        .layout {
+          display: grid;
+          grid-template-columns: 260px minmax(0, 1fr);
+          min-height: calc(100vh - 65px);
+        }
+
+        .sidebar {
+          border-right: 1px solid #232328;
+          background: #111114;
+          padding: 18px 14px;
+        }
+
+        .sidebarSection + .sidebarSection {
+          margin-top: 22px;
+          padding-top: 22px;
+          border-top: 1px solid #232328;
+        }
+
+        .sectionHeader {
+          margin-bottom: 12px;
+          font-size: 12px;
+          font-weight: 800;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: #adadb8;
+        }
+
+        .sectionHeader.accent {
+          color: #bf94ff;
+        }
+
+        .channelBtn,
+        .sidebarAction,
+        .streamCard,
+        .roleCard,
+        .featureCard {
+          width: 100%;
+          border: 0;
+          cursor: pointer;
+        }
+
+        .channelBtn {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+          padding: 10px 8px;
+          border-radius: 12px;
+          background: transparent;
+          color: #efeff1;
+          text-align: left;
+        }
+
+        .channelBtn:hover,
+        .streamCard:hover,
+        .roleCard:hover,
+        .featureCard:hover {
+          background: #19191d;
+        }
+
+        .channelIdentity {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          min-width: 0;
+        }
+
+        .channelAvatar,
+        .streamAvatar {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 34px;
+          height: 34px;
+          border-radius: 10px;
+          background: linear-gradient(135deg, rgba(145, 70, 255, 0.9), rgba(50, 115, 220, 0.7));
+          color: #ffffff;
+          font-size: 12px;
+          font-weight: 800;
+          flex-shrink: 0;
+        }
+
+        .channelName,
+        .streamCreator {
+          font-size: 14px;
+          font-weight: 700;
+        }
+
+        .channelGame,
+        .streamGame,
+        .sectionSubtext,
+        .roleText,
+        .storeText,
+        .watchMeta,
+        .heroText,
+        .marketIntro {
+          color: #adadb8;
+          font-size: 14px;
+          line-height: 1.5;
+        }
+
+        .channelStats {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          color: #dedee3;
+          font-size: 13px;
+          white-space: nowrap;
+        }
+
+        .liveDot {
+          width: 8px;
+          height: 8px;
+          border-radius: 999px;
+          background: #eb0400;
+        }
+
+        .sidebarAction {
+          display: flex;
+          align-items: center;
+          min-height: 42px;
+          padding: 0 12px;
+          border-radius: 12px;
+          background: #18181b;
+          color: #efeff1;
+          text-align: left;
+          margin-bottom: 8px;
+          font-size: 14px;
+        }
+
+        .sidebarAction.active {
+          background: rgba(145, 70, 255, 0.18);
+          color: #ffffff;
+          box-shadow: inset 0 0 0 1px rgba(145, 70, 255, 0.45);
+        }
+
+        .mainContent {
+          padding: 24px;
+        }
+
+        .hero {
+          display: flex;
+          align-items: flex-end;
+          justify-content: space-between;
+          gap: 20px;
+          padding: 24px;
+          border: 1px solid #232328;
+          border-radius: 20px;
+          background: linear-gradient(135deg, rgba(145, 70, 255, 0.18), rgba(20, 20, 24, 0.94));
+          margin-bottom: 20px;
+        }
+
+        .eyebrow {
+          margin-bottom: 10px;
+          color: #bf94ff;
+          font-size: 12px;
+          font-weight: 800;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+        }
+
+        .heroTitle {
+          margin: 0;
+          max-width: 720px;
+          font-size: 34px;
+          line-height: 1.08;
+          font-weight: 800;
+        }
+
+        .heroText {
+          max-width: 720px;
+          margin-top: 12px;
+          margin-bottom: 0;
+        }
+
+        .heroStats {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 12px;
+          min-width: 300px;
+        }
+
+        .heroStat {
+          padding: 14px;
+          border: 1px solid rgba(255, 255, 255, 0.07);
+          border-radius: 16px;
+          background: rgba(10, 10, 12, 0.42);
+        }
+
+        .heroStat strong,
+        .storePrice,
+        .watchTitle,
+        .sectionTitle,
+        .panel,
+        .roleTitle {
+          color: #ffffff;
+        }
+
+        .heroStat strong {
+          display: block;
+          margin-bottom: 6px;
+          font-size: 18px;
+        }
+
+        .heroStat span {
+          color: #c7c7d1;
+          font-size: 13px;
+          line-height: 1.4;
+        }
+
+        .contentTabs {
+          display: flex;
+          gap: 10px;
+          margin-bottom: 20px;
+          overflow-x: auto;
+        }
+
+        .tab {
+          border: 0;
+          border-radius: 999px;
+          background: #18181b;
+          color: #efeff1;
+          padding: 10px 16px;
+          font-size: 14px;
+          font-weight: 700;
+          cursor: pointer;
+          white-space: nowrap;
+        }
+
+        .tab.active {
+          background: #9146ff;
+        }
+
+        .pageSection {
+          padding: 22px;
+          border: 1px solid #232328;
+          border-radius: 20px;
+          background: #111114;
+        }
+
+        .sectionTitleRow {
+          display: flex;
+          align-items: flex-end;
+          justify-content: space-between;
+          gap: 16px;
+          margin-bottom: 18px;
+        }
+
+        .sectionTitle {
+          font-size: 26px;
+          font-weight: 800;
+          margin-bottom: 6px;
+        }
+
+        .resultsBadge {
+          padding: 8px 12px;
+          border-radius: 999px;
+          background: rgba(145, 70, 255, 0.12);
+          color: #cdaeff;
+          font-size: 13px;
+          font-weight: 700;
+          white-space: nowrap;
+        }
+
+        .streamGrid,
+        .storeGrid,
+        .roleGrid {
+          display: grid;
+          gap: 16px;
+        }
+
+        .streamGrid {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .streamCard {
+          padding: 0;
+          background: transparent;
+          color: #efeff1;
+          text-align: left;
+          border-radius: 18px;
+          overflow: hidden;
+        }
+
+        .streamThumbWrap,
+        .playerCard {
+          position: relative;
+          overflow: hidden;
+          border-radius: 18px;
+          border: 1px solid #2d2d35;
+          background: #0b0b0d;
+        }
+
+        .streamThumb,
+        .player {
+          display: block;
+          width: 100%;
+          aspect-ratio: 16 / 9;
+          object-fit: cover;
+        }
+
+        .liveBadge,
+        .viewerBadge,
+        .storeTag,
+        .roleBadge,
+        .statusLabel {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 800;
+          letter-spacing: 0.02em;
+        }
+
+        .liveBadge {
+          position: absolute;
+          top: 12px;
+          left: 12px;
+          padding: 5px 8px;
+          border-radius: 8px;
+          background: #eb0400;
+          color: #ffffff;
+          font-size: 11px;
+        }
+
+        .viewerBadge {
+          position: absolute;
+          left: 12px;
+          bottom: 12px;
+          padding: 5px 8px;
+          border-radius: 8px;
+          background: rgba(0, 0, 0, 0.8);
+          color: #ffffff;
+          font-size: 12px;
+        }
+
+        .streamMeta {
+          display: flex;
+          gap: 12px;
+          padding: 12px 4px 4px;
+        }
+
+        .streamText {
+          min-width: 0;
+        }
+
+        .streamTitle,
+        .watchTitle {
+          font-weight: 800;
+          line-height: 1.35;
+        }
+
+        .streamTitle {
+          margin-bottom: 4px;
+          font-size: 16px;
+        }
+
+        .watchLayout {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) 340px;
+          gap: 18px;
+        }
+
+        .watchMain,
+        .chatRail {
+          min-width: 0;
+        }
+
+        .watchInfo,
+        .chatCard,
+        .panel {
+          margin-top: 16px;
+          padding: 18px;
+          border: 1px solid #232328;
+          border-radius: 18px;
+          background: #111114;
+        }
+
+        .watchHeadingRow {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 16px;
+        }
+
+        .watchTitle {
+          font-size: 26px;
+        }
+
+        .watchButtons,
+        .featureStrip {
+          display: flex;
+          gap: 10px;
+          flex-wrap: wrap;
+        }
+
+        .featureStrip {
+          margin-top: 18px;
+        }
+
+        .pill {
+          min-height: 40px;
+          padding: 0 14px;
+          border: 0;
+          border-radius: 999px;
+          font-size: 13px;
+          font-weight: 800;
+          cursor: pointer;
+          color: #ffffff;
+        }
+
+        .primaryPill {
+          background: #9146ff;
+        }
+
+        .mutedPill {
+          background: #2b2b33;
+        }
+
+        .featureCard {
+          flex: 1;
+          min-width: 220px;
+          padding: 16px;
+          border-radius: 16px;
+          background: #18181b;
+          color: #efeff1;
+          text-align: left;
+        }
+
+        .featureCard span {
+          display: block;
+          color: #adadb8;
+          font-size: 13px;
+          margin-bottom: 6px;
+        }
+
+        .featureCard strong {
+          font-size: 16px;
+          line-height: 1.35;
+        }
+
+        .chatCard {
+          margin-top: 0;
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .chatHeader {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+          font-size: 14px;
+          font-weight: 800;
+          margin-bottom: 14px;
+        }
+
+        .chatHeader span {
+          color: #adadb8;
+          font-size: 12px;
+          font-weight: 700;
+        }
+
+        .chatMessages {
+          flex: 1;
+          min-height: 320px;
+          border-radius: 14px;
+          background: #18181b;
+          border: 1px solid #232328;
+          padding: 14px;
+        }
+
+        .chatMsg {
+          margin-bottom: 10px;
+          font-size: 14px;
+          line-height: 1.5;
+        }
+
+        .chatMsg strong {
+          color: #bf94ff;
+        }
+
+        .chatInput {
+          width: 100%;
+          height: 42px;
+          margin-top: 12px;
+          padding: 0 12px;
+          border: 1px solid #31313a;
+          border-radius: 12px;
+          background: #18181b;
+          color: #efeff1;
+          outline: none;
+          font-size: 14px;
+        }
+
+        .marketIntro {
+          margin-bottom: 18px;
+        }
+
+        .roleGrid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .roleCard {
+          padding: 20px;
+          border-radius: 18px;
+          background: #18181b;
+          color: #efeff1;
+          text-align: left;
+        }
+
+        .roleBadge,
+        .storeTag,
+        .statusLabel {
+          width: fit-content;
+          padding: 6px 10px;
+          border-radius: 999px;
+          font-size: 11px;
+          text-transform: uppercase;
+        }
+
+        .roleBadge {
+          margin-bottom: 14px;
+          background: rgba(145, 70, 255, 0.16);
+          color: #d3b7ff;
+        }
+
+        .roleBadge.alt {
+          background: rgba(61, 153, 245, 0.16);
+          color: #a9d7ff;
+        }
+
+        .roleTitle {
+          font-size: 22px;
+          font-weight: 800;
+          margin-bottom: 8px;
+        }
+
+        .statusLabel {
+          margin-bottom: 16px;
+        }
+
+        .statusLabel.creator {
+          background: rgba(0, 214, 143, 0.16);
+          color: #82f0c2;
+        }
+
+        .statusLabel.brand {
+          background: rgba(86, 204, 242, 0.16);
+          color: #9de6fb;
+        }
+
+        .listItem {
+          padding: 14px 16px;
+          border: 1px solid #232328;
+          border-radius: 14px;
+          background: #18181b;
+          color: #efeff1;
+          font-size: 14px;
+        }
+
+        .listItem + .listItem {
+          margin-top: 10px;
+        }
+
+        .storeGrid {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          margin-top: 18px;
+        }
+
+        .storeCard {
+          padding: 18px;
+          border: 1px solid #232328;
+          border-radius: 18px;
+          background: #18181b;
+        }
+
+        .storeTop {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+          margin-bottom: 14px;
+        }
+
+        .storeTag {
+          background: rgba(145, 70, 255, 0.16);
+          color: #d3b7ff;
+        }
+
+        .storePrice {
+          font-size: 15px;
+          font-weight: 800;
+        }
+
+        .storeTitle {
+          font-size: 20px;
+          font-weight: 800;
+          margin-bottom: 8px;
+        }
+
+        .buyBtn {
+          height: 42px;
+          margin-top: 18px;
+          padding: 0 14px;
+          border: 0;
+          border-radius: 12px;
+          background: #9146ff;
+          color: #ffffff;
+          font-size: 14px;
+          font-weight: 800;
+          cursor: pointer;
+        }
+
+        @media (max-width: 1200px) {
+          .streamGrid,
+          .storeGrid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+
+          .watchLayout {
+            grid-template-columns: 1fr;
+          }
+
+          .chatMessages {
+            min-height: 220px;
+          }
+        }
+
+        @media (max-width: 980px) {
+          .topbar {
+            grid-template-columns: 1fr;
+          }
+
+          .layout {
+            grid-template-columns: 1fr;
+          }
+
+          .sidebar {
+            border-right: 0;
+            border-bottom: 1px solid #232328;
+          }
+
+          .hero {
+            flex-direction: column;
+            align-items: stretch;
+          }
+
+          .heroStats,
+          .roleGrid {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        @media (max-width: 720px) {
+          .mainContent,
+          .sidebar {
+            padding: 16px;
+          }
+
+          .pageSection,
+          .hero {
+            padding: 18px;
+            border-radius: 18px;
+          }
+
+          .heroTitle {
+            font-size: 28px;
+          }
+
+          .sectionTitleRow,
+          .watchHeadingRow {
+            flex-direction: column;
+            align-items: flex-start;
+          }
+
+          .streamGrid,
+          .storeGrid {
+            grid-template-columns: 1fr;
+          }
+
+          .topbarLeft,
+          .topbarRight {
+            flex-wrap: wrap;
+          }
+
+          .searchWrap {
+            min-width: 0;
+          }
         }
       `}</style>
     </div>
