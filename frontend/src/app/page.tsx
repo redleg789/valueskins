@@ -31,6 +31,12 @@ export default function HomePage() {
       color: 'linear-gradient(135deg, #000000 0%, #25f4ee 50%, #fe2c55 100%)',
       path: '/demo/tiktok',
     },
+    {
+      name: 'Twitch',
+      description: 'Live Streaming Platform',
+      color: 'linear-gradient(135deg, #9146ff 0%, #772ce8 100%)',
+      path: '/demo/twitch',
+    },
   ];
 
   return (
@@ -43,7 +49,7 @@ export default function HomePage() {
             Valueskins MVP
           </h1>
           <p style={{ fontSize: '18px', color: '#8e8e8e', marginBottom: '24px' }}>
-            See how Instagram, LinkedIn, YouTube & TikTok could integrate Valueskins
+            See how Instagram, LinkedIn, YouTube, TikTok, and Twitch could integrate Valueskins
           </p>
         </div>
 
