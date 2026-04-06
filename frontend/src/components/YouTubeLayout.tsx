@@ -73,7 +73,7 @@ export default function YouTubeLayout({ children, title, headerRight, hideHeader
                                 color: '#ffffff',
                                 letterSpacing: '-0.5px',
                             }}>
-                                {title || 'Valueskins'}
+                                {title || 'YouTube'}
                             </span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -119,13 +119,13 @@ export default function YouTubeLayout({ children, title, headerRight, hideHeader
                         <ShortsIcon filled={pathname === '/explore'} />
                     </NavItem>
                     {/* Center "Create" button */}
-                    <Link href="/store" style={{ textDecoration: 'none' }}>
+                    <Link href="/create" style={{ textDecoration: 'none' }}>
                         <div style={{
                             width: 40,
                             height: 28,
                             borderRadius: 8,
-                            background: pathname === '/store' ? '#ff0000' : 'transparent',
-                            border: pathname === '/store' ? 'none' : '1px solid #606060',
+                            background: pathname === '/create' ? '#ff0000' : 'transparent',
+                            border: pathname === '/create' ? 'none' : '1px solid #606060',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -136,8 +136,8 @@ export default function YouTubeLayout({ children, title, headerRight, hideHeader
                             </svg>
                         </div>
                     </Link>
-                    <NavItem href="/marketplace" active={pathname === '/marketplace'} label="Deals">
-                        <DealsIcon filled={pathname === '/marketplace'} />
+                    <NavItem href="/subscriptions" active={pathname === '/subscriptions'} label="Subs">
+                        <SubscriptionsIcon filled={pathname === '/subscriptions'} />
                     </NavItem>
                     <NavItem href="/profile/me" active={pathname.startsWith('/profile')} label="You">
                         <ProfileIcon filled={pathname.startsWith('/profile')} />
@@ -206,11 +206,12 @@ function ShortsIcon({ filled }: { filled: boolean }) {
     );
 }
 
-function DealsIcon({ filled }: { filled: boolean }) {
+function SubscriptionsIcon({ filled }: { filled: boolean }) {
     return (
         <svg width="24" height="24" viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={filled ? 0 : 1.5}>
-            <rect x="2" y="6" width="20" height="12" rx="2" />
-            <circle cx="12" cy="12" r="3" />
+            <path d="M4 6.5H20V17.5H4V6.5Z" />
+            <path d="M8 4L6.5 6.5M16 4L17.5 6.5" />
+            <path d="M10.5 10V14L14 12L10.5 10Z" />
         </svg>
     );
 }
