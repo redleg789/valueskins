@@ -1849,143 +1849,156 @@ export default function YouTubeDemoPage() {
         </div>
       )}
 
-      {/* YouTube-native marketplace entry overlay (only on homepage) */}
-      {activeView === 'home' && (
-        <button
-          onClick={() => {
-            setMarketplaceRole('none');
-            setActiveView('mim');
-            setPurchaseToast('Opening YouTube Marketplace');
-            setTimeout(() => setPurchaseToast(null), 2200);
-          }}
-          style={{
-            position: 'fixed',
-            top: isMobile ? '10px' : '14px',
-            right: isMobile ? '12px' : '18px',
-            zIndex: 100000,
-            border: '1px solid #3EA6FF',
-            background: '#0F0F0F',
-            color: '#3EA6FF',
-            borderRadius: '999px',
-            fontSize: isMobile ? '11px' : '12px',
-            fontWeight: 700,
-            padding: isMobile ? '8px 12px' : '10px 16px',
-            cursor: 'pointer',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
-            letterSpacing: '0.2px',
-          }}
-        >
-          Marketplace
-        </button>
-      )}
-
-      {activeView === 'home' && (
-        <button
-          onClick={() => {
-            setActiveView('store');
-            setPurchaseToast('Opening ValueSkins');
-            setTimeout(() => setPurchaseToast(null), 2200);
-          }}
-          style={{
-            position: 'fixed',
-            top: isMobile ? '10px' : '14px',
-            right: isMobile ? '126px' : '152px',
-            zIndex: 100000,
-            border: '1px solid #525252',
-            background: '#181818',
-            color: '#F1F1F1',
-            borderRadius: '999px',
-            fontSize: isMobile ? '11px' : '12px',
-            fontWeight: 700,
-            padding: isMobile ? '8px 12px' : '10px 16px',
-            cursor: 'pointer',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
-            letterSpacing: '0.2px',
-          }}
-        >
-          ValueSkins
-        </button>
-      )}
-
       {/* Left Sidebar — desktop only */}
       {!isMobile && (
-        <div style={{ width: '240px', borderRight: `1px solid ${C.border}`, padding: '20px 16px', display: 'flex', flexDirection: 'column', gap: '16px', height: '100vh', overflowY: 'auto', position: 'sticky', top: 0, background: C.bg, flexShrink: 0 }}>
-          <Link href="/" style={{ textDecoration: 'none' }}>
-            <div style={{ fontSize: '22px', fontWeight: 700, color: C.text, marginBottom: '16px', cursor: 'pointer', fontStyle: 'italic' }}>YouTube</div>
-          </Link>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            <NavItem label="Home" active={activeView === 'home'} onClick={() => setActiveView('home')} />
-            <NavItem label="Explore" active={activeView === 'explore'} onClick={() => setActiveView('explore')} />
-            <NavItem label="Subscriptions" active={false} onClick={() => setActiveView('home')} />
-            <NavItem label="Library" active={false} onClick={() => setActiveView('profile')} />
-            <NavItem label="History" active={false} onClick={() => setActiveView('home')} />
-            <NavItem label="Messages" active={activeView === 'messages'} onClick={() => { setActiveCommunity(null); setActiveDmId(null); setActiveView('messages'); }} />
-            <NavItem label="Notifications" active={activeView === 'notifications'} badgeCount={notifications.filter(n => !n.read).length} onClick={() => { setNotifications(prev => prev.map(n => ({ ...n, read: true }))); setActiveView('notifications'); }} />
-            <NavItem label="Create" active={false} onClick={() => { setActiveView('profile'); }} />
-            <NavItem label="Profile" active={activeView === 'profile'} onClick={() => setActiveView('profile')} />
-            <div style={{ height: '1px', background: C.border, margin: '12px 0' }} />
-            <NavItem label="Marketplace" active={activeView === 'mim'} onClick={() => { setMarketplaceRole('none'); setActiveView('mim'); }} />
-            <NavItem label="Store" active={activeView === 'store'} onClick={() => setActiveView('store')} />
-            <NavItem label="Settings" active={activeView === 'settings'} onClick={() => setActiveView('settings')} />
-            <div style={{ height: '1px', background: C.border, margin: '12px 0' }} />
-            <NavItem label="Admin Panel" active={activeView === 'admin'} onClick={() => setActiveView('admin')} />
-          </div>
+        <div style={{ width: '88px', borderRight: `1px solid ${C.border}`, padding: '12px 8px', display: 'flex', flexDirection: 'column', gap: '6px', height: '100vh', overflowY: 'auto', position: 'sticky', top: 0, background: C.bg, flexShrink: 0 }}>
+          {[
+            { label: 'Home', icon: '⌂', active: activeView === 'home', onClick: () => setActiveView('home') },
+            { label: 'Shorts', icon: '▷', active: activeView === 'explore', onClick: () => setActiveView('explore') },
+            { label: 'Subscriptions', icon: '◉', active: false, onClick: () => setActiveView('home') },
+            { label: 'You', icon: '◌', active: activeView === 'profile', onClick: () => setActiveView('profile') },
+            { label: 'Library', icon: '☰', active: false, onClick: () => setActiveView('profile') },
+            { label: 'History', icon: '⟲', active: false, onClick: () => setActiveView('home') },
+          ].map(item => (
+            <button
+              key={item.label}
+              onClick={item.onClick}
+              style={{
+                border: 'none',
+                background: item.active ? '#272727' : 'transparent',
+                borderRadius: '10px',
+                padding: '8px 4px',
+                color: '#F1F1F1',
+                cursor: 'pointer',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '2px',
+              }}
+            >
+              <span style={{ fontSize: '16px', lineHeight: 1 }}>{item.icon}</span>
+              <span style={{ fontSize: '10px', lineHeight: 1.2 }}>{item.label}</span>
+            </button>
+          ))}
+          <div style={{ height: '1px', background: C.border, margin: '8px 2px' }} />
+          {[
+            { label: 'Marketplace', icon: '◈', active: activeView === 'mim', onClick: () => { setMarketplaceRole('none'); setActiveView('mim'); } },
+            { label: 'Store', icon: '⬢', active: activeView === 'store', onClick: () => setActiveView('store') },
+            { label: 'Messages', icon: '✉', active: activeView === 'messages', onClick: () => { setActiveCommunity(null); setActiveDmId(null); setActiveView('messages'); } },
+            { label: 'Alerts', icon: '◔', active: activeView === 'notifications', onClick: () => { setNotifications(prev => prev.map(n => ({ ...n, read: true }))); setActiveView('notifications'); } },
+            { label: 'Settings', icon: '⚙', active: activeView === 'settings', onClick: () => setActiveView('settings') },
+          ].map(item => (
+            <button
+              key={item.label}
+              onClick={item.onClick}
+              style={{
+                border: 'none',
+                background: item.active ? '#272727' : 'transparent',
+                borderRadius: '10px',
+                padding: '8px 4px',
+                color: '#F1F1F1',
+                cursor: 'pointer',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '2px',
+              }}
+            >
+              <span style={{ fontSize: '16px', lineHeight: 1 }}>{item.icon}</span>
+              <span style={{ fontSize: '10px', lineHeight: 1.2 }}>{item.label}</span>
+            </button>
+          ))}
+          <div style={{ height: '1px', background: C.border, margin: '8px 2px' }} />
+          <button
+            onClick={() => setActiveView('admin')}
+            style={{ border: 'none', background: activeView === 'admin' ? '#272727' : 'transparent', borderRadius: '10px', padding: '8px 4px', color: '#F1F1F1', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}
+          >
+            <span style={{ fontSize: '16px', lineHeight: 1 }}>◫</span>
+            <span style={{ fontSize: '10px', lineHeight: 1.2 }}>Admin</span>
+          </button>
+          <div style={{ marginTop: 'auto', padding: '10px 0 4px', textAlign: 'center', color: '#A8A8A8', fontSize: '10px' }}>ValueSkins</div>
         </div>
       )}
 
       {/* Main Content */}
       <div style={{ flex: 1, display: 'flex', justifyContent: 'center', overflowX: 'hidden', paddingBottom: isMobile ? '60px' : 0 }}>
-        <div style={{ width: '100%', maxWidth: (activeView === 'store' || activeView === 'mim' || activeView === 'admin') ? '900px' : '600px', borderLeft: isMobile ? 'none' : `1px solid ${C.border}`, borderRight: isMobile ? 'none' : `1px solid ${C.border}`, background: C.bg, overflowX: 'hidden' }}>
+        <div style={{ width: '100%', maxWidth: (activeView === 'home') ? '1260px' : (activeView === 'store' || activeView === 'mim' || activeView === 'admin') ? '900px' : '600px', borderLeft: isMobile || activeView === 'home' ? 'none' : `1px solid ${C.border}`, borderRight: isMobile || activeView === 'home' ? 'none' : `1px solid ${C.border}`, background: C.bg, overflowX: 'hidden' }}>
 
-          {/* ── HOME VIEW (YOUTUBE-STYLE FEED) ───────────────── */}
+          {/* ── HOME VIEW (YOUTUBE MATCH) ───────────────────── */}
           {activeView === 'home' && (
-            <div style={{ width: '100%', minHeight: '100vh', background: '#0F0F0F', padding: isMobile ? '10px' : '14px' }}>
-              <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', marginBottom: '12px' }}>
-                {['All', 'Tech', 'Business', 'Creator Economy', 'Finance', 'Productivity'].map((chip, idx) => (
-                  <button
-                    key={chip}
-                    style={{
-                      border: 'none',
-                      borderRadius: '8px',
-                      padding: '8px 12px',
-                      background: idx === 0 ? '#F1F1F1' : '#272727',
-                      color: idx === 0 ? '#0F0F0F' : '#F1F1F1',
-                      fontSize: '12px',
-                      fontWeight: 600,
-                      whiteSpace: 'nowrap',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {chip}
-                  </button>
-                ))}
+            <div style={{ width: '100%', minHeight: '100vh', background: '#0F0F0F' }}>
+              <div style={{ position: 'sticky', top: 0, zIndex: 30, background: '#0F0F0F', borderBottom: '1px solid #222' }}>
+                <div style={{ height: '56px', display: 'flex', alignItems: 'center', gap: '12px', padding: '0 14px' }}>
+                  <span style={{ color: '#fff', fontSize: '20px', cursor: 'pointer' }}>☰</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: '120px' }}>
+                    <div style={{ width: '28px', height: '20px', borderRadius: '5px', background: '#FF0000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <div style={{ width: 0, height: 0, borderLeft: '8px solid white', borderTop: '5px solid transparent', borderBottom: '5px solid transparent', marginLeft: '2px' }} />
+                    </div>
+                    <span style={{ color: '#fff', fontSize: '24px', fontWeight: 700, letterSpacing: '-0.4px' }}>YouTube</span>
+                    <span style={{ color: '#AAA', fontSize: '10px', marginTop: '-10px' }}>IN</span>
+                  </div>
+                  <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+                    <div style={{ width: 'min(650px, 100%)', display: 'flex', alignItems: 'center' }}>
+                      <input placeholder="Search" style={{ flex: 1, height: '40px', background: '#121212', color: '#F1F1F1', border: '1px solid #303030', borderRight: 'none', borderRadius: '20px 0 0 20px', padding: '0 16px', fontSize: '16px', outline: 'none' }} />
+                      <button style={{ width: '64px', height: '40px', background: '#222', border: '1px solid #303030', borderRadius: '0 20px 20px 0', color: '#fff', cursor: 'pointer' }}>⌕</button>
+                    </div>
+                  </div>
+                  <button style={{ border: 'none', background: '#222', color: '#fff', borderRadius: '999px', padding: '8px 12px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>+ Create</button>
+                  <span style={{ color: '#fff', fontSize: '18px' }}>◌</span>
+                  <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: '#607D8B', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>h</div>
+                </div>
+                <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', padding: '0 14px 10px' }}>
+                  {['All', 'Music', 'Brooklyn Nine-Nine', 'Sitcoms', 'Mixes', 'Satire', 'Web series', 'MacBooks', 'Gaming', 'Drake', 'Indian pop music'].map((chip, idx) => (
+                    <button key={chip} style={{ border: 'none', borderRadius: '8px', padding: '8px 12px', background: idx === 0 ? '#fff' : '#272727', color: idx === 0 ? '#0F0F0F' : '#F1F1F1', fontSize: '14px', fontWeight: 600, whiteSpace: 'nowrap', cursor: 'pointer' }}>
+                      {chip}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              {[
-                { title: 'How to price your creator deals in 2026', channel: 'ValueSkins Academy', stats: '112K views • 2 days ago', duration: '12:14', thumb: 'https://i.ytimg.com/vi/8hly31xKli0/hqdefault.jpg' },
-                { title: 'Brand briefs that actually convert creators', channel: 'BrandOps Studio', stats: '84K views • 5 days ago', duration: '9:42', thumb: 'https://i.ytimg.com/vi/9bZkp7q19f0/hqdefault.jpg' },
-                { title: 'Negotiation tactics for sponsored content', channel: 'Creator CFO', stats: '203K views • 1 week ago', duration: '15:57', thumb: 'https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg' },
-                { title: 'Inside a full creator-brand workflow', channel: 'ValueSkins Live', stats: '59K views • 3 days ago', duration: '18:03', thumb: 'https://i.ytimg.com/vi/ysz5S6PUM-U/hqdefault.jpg' },
-              ].map(video => (
-                <div key={video.title} style={{ marginBottom: '16px', cursor: 'pointer' }}>
-                  <div style={{ position: 'relative', borderRadius: '12px', overflow: 'hidden', background: '#1a1a1a' }}>
-                    <img src={video.thumb} alt={video.title} style={{ width: '100%', display: 'block', aspectRatio: '16 / 9', objectFit: 'cover' }} />
-                    <span style={{ position: 'absolute', right: '8px', bottom: '8px', background: 'rgba(0,0,0,0.85)', color: '#fff', borderRadius: '4px', padding: '2px 6px', fontSize: '11px', fontWeight: 700 }}>
-                      {video.duration}
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-                    <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#2A2A2A', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '12px', fontWeight: 700 }}>
-                      {video.channel.slice(0, 1)}
+              <div style={{ padding: '14px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, minmax(0, 1fr))', gap: '14px', marginBottom: '22px' }}>
+                  {[
+                    { title: 'Start your proof of concept with $300 in free credit', channel: 'Google Cloud', stats: 'Sponsored · Google Cloud', duration: 'Ad', thumb: 'https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=1400&q=80' },
+                    { title: 'The Ones with Monica from Season 9 | Friends', channel: 'Friends', stats: '27K views · 14 hours ago', duration: '23:54', thumb: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=1400&q=80' },
+                    { title: 'JANI - Humrahi ft. IzzChughtai (Official Music Video)', channel: 'JANI', stats: '17K views · 11 hours ago', duration: '3:05', thumb: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?auto=format&fit=crop&w=1400&q=80' },
+                  ].map(video => (
+                    <div key={video.title} style={{ cursor: 'pointer' }}>
+                      <div style={{ position: 'relative', borderRadius: '14px', overflow: 'hidden' }}>
+                        <img src={video.thumb} alt={video.title} style={{ width: '100%', aspectRatio: '16/9', display: 'block', objectFit: 'cover' }} />
+                        <span style={{ position: 'absolute', right: '8px', bottom: '8px', background: 'rgba(0,0,0,0.85)', color: '#fff', borderRadius: '4px', padding: '2px 6px', fontSize: '11px', fontWeight: 700 }}>{video.duration}</span>
+                      </div>
+                      <div style={{ marginTop: '10px', display: 'flex', gap: '10px' }}>
+                        <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#262626', flexShrink: 0 }} />
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ color: '#F1F1F1', fontSize: '22px', fontWeight: 700, lineHeight: 1.2 }}>{video.title}</div>
+                          <div style={{ color: '#A8A8A8', fontSize: '20px', marginTop: '2px' }}>{video.channel}</div>
+                          <div style={{ color: '#7F7F7F', fontSize: '18px', marginTop: '1px' }}>{video.stats}</div>
+                        </div>
+                      </div>
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ color: '#F1F1F1', fontSize: '14px', fontWeight: 700, lineHeight: 1.35 }}>{video.title}</div>
-                      <div style={{ color: '#A8A8A8', fontSize: '12px', marginTop: '3px' }}>{video.channel}</div>
-                      <div style={{ color: '#7F7F7F', fontSize: '12px', marginTop: '2px' }}>{video.stats}</div>
-                    </div>
-                  </div>
+                  ))}
                 </div>
-              ))}
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                  <span style={{ color: '#FF4E45', fontSize: '18px' }}>●</span>
+                  <span style={{ color: '#F1F1F1', fontSize: '30px', fontWeight: 700 }}>Shorts</span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(4, minmax(0, 1fr))', gap: '14px' }}>
+                  {[
+                    'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?auto=format&fit=crop&w=900&q=80',
+                    'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=900&q=80',
+                    'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=900&q=80',
+                    'https://images.unsplash.com/photo-1552566626-52f8b828add9?auto=format&fit=crop&w=900&q=80',
+                  ].map((thumb, idx) => (
+                    <div key={thumb} style={{ cursor: 'pointer' }}>
+                      <div style={{ borderRadius: '14px', overflow: 'hidden' }}>
+                        <img src={thumb} alt={`Short ${idx + 1}`} style={{ width: '100%', aspectRatio: '9/16', objectFit: 'cover', display: 'block' }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
 
