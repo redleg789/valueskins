@@ -50,6 +50,7 @@ export default function PlatformLayout({
             );
 
         case 'youtube':
+        case 'twitch':
             return (
                 <YouTubeLayout
                     title={title}

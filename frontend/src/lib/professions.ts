@@ -13,7 +13,7 @@
  * A creator's chosen profession (SDE2) is NOT just identity—it's an ML input.
  */
 
-export type Platform = 'meta' | 'linkedin' | 'youtube' | 'across';
+export type Platform = 'meta' | 'linkedin' | 'youtube' | 'twitch' | 'across';
 
 export interface Profession {
   id: string;
@@ -825,6 +825,23 @@ export const PLATFORM_CONFIGS: Record<Platform, PlatformConfig> = {
       textSecondary: '#b0b0b0',
       textTertiary: '#737373',
       accentColor: '#ff0000',
+    },
+  },
+  twitch: {
+    id: 'twitch',
+    name: 'Twitch',
+    description: 'Grow through live streams and gaming communities',
+    primaryColor: '#9146ff',
+    secondaryColor: '#772ce8',
+    logoEmoji: '🎮',
+    themes: {
+      bg: '#0e0e10',
+      card: '#18181b',
+      separator: '#2f2f35',
+      textPrimary: '#efeff1',
+      textSecondary: '#adadb8',
+      textTertiary: '#8f8f9b',
+      accentColor: '#9146ff',
     },
   },
   across: {

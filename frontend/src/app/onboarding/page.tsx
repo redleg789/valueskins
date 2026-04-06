@@ -46,7 +46,7 @@ export default function OnboardingPage() {
 
             {/* Platform Cards */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
-              {(['meta', 'linkedin', 'youtube', 'across'] as Platform[]).map(platformId => {
+              {(['meta', 'linkedin', 'youtube', 'twitch', 'across'] as Platform[]).map(platformId => {
                 const config = PLATFORM_CONFIGS[platformId];
                 const isSelected = selected === platformId;
                 return (
@@ -111,7 +111,7 @@ export default function OnboardingPage() {
               <strong style={{ display: 'block', marginBottom: 8, color: '#f5f5f5' }}>
                 💡 Pro Tip:
               </strong>
-              Across Brands mode lets you sell your creator persona simultaneously across Meta, LinkedIn, AND YouTube—perfect if you're a multi-platform creator.
+              Across Brands mode lets you sell your creator persona simultaneously across Meta, LinkedIn, YouTube, and Twitch.
             </div>
 
             {/* Button */}
