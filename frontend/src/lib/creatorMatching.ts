@@ -3,14 +3,14 @@
  *
  * PLUGGABLE ARCHITECTURE:
  * - MVP: Returns all creators as matching (assumes creator has everything brand wants)
- * - Production: Swap CreatorDataProvider to fetch real audience data from Meta/Instagram API
+ * - Production: Swap CreatorDataProvider to fetch real audience data from any supported platform
  *
- * META INTEGRATION POINTS:
- * - CreatorDataProvider.getAudienceData() → Meta Marketing API / Instagram Graph API
- * - CreatorDataProvider.getContentMetrics() → Instagram Insights API
- * - CreatorDataProvider.getEngagementHistory() → Meta Business Suite API
+ * PLATFORM INTEGRATION POINTS:
+ * - CreatorDataProvider.getAudienceData() → platform audience / demographics API
+ * - CreatorDataProvider.getContentMetrics() → platform analytics / insights API
+ * - CreatorDataProvider.getBrandSafetyScore() → platform trust systems or external safety service
  *
- * DATABASE REQUIREMENTS (for Meta to attach):
+ * DATABASE REQUIREMENTS (for any platform adapter):
  * - creator_audience_demographics (creator_id, age_range, gender_split, location, language)
  * - creator_content_metrics (creator_id, avg_views, avg_engagement, content_categories)
  * - creator_brand_safety (creator_id, brand_safety_score, flagged_content, last_audit_date)
@@ -49,6 +49,9 @@ export interface CreatorProfile {
   audienceData?: AudienceData;
   contentMetrics?: ContentMetrics;
   brandSafety?: BrandSafetyScore;
+  nicheAuthorityScore?: number;    // 0-100, how trusted this creator is in their niche
+  repeatBrandRate?: number;        // 0-1, how often brands return for another collaboration
+  contentConsistencyScore?: number;// 0-100 fallback when no granular consistency metrics exist
 }
 
 export interface AudienceData {
@@ -67,6 +70,9 @@ export interface ContentMetrics {
   postFrequency: number;           // Posts per week
   topContentCategories: string[];
   recentGrowthRate: number;        // Monthly follower growth %
+  avgStoryCompletionRate?: number; // 0-1 if available on the platform
+  avgWatchRetention?: number;      // 0-1 if available on the platform
+  postingConsistency?: number;     // 0-1 reliability of publishing cadence
 }
 
 export interface BrandSafetyScore {
@@ -91,20 +97,20 @@ export interface MatchResult {
   reason?: string;                 // Why ineligible
 }
 
-// ---- Data Provider Interface (pluggable for Meta) ----
+// ---- Data Provider Interface (pluggable for any platform) ----
 
 export interface CreatorDataProvider {
   /**
    * Fetch audience demographics for a creator.
    * MVP: Returns null (assumed match).
-   * Production: Calls Meta Marketing API / Instagram Graph API.
+   * Production: Calls the platform's audience/demographics API.
    */
   getAudienceData(creatorId: string): Promise<AudienceData | null>;
 
   /**
    * Fetch content performance metrics.
    * MVP: Returns null (assumed match).
-   * Production: Calls Instagram Insights API.
+   * Production: Calls the platform's analytics/insights API.
    */
   getContentMetrics(creatorId: string): Promise<ContentMetrics | null>;
 
@@ -132,15 +138,15 @@ export class MVPCreatorDataProvider implements CreatorDataProvider {
   }
 }
 
-// ---- Production Provider Template (for Meta to implement) ----
+// ---- Production Provider Template (for a platform integration to implement) ----
 
 /**
  * Production implementation — connects to real APIs.
  *
  * Required environment variables:
- * - META_APP_ID: Meta app ID for Graph API access
- * - META_APP_SECRET: Meta app secret
- * - INSTAGRAM_BUSINESS_ACCOUNT_TOKEN: Long-lived token for Insights API
+ * - PLATFORM_APP_ID: Platform app/client ID
+ * - PLATFORM_APP_SECRET: Platform app/client secret
+ * - PLATFORM_ACCOUNT_TOKEN: Long-lived token for analytics APIs where applicable
  * - BRAND_SAFETY_API_KEY: Third-party brand safety service key
  *
  * Required database tables:
@@ -170,15 +176,15 @@ export class MVPCreatorDataProvider implements CreatorDataProvider {
  * );
  */
 
-// Uncomment and implement when Meta provides API access:
-// export class MetaCreatorDataProvider implements CreatorDataProvider {
-//   private metaAppId: string;
-//   private metaAppSecret: string;
+// Uncomment and implement when a platform provides API access:
+// export class PlatformCreatorDataProvider implements CreatorDataProvider {
+//   private platformAppId: string;
+//   private platformAppSecret: string;
 //   private dbPool: any; // PostgreSQL pool
 //
-//   constructor(config: { metaAppId: string; metaAppSecret: string; dbPool: any }) {
-//     this.metaAppId = config.metaAppId;
-//     this.metaAppSecret = config.metaAppSecret;
+//   constructor(config: { platformAppId: string; platformAppSecret: string; dbPool: any }) {
+//     this.platformAppId = config.platformAppId;
+//     this.platformAppSecret = config.platformAppSecret;
 //     this.dbPool = config.dbPool;
 //   }
 //
@@ -190,14 +196,14 @@ export class MVPCreatorDataProvider implements CreatorDataProvider {
 //     );
 //     if (cached.rows.length > 0) return cached.rows[0].data;
 //
-//     // 2. Fetch from Meta Graph API
+//     // 2. Fetch from the platform API
 //     const response = await fetch(
-//       `https://graph.facebook.com/v19.0/${creatorId}/insights?metric=audience_city,audience_country,audience_gender_age,audience_locale&access_token=${this.metaAppSecret}`
+//       `https://api.platform.com/${creatorId}/insights?metric=audience_city,audience_country,audience_gender_age,audience_locale&access_token=${this.platformAppSecret}`
 //     );
 //     const data = await response.json();
 //
 //     // 3. Transform and cache
-//     const audienceData = this.transformMetaInsights(data);
+//     const audienceData = this.transformPlatformInsights(data);
 //     await this.dbPool.query(
 //       'INSERT INTO creator_audience_cache (creator_id, data) VALUES ($1, $2) ON CONFLICT (creator_id) DO UPDATE SET data = $2, fetched_at = NOW()',
 //       [creatorId, audienceData]
@@ -207,7 +213,7 @@ export class MVPCreatorDataProvider implements CreatorDataProvider {
 //   }
 //
 //   async getContentMetrics(creatorId: string): Promise<ContentMetrics | null> {
-//     // Similar pattern: cache → Meta Insights API → transform → cache
+//     // Similar pattern: cache → platform insights API → transform → cache
 //     return null;
 //   }
 //
@@ -216,8 +222,8 @@ export class MVPCreatorDataProvider implements CreatorDataProvider {
 //     return null;
 //   }
 //
-//   private transformMetaInsights(raw: any): AudienceData {
-//     // Transform Meta Graph API response to our AudienceData format
+//   private transformPlatformInsights(raw: any): AudienceData {
+//     // Transform platform API response to our AudienceData format
 //     return { ageDistribution: {}, genderSplit: { male: 0, female: 0, other: 0 }, topLocations: [], primaryLanguage: 'English', secondaryLanguages: [] };
 //   }
 // }
@@ -228,10 +234,77 @@ const WEIGHTS = {
   skinMatch: 30,        // Must match — hard filter
   levelMatch: 15,       // Creator level within range
   budgetMatch: 15,      // Creator rate vs brand budget
-  audienceMatch: 20,    // Audience demographics alignment
-  engagementMatch: 10,  // Engagement rate quality
-  brandSafetyMatch: 10, // Brand safety score
+  audienceMatch: 20,    // Audience fit + niche authority
+  engagementMatch: 10,  // Engagement + retention + consistency
+  brandSafetyMatch: 10, // Safety + repeat brand trust
 };
+
+function clampScore(value: number): number {
+  return Math.max(0, Math.min(100, Math.round(value)));
+}
+
+function scoreAudienceFit(creator: CreatorProfile, requirements: CampaignRequirements): number {
+  if (!creator.audienceData) return 90;
+
+  let audienceScore = 0;
+  let checks = 0;
+
+  if (requirements.audienceAgeRange && creator.audienceData.ageDistribution) {
+    checks++;
+    const agePercent = creator.audienceData.ageDistribution[requirements.audienceAgeRange] ?? 0;
+    audienceScore += agePercent > 0.3 ? 100 : agePercent > 0.15 ? 70 : agePercent > 0.05 ? 40 : 10;
+  }
+
+  if (requirements.location && creator.audienceData.topLocations) {
+    checks++;
+    const locationMatch = creator.audienceData.topLocations.find(
+      (l) => l.country.toLowerCase() === requirements.location!.toLowerCase()
+    );
+    audienceScore += locationMatch ? Math.min(100, locationMatch.percentage * 200) : 20;
+  }
+
+  if (requirements.audienceLanguage && creator.audienceData.primaryLanguage) {
+    checks++;
+    audienceScore += creator.audienceData.primaryLanguage.toLowerCase() === requirements.audienceLanguage.toLowerCase()
+      ? 100
+      : creator.audienceData.secondaryLanguages.some((l) => l.toLowerCase() === requirements.audienceLanguage!.toLowerCase())
+        ? 60
+        : 20;
+  }
+
+  return checks > 0 ? Math.round(audienceScore / checks) : 90;
+}
+
+function scoreNicheAuthority(creator: CreatorProfile, requirements: CampaignRequirements): number {
+  if (creator.nicheAuthorityScore !== undefined) return clampScore(creator.nicheAuthorityScore);
+
+  if (!requirements.contentCategories?.length || !creator.contentMetrics?.topContentCategories?.length) {
+    return 80;
+  }
+
+  const required = requirements.contentCategories.map((category) => category.toLowerCase());
+  const actual = creator.contentMetrics.topContentCategories.map((category) => category.toLowerCase());
+  const overlap = required.filter((category) => actual.includes(category)).length;
+  return clampScore(40 + (overlap / required.length) * 60);
+}
+
+function scoreConsistency(creator: CreatorProfile): number {
+  if (creator.contentConsistencyScore !== undefined) return clampScore(creator.contentConsistencyScore);
+  if (creator.contentMetrics?.postingConsistency !== undefined) return clampScore(creator.contentMetrics.postingConsistency * 100);
+  if (!creator.contentMetrics?.postFrequency) return 75;
+  return clampScore(45 + Math.min(creator.contentMetrics.postFrequency, 7) * 7);
+}
+
+function scoreRetention(creator: CreatorProfile): number {
+  const retention = creator.contentMetrics?.avgWatchRetention ?? creator.contentMetrics?.avgStoryCompletionRate;
+  if (retention === undefined) return 75;
+  return clampScore(retention * 100);
+}
+
+function scoreRepeatPartnershipTrust(creator: CreatorProfile): number {
+  if (creator.repeatBrandRate !== undefined) return clampScore(creator.repeatBrandRate * 100);
+  return 70;
+}
 
 /**
  * Score a single creator against campaign requirements.
@@ -309,43 +382,21 @@ export function scoreCreator(
     breakdown.engagementMatch = Math.min(100, Math.round(creator.engagement * 15));
   }
 
-  // Audience match (MVP: assume full match since we don't have real data)
-  if (creator.audienceData) {
-    let audienceScore = 0;
-    let checks = 0;
+  // Audience fit is combined with niche authority so high-fit micro creators
+  // can still rank above broad but poorly matched larger creators.
+  const audienceFitScore = scoreAudienceFit(creator, requirements);
+  const nicheAuthorityScore = scoreNicheAuthority(creator, requirements);
+  breakdown.audienceMatch = clampScore(audienceFitScore * 0.7 + nicheAuthorityScore * 0.3);
 
-    // Age range match
-    if (requirements.audienceAgeRange && creator.audienceData.ageDistribution) {
-      checks++;
-      const targetAge = requirements.audienceAgeRange;
-      const agePercent = creator.audienceData.ageDistribution[targetAge] ?? 0;
-      audienceScore += agePercent > 0.3 ? 100 : agePercent > 0.15 ? 70 : agePercent > 0.05 ? 40 : 10;
-    }
-
-    // Location match
-    if (requirements.location && creator.audienceData.topLocations) {
-      checks++;
-      const locationMatch = creator.audienceData.topLocations.find(
-        l => l.country.toLowerCase() === requirements.location!.toLowerCase()
-      );
-      audienceScore += locationMatch ? Math.min(100, locationMatch.percentage * 200) : 20;
-    }
-
-    // Language match
-    if (requirements.audienceLanguage && creator.audienceData.primaryLanguage) {
-      checks++;
-      audienceScore += creator.audienceData.primaryLanguage.toLowerCase() === requirements.audienceLanguage.toLowerCase()
-        ? 100
-        : creator.audienceData.secondaryLanguages.some(l => l.toLowerCase() === requirements.audienceLanguage!.toLowerCase())
-          ? 60
-          : 20;
-    }
-
-    breakdown.audienceMatch = checks > 0 ? Math.round(audienceScore / checks) : 90;
-  } else {
-    // MVP: no audience data → assume good match
-    breakdown.audienceMatch = 90;
-  }
+  // Blend retention and posting consistency into the engagement bucket without
+  // changing the external breakdown shape or UI contract.
+  const consistencyScore = scoreConsistency(creator);
+  const retentionScore = scoreRetention(creator);
+  breakdown.engagementMatch = clampScore(
+    breakdown.engagementMatch * 0.55 +
+    consistencyScore * 0.25 +
+    retentionScore * 0.20
+  );
 
   // Brand safety
   if (creator.brandSafety) {
@@ -354,6 +405,10 @@ export function scoreCreator(
     // MVP: no audit → assume safe
     breakdown.brandSafetyMatch = 85;
   }
+
+  // Returning brands are a strong hidden trust signal that agencies use.
+  const repeatPartnershipScore = scoreRepeatPartnershipTrust(creator);
+  breakdown.brandSafetyMatch = clampScore(breakdown.brandSafetyMatch * 0.7 + repeatPartnershipScore * 0.3);
 
   // ---- Weighted total ----
   const totalWeight = Object.values(WEIGHTS).reduce((a, b) => a + b, 0);
