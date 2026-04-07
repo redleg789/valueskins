@@ -2,105 +2,125 @@
 
 import { useMemo, useState } from 'react';
 
-type Role = 'none' | 'creator' | 'brand';
-type View = 'browse' | 'watch' | 'mim' | 'store';
+type View = 'browse' | 'watch' | 'network' | 'loadout';
+type Role = 'none' | 'streamer' | 'sponsor';
 
-type StreamCard = {
+type Stream = {
   id: string;
   title: string;
-  creator: string;
+  channel: string;
   game: string;
   viewers: string;
-  tag: string;
-  thumb: string;
+  tags: string[];
+  image: string;
 };
 
-const STREAMS: StreamCard[] = [
+type Channel = {
+  name: string;
+  game: string;
+  viewers: string;
+  avatar: string;
+  streamId?: string;
+};
+
+const TOP_STREAMS: Stream[] = [
   {
-    id: 's1',
-    title: "Where's my good boys... Goddess ASMR",
-    creator: 'Castaway',
+    id: 'castaway',
+    title: "Where's my good boys.... Goddess ASMR l...",
+    channel: 'Castaway',
     game: 'Just Chatting',
     viewers: '343',
-    tag: 'girl',
-    thumb: 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=1200&q=80',
+    tags: ['girl', 'english', 'worldofwarcraft', 'ADHD'],
+    image: 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=1400&q=80',
   },
   {
-    id: 's2',
-    title: 'MEET AND GREET AT Tipsy Dreamer 1-4PM',
-    creator: 'Mande',
+    id: 'mande',
+    title: 'MEET AND GREET AT Tipsy Dreamer 1-4PM ...',
+    channel: 'Mande',
     game: 'Just Chatting',
     viewers: '4.1K',
-    tag: 'English',
-    thumb: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1200&q=80',
+    tags: ['English'],
+    image: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1400&q=80',
   },
   {
-    id: 's3',
-    title: 'EXPLORING HAUNTED FOREST W/ @Rosiiwu',
-    creator: 'Arky',
+    id: 'arky',
+    title: 'EXPLORING HAUNTED FOREST W/ @Rosiiwu...',
+    channel: 'Arky',
     game: 'Just Chatting',
     viewers: '6.9K',
-    tag: 'English',
-    thumb: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80',
+    tags: ['English'],
+    image: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1400&q=80',
   },
+];
+
+const TEAM_FPS_STREAMS: Stream[] = [
   {
-    id: 's4',
+    id: 'hamy',
     title: 'WINNING GAMES TONIGHT SUPER LOCKED IN',
-    creator: 'Hamy',
+    channel: 'Hamy',
     game: 'VALORANT',
     viewers: '242',
-    tag: 'English',
-    thumb: 'https://images.unsplash.com/photo-1542751110-97427bbecf20?auto=format&fit=crop&w=1200&q=80',
+    tags: ['English'],
+    image: 'https://images.unsplash.com/photo-1542751110-97427bbecf20?auto=format&fit=crop&w=1400&q=80',
   },
   {
-    id: 's5',
-    title: 'WHY AM I the GOAT',
-    creator: 'eggsterr',
+    id: 'eggsterr',
+    title: 'wHY AM I the GOAT',
+    channel: 'eggsterr',
     game: 'VALORANT',
     viewers: '1.1K',
-    tag: 'English',
-    thumb: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=1200&q=80',
+    tags: ['English'],
+    image: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=1400&q=80',
   },
   {
-    id: 's6',
-    title: 'RERUN: NAVI vs. G2 - ESL Pro League Season 23',
-    creator: 'ESLCS',
+    id: 'eslcs',
+    title: 'RERUN: NAVI vs. G2 - ESL Pro League Season 23...',
+    channel: 'ESLCS',
     game: 'Counter-Strike',
     viewers: '285',
-    tag: 'English',
-    thumb: 'https://images.unsplash.com/photo-1603481546238-487240415921?auto=format&fit=crop&w=1200&q=80',
+    tags: ['English'],
+    image: 'https://images.unsplash.com/photo-1603481546238-487240415921?auto=format&fit=crop&w=1400&q=80',
   },
 ];
 
-const FEATURED_IDS = ['s1', 's2', 's3'];
-const FPS_IDS = ['s4', 's5', 's6'];
+const ALL_STREAMS = [...TOP_STREAMS, ...TEAM_FPS_STREAMS];
 
-const CHANNELS = [
-  { name: 'xQc', game: 'Minecraft', viewers: '23.1K' },
-  { name: 'caseoh_', game: 'Retro Rewind: Vid...', viewers: '56K' },
-  { name: 'TBJZL', game: "I'm Only Sleeping", viewers: '681' },
-  { name: 'ESL_DOTA2', game: 'Dota 2', viewers: '167' },
-  { name: 'Lacy', game: 'Grand Theft Aut...', viewers: '15.2K' },
-  { name: 'TenZ', game: 'VALORANT', viewers: '6.7K' },
-  { name: 'Faith', game: 'Just Chatting', viewers: '325' },
-  { name: 'MarvelRivals', game: 'Marvel Rivals', viewers: '1.4K' },
-  { name: 'ion2x', game: 'VALORANT', viewers: '334' },
-  { name: 'CDAwg', game: 'Just Chatting', viewers: '24.4K' },
+const LIVE_CHANNELS: Channel[] = [
+  { name: 'xQc', game: 'Minecraft', viewers: '23.1K', avatar: 'xQ' },
+  { name: 'caseoh_', game: 'Retro Rewind: Vid...', viewers: '56K', avatar: 'ca' },
+  { name: 'TBJZL', game: "I'm Only Sleeping", viewers: '681', avatar: 'tb' },
+  { name: 'ESL_DOTA2', game: 'Dota 2', viewers: '167', avatar: 'ES' },
+  { name: 'Lacy', game: 'Grand Theft Aut...', viewers: '15.2K', avatar: 'La' },
+  { name: 'TenZ', game: 'VALORANT', viewers: '6.7K', avatar: 'Te' },
+  { name: 'Faith', game: 'Just Chatting', viewers: '325', avatar: 'Fa' },
+  { name: 'MarvelRivals', game: 'Marvel Rivals', viewers: '1.4K', avatar: 'MR' },
+  { name: 'ion2x', game: 'VALORANT', viewers: '334', avatar: 'io' },
+  { name: 'CDAwg', game: 'Just Chatting', viewers: '24.4K', avatar: 'CD' },
+  { name: 'Mande', game: 'Just Chatting', viewers: '4.1K', avatar: 'Ma', streamId: 'mande' },
+  { name: 'eggsterr', game: 'VALORANT', viewers: '1.1K', avatar: 'eg', streamId: 'eggsterr' },
+  { name: 'Arky', game: 'Just Chatting', viewers: '6.9K', avatar: 'Ar', streamId: 'arky' },
 ];
 
-const MARKETPLACE_DEALS = [
+const CHAT_LINES = [
+  { user: 'noukhii', text: 'sens and setup posted above' },
+  { user: 'fpsfan_21', text: 'clutch incoming' },
+  { user: 'brandwatch', text: 'retention is insane on this stream' },
+  { user: 'mod_mira', text: 'drop your favorite loadout in chat' },
+];
+
+const NETWORK_DEALS = [
   'HyperX: Sponsored live session + clipped highlight package ($3,000)',
   'Razer: Gear showcase with chat command CTA ($1,800)',
   'Corsair: Giveaway activation + stream overlay slot ($2,100)',
 ];
 
-const BRAND_MATCHES = [
+const SPONSOR_MATCHES = [
   'Mande · Just Chatting · 4.1K live viewers · High event turnout',
-  'Arky · Just Chatting · 6.9K viewers · Strong session length',
-  'eggsterr · VALORANT · 1.1K viewers · High FPS affinity',
+  'Arky · Just Chatting · 6.9K live viewers · Strong session length',
+  'eggsterr · VALORANT · 1.1K live viewers · High FPS affinity',
 ];
 
-const LOADOUT_ITEMS = [
+const LOADOUTS = [
   'FPS Pro',
   'Chat Magnet',
   'Brand Safe',
@@ -109,31 +129,64 @@ const LOADOUT_ITEMS = [
   'Community Builder',
 ];
 
-const CHAT_MESSAGES = [
-  { user: 'noukhii', text: 'sens and setup posted above' },
-  { user: 'fpsfan_21', text: 'clutch incoming' },
-  { user: 'brandwatch', text: 'retention is crazy on this channel' },
-  { user: 'mod_mira', text: 'drop your favorite loadout in chat' },
-];
+function StreamCard({
+  stream,
+  featured = false,
+  onOpen,
+}: {
+  stream: Stream;
+  featured?: boolean;
+  onOpen: (stream: Stream) => void;
+}) {
+  return (
+    <button type="button" className="streamCard" onClick={() => onOpen(stream)}>
+      <div className={`thumbShell ${featured ? 'featured' : ''}`}>
+        <img src={stream.image} alt={stream.title} className="thumbImage" />
+        <span className="livePill">LIVE</span>
+        <span className="viewerPill">{stream.viewers} viewers</span>
+      </div>
+      <div className="streamMeta">
+        <div className="streamAvatar">{stream.channel.slice(0, 2)}</div>
+        <div className="streamText">
+          <div className="streamTitle">{stream.title}</div>
+          <div className="streamChannel">{stream.channel}</div>
+          <div className="streamGame">{stream.game}</div>
+          <div className="tagRow">
+            {stream.tags.map((tag) => (
+              <span key={tag} className="tagChip">
+                {tag}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </button>
+  );
+}
 
 export default function TwitchDemoPage() {
   const [query, setQuery] = useState('');
   const [view, setView] = useState<View>('browse');
   const [role, setRole] = useState<Role>('none');
-  const [selected, setSelected] = useState<StreamCard>(STREAMS[1]);
+  const [selected, setSelected] = useState<Stream>(TOP_STREAMS[1]);
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return STREAMS;
-    return STREAMS.filter((stream) =>
-      `${stream.title} ${stream.creator} ${stream.game} ${stream.tag}`.toLowerCase().includes(q)
-    );
-  }, [query]);
+  const q = query.trim().toLowerCase();
+  const featured = useMemo(
+    () =>
+      TOP_STREAMS.filter((stream) =>
+        q ? `${stream.title} ${stream.channel} ${stream.game} ${stream.tags.join(' ')}`.toLowerCase().includes(q) : true
+      ),
+    [q]
+  );
+  const fps = useMemo(
+    () =>
+      TEAM_FPS_STREAMS.filter((stream) =>
+        q ? `${stream.title} ${stream.channel} ${stream.game} ${stream.tags.join(' ')}`.toLowerCase().includes(q) : true
+      ),
+    [q]
+  );
 
-  const featuredStreams = (query ? filtered : STREAMS).filter((stream) => FEATURED_IDS.includes(stream.id));
-  const fpsStreams = (query ? filtered : STREAMS).filter((stream) => FPS_IDS.includes(stream.id));
-
-  const openStream = (stream: StreamCard) => {
+  const openStream = (stream: Stream) => {
     setSelected(stream);
     setView('watch');
   };
@@ -142,13 +195,13 @@ export default function TwitchDemoPage() {
     <div className="page">
       <header className="topbar">
         <div className="topbarLeft">
-          <button type="button" className="logo" onClick={() => setView('browse')} aria-label="Open Twitch home">
+          <button type="button" className="twitchMark" onClick={() => setView('browse')} aria-label="Open Twitch browse">
             <span>Tw</span>
           </button>
-          <button type="button" className="browseLink" onClick={() => setView('browse')}>
+          <button type="button" className="browseLabel" onClick={() => setView('browse')}>
             Browse
           </button>
-          <button type="button" className="dotsBtn" aria-label="More options">
+          <button type="button" className="dotsButton" aria-label="More">
             •••
           </button>
         </div>
@@ -160,172 +213,116 @@ export default function TwitchDemoPage() {
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search"
           />
-          <button type="button" className="searchBtn" aria-label="Search" />
+          <button type="button" className="searchButton" aria-label="Search" />
         </div>
 
         <div className="topbarRight">
-          <button type="button" className="ghostBtn">
+          <button type="button" className="ghostAction">
             Log In
           </button>
-          <button type="button" className="primaryBtn">
+          <button type="button" className="primaryAction">
             Sign Up
           </button>
-          <button type="button" className="profileBtn" aria-label="Profile">
+          <button type="button" className="userAction" aria-label="Account">
             ◌
           </button>
         </div>
       </header>
 
-      <div className="layout">
+      <div className="shell">
         <aside className="sidebar">
-          <div className="sidebarTop">
+          <div className="sidebarHeader">
             <div className="sidebarTitle">Live Channels</div>
-            <button type="button" className="collapseBtn" aria-label="Collapse">
+            <button type="button" className="collapseAction" aria-label="Collapse">
               ←|
             </button>
           </div>
 
           <div className="channelList">
-            {CHANNELS.map((channel) => (
+            {LIVE_CHANNELS.map((channel) => (
               <button
                 key={channel.name}
                 type="button"
                 className="channelRow"
                 onClick={() => {
-                  const stream = STREAMS.find((item) => item.creator.toLowerCase() === channel.name.toLowerCase());
+                  const stream = channel.streamId ? ALL_STREAMS.find((item) => item.id === channel.streamId) : null;
                   if (stream) openStream(stream);
                 }}
               >
                 <div className="channelIdentity">
-                  <div className="channelAvatar">{channel.name.slice(0, 2)}</div>
-                  <div className="channelMeta">
+                  <div className="channelAvatar">{channel.avatar}</div>
+                  <div className="channelText">
                     <div className="channelName">{channel.name}</div>
                     <div className="channelGame">{channel.game}</div>
                   </div>
                 </div>
-                <div className="channelViewers">
+                <div className="channelCount">
                   <span className="liveDot" />
                   {channel.viewers}
                 </div>
               </button>
             ))}
           </div>
-
-          {view !== 'browse' && (
-            <div className="sidebarTools">
-              <div className="toolsLabel">ValueSkins on Twitch</div>
-              <button type="button" className={`toolBtn ${view === 'mim' ? 'active' : ''}`} onClick={() => setView('mim')}>
-                Network
-              </button>
-              <button type="button" className={`toolBtn ${view === 'store' ? 'active' : ''}`} onClick={() => setView('store')}>
-                Loadout
-              </button>
-              <button
-                type="button"
-                className="toolBtn"
-                onClick={() => {
-                  setRole('creator');
-                  setView('mim');
-                }}
-              >
-                Streamer view
-              </button>
-              <button
-                type="button"
-                className="toolBtn"
-                onClick={() => {
-                  setRole('brand');
-                  setView('mim');
-                }}
-              >
-                Sponsor view
-              </button>
-            </div>
-          )}
         </aside>
 
         <main className="content">
           {view === 'browse' && (
             <div className="browseView">
-              <div className="featuredGrid">
-                {featuredStreams.map((stream) => (
-                  <button key={stream.id} type="button" className="streamCard" onClick={() => openStream(stream)}>
-                    <div className="thumbFrame featured">
-                      <img src={stream.thumb} alt={stream.title} className="thumb" />
-                      <span className="liveBadge">LIVE</span>
-                      <span className="viewerBadge">{stream.viewers} viewers</span>
-                    </div>
-                    <div className="cardInfo">
-                      <div className="streamAvatar">{stream.creator.slice(0, 2)}</div>
-                      <div className="cardText">
-                        <div className="streamTitle">{stream.title}</div>
-                        <div className="streamCreator">{stream.creator}</div>
-                        <div className="streamGame">{stream.game}</div>
-                        <div className="tagList">
-                          <span className="tag">{stream.tag}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </button>
+              <div className="featuredRow">
+                {featured.map((stream) => (
+                  <StreamCard key={stream.id} stream={stream} featured onOpen={openStream} />
                 ))}
               </div>
 
-              <div className="separatorRow">
-                <div className="separator" />
-                <button type="button" className="showAllBtn" onClick={() => setView('mim')}>
+              <div className="dividerRow">
+                <div className="dividerLine" />
+                <button type="button" className="showAllLink" onClick={() => setView('network')}>
                   Show all
                 </button>
-                <div className="separator" />
+                <div className="dividerLine" />
               </div>
 
-              <div className="sectionBlock">
-                <div className="sectionHeading">Team FPS</div>
+              <section className="section">
+                <div className="sectionTitle">Team FPS</div>
                 <div className="streamGrid">
-                  {fpsStreams.map((stream) => (
-                    <button key={stream.id} type="button" className="streamCard" onClick={() => openStream(stream)}>
-                      <div className="thumbFrame">
-                        <img src={stream.thumb} alt={stream.title} className="thumb" />
-                        <span className="liveBadge">LIVE</span>
-                        <span className="viewerBadge">{stream.viewers} viewers</span>
-                      </div>
-                      <div className="cardInfo">
-                        <div className="streamAvatar">{stream.creator.slice(0, 2)}</div>
-                        <div className="cardText">
-                          <div className="streamTitle">{stream.title}</div>
-                          <div className="streamCreator">{stream.creator}</div>
-                          <div className="streamGame">{stream.game}</div>
-                          <div className="tagList">
-                            <span className="tag">{stream.tag}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </button>
+                  {fps.map((stream) => (
+                    <StreamCard key={stream.id} stream={stream} onOpen={openStream} />
                   ))}
                 </div>
-              </div>
+              </section>
             </div>
           )}
 
           {view === 'watch' && (
-            <section className="watchLayout">
+            <div className="watchView">
               <div className="watchMain">
-                <div className="playerFrame">
-                  <img src={selected.thumb} alt={selected.title} className="player" />
+                <div className="playerShell">
+                  <img src={selected.image} alt={selected.title} className="playerImage" />
                 </div>
-                <div className="watchPanel">
-                  <div className="watchHead">
+                <div className="watchInfo">
+                  <div className="watchTop">
                     <div>
                       <div className="watchTitle">{selected.title}</div>
                       <div className="watchMeta">
-                        {selected.creator} · {selected.game} · {selected.viewers} viewers
+                        {selected.channel} · {selected.game} · {selected.viewers} viewers
                       </div>
                     </div>
-                    <div className="watchActions">
-                      <button type="button" className="pill primaryPill">Follow</button>
-                      <button type="button" className="pill mutedPill">Subscribe</button>
-                      <button type="button" className="pill mutedPill">Gift a Sub</button>
-                      <button type="button" className="pill mutedPill" onClick={() => setView('mim')}>ValueSkins Network</button>
-                      <button type="button" className="pill mutedPill" onClick={() => setView('store')}>ValueSkins Loadout</button>
+                    <div className="watchButtons">
+                      <button type="button" className="pill primaryPill">
+                        Follow
+                      </button>
+                      <button type="button" className="pill mutedPill">
+                        Subscribe
+                      </button>
+                      <button type="button" className="pill mutedPill">
+                        Gift a Sub
+                      </button>
+                      <button type="button" className="pill mutedPill" onClick={() => setView('network')}>
+                        ValueSkins Network
+                      </button>
+                      <button type="button" className="pill mutedPill" onClick={() => setView('loadout')}>
+                        ValueSkins Loadout
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -337,63 +334,67 @@ export default function TwitchDemoPage() {
                     <div>Stream Chat</div>
                     <span>{selected.viewers} here</span>
                   </div>
-                  <div className="chatMessages">
-                    {CHAT_MESSAGES.map((message) => (
-                      <div key={`${message.user}-${message.text}`} className="chatMessage">
-                        <strong>{message.user}</strong> {message.text}
+                  <div className="chatBody">
+                    {CHAT_LINES.map((line) => (
+                      <div key={`${line.user}-${line.text}`} className="chatLine">
+                        <strong>{line.user}</strong> {line.text}
                       </div>
                     ))}
                   </div>
                   <input className="chatInput" placeholder="Send a message" />
                 </div>
               </aside>
-            </section>
+            </div>
           )}
 
-          {view === 'mim' && (
+          {view === 'network' && (
             <section className="panel">
               <div className="panelTitle">ValueSkins Network</div>
               <div className="panelIntro">
-                On Twitch, the two sides are streamers and sponsors, including brands, publishers, and event partners.
+                Streamers and sponsors meet here without changing the core Twitch flow.
               </div>
 
               {role === 'none' ? (
                 <div className="roleGrid">
-                  <button type="button" className="roleCard" onClick={() => setRole('creator')}>
+                  <button type="button" className="roleCard" onClick={() => setRole('streamer')}>
                     <span className="roleBadge">Streamer</span>
                     <div className="roleTitle">See inbound activations</div>
-                    <div className="roleText">Review paid stream integrations, audience fit, and trust signals.</div>
+                    <div className="roleText">Review sponsor briefs, fit, and trust signals.</div>
                   </button>
-                  <button type="button" className="roleCard" onClick={() => setRole('brand')}>
+                  <button type="button" className="roleCard" onClick={() => setRole('sponsor')}>
                     <span className="roleBadge alt">Sponsor</span>
-                    <div className="roleTitle">Find channels with real traction</div>
-                    <div className="roleText">Search by game, category, and live retention.</div>
+                    <div className="roleTitle">Find channels with traction</div>
+                    <div className="roleText">Search by game, session length, and live quality.</div>
                   </button>
                 </div>
-              ) : role === 'creator' ? (
-                <div className="listWrap">
-                  <div className="status creator">Streamer mode active</div>
-                  {MARKETPLACE_DEALS.map((deal) => (
-                    <div key={deal} className="listItem">{deal}</div>
+              ) : role === 'streamer' ? (
+                <div className="listStack">
+                  <div className="statusPill streamer">Streamer mode active</div>
+                  {NETWORK_DEALS.map((deal) => (
+                    <div key={deal} className="listItem">
+                      {deal}
+                    </div>
                   ))}
                 </div>
               ) : (
-                <div className="listWrap">
-                  <div className="status brand">Sponsor mode active</div>
-                  {BRAND_MATCHES.map((item) => (
-                    <div key={item} className="listItem">{item}</div>
+                <div className="listStack">
+                  <div className="statusPill sponsor">Sponsor mode active</div>
+                  {SPONSOR_MATCHES.map((match) => (
+                    <div key={match} className="listItem">
+                      {match}
+                    </div>
                   ))}
                 </div>
               )}
             </section>
           )}
 
-          {view === 'store' && (
+          {view === 'loadout' && (
             <section className="panel">
               <div className="panelTitle">ValueSkins Loadout</div>
               <div className="panelIntro">Channel badges streamers can turn on to signal niche, trust, and sponsor readiness.</div>
               <div className="loadoutGrid">
-                {LOADOUT_ITEMS.map((item) => (
+                {LOADOUTS.map((item) => (
                   <div key={item} className="loadoutCard">
                     <div className="loadoutTop">
                       <span className="loadoutTag">Channel Badge</span>
@@ -401,7 +402,9 @@ export default function TwitchDemoPage() {
                     </div>
                     <div className="loadoutTitle">{item}</div>
                     <div className="loadoutText">Use this badge to unlock more targeted matches and stronger sponsor positioning.</div>
-                    <button type="button" className="buyBtn">Buy now</button>
+                    <button type="button" className="buyButton">
+                      Buy now
+                    </button>
                   </div>
                 ))}
               </div>
@@ -411,14 +414,16 @@ export default function TwitchDemoPage() {
       </div>
 
       {view === 'browse' && (
-        <div className="bottomBanner">
-          <div className="bottomBannerText">
-            <div className="bannerBadge">VS</div>
+        <div className="bottomCta">
+          <div className="bottomCtaText">
+            <div className="bottomBadge">VS</div>
             <div>
               <strong>Join the Twitch community!</strong> Discover the best live streams anywhere.
             </div>
           </div>
-          <button type="button" className="bannerBtn">Sign Up</button>
+          <button type="button" className="bottomButton">
+            Sign Up
+          </button>
         </div>
       )}
 
@@ -434,7 +439,7 @@ export default function TwitchDemoPage() {
           top: 0;
           z-index: 20;
           display: grid;
-          grid-template-columns: auto minmax(280px, 1fr) auto;
+          grid-template-columns: auto minmax(260px, 1fr) auto;
           align-items: center;
           gap: 16px;
           height: 60px;
@@ -450,27 +455,26 @@ export default function TwitchDemoPage() {
           gap: 12px;
         }
 
-        .logo,
-        .browseLink,
-        .dotsBtn,
-        .ghostBtn,
-        .primaryBtn,
-        .profileBtn,
-        .collapseBtn,
-        .toolBtn,
-        .searchBtn,
-        .showAllBtn,
-        .buyBtn,
-        .pill,
-        .streamCard,
+        .twitchMark,
+        .browseLabel,
+        .dotsButton,
+        .ghostAction,
+        .primaryAction,
+        .userAction,
+        .collapseAction,
         .channelRow,
+        .showAllLink,
+        .pill,
+        .buyButton,
+        .bottomButton,
         .roleCard,
-        .bannerBtn {
+        .streamCard,
+        .searchButton {
           border: 0;
           cursor: pointer;
         }
 
-        .logo {
+        .twitchMark {
           width: 30px;
           height: 30px;
           border-radius: 8px;
@@ -480,7 +484,7 @@ export default function TwitchDemoPage() {
           font-weight: 900;
         }
 
-        .browseLink {
+        .browseLabel {
           background: transparent;
           color: #efeff1;
           font-size: 18px;
@@ -488,9 +492,9 @@ export default function TwitchDemoPage() {
           padding: 0;
         }
 
-        .dotsBtn,
-        .profileBtn,
-        .collapseBtn {
+        .dotsButton,
+        .userAction,
+        .collapseAction {
           background: transparent;
           color: #efeff1;
           font-size: 18px;
@@ -498,7 +502,7 @@ export default function TwitchDemoPage() {
 
         .searchWrap {
           display: grid;
-          grid-template-columns: 1fr 54px;
+          grid-template-columns: 1fr 52px;
           max-width: 560px;
           width: 100%;
           justify-self: center;
@@ -506,30 +510,30 @@ export default function TwitchDemoPage() {
 
         .searchInput {
           height: 48px;
+          padding: 0 16px;
           border: 1px solid #6e6e73;
           border-right: 0;
           border-radius: 10px 0 0 10px;
           background: #0f0f12;
           color: #efeff1;
           font-size: 18px;
-          padding: 0 16px;
           outline: none;
         }
 
-        .searchBtn {
+        .searchButton {
           background: #2a2a31;
           border-radius: 0 10px 10px 0;
           position: relative;
         }
 
-        .searchBtn::before {
+        .searchButton::before {
           content: '⌕';
           color: #efeff1;
           font-size: 24px;
         }
 
-        .ghostBtn,
-        .primaryBtn {
+        .ghostAction,
+        .primaryAction {
           height: 44px;
           padding: 0 18px;
           border-radius: 999px;
@@ -537,17 +541,17 @@ export default function TwitchDemoPage() {
           font-weight: 800;
         }
 
-        .ghostBtn {
+        .ghostAction {
           background: #2c2c33;
           color: #efeff1;
         }
 
-        .primaryBtn {
+        .primaryAction {
           background: #9146ff;
           color: #fff;
         }
 
-        .layout {
+        .shell {
           display: grid;
           grid-template-columns: 328px minmax(0, 1fr);
           min-height: calc(100vh - 60px);
@@ -559,7 +563,7 @@ export default function TwitchDemoPage() {
           padding-bottom: 92px;
         }
 
-        .sidebarTop {
+        .sidebarHeader {
           display: flex;
           align-items: center;
           justify-content: space-between;
@@ -589,7 +593,6 @@ export default function TwitchDemoPage() {
         }
 
         .channelRow:hover,
-        .toolBtn:hover,
         .streamCard:hover,
         .roleCard:hover {
           background: rgba(255, 255, 255, 0.04);
@@ -617,8 +620,8 @@ export default function TwitchDemoPage() {
           flex-shrink: 0;
         }
 
-        .channelMeta,
-        .cardText {
+        .channelText,
+        .streamText {
           min-width: 0;
         }
 
@@ -631,8 +634,8 @@ export default function TwitchDemoPage() {
         }
 
         .channelGame,
+        .streamChannel,
         .streamGame,
-        .streamCreator,
         .panelIntro,
         .roleText,
         .loadoutText,
@@ -647,7 +650,7 @@ export default function TwitchDemoPage() {
           text-overflow: ellipsis;
         }
 
-        .channelViewers {
+        .channelCount {
           display: inline-flex;
           align-items: center;
           gap: 6px;
@@ -662,39 +665,6 @@ export default function TwitchDemoPage() {
           background: #ff2b2b;
         }
 
-        .sidebarTools {
-          margin: 18px 12px 0;
-          padding-top: 18px;
-          border-top: 1px solid #2b2b31;
-        }
-
-        .toolsLabel {
-          margin-bottom: 10px;
-          color: #bf94ff;
-          font-size: 13px;
-          font-weight: 800;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-        }
-
-        .toolBtn {
-          width: 100%;
-          min-height: 40px;
-          margin-bottom: 8px;
-          border-radius: 10px;
-          background: #18181b;
-          color: #efeff1;
-          font-size: 14px;
-          font-weight: 700;
-          text-align: left;
-          padding: 0 12px;
-        }
-
-        .toolBtn.active {
-          background: rgba(145, 70, 255, 0.2);
-          box-shadow: inset 0 0 0 1px rgba(145, 70, 255, 0.45);
-        }
-
         .content {
           padding: 10px 18px 100px;
         }
@@ -705,7 +675,7 @@ export default function TwitchDemoPage() {
           gap: 18px;
         }
 
-        .featuredGrid,
+        .featuredRow,
         .streamGrid,
         .loadoutGrid,
         .roleGrid {
@@ -721,49 +691,49 @@ export default function TwitchDemoPage() {
           padding: 0;
         }
 
-        .thumbFrame {
+        .thumbShell {
           position: relative;
-          border-radius: 4px;
           overflow: hidden;
+          border-radius: 4px;
           border: 1px solid #2a2a31;
         }
 
-        .thumbFrame.featured {
+        .thumbShell.featured {
           border: 4px solid #9146ff;
         }
 
-        .thumb,
-        .player {
+        .thumbImage,
+        .playerImage {
           display: block;
           width: 100%;
           aspect-ratio: 16 / 9;
           object-fit: cover;
         }
 
-        .liveBadge {
+        .livePill {
           position: absolute;
           top: 10px;
           left: 10px;
-          background: #ff2b2b;
-          color: #fff;
           padding: 4px 8px;
           border-radius: 6px;
+          background: #ff2b2b;
+          color: #fff;
           font-size: 12px;
           font-weight: 900;
         }
 
-        .viewerBadge {
+        .viewerPill {
           position: absolute;
           left: 10px;
           bottom: 10px;
-          background: rgba(0, 0, 0, 0.82);
-          color: #fff;
           padding: 4px 8px;
           border-radius: 4px;
+          background: rgba(0, 0, 0, 0.82);
+          color: #fff;
           font-size: 12px;
         }
 
-        .cardInfo {
+        .streamMeta {
           display: flex;
           gap: 12px;
           padding-top: 12px;
@@ -779,20 +749,20 @@ export default function TwitchDemoPage() {
           overflow: hidden;
         }
 
-        .streamCreator,
+        .streamChannel,
         .streamGame {
           font-size: 17px;
           margin-top: 2px;
         }
 
-        .tagList {
+        .tagRow {
           display: flex;
           gap: 8px;
           flex-wrap: wrap;
           margin-top: 8px;
         }
 
-        .tag {
+        .tagChip {
           display: inline-flex;
           align-items: center;
           padding: 6px 10px;
@@ -803,31 +773,26 @@ export default function TwitchDemoPage() {
           font-weight: 700;
         }
 
-        .separatorRow {
+        .dividerRow {
           display: grid;
           grid-template-columns: 1fr auto 1fr;
           gap: 18px;
           align-items: center;
         }
 
-        .separator {
+        .dividerLine {
           height: 1px;
           background: #303039;
         }
 
-        .showAllBtn {
+        .showAllLink {
           background: transparent;
           color: #bf94ff;
           font-size: 16px;
           font-weight: 800;
         }
 
-        .sectionBlock {
-          display: flex;
-          flex-direction: column;
-        }
-
-        .sectionHeading,
+        .sectionTitle,
         .panelTitle {
           margin-bottom: 14px;
           color: #bf94ff;
@@ -835,32 +800,32 @@ export default function TwitchDemoPage() {
           font-weight: 800;
         }
 
-        .watchLayout {
+        .watchView {
           display: grid;
           grid-template-columns: minmax(0, 1fr) 340px;
           gap: 18px;
         }
 
-        .playerFrame,
-        .panel,
-        .watchPanel,
-        .chatCard {
+        .playerShell,
+        .watchInfo,
+        .chatCard,
+        .panel {
           border: 1px solid #2a2a31;
           border-radius: 18px;
           background: #111114;
         }
 
-        .watchPanel,
+        .watchInfo,
         .chatCard,
         .panel {
           padding: 18px;
         }
 
-        .watchPanel {
+        .watchInfo {
           margin-top: 16px;
         }
 
-        .watchHead {
+        .watchTop {
           display: flex;
           align-items: flex-start;
           justify-content: space-between;
@@ -878,7 +843,7 @@ export default function TwitchDemoPage() {
           font-size: 26px;
         }
 
-        .watchActions {
+        .watchButtons {
           display: flex;
           gap: 10px;
           flex-wrap: wrap;
@@ -914,21 +879,21 @@ export default function TwitchDemoPage() {
           font-size: 12px;
         }
 
-        .chatMessages {
+        .chatBody {
           min-height: 320px;
-          background: #18181b;
           border: 1px solid #2a2a31;
           border-radius: 14px;
+          background: #18181b;
           padding: 14px;
         }
 
-        .chatMessage {
+        .chatLine {
           margin-bottom: 10px;
           font-size: 14px;
           line-height: 1.45;
         }
 
-        .chatMessage strong {
+        .chatLine strong {
           color: #bf94ff;
         }
 
@@ -936,11 +901,11 @@ export default function TwitchDemoPage() {
           width: 100%;
           height: 42px;
           margin-top: 12px;
+          padding: 0 12px;
           border: 1px solid #31313a;
           border-radius: 12px;
           background: #18181b;
           color: #efeff1;
-          padding: 0 12px;
           outline: none;
         }
 
@@ -967,7 +932,7 @@ export default function TwitchDemoPage() {
 
         .roleBadge,
         .loadoutTag,
-        .status {
+        .statusPill {
           display: inline-flex;
           align-items: center;
           padding: 6px 10px;
@@ -979,9 +944,9 @@ export default function TwitchDemoPage() {
 
         .roleBadge,
         .loadoutTag {
+          margin-bottom: 12px;
           background: rgba(145, 70, 255, 0.16);
           color: #d3b7ff;
-          margin-bottom: 12px;
         }
 
         .roleBadge.alt {
@@ -994,19 +959,19 @@ export default function TwitchDemoPage() {
           margin-bottom: 8px;
         }
 
-        .listWrap {
+        .listStack {
           display: flex;
           flex-direction: column;
           gap: 10px;
         }
 
-        .status.creator {
+        .statusPill.streamer {
           width: fit-content;
           background: rgba(0, 214, 143, 0.16);
           color: #82f0c2;
         }
 
-        .status.brand {
+        .statusPill.sponsor {
           width: fit-content;
           background: rgba(86, 204, 242, 0.16);
           color: #a4ebff;
@@ -1035,7 +1000,7 @@ export default function TwitchDemoPage() {
           margin-bottom: 8px;
         }
 
-        .buyBtn {
+        .buyButton {
           height: 42px;
           margin-top: 18px;
           padding: 0 14px;
@@ -1046,7 +1011,7 @@ export default function TwitchDemoPage() {
           font-weight: 800;
         }
 
-        .bottomBanner {
+        .bottomCta {
           position: fixed;
           left: 0;
           right: 0;
@@ -1061,14 +1026,14 @@ export default function TwitchDemoPage() {
           color: #fff;
         }
 
-        .bottomBannerText {
+        .bottomCtaText {
           display: flex;
           align-items: center;
           gap: 14px;
           font-size: 18px;
         }
 
-        .bannerBadge {
+        .bottomBadge {
           display: inline-flex;
           align-items: center;
           justify-content: center;
@@ -1080,7 +1045,7 @@ export default function TwitchDemoPage() {
           font-weight: 900;
         }
 
-        .bannerBtn {
+        .bottomButton {
           height: 46px;
           padding: 0 24px;
           border-radius: 999px;
@@ -1091,13 +1056,13 @@ export default function TwitchDemoPage() {
         }
 
         @media (max-width: 1280px) {
-          .featuredGrid,
+          .featuredRow,
           .streamGrid,
           .loadoutGrid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
           }
 
-          .watchLayout {
+          .watchView {
             grid-template-columns: 1fr;
           }
         }
@@ -1109,7 +1074,7 @@ export default function TwitchDemoPage() {
             padding: 10px 12px;
           }
 
-          .layout {
+          .shell {
             grid-template-columns: 1fr;
           }
 
@@ -1128,7 +1093,7 @@ export default function TwitchDemoPage() {
             padding: 10px 12px 120px;
           }
 
-          .featuredGrid,
+          .featuredRow,
           .streamGrid,
           .loadoutGrid {
             grid-template-columns: 1fr;
@@ -1136,12 +1101,12 @@ export default function TwitchDemoPage() {
 
           .topbarLeft,
           .topbarRight,
-          .bottomBanner {
+          .bottomCta {
             flex-wrap: wrap;
           }
 
-          .watchHead,
-          .bottomBanner {
+          .watchTop,
+          .bottomCta {
             flex-direction: column;
             align-items: flex-start;
           }
