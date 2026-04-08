@@ -1,19 +1,18 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
-import { useDealSync, type Campaign } from '@/lib/useDealSync';
-
-type View = 'browse' | 'watch' | 'network' | 'loadout';
-type Role = 'none' | 'streamer' | 'sponsor';
+import { useMemo, useState } from 'react';
 
 type Stream = {
   id: string;
   title: string;
   channel: string;
+  subtitle?: string;
   game: string;
   viewers: string;
   tags: string[];
   image: string;
+  accent?: boolean;
+  badge?: string;
 };
 
 type Channel = {
@@ -21,10 +20,11 @@ type Channel = {
   game: string;
   viewers: string;
   avatar: string;
-  streamId?: string;
+  avatarImage?: string;
+  note?: string;
 };
 
-const TOP_STREAMS: Stream[] = [
+const FEATURED_STREAMS: Stream[] = [
   {
     id: 'castaway',
     title: "Where's my good boys.... Goddess ASMR l...",
@@ -32,25 +32,31 @@ const TOP_STREAMS: Stream[] = [
     game: 'Just Chatting',
     viewers: '343',
     tags: ['girl', 'english', 'worldofwarcraft', 'ADHD'],
-    image: 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=1400&q=80',
+    image:
+      'https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=1400&q=80',
   },
   {
     id: 'mande',
     title: 'MEET AND GREET AT Tipsy Dreamer 1-4PM ...',
     channel: 'Mande',
+    subtitle: 'with JOEYKAOTYK',
     game: 'Just Chatting',
     viewers: '4.1K',
     tags: ['English'],
-    image: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1400&q=80',
+    image:
+      'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1400&q=80',
+    accent: true,
   },
   {
     id: 'arky',
     title: 'EXPLORING HAUNTED FOREST W/ @Rosiiwu...',
     channel: 'Arky',
+    subtitle: '+ 4',
     game: 'Just Chatting',
     viewers: '6.9K',
     tags: ['English'],
-    image: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1400&q=80',
+    image:
+      'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1400&q=80',
   },
 ];
 
@@ -62,7 +68,8 @@ const TEAM_FPS_STREAMS: Stream[] = [
     game: 'VALORANT',
     viewers: '242',
     tags: ['English'],
-    image: 'https://images.unsplash.com/photo-1542751110-97427bbecf20?auto=format&fit=crop&w=1400&q=80',
+    image:
+      'https://images.unsplash.com/photo-1542751110-97427bbecf20?auto=format&fit=crop&w=1400&q=80',
   },
   {
     id: 'eggsterr',
@@ -71,7 +78,8 @@ const TEAM_FPS_STREAMS: Stream[] = [
     game: 'VALORANT',
     viewers: '1.1K',
     tags: ['English'],
-    image: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=1400&q=80',
+    image:
+      'https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=1400&q=80',
   },
   {
     id: 'eslcs',
@@ -80,68 +88,61 @@ const TEAM_FPS_STREAMS: Stream[] = [
     game: 'Counter-Strike',
     viewers: '285',
     tags: ['English'],
-    image: 'https://images.unsplash.com/photo-1603481546238-487240415921?auto=format&fit=crop&w=1400&q=80',
+    image:
+      'https://images.unsplash.com/photo-1603481546238-487240415921?auto=format&fit=crop&w=1400&q=80',
   },
 ];
 
-const ALL_STREAMS = [...TOP_STREAMS, ...TEAM_FPS_STREAMS];
-
 const LIVE_CHANNELS: Channel[] = [
-  { name: 'xQc', game: 'Minecraft', viewers: '23.1K', avatar: 'xQ' },
-  { name: 'caseoh_', game: 'Retro Rewind: Vid...', viewers: '56K', avatar: 'ca' },
-  { name: 'TBJZL', game: "I'm Only Sleeping", viewers: '681', avatar: 'tb' },
-  { name: 'ESL_DOTA2', game: 'Dota 2', viewers: '167', avatar: 'ES' },
-  { name: 'Lacy', game: 'Grand Theft Aut...', viewers: '15.2K', avatar: 'La' },
-  { name: 'TenZ', game: 'VALORANT', viewers: '6.7K', avatar: 'Te' },
-  { name: 'Faith', game: 'Just Chatting', viewers: '325', avatar: 'Fa' },
-  { name: 'MarvelRivals', game: 'Marvel Rivals', viewers: '1.4K', avatar: 'MR' },
-  { name: 'ion2x', game: 'VALORANT', viewers: '334', avatar: 'io' },
-  { name: 'CDAwg', game: 'Just Chatting', viewers: '24.4K', avatar: 'CD' },
-  { name: 'Mande', game: 'Just Chatting', viewers: '4.1K', avatar: 'Ma', streamId: 'mande' },
-  { name: 'eggsterr', game: 'VALORANT', viewers: '1.1K', avatar: 'eg', streamId: 'eggsterr' },
-  { name: 'Arky', game: 'Just Chatting', viewers: '6.9K', avatar: 'Ar', streamId: 'arky' },
+  { name: 'xQc', game: 'Minecraft', viewers: '23.1K', avatar: 'xQ', avatarImage: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=120&q=80' },
+  { name: 'caseoh_', game: 'Retro Rewind: Vid...', viewers: '56K', avatar: 'ca', avatarImage: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=120&q=80' },
+  { name: 'TBJZL', game: "I'm Only Sleeping", viewers: '681', avatar: 'tb', avatarImage: 'https://images.unsplash.com/photo-1504593811423-6dd665756598?auto=format&fit=crop&w=120&q=80' },
+  { name: 'ESL_DOTA2', game: 'Dota 2', viewers: '167', avatar: 'ES', avatarImage: 'https://images.unsplash.com/photo-1511882150382-421056c89033?auto=format&fit=crop&w=120&q=80' },
+  { name: 'Lacy', game: 'Grand Theft Aut...', viewers: '15.2K', avatar: 'La', avatarImage: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80', note: 'Hype Train • Level 1' },
+  { name: 'TenZ', game: 'VALORANT', viewers: '6.7K', avatar: 'Te', avatarImage: 'https://images.unsplash.com/photo-1507591064344-4c6ce005b128?auto=format&fit=crop&w=120&q=80' },
+  { name: 'Faith', game: 'Just Chatting', viewers: '325', avatar: 'Fa', avatarImage: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=120&q=80' },
+  { name: 'MarvelRivals', game: 'Marvel Rivals', viewers: '1.4K', avatar: 'MR', avatarImage: 'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=120&q=80' },
+  { name: 'ion2x', game: 'VALORANT', viewers: '334', avatar: 'io', avatarImage: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=120&q=80' },
+  { name: 'CDAwg', game: 'Just Chatting', viewers: '24.4K', avatar: 'CD', avatarImage: 'https://images.unsplash.com/photo-1504257432389-52343af06ae3?auto=format&fit=crop&w=120&q=80' },
 ];
 
-const CHAT_LINES = [
-  { user: 'noukhii', text: 'sens and setup posted above' },
-  { user: 'fpsfan_21', text: 'clutch incoming' },
-  { user: 'brandwatch', text: 'retention is insane on this stream' },
-  { user: 'mod_mira', text: 'drop your favorite loadout in chat' },
-];
-
-const NETWORK_DEALS = [
-  'HyperX: Sponsored live session + clipped highlight package ($3,000)',
-  'Razer: Gear showcase with chat command CTA ($1,800)',
-  'Corsair: Giveaway activation + stream overlay slot ($2,100)',
-];
-
-const SPONSOR_MATCHES = [
-  'Mande · Just Chatting · 4.1K live viewers · High event turnout',
-  'Arky · Just Chatting · 6.9K live viewers · Strong session length',
-  'eggsterr · VALORANT · 1.1K live viewers · High FPS affinity',
-];
-
-const LOADOUTS = [
-  'FPS Pro',
-  'Chat Magnet',
-  'Brand Safe',
-  'Speedrunner',
-  'Esports Analyst',
-  'Community Builder',
-];
-
-function StreamCard({
-  stream,
-  featured = false,
-  onOpen,
-}: {
-  stream: Stream;
-  featured?: boolean;
-  onOpen: (stream: Stream) => void;
-}) {
+function TwitchGlyph() {
   return (
-    <button type="button" className="streamCard" onClick={() => onOpen(stream)}>
-      <div className={`thumbShell ${featured ? 'featured' : ''}`}>
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 2 2 6v14h5v3l3-3h4l8-8V2H4Zm16 9-4 4h-4l-3 3v-3H4V4h16v7Z" />
+      <path d="M17 6h-2v5h2V6Zm-5 0h-2v5h2V6Z" />
+    </svg>
+  );
+}
+
+function SearchIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M10 4a6 6 0 1 0 3.87 10.58l4.27 4.27 1.41-1.41-4.27-4.27A6 6 0 0 0 10 4Zm0 2a4 4 0 1 1 0 8 4 4 0 0 1 0-8Z" />
+    </svg>
+  );
+}
+
+function UserIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5Z" />
+    </svg>
+  );
+}
+
+function VerifiedIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 2 9.8 4.3 6.7 4 6 7.1 3.3 9.2 5 12l-1.7 2.8L6 16.9l.7 3.1 3.1-.3L12 22l2.2-2.3 3.1.3.7-3.1 2.7-2.1L19 12l1.7-2.8L18 7.1 17.3 4l-3.1.3L12 2Zm-1.1 13.2-3-3 1.4-1.4 1.6 1.6 3.8-3.8 1.4 1.4-5.2 5.2Z" />
+    </svg>
+  );
+}
+
+function StreamCard({ stream }: { stream: Stream }) {
+  return (
+    <article className="streamCard">
+      <div className={`thumbShell${stream.accent ? ' accent' : ''}`}>
         <img src={stream.image} alt={stream.title} className="thumbImage" />
         <span className="livePill">LIVE</span>
         <span className="viewerPill">{stream.viewers} viewers</span>
@@ -149,9 +150,16 @@ function StreamCard({
       <div className="streamMeta">
         <div className="streamAvatar">{stream.channel.slice(0, 2)}</div>
         <div className="streamText">
-          <div className="streamTitle">{stream.title}</div>
-          <div className="streamChannel">{stream.channel}</div>
-          <div className="streamGame">{stream.game}</div>
+          <h3>{stream.title}</h3>
+          <div className="channelRow">
+            <span>{stream.channel}</span>
+            <span className="verifiedIcon">
+              <VerifiedIcon />
+            </span>
+            {stream.subtitle ? <span className="subtitleText">{stream.subtitle}</span> : null}
+            {stream.subtitle ? <span className="caret">⌄</span> : null}
+          </div>
+          <p>{stream.game}</p>
           <div className="tagRow">
             {stream.tags.map((tag) => (
               <span key={tag} className="tagChip">
@@ -161,89 +169,66 @@ function StreamCard({
           </div>
         </div>
       </div>
-    </button>
+    </article>
   );
 }
 
 export default function TwitchDemoPage() {
   const [query, setQuery] = useState('');
-  const [view, setView] = useState<View>('browse');
-  const [role, setRole] = useState<Role>('none');
-  const [selected, setSelected] = useState<Stream>(TOP_STREAMS[1]);
-  const [showCampaignCreator, setShowCampaignCreator] = useState(false);
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
 
-  // Form states for Create Campaign
-  const [newCampaignTitle, setNewCampaignTitle] = useState('');
-  const [newCampaignBudget, setNewCampaignBudget] = useState('');
-  const [newCampaignDesc, setNewCampaignDesc] = useState('');
+  const featured = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return FEATURED_STREAMS;
+    return FEATURED_STREAMS.filter((stream) =>
+      `${stream.title} ${stream.channel} ${stream.game}`.toLowerCase().includes(q)
+    );
+  }, [query]);
 
-  // Simulating fetching or local persistence
-  useEffect(() => {
-    const saved = localStorage.getItem('twitch_campaigns');
-    if (saved) setCampaigns(JSON.parse(saved));
-  }, []);
-
-  const persistCampaigns = (updated: Campaign[]) => {
-    setCampaigns(updated);
-    localStorage.setItem('twitch_campaigns', JSON.stringify(updated));
-  };
-
-  const q = query.trim().toLowerCase();
-  const featured = useMemo(
-    () =>
-      TOP_STREAMS.filter((stream) =>
-        q ? `${stream.title} ${stream.channel} ${stream.game} ${stream.tags.join(' ')}`.toLowerCase().includes(q) : true
-      ),
-    [q]
-  );
-  const fps = useMemo(
-    () =>
-      TEAM_FPS_STREAMS.filter((stream) =>
-        q ? `${stream.title} ${stream.channel} ${stream.game} ${stream.tags.join(' ')}`.toLowerCase().includes(q) : true
-      ),
-    [q]
-  );
-
-  const openStream = (stream: Stream) => {
-    setSelected(stream);
-    setView('watch');
-  };
+  const fps = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return TEAM_FPS_STREAMS;
+    return TEAM_FPS_STREAMS.filter((stream) =>
+      `${stream.title} ${stream.channel} ${stream.game}`.toLowerCase().includes(q)
+    );
+  }, [query]);
 
   return (
     <div className="page">
       <header className="topbar">
         <div className="topbarLeft">
-          <button type="button" className="twitchMark" onClick={() => setView('browse')} aria-label="Open Twitch browse">
-            <span>Tw</span>
-          </button>
-          <button type="button" className="browseLabel" onClick={() => setView('browse')}>
+          <div className="brandBadge" aria-label="Twitch">
+            <TwitchGlyph />
+          </div>
+          <button type="button" className="browseButton">
             Browse
           </button>
           <button type="button" className="dotsButton" aria-label="More">
-            •••
+            ⋮
           </button>
         </div>
 
         <div className="searchWrap">
           <input
-            className="searchInput"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(event) => setQuery(event.target.value)}
+            className="searchInput"
             placeholder="Search"
+            aria-label="Search streams"
           />
-          <button type="button" className="searchButton" aria-label="Search" />
+          <button type="button" className="searchButton" aria-label="Search">
+            <SearchIcon />
+          </button>
         </div>
 
         <div className="topbarRight">
-          <button type="button" className="ghostAction">
+          <button type="button" className="ghostButton">
             Log In
           </button>
-          <button type="button" className="primaryAction">
+          <button type="button" className="primaryButton">
             Sign Up
           </button>
-          <button type="button" className="userAction" aria-label="Account">
-            ◌
+          <button type="button" className="userButton" aria-label="Account">
+            <UserIcon />
           </button>
         </div>
       </header>
@@ -251,28 +236,27 @@ export default function TwitchDemoPage() {
       <div className="shell">
         <aside className="sidebar">
           <div className="sidebarHeader">
-            <div className="sidebarTitle">Live Channels</div>
-            <button type="button" className="collapseAction" aria-label="Collapse">
+            <h2>Live Channels</h2>
+            <button type="button" className="collapseButton" aria-label="Collapse">
               ←|
             </button>
           </div>
 
           <div className="channelList">
             {LIVE_CHANNELS.map((channel) => (
-              <button
-                key={channel.name}
-                type="button"
-                className="channelRow"
-                onClick={() => {
-                  const stream = channel.streamId ? ALL_STREAMS.find((item) => item.id === channel.streamId) : null;
-                  if (stream) openStream(stream);
-                }}
-              >
+              <button key={channel.name} type="button" className="channelRowButton">
                 <div className="channelIdentity">
-                  <div className="channelAvatar">{channel.avatar}</div>
+                  <div className="channelAvatar">
+                    {channel.avatarImage ? (
+                      <img src={channel.avatarImage} alt={channel.name} className="channelAvatarImage" />
+                    ) : (
+                      channel.avatar
+                    )}
+                  </div>
                   <div className="channelText">
                     <div className="channelName">{channel.name}</div>
                     <div className="channelGame">{channel.game}</div>
+                    {channel.note ? <div className="channelNote">{channel.note}</div> : null}
                   </div>
                 </div>
                 <div className="channelCount">
@@ -285,296 +269,66 @@ export default function TwitchDemoPage() {
         </aside>
 
         <main className="content">
-          {view === 'browse' && (
-            <div className="browseView">
-              <div className="featuredRow">
-                {featured.map((stream) => (
-                  <StreamCard key={stream.id} stream={stream} featured onOpen={openStream} />
-                ))}
-              </div>
+          <section className="featuredGrid">
+            {featured.map((stream) => (
+              <StreamCard key={stream.id} stream={stream} />
+            ))}
+          </section>
 
-              <div className="dividerRow">
-                <div className="dividerLine" />
-                <button type="button" className="showAllLink" onClick={() => setView('network')}>
-                  Show all
-                </button>
-                <div className="dividerLine" />
-              </div>
+          <div className="dividerRow">
+            <div className="dividerLine" />
+            <button type="button" className="showAllButton">
+              Show all
+              <span>›</span>
+            </button>
+            <div className="dividerLine" />
+          </div>
 
-              <section className="section">
-                <div className="sectionTitle">Team FPS</div>
-                <div className="streamGrid">
-                  {fps.map((stream) => (
-                    <StreamCard key={stream.id} stream={stream} onOpen={openStream} />
-                  ))}
-                </div>
-              </section>
+          <section className="section">
+            <h2>Team FPS</h2>
+            <div className="streamGrid">
+              {fps.map((stream) => (
+                <StreamCard key={stream.id} stream={stream} />
+              ))}
             </div>
-          )}
-
-          {view === 'watch' && (
-            <div className="watchView">
-              <div className="watchMain">
-                <div className="playerShell">
-                  <img src={selected.image} alt={selected.title} className="playerImage" />
-                </div>
-                <div className="watchInfo">
-                  <div className="watchTop">
-                    <div>
-                      <div className="watchTitle">{selected.title}</div>
-                      <div className="watchMeta">
-                        {selected.channel} · {selected.game} · {selected.viewers} viewers
-                      </div>
-                    </div>
-                    <div className="watchButtons">
-                      <button type="button" className="pill primaryPill">
-                        Follow
-                      </button>
-                      <button type="button" className="pill mutedPill">
-                        Subscribe
-                      </button>
-                      <button type="button" className="pill mutedPill">
-                        Gift a Sub
-                      </button>
-                      <button type="button" className="pill mutedPill" onClick={() => setView('network')}>
-                        ValueSkins Network
-                      </button>
-                      <button type="button" className="pill mutedPill" onClick={() => setView('loadout')}>
-                        ValueSkins Loadout
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <aside className="chatRail">
-                <div className="chatCard">
-                  <div className="chatHeader">
-                    <div>Stream Chat</div>
-                    <span>{selected.viewers} here</span>
-                  </div>
-                  <div className="chatBody">
-                    {CHAT_LINES.map((line) => (
-                      <div key={`${line.user}-${line.text}`} className="chatLine">
-                        <strong>{line.user}</strong> {line.text}
-                      </div>
-                    ))}
-                  </div>
-                  <input className="chatInput" placeholder="Send a message" />
-                </div>
-              </aside>
-            </div>
-          )}
-
-          {view === 'network' && (
-            <section className="panel">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
-                <div className="panelTitle" style={{ margin: 0 }}>ValueSkins Network</div>
-                {role === 'sponsor' && (
-                  <button
-                    onClick={() => setShowCampaignCreator(true)}
-                    style={{
-                      background: '#9146ff', color: '#fff', border: 'none', borderRadius: '8px',
-                      padding: '10px 18px', fontSize: '14px', fontWeight: 800, cursor: 'pointer',
-                      display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 12px rgba(145, 70, 255, 0.3)'
-                    }}
-                  >
-                    + Create Campaign
-                  </button>
-                )}
-              </div>
-              <div className="panelIntro">
-                Streamers and sponsors meet here without changing the core Twitch flow.
-              </div>
-
-              {role === 'none' ? (
-                <div className="roleGrid">
-                  <button type="button" className="roleCard" onClick={() => setRole('streamer')}>
-                    <span className="roleBadge">Streamer</span>
-                    <div className="roleTitle">See inbound activations</div>
-                    <div className="roleText">Review sponsor briefs, fit, and trust signals.</div>
-                  </button>
-                  <button type="button" className="roleCard" onClick={() => setRole('sponsor')}>
-                    <span className="roleBadge alt">Sponsor</span>
-                    <div className="roleTitle">Find channels with traction</div>
-                    <div className="roleText">Search by game, session length, and live quality.</div>
-                  </button>
-                </div>
-              ) : role === 'streamer' ? (
-                <div className="listStack">
-                  <div className="statusPill streamer">Streamer mode active</div>
-                  {NETWORK_DEALS.map((deal) => (
-                    <div key={deal} className="listItem">
-                      {deal}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="listStack">
-                  <div className="statusPill sponsor">Sponsor mode active</div>
-                  {campaigns.length === 0 ? (
-                    <div style={{ background: '#18181b', border: '1px solid #2a2a31', borderRadius: '14px', padding: '32px', textAlign: 'center', marginTop: '12px' }}>
-                      <div style={{ fontSize: '18px', fontWeight: 800, color: '#fff', marginBottom: '8px' }}>Start with a Campaign</div>
-                      <div style={{ fontSize: '14px', color: '#adadb8', maxWidth: '380px', margin: '0 auto 20px', lineHeight: 1.5 }}>
-                        Once you create a campaign brief, we'll match you with streamers whose metrics and audience fit your brand goals.
-                      </div>
-                      <button
-                        onClick={() => setShowCampaignCreator(true)}
-                        style={{ background: '#9146ff', border: 'none', borderRadius: '10px', padding: '12px 24px', color: '#fff', fontWeight: 800, fontSize: '14px', cursor: 'pointer' }}
-                      >
-                        Create Brief Now
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      <div style={{ fontSize: '12px', fontWeight: 800, color: '#adadb8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px' }}>Your Campaigns</div>
-                      {campaigns.map(c => (
-                        <div key={c.id} style={{ background: '#18181b', border: '1px solid #2a2a31', borderRadius: '12px', padding: '16px', marginBottom: '12px' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                            <div style={{ fontWeight: 800, color: '#fff' }}>{c.title}</div>
-                            <div style={{ color: '#9146ff', fontWeight: 800 }}>${c.budget}</div>
-                          </div>
-                          <div style={{ fontSize: '13px', color: '#adadb8' }}>{c.description}</div>
-                        </div>
-                      ))}
-
-                      <div style={{ fontSize: '12px', fontWeight: 800, color: '#adadb8', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '24px 0 12px' }}>Recommended Streamer Matches</div>
-                      {SPONSOR_MATCHES.map((match) => (
-                        <div key={match} className="listItem">
-                          {match}
-                        </div>
-                      ))}
-                    </>
-                  )}
-                </div>
-              )}
-            </section>
-          )}
-
-          {/* New Campaign Modal for Twitch */}
-          {showCampaignCreator && (
-            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100000, padding: '16px' }}>
-              <div style={{ background: '#111114', borderRadius: '24px', padding: '32px', maxWidth: '440px', width: '100%', border: '1px solid #2a2a31', position: 'relative', boxShadow: '0 20px 40px rgba(0,0,0,0.5)' }}>
-                <button onClick={() => setShowCampaignCreator(false)} style={{ position: 'absolute', top: '24px', right: '24px', background: 'none', border: 'none', color: '#adadb8', fontSize: '24px', cursor: 'pointer' }}>×</button>
-                <div style={{ fontSize: '24px', fontWeight: 900, color: '#fff', marginBottom: '24px', letterSpacing: '-0.5px' }}>Create Campaign Brief</div>
-
-                <div style={{ marginBottom: '18px' }}>
-                  <div style={{ fontSize: '12px', color: '#adadb8', fontWeight: 700, marginBottom: '6px', textTransform: 'uppercase' }}>Campaign Title</div>
-                  <input type="text" value={newCampaignTitle} onChange={e => setNewCampaignTitle(e.target.value)} placeholder="e.g. 5x Sponsored Slots + Highlights" style={{ width: '100%', background: '#18181b', border: '1px solid #31313a', borderRadius: '12px', color: '#fff', padding: '12px 16px', fontSize: '15px', outline: 'none' }} />
-                </div>
-
-                <div style={{ marginBottom: '18px' }}>
-                  <div style={{ fontSize: '12px', color: '#adadb8', fontWeight: 700, marginBottom: '6px', textTransform: 'uppercase' }}>Budget ($)</div>
-                  <input type="number" value={newCampaignBudget} onChange={e => setNewCampaignBudget(e.target.value)} placeholder="e.g. 2500" style={{ width: '100%', background: '#18181b', border: '1px solid #31313a', borderRadius: '12px', color: '#fff', padding: '12px 16px', fontSize: '15px', outline: 'none' }} />
-                </div>
-
-                <div style={{ marginBottom: '24px' }}>
-                  <div style={{ fontSize: '12px', color: '#adadb8', fontWeight: 700, marginBottom: '6px', textTransform: 'uppercase' }}>Campaign Brief</div>
-                  <textarea value={newCampaignDesc} onChange={e => setNewCampaignDesc(e.target.value)} rows={3} placeholder="Describe what you want to promote and any key requirements..." style={{ width: '100%', background: '#18181b', border: '1px solid #31313a', borderRadius: '12px', color: '#fff', padding: '12px 16px', fontSize: '15px', outline: 'none', resize: 'none' }} />
-                </div>
-
-                <button
-                  onClick={() => {
-                    if (newCampaignTitle && newCampaignBudget) {
-                      const newC: Campaign = {
-                        id: Date.now(),
-                        title: newCampaignTitle,
-                        budget: newCampaignBudget,
-                        description: newCampaignDesc,
-                        status: 'open',
-                        applicants: 0,
-                        brandName: 'Twitch Sponsor',
-                        brandProfession: 'Technology',
-                        about: '',
-                        requiredProfessions: [],
-                        minLevel: 1,
-                        maxLevel: 5,
-                        deadline: '',
-                        location: '',
-                        nonNegotiables: [],
-                        deliverables: '',
-                        compensationType: 'Paid',
-                        exclusivity: 'None',
-                        usageRights: 'None',
-                        audienceTarget: '',
-                        requirements: [],
-                        scriptMode: 'discussion',
-                        scriptText: '',
-                        escrowFunded: false,
-                        creatorCount: 1,
-                      };
-                      persistCampaigns([...campaigns, newC]);
-                      setShowCampaignCreator(false);
-                      setNewCampaignTitle(''); setNewCampaignBudget(''); setNewCampaignDesc('');
-                    }
-                  }}
-                  style={{ width: '100%', background: '#9146ff', border: 'none', borderRadius: '12px', padding: '16px', color: '#fff', fontWeight: 800, fontSize: '16px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(145, 70, 255, 0.4)' }}
-                >
-                  Publish Campaign Brief
-                </button>
-              </div>
-            </div>
-          )}
-
-          {view === 'loadout' && (
-            <section className="panel">
-              <div className="panelTitle">ValueSkins Loadout</div>
-              <div className="panelIntro">Channel badges streamers can turn on to signal niche, trust, and sponsor readiness.</div>
-              <div className="loadoutGrid">
-                {LOADOUTS.map((item) => (
-                  <div key={item} className="loadoutCard">
-                    <div className="loadoutTop">
-                      <span className="loadoutTag">Channel Badge</span>
-                      <span className="loadoutPrice">$29</span>
-                    </div>
-                    <div className="loadoutTitle">{item}</div>
-                    <div className="loadoutText">Use this badge to unlock more targeted matches and stronger sponsor positioning.</div>
-                    <button type="button" className="buyButton">
-                      Buy now
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
+          </section>
         </main>
       </div>
 
-      {view === 'browse' && (
-        <div className="bottomCta">
-          <div className="bottomCtaText">
-            <div className="bottomBadge">VS</div>
-            <div>
-              <strong>Join the Twitch community!</strong> Discover the best live streams anywhere.
-            </div>
+      <footer className="promoBar">
+        <div className="promoLeft">
+          <div className="promoMascot">
+            <TwitchGlyph />
           </div>
-          <button type="button" className="bottomButton">
-            Sign Up
-          </button>
+          <p>
+            <strong>Join the Twitch community!</strong> Discover the best live streams anywhere.
+          </p>
         </div>
-      )}
+        <button type="button" className="promoButton">
+          Sign Up
+        </button>
+      </footer>
 
       <style jsx>{`
         .page {
-          height: 100vh;
-          display: flex;
-          flex-direction: column;
+          min-height: 100vh;
           background: #0e0e10;
           color: #efeff1;
-          overflow: hidden;
+          padding-bottom: 78px;
         }
 
         .topbar {
-          flex-shrink: 0;
-          display: grid;
-          grid-template-columns: auto 1fr auto;
+          position: sticky;
+          top: 0;
+          z-index: 20;
+          display: flex;
           align-items: center;
-          gap: 16px;
+          justify-content: space-between;
+          gap: 20px;
           height: 60px;
-          padding: 0 12px;
+          padding: 0 12px 0 0;
           background: #18181b;
-          border-bottom: 1px solid #2b2b31;
-          z-index: 100;
+          border-bottom: 1px solid #2a2a31;
         }
 
         .topbarLeft,
@@ -582,159 +336,159 @@ export default function TwitchDemoPage() {
           display: flex;
           align-items: center;
           gap: 12px;
+          flex: 0 0 auto;
         }
 
-        .twitchMark,
-        .browseLabel,
-        .dotsButton,
-        .ghostAction,
-        .primaryAction,
-        .userAction,
-        .collapseAction,
-        .channelRow,
-        .showAllLink,
-        .pill,
-        .buyButton,
-        .bottomButton,
-        .roleCard,
-        .streamCard,
-        .searchButton {
-          border: 0;
-          cursor: pointer;
+        .topbarRight {
+          padding-right: 8px;
         }
 
-        .twitchMark {
-          width: 30px;
-          height: 30px;
-          border-radius: 8px;
-          background: #9146ff;
-          color: #fff;
-          font-size: 10px;
-          font-weight: 900;
+        .brandBadge {
+          display: grid;
+          place-items: center;
+          width: 60px;
+          height: 60px;
+          background: #18181b;
+          color: #a970ff;
+          border-right: 1px solid #2a2a31;
         }
 
-        .browseLabel {
-          background: transparent;
+        .brandBadge svg {
+          width: 28px;
+          height: 28px;
+          fill: currentColor;
+        }
+
+        .browseButton,
+        .dotsButton {
           color: #efeff1;
           font-size: 18px;
           font-weight: 700;
-          padding: 0;
+          letter-spacing: -0.01em;
         }
 
-        .dotsButton,
-        .userAction,
-        .collapseAction {
-          background: transparent;
-          color: #efeff1;
-          font-size: 18px;
+        .dotsButton {
+          font-size: 26px;
+          line-height: 1;
+          width: 28px;
         }
 
         .searchWrap {
-          display: grid;
-          grid-template-columns: 1fr 52px;
-          max-width: 560px;
-          width: 100%;
-          justify-self: center;
+          flex: 1;
+          display: flex;
+          justify-content: center;
+          min-width: 0;
+          padding: 0 20px;
         }
 
         .searchInput {
-          height: 48px;
-          padding: 0 16px;
-          border: 1px solid #6e6e73;
+          width: min(100%, 550px);
+          height: 40px;
+          padding: 0 18px;
+          background: #0e0e10;
+          border: 1px solid #5b5b66;
           border-right: 0;
-          border-radius: 10px 0 0 10px;
-          background: #0f0f12;
           color: #efeff1;
-          font-size: 18px;
-          outline: none;
+          font-size: 16px;
+          border-radius: 8px 0 0 8px;
+        }
+
+        .searchInput::placeholder {
+          color: #adadb8;
         }
 
         .searchButton {
-          background: #2a2a31;
-          border-radius: 0 10px 10px 0;
-          position: relative;
-        }
-
-        .searchButton::before {
-          content: '⌕';
+          display: grid;
+          place-items: center;
+          width: 52px;
+          height: 40px;
+          background: #3a3a44;
+          border-radius: 0 8px 8px 0;
           color: #efeff1;
-          font-size: 24px;
         }
 
-        .ghostAction,
-        .primaryAction {
-          height: 44px;
-          padding: 0 18px;
+        .searchButton svg,
+        .userButton svg {
+          width: 22px;
+          height: 22px;
+          fill: currentColor;
+        }
+
+        .ghostButton,
+        .primaryButton {
+          height: 40px;
+          padding: 0 16px;
           border-radius: 999px;
           font-size: 14px;
-          font-weight: 800;
+          font-weight: 700;
         }
 
-        .ghostAction {
-          background: #2c2c33;
+        .ghostButton {
+          background: #2b2b33;
           color: #efeff1;
         }
 
-        .primaryAction {
-          background: #9146ff;
+        .primaryButton {
+          background: #a970ff;
           color: #fff;
         }
 
-        .shell {
-          flex: 1;
+        .userButton {
           display: grid;
-          grid-template-columns: 240px 1fr;
-          overflow: hidden;
+          place-items: center;
+          width: 32px;
+          height: 32px;
+          color: #efeff1;
+        }
+
+        .shell {
+          display: flex;
+          min-height: calc(100vh - 138px);
         }
 
         .sidebar {
+          position: sticky;
+          top: 60px;
+          width: 320px;
+          height: calc(100vh - 138px);
           background: #1f1f23;
-          border-right: 1px solid #2b2b31;
-          display: flex;
-          flex-direction: column;
-          overflow-y: auto;
-        }
-
-        .content {
-          overflow-y: auto;
-          padding: 24px;
-          background: #0e0e10;
-          scroll-behavior: smooth;
+          border-right: 1px solid #2a2a31;
+          padding: 20px 14px;
+          overflow: auto;
         }
 
         .sidebarHeader {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 18px 12px 14px;
+          margin-bottom: 18px;
         }
 
-        .sidebarTitle {
+        .sidebarHeader h2 {
           font-size: 18px;
           font-weight: 800;
+        }
+
+        .collapseButton {
+          color: #efeff1;
+          font-size: 22px;
+          line-height: 1;
         }
 
         .channelList {
           display: flex;
           flex-direction: column;
+          gap: 12px;
         }
 
-        .channelRow {
+        .channelRowButton {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          gap: 10px;
-          width: 100%;
-          padding: 8px 12px;
-          background: transparent;
-          color: #efeff1;
+          gap: 12px;
           text-align: left;
-        }
-
-        .channelRow:hover,
-        .streamCard:hover,
-        .roleCard:hover {
-          background: rgba(255, 255, 255, 0.04);
+          border-radius: 8px;
+          padding: 2px 0;
         }
 
         .channelIdentity {
@@ -744,46 +498,50 @@ export default function TwitchDemoPage() {
           min-width: 0;
         }
 
-        .channelAvatar,
-        .streamAvatar {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          width: 40px;
-          height: 40px;
-          border-radius: 999px;
-          background: linear-gradient(135deg, #6d28d9, #4f46e5);
+        .channelAvatar {
+          display: grid;
+          place-items: center;
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #5f5f73, #2d2d35);
           color: #fff;
           font-size: 12px;
           font-weight: 800;
-          flex-shrink: 0;
+          flex: 0 0 auto;
+          overflow: hidden;
         }
 
-        .channelText,
-        .streamText {
+        .channelAvatarImage {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+
+        .channelText {
           min-width: 0;
         }
 
         .channelName {
-          font-size: 18px;
+          font-size: 17px;
           font-weight: 700;
+          line-height: 1.1;
+        }
+
+        .channelGame {
+          color: #adadb8;
+          font-size: 13px;
+          line-height: 1.2;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
         }
 
-        .channelGame,
-        .streamChannel,
-        .streamGame,
-        .panelIntro,
-        .roleText,
-        .loadoutText,
-        .watchMeta {
-          color: #adadb8;
-        }
-
-        .channelGame {
-          font-size: 16px;
+        .channelNote {
+          margin-top: 2px;
+          color: #bf94ff;
+          font-size: 12px;
+          font-weight: 700;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -792,60 +550,57 @@ export default function TwitchDemoPage() {
         .channelCount {
           display: inline-flex;
           align-items: center;
-          gap: 6px;
-          font-size: 17px;
-          white-space: nowrap;
+          gap: 7px;
+          font-size: 14px;
+          color: #efeff1;
+          flex: 0 0 auto;
         }
 
         .liveDot {
-          width: 12px;
-          height: 12px;
-          border-radius: 999px;
-          background: #ff2b2b;
+          width: 10px;
+          height: 10px;
+          border-radius: 50%;
+          background: #ff2e2e;
         }
 
         .content {
-          padding: 10px 18px 100px;
+          flex: 1;
+          min-width: 0;
+          padding: 18px 30px 24px 32px;
         }
 
-        .browseView {
-          display: flex;
-          flex-direction: column;
-          gap: 18px;
-        }
-
-        .featuredRow,
-        .streamGrid,
-        .loadoutGrid,
-        .roleGrid {
+        .featuredGrid,
+        .streamGrid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-          gap: 20px;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 26px 18px;
         }
 
         .streamCard {
-          background: transparent;
-          color: #efeff1;
-          text-align: left;
-          padding: 0;
+          min-width: 0;
         }
 
         .thumbShell {
           position: relative;
           overflow: hidden;
-          border-radius: 4px;
-          border: 1px solid #2a2a31;
-        }
-
-        .thumbShell.featured {
-          border: 4px solid #9146ff;
-        }
-
-        .thumbImage,
-        .playerImage {
-          display: block;
-          width: 100%;
           aspect-ratio: 16 / 9;
+          background: #18181b;
+          border: 1px solid transparent;
+          transition: transform 0.18s ease, box-shadow 0.18s ease;
+          margin-bottom: 10px;
+        }
+
+        .thumbShell.accent {
+          box-shadow: 0 0 0 4px #9146ff, 8px 8px 0 rgba(0, 0, 0, 0.45);
+        }
+
+        .streamCard:hover .thumbShell {
+          transform: translateY(-2px);
+        }
+
+        .thumbImage {
+          width: 100%;
+          height: 100%;
           object-fit: cover;
         }
 
@@ -854,321 +609,139 @@ export default function TwitchDemoPage() {
           top: 10px;
           left: 10px;
           padding: 4px 8px;
-          border-radius: 6px;
-          background: #ff2b2b;
+          background: #ff2e2e;
           color: #fff;
-          font-size: 12px;
-          font-weight: 900;
+          font-size: 14px;
+          font-weight: 800;
+          border-radius: 4px;
         }
 
         .viewerPill {
           position: absolute;
-          left: 10px;
-          bottom: 10px;
-          padding: 4px 8px;
-          border-radius: 4px;
-          background: rgba(0, 0, 0, 0.82);
+          left: 12px;
+          bottom: 12px;
+          padding: 3px 7px;
+          background: rgba(0, 0, 0, 0.78);
           color: #fff;
-          font-size: 12px;
+          font-size: 13px;
+          font-weight: 500;
+          border-radius: 4px;
         }
 
         .streamMeta {
           display: flex;
-          gap: 12px;
-          padding-top: 12px;
+          align-items: flex-start;
+          gap: 10px;
+          padding-top: 0;
         }
 
-        .streamTitle {
-          font-size: 18px;
+        .streamAvatar {
+          display: grid;
+          place-items: center;
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #d95cff, #5f68ff);
+          color: #fff;
+          font-size: 13px;
           font-weight: 800;
+          flex: 0 0 auto;
+        }
+
+        .streamText {
+          min-width: 0;
+        }
+
+        .streamText h3 {
+          font-size: 17px;
+          font-weight: 700;
           line-height: 1.3;
           display: -webkit-box;
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
           overflow: hidden;
+          letter-spacing: -0.01em;
         }
 
-        .streamChannel,
-        .streamGame {
-          font-size: 17px;
-          margin-top: 2px;
+        .channelRow {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          margin-top: 4px;
+          color: #adadb8;
+          font-size: 14px;
+          flex-wrap: wrap;
+        }
+
+        .verifiedIcon {
+          display: inline-flex;
+          color: #a970ff;
+        }
+
+        .verifiedIcon :global(svg) {
+          width: 16px;
+          height: 16px;
+          fill: currentColor;
+        }
+
+        .subtitleText,
+        .caret,
+        .streamText p {
+          color: #c9c9d0;
+        }
+
+        .streamText p {
+          margin-top: 0;
+          font-size: 14px;
         }
 
         .tagRow {
           display: flex;
-          gap: 8px;
           flex-wrap: wrap;
-          margin-top: 8px;
+          gap: 8px;
+          margin-top: 10px;
         }
 
         .tagChip {
-          display: inline-flex;
-          align-items: center;
-          padding: 6px 10px;
+          padding: 4px 10px;
           border-radius: 999px;
-          background: #2e2e35;
+          background: #2b2b33;
           color: #efeff1;
           font-size: 12px;
           font-weight: 700;
         }
 
         .dividerRow {
-          display: grid;
-          grid-template-columns: 1fr auto 1fr;
-          gap: 18px;
+          display: flex;
           align-items: center;
+          gap: 24px;
+          margin: 18px 0 46px;
         }
 
         .dividerLine {
+          flex: 1;
           height: 1px;
-          background: #303039;
+          background: #2a2a31;
         }
 
-        .showAllLink {
-          background: transparent;
+        .showAllButton {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
           color: #bf94ff;
           font-size: 16px;
           font-weight: 800;
+          white-space: nowrap;
         }
 
-        .sectionTitle,
-        .panelTitle {
-          margin-bottom: 14px;
+        .section h2 {
+          margin-bottom: 16px;
           color: #bf94ff;
-          font-size: 22px;
+          font-size: 18px;
           font-weight: 800;
         }
 
-        .watchView {
-          display: grid;
-          grid-template-columns: 1fr 340px;
-          gap: 24px;
-          align-items: start;
-        }
-
-        .chatRail {
-          position: sticky;
-          top: 0;
-          height: calc(100vh - 100px);
-          display: flex;
-          flex-direction: column;
-        }
-
-        .playerShell,
-        .watchInfo,
-        .chatCard,
-        .panel {
-          border: 1px solid #2a2a31;
-          border-radius: 18px;
-          background: #111114;
-        }
-
-        .watchInfo,
-        .panel {
-          padding: 18px;
-          margin-top: 16px;
-        }
-
-        .chatCard {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          overflow: hidden;
-          padding: 18px;
-        }
-
-        .watchTop {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: 16px;
-        }
-
-        .watchTitle,
-        .roleTitle,
-        .loadoutTitle {
-          color: #fff;
-          font-weight: 800;
-        }
-
-        .watchTitle {
-          font-size: 26px;
-        }
-
-        .watchButtons {
-          display: flex;
-          gap: 10px;
-          flex-wrap: wrap;
-        }
-
-        .pill {
-          min-height: 40px;
-          padding: 0 14px;
-          border-radius: 999px;
-          color: #fff;
-          font-size: 13px;
-          font-weight: 800;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .primaryPill {
-          background: #9146ff;
-        }
-
-        .mutedPill {
-          background: #2d2d35;
-        }
-
-        .chatHeader {
-          flex-shrink: 0;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          margin-bottom: 12px;
-          font-weight: 800;
-        }
-
-        .chatHeader span {
-          color: #adadb8;
-          font-size: 12px;
-        }
-
-        .chatBody {
-          flex: 1;
-          overflow-y: auto;
-          background: #18181b;
-          border: 1px solid #2a2a31;
-          border-radius: 14px;
-          padding: 14px;
-        }
-
-        .chatLine {
-          margin-bottom: 10px;
-          font-size: 14px;
-          line-height: 1.45;
-        }
-
-        .chatLine strong {
-          color: #bf94ff;
-        }
-
-        .chatInput {
-          width: 100%;
-          height: 42px;
-          margin-top: 12px;
-          padding: 0 12px;
-          border: 1px solid #31313a;
-          border-radius: 12px;
-          background: #18181b;
-          color: #efeff1;
-          outline: none;
-        }
-
-        .panelIntro {
-          margin-bottom: 18px;
-          font-size: 14px;
-          line-height: 1.5;
-        }
-
-        .roleCard,
-        .loadoutCard,
-        .listItem {
-          background: #18181b;
-          border: 1px solid #2a2a31;
-          border-radius: 16px;
-          color: #efeff1;
-        }
-
-        .roleCard,
-        .loadoutCard {
-          padding: 18px;
-          text-align: left;
-        }
-
-        .roleBadge,
-        .loadoutTag,
-        .statusPill {
-          display: inline-flex;
-          align-items: center;
-          padding: 6px 10px;
-          border-radius: 999px;
-          font-size: 11px;
-          font-weight: 900;
-          text-transform: uppercase;
-        }
-
-        .roleBadge,
-        .loadoutTag {
-          margin-bottom: 12px;
-          background: rgba(145, 70, 255, 0.16);
-          color: #d3b7ff;
-        }
-
-        .roleBadge.alt {
-          background: rgba(59, 130, 246, 0.16);
-          color: #b6dbff;
-        }
-
-        .roleTitle {
-          font-size: 22px;
-          margin-bottom: 8px;
-        }
-
-        .listStack {
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-        }
-
-        .statusPill.streamer {
-          width: fit-content;
-          background: rgba(0, 214, 143, 0.16);
-          color: #82f0c2;
-        }
-
-        .statusPill.sponsor {
-          width: fit-content;
-          background: rgba(86, 204, 242, 0.16);
-          color: #a4ebff;
-        }
-
-        .listItem {
-          padding: 14px 16px;
-          font-size: 14px;
-        }
-
-        .loadoutTop {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          margin-bottom: 14px;
-        }
-
-        .loadoutPrice {
-          color: #fff;
-          font-size: 15px;
-          font-weight: 800;
-        }
-
-        .loadoutTitle {
-          font-size: 20px;
-          margin-bottom: 8px;
-        }
-
-        .buyButton {
-          height: 42px;
-          margin-top: 18px;
-          padding: 0 14px;
-          border-radius: 12px;
-          background: #9146ff;
-          color: #fff;
-          font-size: 14px;
-          font-weight: 800;
-        }
-
-        .bottomCta {
+        .promoBar {
           position: fixed;
           left: 0;
           right: 0;
@@ -1177,95 +750,134 @@ export default function TwitchDemoPage() {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          gap: 16px;
-          padding: 16px 20px;
-          background: linear-gradient(90deg, #4c1d95, #6d28d9);
+          gap: 20px;
+          min-height: 80px;
+          padding: 12px 18px;
+          background: linear-gradient(90deg, #5c16c5, #772ce8);
           color: #fff;
+          box-shadow: 0 -1px 0 rgba(255, 255, 255, 0.08);
         }
 
-        .bottomCtaText {
+        .promoLeft {
           display: flex;
           align-items: center;
           gap: 14px;
-          font-size: 18px;
         }
 
-        .bottomBadge {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
+        .promoMascot {
+          display: grid;
+          place-items: center;
           width: 48px;
           height: 48px;
           border-radius: 12px;
-          background: rgba(255, 255, 255, 0.16);
-          font-size: 14px;
-          font-weight: 900;
+          background: rgba(255, 255, 255, 0.14);
         }
 
-        .bottomButton {
+        .promoMascot svg {
+          width: 28px;
+          height: 28px;
+          fill: currentColor;
+        }
+
+        .promoLeft p {
+          font-size: 17px;
+        }
+
+        .promoLeft strong {
+          font-weight: 800;
+        }
+
+        .promoButton {
+          flex: 0 0 auto;
+          min-width: 124px;
           height: 46px;
           padding: 0 24px;
           border-radius: 999px;
           background: #fff;
           color: #0e0e10;
-          font-size: 16px;
+          font-size: 17px;
           font-weight: 800;
         }
 
-        @media (max-width: 1280px) {
-          .featuredRow,
-          .streamGrid,
-          .loadoutGrid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+        @media (max-width: 1200px) {
+          .sidebar {
+            width: 260px;
           }
 
-          .watchView {
-            grid-template-columns: 1fr;
+          .featuredGrid,
+          .streamGrid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
           }
         }
 
-        @media (max-width: 980px) {
+        @media (max-width: 900px) {
           .topbar {
-            grid-template-columns: 1fr;
+            flex-wrap: wrap;
             height: auto;
-            padding: 10px 12px;
+            padding: 12px;
+          }
+
+          .searchWrap {
+            order: 3;
+            width: 100%;
           }
 
           .shell {
-            grid-template-columns: 1fr;
+            display: block;
           }
 
           .sidebar {
+            width: 100%;
             border-right: 0;
-            border-bottom: 1px solid #2b2b31;
+            border-bottom: 1px solid #2a2a31;
           }
 
-          .roleGrid {
+          .featuredGrid,
+          .streamGrid {
             grid-template-columns: 1fr;
+          }
+
+          .content {
+            padding: 18px 16px 24px;
+          }
+
+          .promoBar {
+            padding: 14px;
           }
         }
 
-        @media (max-width: 720px) {
-          .content {
-            padding: 10px 12px 120px;
+        @media (max-width: 640px) {
+          .topbarRight {
+            gap: 8px;
           }
 
-          .featuredRow,
-          .streamGrid,
-          .loadoutGrid {
-            grid-template-columns: 1fr;
+          .ghostButton {
+            display: none;
           }
 
-          .topbarLeft,
-          .topbarRight,
-          .bottomCta {
-            flex-wrap: wrap;
+          .browseButton {
+            font-size: 16px;
           }
 
-          .watchTop,
-          .bottomCta {
+          .channelName,
+          .streamText h3 {
+            font-size: 17px;
+          }
+
+          .channelRow,
+          .streamText p,
+          .viewerPill,
+          .promoLeft p {
+            font-size: 15px;
+          }
+
+          .promoBar {
             flex-direction: column;
             align-items: flex-start;
+          }
+
+          .promoButton {
+            width: 100%;
           }
         }
       `}</style>
