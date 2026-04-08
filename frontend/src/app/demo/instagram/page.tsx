@@ -5375,6 +5375,17 @@ export default function InstagramDemoPage() {
                     )}
 
                     {marketplaceTab === 'creators' && (<>
+                    {campaigns.length === 0 ? (
+                      <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:'12px', padding:'22px 18px', marginBottom:'16px', textAlign:'center' }}>
+                        <div style={{ fontSize:'16px', fontWeight:700, color:C.text, marginBottom:'6px' }}>Create a campaign first</div>
+                        <div style={{ fontSize:'12px', color:C.textSecondary, lineHeight:1.5, marginBottom:'14px' }}>
+                          Creator suggestions unlock after you publish your first campaign brief. Once the niche and requirements are set, matching creators will appear here.
+                        </div>
+                        <button onClick={() => setMarketplaceTab('campaigns')} style={{ background:C.primary, border:'none', borderRadius:'8px', padding:'10px 14px', color:'#fff', fontWeight:700, fontSize:'12px', cursor:'pointer' }}>
+                          Go to Campaigns
+                        </button>
+                      </div>
+                    ) : (<>
                     {/* Matching Rule Banner */}
                     <div style={{ background: 'rgba(0,102,204,0.06)', border: `1px solid rgba(0,102,204,0.15)`, borderRadius: '10px', padding: '12px 16px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
@@ -6784,6 +6795,7 @@ export default function InstagramDemoPage() {
                         </>
                       );
                     })()}
+                    </>)}
                     </>)}
 
                     {/* Campaign tabs: Your Campaigns — collapsible, does NOT hide the creator list */}
