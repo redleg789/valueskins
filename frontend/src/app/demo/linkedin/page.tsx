@@ -5472,13 +5472,24 @@ export default function LinkedInDemoPage() {
                       }
                       return (
                         <>
-                          {results.length === 0 && (
+                          {campaigns.length === 0 && (
+                            <div style={{ background: C.card, borderRadius: '12px', border: `1px solid ${C.border}`, padding: '32px 24px', textAlign: 'center' }}>
+                              <div style={{ fontSize: '15px', fontWeight: 700, color: C.text, marginBottom: '8px' }}>Create a campaign first</div>
+                              <div style={{ fontSize: '12px', color: C.textSecondary, lineHeight: 1.6, maxWidth: '520px', margin: '0 auto 20px' }}>
+                                Creator discovery unlocks after you create a campaign. Once the brief is live, you can review matching creators and start deals from here.
+                              </div>
+                              <button onClick={() => setMarketplaceTab('campaigns')} style={{ background: C.primary, border: 'none', borderRadius: '8px', padding: '10px 18px', color: '#fff', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}>
+                                Create Campaign
+                              </button>
+                            </div>
+                          )}
+                          {campaigns.length > 0 && results.length === 0 && (
                             <div style={{ textAlign: 'center', padding: '30px 20px', color: C.textMuted }}>
                               <div style={{ fontSize: '14px', marginBottom: '4px' }}>No candidates found</div>
                               <div style={{ fontSize: '11px' }}>Try a different search term or clear filters.</div>
                             </div>
                           )}
-                          {results.map((creator, i) => {
+                          {campaigns.length > 0 && results.map((creator, i) => {
                       const origIdx = (creator as any)._origIdx ?? i;
                       const badge = PROFESSION_BADGES[creator.valueSkin];
                       const abbr = badge?.abbreviation ?? creator.valueSkin.split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0, 3);
@@ -6636,7 +6647,7 @@ export default function LinkedInDemoPage() {
                     })}
 
                           {/* Similar Creators */}
-                          {adminShowSimilarCreators && results.length > 0 && (
+                          {campaigns.length > 0 && adminShowSimilarCreators && results.length > 0 && (
                             <div style={{ marginTop: '8px', padding: '12px 14px', background: C.card, border: `1px solid ${C.border}`, borderRadius: '10px' }}>
                               <div style={{ fontSize: '10px', fontWeight: 700, color: C.textMuted, textTransform: 'uppercase', marginBottom: '8px' }}>Similar Creators</div>
                               <div style={{ fontSize: '11px', color: C.textSecondary, marginBottom: '8px' }}>Based on your most-viewed creator this session:</div>
