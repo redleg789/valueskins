@@ -4823,15 +4823,30 @@ export default function InstagramDemoPage() {
                   <div style={{ padding: '12px 16px 0', position: 'sticky', top: 0, background: C.bg, zIndex: 10 }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
                       <span style={{ fontSize: '22px', fontWeight: 700, color: C.text }}>Brand Dashboard</span>
-                      <button onClick={() => { setMarketplaceRole('none'); setNegotiatingCreator(null); }} style={{ background: 'none', border: 'none', fontSize: '13px', color: C.textSecondary, cursor: 'pointer' }}>Switch</button>
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <button
+                          onClick={() => setShowCampaignCreator(true)}
+                          style={{
+                            background: C.primary, color: '#fff', border: 'none', borderRadius: '8px',
+                            padding: '8px 14px', fontSize: '13px', fontWeight: 700, cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', gap: '6px'
+                          }}
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                          Create Campaign
+                        </button>
+                        <button onClick={() => { setMarketplaceRole('none'); setNegotiatingCreator(null); }} style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: '8px', padding: '8px 12px', fontSize: '13px', color: C.textSecondary, cursor: 'pointer', fontWeight: 600 }}>Switch</button>
+                      </div>
                     </div>
-                    {/* Search bar */}
-                    <div style={{ position: 'relative', marginBottom: '14px' }}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }}>
-                        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                      </svg>
-                      <input type="text" placeholder="Search creators..." style={{ width: '100%', background: C.card, border: 'none', borderRadius: '12px', padding: '12px 12px 12px 40px', color: C.text, fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
-                    </div>
+                    {/* Only show discovery search if a campaign exists */}
+                    {campaigns.length > 0 && (
+                      <div style={{ position: 'relative', marginBottom: '14px' }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }}>
+                          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                        </svg>
+                        <input type="text" placeholder="Search creators..." style={{ width: '100%', background: C.card, border: 'none', borderRadius: '12px', padding: '12px 12px 12px 40px', color: C.text, fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
+                      </div>
+                    )}
                   </div>
                   <div style={{ padding: '0 16px 16px' }}>
                     {/* New Campaign Creator Modal */}
@@ -5322,56 +5337,58 @@ export default function InstagramDemoPage() {
                     )}
 
                     {/* Brand Identity — skin selector or redirect to store */}
-                    {brandValueSkins.length > 0 ? (
-                      <div style={{ background:C.card, border:`1px solid rgba(230,81,0,0.3)`, borderRadius:'12px', padding:'14px 16px', marginBottom:'14px' }}>
-                        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'10px' }}>
-                          <div style={{ fontSize:'10px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.6px' }}>Active ValueSkin</div>
-                          {brandValueSkins.length < 3 && (
-                            <button onClick={() => setActiveView('store')} style={{ background:'none', border:`1px solid ${C.border}`, borderRadius:'6px', padding:'4px 10px', fontSize:'10px', color:C.textSecondary, cursor:'pointer', fontWeight:600 }}>+ Add Skin</button>
+                    {campaigns.length > 0 && (
+                      brandValueSkins.length > 0 ? (
+                        <div style={{ background:C.card, border:`1px solid rgba(230,81,0,0.3)`, borderRadius:'12px', padding:'14px 16px', marginBottom:'14px' }}>
+                          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'10px' }}>
+                            <div style={{ fontSize:'10px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.6px' }}>Active ValueSkin</div>
+                            {brandValueSkins.length < 3 && (
+                              <button onClick={() => setActiveView('store')} style={{ background:'none', border:`1px solid ${C.border}`, borderRadius:'6px', padding:'4px 10px', fontSize:'10px', color:C.textSecondary, cursor:'pointer', fontWeight:600 }}>+ Add Skin</button>
+                            )}
+                          </div>
+                          <div style={{ display:'flex', gap:'8px', marginBottom:'10px' }}>
+                            {brandValueSkins.map(skin => {
+                              const isActive = activeBrandSkin === skin;
+                              const badge = PROFESSION_BADGES[skin];
+                              return (
+                                <button
+                                  key={skin}
+                                  onClick={() => setActiveBrandSkin(skin)}
+                                  style={{
+                                    flex: 1, padding:'10px 8px', borderRadius:'10px', cursor:'pointer', transition:'all 0.15s',
+                                    background: isActive ? `${badge?.color ?? C.primary}15` : C.bg,
+                                    border: `2px solid ${isActive ? (badge?.color ?? C.primary) : C.border}`,
+                                  }}
+                                >
+                                  {getStickerForProfession(skin) ? (
+                                    <img src={getStickerForProfession(skin)!} alt={skin} style={{ width:'32px', height:'32px', objectFit:'contain', margin:'0 auto 4px' }} />
+                                  ) : (
+                                    <div style={{ fontSize:'10px', fontWeight:700, letterSpacing:'0.5px', textTransform:'uppercase', color: badge?.color ?? C.primary, marginBottom:'3px' }}>
+                                      {badge?.abbreviation ?? skin.slice(0,3).toUpperCase()}
+                                    </div>
+                                  )}
+                                  <div style={{ fontSize:'11px', color: isActive ? C.text : C.textSecondary, fontWeight: isActive ? 600 : 400, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                                    {skin}
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                          {activeBrandSkin && (
+                            <div style={{ fontSize:'11px', color:C.textSecondary, lineHeight:1.4 }}>
+                              Campaigns and proposals you create will be under <strong style={{ color:C.text }}>{activeBrandSkin}</strong>. Creators with this ValueSkin will see you as a match.
+                            </div>
                           )}
                         </div>
-                        <div style={{ display:'flex', gap:'8px', marginBottom:'10px' }}>
-                          {brandValueSkins.map(skin => {
-                            const isActive = activeBrandSkin === skin;
-                            const badge = PROFESSION_BADGES[skin];
-                            return (
-                              <button
-                                key={skin}
-                                onClick={() => setActiveBrandSkin(skin)}
-                                style={{
-                                  flex: 1, padding:'10px 8px', borderRadius:'10px', cursor:'pointer', transition:'all 0.15s',
-                                  background: isActive ? `${badge?.color ?? C.primary}15` : C.bg,
-                                  border: `2px solid ${isActive ? (badge?.color ?? C.primary) : C.border}`,
-                                }}
-                              >
-                                {getStickerForProfession(skin) ? (
-                                  <img src={getStickerForProfession(skin)!} alt={skin} style={{ width:'32px', height:'32px', objectFit:'contain', margin:'0 auto 4px' }} />
-                                ) : (
-                                  <div style={{ fontSize:'10px', fontWeight:700, letterSpacing:'0.5px', textTransform:'uppercase', color: badge?.color ?? C.primary, marginBottom:'3px' }}>
-                                    {badge?.abbreviation ?? skin.slice(0,3).toUpperCase()}
-                                  </div>
-                                )}
-                                <div style={{ fontSize:'11px', color: isActive ? C.text : C.textSecondary, fontWeight: isActive ? 600 : 400, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-                                  {skin}
-                                </div>
-                              </button>
-                            );
-                          })}
-                        </div>
-                        {activeBrandSkin && (
-                          <div style={{ fontSize:'11px', color:C.textSecondary, lineHeight:1.4 }}>
-                            Campaigns and proposals you create will be under <strong style={{ color:C.text }}>{activeBrandSkin}</strong>. Creators with this ValueSkin will see you as a match.
+                      ) : (
+                        <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:'12px', padding:'14px 16px', marginBottom:'14px' }}>
+                          <div style={{ fontSize:'10px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.6px', marginBottom:'8px' }}>Your Brand Identity</div>
+                          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                            <div style={{ fontSize:'12px', color:C.textMuted }}>Purchase a ValueSkin to start contacting creators</div>
+                            <button onClick={() => setActiveView('store')} style={{ background:C.primary, border:'none', borderRadius:'6px', padding:'6px 12px', fontSize:'11px', fontWeight:700, color:'#fff', cursor:'pointer' }}>Get ValueSkin</button>
                           </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:'12px', padding:'14px 16px', marginBottom:'14px' }}>
-                        <div style={{ fontSize:'10px', fontWeight:700, color:C.textMuted, textTransform:'uppercase', letterSpacing:'0.6px', marginBottom:'8px' }}>Your Brand Identity</div>
-                        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                          <div style={{ fontSize:'12px', color:C.textMuted }}>Purchase a ValueSkin to start contacting creators</div>
-                          <button onClick={() => setActiveView('store')} style={{ background:C.primary, border:'none', borderRadius:'6px', padding:'6px 12px', fontSize:'11px', fontWeight:700, color:'#fff', cursor:'pointer' }}>Get ValueSkin</button>
                         </div>
-                      </div>
+                      )
                     )}
 
                     {marketplaceTab === 'creators' && (<>

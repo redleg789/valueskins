@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
+import { useDealSync, type Campaign } from '@/lib/useDealSync';
 
 type View = 'browse' | 'watch' | 'network' | 'loadout';
 type Role = 'none' | 'streamer' | 'sponsor';
@@ -169,6 +170,24 @@ export default function TwitchDemoPage() {
   const [view, setView] = useState<View>('browse');
   const [role, setRole] = useState<Role>('none');
   const [selected, setSelected] = useState<Stream>(TOP_STREAMS[1]);
+  const [showCampaignCreator, setShowCampaignCreator] = useState(false);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+
+  // Form states for Create Campaign
+  const [newCampaignTitle, setNewCampaignTitle] = useState('');
+  const [newCampaignBudget, setNewCampaignBudget] = useState('');
+  const [newCampaignDesc, setNewCampaignDesc] = useState('');
+
+  // Simulating fetching or local persistence
+  useEffect(() => {
+    const saved = localStorage.getItem('twitch_campaigns');
+    if (saved) setCampaigns(JSON.parse(saved));
+  }, []);
+
+  const persistCampaigns = (updated: Campaign[]) => {
+    setCampaigns(updated);
+    localStorage.setItem('twitch_campaigns', JSON.stringify(updated));
+  };
 
   const q = query.trim().toLowerCase();
   const featured = useMemo(
@@ -349,7 +368,21 @@ export default function TwitchDemoPage() {
 
           {view === 'network' && (
             <section className="panel">
-              <div className="panelTitle">ValueSkins Network</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
+                <div className="panelTitle" style={{ margin: 0 }}>ValueSkins Network</div>
+                {role === 'sponsor' && (
+                  <button
+                    onClick={() => setShowCampaignCreator(true)}
+                    style={{
+                      background: '#9146ff', color: '#fff', border: 'none', borderRadius: '8px',
+                      padding: '10px 18px', fontSize: '14px', fontWeight: 800, cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 12px rgba(145, 70, 255, 0.3)'
+                    }}
+                  >
+                    + Create Campaign
+                  </button>
+                )}
+              </div>
               <div className="panelIntro">
                 Streamers and sponsors meet here without changing the core Twitch flow.
               </div>
@@ -379,14 +412,108 @@ export default function TwitchDemoPage() {
               ) : (
                 <div className="listStack">
                   <div className="statusPill sponsor">Sponsor mode active</div>
-                  {SPONSOR_MATCHES.map((match) => (
-                    <div key={match} className="listItem">
-                      {match}
+                  {campaigns.length === 0 ? (
+                    <div style={{ background: '#18181b', border: '1px solid #2a2a31', borderRadius: '14px', padding: '32px', textAlign: 'center', marginTop: '12px' }}>
+                      <div style={{ fontSize: '18px', fontWeight: 800, color: '#fff', marginBottom: '8px' }}>Start with a Campaign</div>
+                      <div style={{ fontSize: '14px', color: '#adadb8', maxWidth: '380px', margin: '0 auto 20px', lineHeight: 1.5 }}>
+                        Once you create a campaign brief, we'll match you with streamers whose metrics and audience fit your brand goals.
+                      </div>
+                      <button
+                        onClick={() => setShowCampaignCreator(true)}
+                        style={{ background: '#9146ff', border: 'none', borderRadius: '10px', padding: '12px 24px', color: '#fff', fontWeight: 800, fontSize: '14px', cursor: 'pointer' }}
+                      >
+                        Create Brief Now
+                      </button>
                     </div>
-                  ))}
+                  ) : (
+                    <>
+                      <div style={{ fontSize: '12px', fontWeight: 800, color: '#adadb8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px' }}>Your Campaigns</div>
+                      {campaigns.map(c => (
+                        <div key={c.id} style={{ background: '#18181b', border: '1px solid #2a2a31', borderRadius: '12px', padding: '16px', marginBottom: '12px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                            <div style={{ fontWeight: 800, color: '#fff' }}>{c.title}</div>
+                            <div style={{ color: '#9146ff', fontWeight: 800 }}>${c.budget}</div>
+                          </div>
+                          <div style={{ fontSize: '13px', color: '#adadb8' }}>{c.description}</div>
+                        </div>
+                      ))}
+
+                      <div style={{ fontSize: '12px', fontWeight: 800, color: '#adadb8', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '24px 0 12px' }}>Recommended Streamer Matches</div>
+                      {SPONSOR_MATCHES.map((match) => (
+                        <div key={match} className="listItem">
+                          {match}
+                        </div>
+                      ))}
+                    </>
+                  )}
                 </div>
               )}
             </section>
+          )}
+
+          {/* New Campaign Modal for Twitch */}
+          {showCampaignCreator && (
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100000, padding: '16px' }}>
+              <div style={{ background: '#111114', borderRadius: '24px', padding: '32px', maxWidth: '440px', width: '100%', border: '1px solid #2a2a31', position: 'relative', boxShadow: '0 20px 40px rgba(0,0,0,0.5)' }}>
+                <button onClick={() => setShowCampaignCreator(false)} style={{ position: 'absolute', top: '24px', right: '24px', background: 'none', border: 'none', color: '#adadb8', fontSize: '24px', cursor: 'pointer' }}>×</button>
+                <div style={{ fontSize: '24px', fontWeight: 900, color: '#fff', marginBottom: '24px', letterSpacing: '-0.5px' }}>Create Campaign Brief</div>
+
+                <div style={{ marginBottom: '18px' }}>
+                  <div style={{ fontSize: '12px', color: '#adadb8', fontWeight: 700, marginBottom: '6px', textTransform: 'uppercase' }}>Campaign Title</div>
+                  <input type="text" value={newCampaignTitle} onChange={e => setNewCampaignTitle(e.target.value)} placeholder="e.g. 5x Sponsored Slots + Highlights" style={{ width: '100%', background: '#18181b', border: '1px solid #31313a', borderRadius: '12px', color: '#fff', padding: '12px 16px', fontSize: '15px', outline: 'none' }} />
+                </div>
+
+                <div style={{ marginBottom: '18px' }}>
+                  <div style={{ fontSize: '12px', color: '#adadb8', fontWeight: 700, marginBottom: '6px', textTransform: 'uppercase' }}>Budget ($)</div>
+                  <input type="number" value={newCampaignBudget} onChange={e => setNewCampaignBudget(e.target.value)} placeholder="e.g. 2500" style={{ width: '100%', background: '#18181b', border: '1px solid #31313a', borderRadius: '12px', color: '#fff', padding: '12px 16px', fontSize: '15px', outline: 'none' }} />
+                </div>
+
+                <div style={{ marginBottom: '24px' }}>
+                  <div style={{ fontSize: '12px', color: '#adadb8', fontWeight: 700, marginBottom: '6px', textTransform: 'uppercase' }}>Campaign Brief</div>
+                  <textarea value={newCampaignDesc} onChange={e => setNewCampaignDesc(e.target.value)} rows={3} placeholder="Describe what you want to promote and any key requirements..." style={{ width: '100%', background: '#18181b', border: '1px solid #31313a', borderRadius: '12px', color: '#fff', padding: '12px 16px', fontSize: '15px', outline: 'none', resize: 'none' }} />
+                </div>
+
+                <button
+                  onClick={() => {
+                    if (newCampaignTitle && newCampaignBudget) {
+                      const newC: Campaign = {
+                        id: Date.now(),
+                        title: newCampaignTitle,
+                        budget: newCampaignBudget,
+                        description: newCampaignDesc,
+                        status: 'open',
+                        applicants: 0,
+                        brandName: 'Twitch Sponsor',
+                        brandProfession: 'Technology',
+                        about: '',
+                        requiredProfessions: [],
+                        minLevel: 1,
+                        maxLevel: 5,
+                        deadline: '',
+                        location: '',
+                        nonNegotiables: [],
+                        deliverables: '',
+                        compensationType: 'Paid',
+                        exclusivity: 'None',
+                        usageRights: 'None',
+                        audienceTarget: '',
+                        requirements: [],
+                        scriptMode: 'discussion',
+                        scriptText: '',
+                        escrowFunded: false,
+                        creatorCount: 1,
+                      };
+                      persistCampaigns([...campaigns, newC]);
+                      setShowCampaignCreator(false);
+                      setNewCampaignTitle(''); setNewCampaignBudget(''); setNewCampaignDesc('');
+                    }
+                  }}
+                  style={{ width: '100%', background: '#9146ff', border: 'none', borderRadius: '12px', padding: '16px', color: '#fff', fontWeight: 800, fontSize: '16px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(145, 70, 255, 0.4)' }}
+                >
+                  Publish Campaign Brief
+                </button>
+              </div>
+            </div>
           )}
 
           {view === 'loadout' && (
@@ -429,23 +556,25 @@ export default function TwitchDemoPage() {
 
       <style jsx>{`
         .page {
-          min-height: 100vh;
+          height: 100vh;
+          display: flex;
+          flex-direction: column;
           background: #0e0e10;
           color: #efeff1;
+          overflow: hidden;
         }
 
         .topbar {
-          position: sticky;
-          top: 0;
-          z-index: 20;
+          flex-shrink: 0;
           display: grid;
-          grid-template-columns: auto minmax(260px, 1fr) auto;
+          grid-template-columns: auto 1fr auto;
           align-items: center;
           gap: 16px;
           height: 60px;
           padding: 0 12px;
           background: #18181b;
           border-bottom: 1px solid #2b2b31;
+          z-index: 100;
         }
 
         .topbarLeft,
@@ -552,15 +681,25 @@ export default function TwitchDemoPage() {
         }
 
         .shell {
+          flex: 1;
           display: grid;
-          grid-template-columns: 328px minmax(0, 1fr);
-          min-height: calc(100vh - 60px);
+          grid-template-columns: 240px 1fr;
+          overflow: hidden;
         }
 
         .sidebar {
           background: #1f1f23;
           border-right: 1px solid #2b2b31;
-          padding-bottom: 92px;
+          display: flex;
+          flex-direction: column;
+          overflow-y: auto;
+        }
+
+        .content {
+          overflow-y: auto;
+          padding: 24px;
+          background: #0e0e10;
+          scroll-behavior: smooth;
         }
 
         .sidebarHeader {
@@ -680,8 +819,8 @@ export default function TwitchDemoPage() {
         .loadoutGrid,
         .roleGrid {
           display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 16px;
+          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+          gap: 20px;
         }
 
         .streamCard {
@@ -802,8 +941,17 @@ export default function TwitchDemoPage() {
 
         .watchView {
           display: grid;
-          grid-template-columns: minmax(0, 1fr) 340px;
-          gap: 18px;
+          grid-template-columns: 1fr 340px;
+          gap: 24px;
+          align-items: start;
+        }
+
+        .chatRail {
+          position: sticky;
+          top: 0;
+          height: calc(100vh - 100px);
+          display: flex;
+          flex-direction: column;
         }
 
         .playerShell,
@@ -816,13 +964,17 @@ export default function TwitchDemoPage() {
         }
 
         .watchInfo,
-        .chatCard,
         .panel {
           padding: 18px;
+          margin-top: 16px;
         }
 
-        .watchInfo {
-          margin-top: 16px;
+        .chatCard {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+          padding: 18px;
         }
 
         .watchTop {
@@ -856,6 +1008,9 @@ export default function TwitchDemoPage() {
           color: #fff;
           font-size: 13px;
           font-weight: 800;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
 
         .primaryPill {
@@ -867,6 +1022,7 @@ export default function TwitchDemoPage() {
         }
 
         .chatHeader {
+          flex-shrink: 0;
           display: flex;
           align-items: center;
           justify-content: space-between;
@@ -880,10 +1036,11 @@ export default function TwitchDemoPage() {
         }
 
         .chatBody {
-          min-height: 320px;
+          flex: 1;
+          overflow-y: auto;
+          background: #18181b;
           border: 1px solid #2a2a31;
           border-radius: 14px;
-          background: #18181b;
           padding: 14px;
         }
 

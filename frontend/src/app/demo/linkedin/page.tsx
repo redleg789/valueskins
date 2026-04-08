@@ -4682,27 +4682,32 @@ export default function LinkedInDemoPage() {
                   <div style={{ padding: '12px 16px 0', position: 'sticky', top: 0, background: C.bg, zIndex: 10 }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
                       <span style={{ fontSize: '22px', fontWeight: 700, color: C.text }}>Hiring Team Dashboard</span>
-                      <button onClick={() => { setMarketplaceRole('none'); setNegotiatingCreator(null); }} style={{ background: 'none', border: 'none', fontSize: '13px', color: C.textSecondary, cursor: 'pointer' }}>Switch</button>
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <button
+                          onClick={() => setShowCampaignCreator(true)}
+                          style={{
+                            background: C.primary, color: '#fff', border: 'none', borderRadius: '8px',
+                            padding: '8px 14px', fontSize: '13px', fontWeight: 700, cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', gap: '6px'
+                          }}
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                          Create Campaign
+                        </button>
+                        <button onClick={() => { setMarketplaceRole('none'); setNegotiatingCreator(null); }} style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: '8px', padding: '8px 12px', fontSize: '13px', color: C.textSecondary, cursor: 'pointer', fontWeight: 600 }}>Switch</button>
+                      </div>
                     </div>
-                    {/* Search bar */}
-                    <div style={{ position: 'relative', marginBottom: '14px' }}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }}>
-                        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                      </svg>
-                      <input type="text" placeholder="Search candidates..." style={{ width: '100%', background: C.card, border: 'none', borderRadius: '12px', padding: '12px 12px 12px 40px', color: C.text, fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
-                    </div>
+                    {/* Only show discovery search if a campaign exists */}
+                    {campaigns.length > 0 && (
+                      <div style={{ position: 'relative', marginBottom: '14px' }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.textMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }}>
+                          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                        </svg>
+                        <input type="text" placeholder="Search candidates..." style={{ width: '100%', background: C.card, border: 'none', borderRadius: '12px', padding: '12px 12px 12px 40px', color: C.text, fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
+                      </div>
+                    )}
                   </div>
                   <div style={{ padding: '0 16px 16px' }}>
-                    {/* Prominent New Campaign CTA */}
-                    {!showCampaignCreator && activeBrandSkin && (
-                      <button
-                        onClick={() => setShowCampaignCreator(true)}
-                        style={{ width: '100%', background: C.primary, border: 'none', borderRadius: '10px', padding: '14px', color: '#fff', fontWeight: 700, fontSize: '14px', cursor: 'pointer', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                        Create Hiring Brief
-                      </button>
-                    )}
 
                     {/* New Campaign Candidate Modal */}
                     {showCampaignCreator && (
