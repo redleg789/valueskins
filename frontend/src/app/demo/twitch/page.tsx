@@ -1,7 +1,5 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-
 type Stream = {
   id: string;
   title: string;
@@ -174,24 +172,6 @@ function StreamCard({ stream }: { stream: Stream }) {
 }
 
 export default function TwitchDemoPage() {
-  const [query, setQuery] = useState('');
-
-  const featured = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return FEATURED_STREAMS;
-    return FEATURED_STREAMS.filter((stream) =>
-      `${stream.title} ${stream.channel} ${stream.game}`.toLowerCase().includes(q)
-    );
-  }, [query]);
-
-  const fps = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return TEAM_FPS_STREAMS;
-    return TEAM_FPS_STREAMS.filter((stream) =>
-      `${stream.title} ${stream.channel} ${stream.game}`.toLowerCase().includes(q)
-    );
-  }, [query]);
-
   return (
     <div className="page">
       <header className="topbar">
@@ -209,8 +189,7 @@ export default function TwitchDemoPage() {
 
         <div className="searchWrap">
           <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            defaultValue=""
             className="searchInput"
             placeholder="Search"
             aria-label="Search streams"
@@ -270,7 +249,7 @@ export default function TwitchDemoPage() {
 
         <main className="content">
           <section className="featuredGrid">
-            {featured.map((stream) => (
+            {FEATURED_STREAMS.map((stream) => (
               <StreamCard key={stream.id} stream={stream} />
             ))}
           </section>
@@ -287,7 +266,7 @@ export default function TwitchDemoPage() {
           <section className="section">
             <h2>Team FPS</h2>
             <div className="streamGrid">
-              {fps.map((stream) => (
+              {TEAM_FPS_STREAMS.map((stream) => (
                 <StreamCard key={stream.id} stream={stream} />
               ))}
             </div>
