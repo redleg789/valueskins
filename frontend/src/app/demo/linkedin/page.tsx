@@ -4497,6 +4497,18 @@ export default function LinkedInDemoPage() {
                         )}
 
                         {collabView === 'browse' && <>
+                        {campaigns.length === 0 ? (
+                          <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:'12px', padding:'22px 18px', textAlign:'center' }}>
+                            <div style={{ fontSize:'16px', fontWeight:700, color:C.text, marginBottom:'6px' }}>Create a campaign first</div>
+                            <div style={{ fontSize:'12px', color:C.textSecondary, lineHeight:1.5, marginBottom:'14px' }}>
+                              Candidate browsing unlocks after you publish your first campaign brief.
+                            </div>
+                            <button onClick={() => setMarketplaceTab('campaigns')} style={{ background:C.primary, border:'none', borderRadius:'8px', padding:'10px 14px', color:'#fff', fontWeight:700, fontSize:'12px', cursor:'pointer' }}>
+                              Create Campaign
+                            </button>
+                          </div>
+                        ) : (
+                        <>
                         {/* Compensation type filter chips */}
                         <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
                           {(['all', 'paid', 'unpaid', 'barter'] as const).map(f => {
@@ -4635,6 +4647,8 @@ export default function LinkedInDemoPage() {
                             </div>
                           );
                         })}
+                        </>
+                        )}
                         </>}
                       {/* Past Deals section */}
                       <div style={{ marginTop:'24px', paddingTop:'20px', borderTop:`1px solid ${C.border}` }}>
