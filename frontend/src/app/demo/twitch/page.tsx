@@ -548,7 +548,13 @@ export default function TwitchDemoPage() {
           padding: 18px 30px 24px 32px;
         }
 
-        .featuredGrid,
+        .featuredGrid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 26px 18px;
+          margin-bottom: 46px;
+        }
+
         .streamGrid {
           display: grid;
           grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -694,7 +700,7 @@ export default function TwitchDemoPage() {
           display: flex;
           align-items: center;
           gap: 24px;
-          margin: 18px 0 46px;
+          margin: 0;
         }
 
         .dividerLine {
@@ -713,9 +719,13 @@ export default function TwitchDemoPage() {
           white-space: nowrap;
         }
 
+        .section {
+          margin-top: 46px;
+        }
+
         .section h2 {
           margin-bottom: 16px;
-          color: #bf94ff;
+          color: #efeff1;
           font-size: 18px;
           font-weight: 800;
         }
