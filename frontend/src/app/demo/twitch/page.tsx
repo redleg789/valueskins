@@ -428,12 +428,13 @@ export default function TwitchDemoPage() {
         .sidebar {
           position: sticky;
           top: 60px;
-          width: 320px;
+          width: 280px;
           height: calc(100vh - 138px);
           background: #1f1f23;
           border-right: 1px solid #2a2a31;
           padding: 20px 14px;
           overflow: auto;
+          flex-shrink: 0;
         }
 
         .sidebarHeader {
@@ -545,24 +546,26 @@ export default function TwitchDemoPage() {
         .content {
           flex: 1;
           min-width: 0;
-          padding: 18px 30px 24px 32px;
+          padding: 24px 32px;
+          overflow-y: auto;
         }
 
         .featuredGrid {
           display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 26px 18px;
-          margin-bottom: 46px;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 20px;
+          margin-bottom: 40px;
         }
 
         .streamGrid {
           display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 26px 18px;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 20px;
         }
 
         .streamCard {
           min-width: 0;
+          cursor: pointer;
         }
 
         .thumbShell {
@@ -570,9 +573,10 @@ export default function TwitchDemoPage() {
           overflow: hidden;
           aspect-ratio: 16 / 9;
           background: #18181b;
+          border-radius: 8px;
           border: 1px solid transparent;
           transition: transform 0.18s ease, box-shadow 0.18s ease;
-          margin-bottom: 10px;
+          margin-bottom: 12px;
         }
 
         .thumbShell.accent {
@@ -616,45 +620,49 @@ export default function TwitchDemoPage() {
         .streamMeta {
           display: flex;
           align-items: flex-start;
-          gap: 10px;
+          gap: 12px;
           padding-top: 0;
         }
 
         .streamAvatar {
           display: grid;
           place-items: center;
-          width: 40px;
-          height: 40px;
+          width: 44px;
+          height: 44px;
           border-radius: 50%;
           background: linear-gradient(135deg, #d95cff, #5f68ff);
           color: #fff;
           font-size: 13px;
           font-weight: 800;
           flex: 0 0 auto;
+          font-size: 14px;
         }
 
         .streamText {
           min-width: 0;
+          flex: 1;
         }
 
         .streamText h3 {
-          font-size: 17px;
-          font-weight: 700;
-          line-height: 1.3;
+          font-size: 15px;
+          font-weight: 600;
+          line-height: 1.4;
           display: -webkit-box;
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
           overflow: hidden;
           letter-spacing: -0.01em;
+          margin: 0;
+          color: #efeff1;
         }
 
         .channelRow {
           display: flex;
           align-items: center;
           gap: 4px;
-          margin-top: 4px;
+          margin-top: 6px;
           color: #adadb8;
-          font-size: 14px;
+          font-size: 13px;
           flex-wrap: wrap;
         }
 
@@ -676,31 +684,34 @@ export default function TwitchDemoPage() {
         }
 
         .streamText p {
-          margin-top: 0;
-          font-size: 14px;
+          margin-top: 4px;
+          margin-bottom: 0;
+          font-size: 13px;
+          color: #c9c9d0;
         }
 
         .tagRow {
           display: flex;
           flex-wrap: wrap;
-          gap: 8px;
-          margin-top: 10px;
+          gap: 6px;
+          margin-top: 8px;
         }
 
         .tagChip {
-          padding: 4px 10px;
-          border-radius: 999px;
-          background: #2b2b33;
-          color: #efeff1;
-          font-size: 12px;
-          font-weight: 700;
+          padding: 4px 8px;
+          border-radius: 4px;
+          background: transparent;
+          color: #adadb8;
+          font-size: 11px;
+          font-weight: 600;
+          border: 1px solid #2a2a31;
         }
 
         .dividerRow {
           display: flex;
           align-items: center;
-          gap: 24px;
-          margin: 0;
+          gap: 16px;
+          margin: 40px 0;
         }
 
         .dividerLine {
@@ -712,22 +723,27 @@ export default function TwitchDemoPage() {
         .showAllButton {
           display: inline-flex;
           align-items: center;
-          gap: 8px;
-          color: #bf94ff;
-          font-size: 16px;
-          font-weight: 800;
+          gap: 6px;
+          color: #a970ff;
+          font-size: 15px;
+          font-weight: 600;
           white-space: nowrap;
+          padding: 0;
+          background: none;
+          border: none;
+          cursor: pointer;
         }
 
         .section {
-          margin-top: 46px;
+          margin-top: 0;
         }
 
         .section h2 {
-          margin-bottom: 16px;
+          margin-bottom: 20px;
+          margin-top: 0;
           color: #efeff1;
           font-size: 18px;
-          font-weight: 800;
+          font-weight: 700;
         }
 
         .promoBar {
@@ -788,14 +804,16 @@ export default function TwitchDemoPage() {
           font-weight: 800;
         }
 
-        @media (max-width: 1200px) {
-          .sidebar {
-            width: 260px;
-          }
-
+        @media (max-width: 1400px) {
           .featuredGrid,
           .streamGrid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+
+        @media (max-width: 1200px) {
+          .sidebar {
+            width: 240px;
           }
         }
 
