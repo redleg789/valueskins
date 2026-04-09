@@ -36,7 +36,6 @@ const PLATFORMS = [
     { value: 'youtube', label: 'YouTube' },
     { value: 'tiktok', label: 'TikTok' },
     { value: 'linkedin', label: 'LinkedIn' },
-    { value: 'twitch', label: 'Twitch' },
 ];
 
 const FOLLOWER_RANGES = [

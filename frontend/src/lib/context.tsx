@@ -19,7 +19,7 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
   // Hydrate from localStorage
   useEffect(() => {
     const saved = localStorage.getItem('valueskins_platform');
-    if (saved && ['meta', 'linkedin', 'youtube', 'twitch', 'across'].includes(saved)) {
+    if (saved && ['meta', 'linkedin', 'youtube', 'across'].includes(saved)) {
       setActivePlatform(saved as Platform);
     }
     setMounted(true);
@@ -33,7 +33,7 @@ export function PlatformProvider({ children }: { children: React.ReactNode }) {
   const value: PlatformContextType = {
     activePlatform: mounted ? activePlatform : 'meta',
     setPlatform: handleSetPlatform,
-    availablePlatforms: ['meta', 'linkedin', 'youtube', 'twitch', 'across'] as Platform[],
+    availablePlatforms: ['meta', 'linkedin', 'youtube', 'across'] as Platform[],
     isAcrossModeAvailable: activePlatform === 'across',
   };
 
@@ -53,7 +53,7 @@ export function usePlatform(): PlatformContextType {
     return {
       activePlatform: 'meta',
       setPlatform: () => {},
-      availablePlatforms: ['meta', 'linkedin', 'youtube', 'twitch', 'across'],
+      availablePlatforms: ['meta', 'linkedin', 'youtube', 'across'],
       isAcrossModeAvailable: false,
     };
   }

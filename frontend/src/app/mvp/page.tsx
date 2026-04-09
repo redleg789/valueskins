@@ -7,7 +7,6 @@ const PLATFORMS = [
   { name: 'YouTube', href: '/demo/youtube', accent: '#ff0000', desc: 'Long-form creator marketplace' },
   { name: 'TikTok', href: '/demo/tiktok', accent: '#25f4ee', desc: 'Short-form deal flow' },
   { name: 'LinkedIn', href: '/demo/linkedin', accent: '#0a66c2', desc: 'Professional creator commerce' },
-  { name: 'Twitch', href: '/demo/twitch', accent: '#9146ff', desc: 'Live-stream ValueSkins workflow' },
 ];
 
 export default function MvpPage() {

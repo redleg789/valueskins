@@ -639,7 +639,7 @@ export default function SettingsPage() {
           </div>
           {showPlatformSelector && (
             <div style={{ padding: '12px 16px', background: 'var(--ig-elevated)' }}>
-              {(['meta', 'linkedin', 'youtube', 'twitch', 'across'] as Platform[]).map(platformId => {
+              {(['meta', 'linkedin', 'youtube', 'across'] as Platform[]).map(platformId => {
                 const config = PLATFORM_CONFIGS[platformId];
                 const isActive = activePlatform === platformId;
                 return (

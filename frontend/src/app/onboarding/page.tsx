@@ -46,7 +46,7 @@ export default function OnboardingPage() {
 
             {/* Platform Cards */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
-              {(['meta', 'linkedin', 'youtube', 'twitch', 'across'] as Platform[]).map(platformId => {
+              {(['meta', 'linkedin', 'youtube', 'across'] as Platform[]).map(platformId => {
                 const config = PLATFORM_CONFIGS[platformId];
                 const isSelected = selected === platformId;
                 return (

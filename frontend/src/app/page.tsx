@@ -31,12 +31,6 @@ export default function HomePage() {
       color: 'linear-gradient(135deg, #000000 0%, #25f4ee 50%, #fe2c55 100%)',
       path: '/demo/tiktok',
     },
-    {
-      name: 'Twitch',
-      description: 'Live Streaming Platform',
-      color: 'linear-gradient(135deg, #9146ff 0%, #772ce8 100%)',
-      path: '/demo/twitch',
-    },
   ];
 
   return (
