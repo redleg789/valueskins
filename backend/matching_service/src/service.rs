@@ -228,7 +228,10 @@ impl MatchingService {
             total_count: i64,
         }
 
-        let cache_key = format!("matching:discover:{}:{}:{}:{}:{}", profession, min_level, barter_only, limit, offset);
+        let cache_key = format!(
+            "matching:discover:{}:{}:{}:{}:{}:{}",
+            brand_user_id, profession, min_level, barter_only, limit, offset
+        );
 
         let (creators, total_count) = match self.cache.get::<(Vec<MatchedCreator>, i64)>(&cache_key).await.unwrap_or(None) {
             Some(cached) => cached,
@@ -238,6 +241,17 @@ impl MatchingService {
                 // Exclude the brand's own user from results.
                 let rows = with_timeout(sqlx::query_as::<_, CreatorWithCount>(
                     r#"
+                    WITH creator_history AS (
+                        SELECT
+                            cd.creator_user_id,
+                            COUNT(*)::int AS completed_deals,
+                            COALESCE(AVG(cd.total_amount), 0)::float8 AS avg_deal_amount,
+                            COALESCE(AVG(GREATEST(roi.roi_pct, 0)), 0)::float8 AS avg_roi_pct,
+                            COALESCE(SUM(roi.conversions), 0)::float8 AS total_conversions
+                        FROM completed_deals cd
+                        LEFT JOIN brand_campaign_roi roi ON roi.completed_deal_id = cd.id
+                        GROUP BY cd.creator_user_id
+                    )
                     SELECT
                         u.id AS user_id,
                         u.username,
@@ -246,7 +260,22 @@ impl MatchingService {
                         pr.name AS profession,
                         pp.slot,
                         pp.level,
-                        pp.real_score AS score,
+                        LEAST(
+                            100.0,
+                            LEAST(pp.level::float8 * 6.0, 30.0)
+                            + LEAST(COALESCE(pp.real_score, 0)::float8 / 2.5, 20.0)
+                            + LEAST(COALESCE(crm.reputation_score, 50)::float8 / 5.0, 20.0)
+                            + LEAST(COALESCE(far.engagement_authenticity_score, 50)::float8 / 5.0, 15.0)
+                            + LEAST(COALESCE(ch.avg_roi_pct, 0)::float8 / 10.0, 10.0)
+                            + (LEAST(COALESCE(ch.total_conversions, 0)::float8, 50.0) / 10.0)
+                            + CASE
+                                WHEN COALESCE(ch.completed_deals, 0) BETWEEN 1 AND 5
+                                     AND COALESCE(crm.reputation_score, 50) >= 60
+                                     AND COALESCE(far.engagement_authenticity_score, 50) >= 60
+                                THEN 5.0
+                                ELSE 0.0
+                              END
+                        ) AS score,
                         COALESCE(us.willing_to_barter, FALSE) AS willing_to_barter,
                         COALESCE(us.energy_state, 'available') AS energy_state,
                         COALESCE(us.price_band, 'mid-tier') AS price_band,
@@ -256,12 +285,21 @@ impl MatchingService {
                     JOIN users u ON p.owner_user_id = u.id AND u.is_active = TRUE
                     JOIN professions pr ON pp.profession_id = pr.id
                     LEFT JOIN user_settings us ON u.id = us.user_id
+                    LEFT JOIN creator_reputation_metrics crm ON crm.creator_user_id = u.id
+                    LEFT JOIN creator_history ch ON ch.creator_user_id = u.id
+                    LEFT JOIN LATERAL (
+                        SELECT engagement_authenticity_score
+                        FROM follower_audit_results
+                        WHERE persona_id = p.id
+                        ORDER BY audited_at DESC
+                        LIMIT 1
+                    ) far ON TRUE
                     WHERE pr.name = $1
                       AND pp.level >= $2
                       AND u.id != $3
                       AND COALESCE(us.energy_state, 'available') != 'pause'
                       AND ($4 = FALSE OR COALESCE(us.willing_to_barter, FALSE) = TRUE)
-                    ORDER BY pp.level DESC, pp.real_score DESC
+                    ORDER BY score DESC, pp.level DESC, pp.real_score DESC
                     LIMIT $5 OFFSET $6
                     "#,
                 )
@@ -391,17 +429,56 @@ impl MatchingService {
                 mr.min_level,
                 COALESCE(o.compensation_type, 'paid') AS compensation_type,
                 o.reward_amount,
-                50.0 AS match_score,
+                LEAST(
+                    100.0,
+                    40.0
+                    + CASE
+                        WHEN cc.creator_level >= mr.min_level
+                            THEN LEAST(20.0, 20.0 - GREATEST(cc.creator_level - mr.min_level, 0)::float8 * 2.0)
+                        ELSE GREATEST(0.0, 12.0 - (mr.min_level - cc.creator_level)::float8 * 6.0)
+                      END
+                    + CASE
+                        WHEN cc.avg_deal_amount <= 0 THEN 12.0
+                        WHEN o.reward_amount::float8 >= cc.avg_deal_amount * 0.85
+                             AND o.reward_amount::float8 <= cc.avg_deal_amount * 1.25 THEN 20.0
+                        WHEN o.reward_amount::float8 >= cc.avg_deal_amount * 0.65 THEN 14.0
+                        WHEN o.reward_amount::float8 >= cc.avg_deal_amount * 0.45 THEN 8.0
+                        ELSE 4.0
+                      END
+                    + LEAST(cc.reputation_score / 10.0, 10.0)
+                    + CASE
+                        WHEN cc.creator_requires_advance = FALSE THEN 10.0
+                        WHEN COALESCE(brand_ap.brand_offers_advance, FALSE) = TRUE THEN 10.0
+                        ELSE 0.0
+                      END
+                ) AS match_score,
                 COUNT(*) OVER()::int8 AS total_count
             FROM matching_requirements mr
-            JOIN opportunities o ON mr.opportunity_id = o.id AND o.status = 'active'
+            JOIN opportunities o ON mr.opportunity_id = o.id AND o.status IN ('active', 'open')
             JOIN users u ON o.brand_user_id = u.id
-            WHERE mr.required_profession = $1
-              AND ($2::TEXT IS NULL OR o.compensation_type = $2)
-            ORDER BY mr.priority ASC, o.created_at DESC
-            LIMIT $3 OFFSET $4
+            CROSS JOIN LATERAL (
+                SELECT
+                    MAX(pp.level)::int AS creator_level,
+                    COALESCE(MAX(crm.reputation_score), 50)::float8 AS reputation_score,
+                    COALESCE(AVG(cd.total_amount), 0)::float8 AS avg_deal_amount,
+                    COALESCE(BOOL_OR(ap.creator_requires_advance), FALSE) AS creator_requires_advance
+                FROM persona_professions pp
+                JOIN personas p ON pp.persona_id = p.id
+                JOIN professions pr ON pp.profession_id = pr.id
+                LEFT JOIN creator_reputation_metrics crm ON crm.creator_user_id = p.owner_user_id
+                LEFT JOIN completed_deals cd ON cd.creator_user_id = p.owner_user_id
+                LEFT JOIN advance_preferences ap ON ap.user_id = p.owner_user_id
+                WHERE p.owner_user_id = $1
+                  AND pr.name = $2
+            ) cc
+            LEFT JOIN advance_preferences brand_ap ON brand_ap.user_id = o.brand_user_id
+            WHERE mr.required_profession = $2
+              AND ($3::TEXT IS NULL OR o.compensation_type = $3)
+            ORDER BY match_score DESC, mr.priority ASC, o.created_at DESC
+            LIMIT $4 OFFSET $5
             "#,
         )
+        .bind(creator_user_id)
         .bind(&query.valueskin)
         .bind(query.compensation_filter.as_deref())
         .bind(limit)
@@ -553,10 +630,7 @@ impl MatchingService {
     }
 
     fn compute_match_score(creator: &MatchedCreator) -> f64 {
-        let mut score: f64 = 50.0; // base: same ValuSkin
-        score += (creator.level as f64 * 5.0).min(25.0);
-        // More factors would come from reputation_service in production
-        score.min(100.0)
+        (creator.score as f64).min(100.0)
     }
 
     // === DEAL SUGGESTIONS ===
@@ -669,21 +743,62 @@ impl MatchingService {
             // Find matching creators and compute suggestion scores
             let inserted: i64 = sqlx::query_scalar(
                 r#"
-                WITH scored_creators AS (
+                WITH opportunity_context AS (
+                    SELECT COALESCE(reward_amount, 0)::float8 AS reward_amount
+                    FROM opportunities
+                    WHERE id = $5 AND brand_user_id = $4
+                ),
+                creator_history AS (
+                    SELECT
+                        cd.creator_persona_id,
+                        COUNT(*)::int AS completed_deals,
+                        COALESCE(AVG(cd.total_amount), 0)::float8 AS avg_deal_amount,
+                        COALESCE(AVG(GREATEST(roi.roi_pct, 0)), 0)::float8 AS avg_roi_pct,
+                        COALESCE(SUM(roi.conversions), 0)::float8 AS total_conversions
+                    FROM completed_deals cd
+                    LEFT JOIN brand_campaign_roi roi ON roi.completed_deal_id = cd.id
+                    GROUP BY cd.creator_persona_id
+                ),
+                scored_creators AS (
                     SELECT
                         p.id AS persona_id,
                         pp.level,
                         COALESCE(pp.real_score, 0) AS trust_score,
                         COALESCE(us.price_band, 'mid-tier') AS price_band,
                         COALESCE(far.engagement_authenticity_score, 50) AS audit_score,
+                        COALESCE(crm.reputation_score, 50) AS reputation_score,
+                        COALESCE(ch.completed_deals, 0) AS completed_deals,
+                        COALESCE(ch.avg_deal_amount, 0) AS avg_deal_amount,
+                        COALESCE(ch.avg_roi_pct, 0) AS avg_roi_pct,
+                        COALESCE(ch.total_conversions, 0) AS total_conversions,
                         COALESCE(ap.creator_requires_advance, FALSE) AS requires_advance,
                         -- Score computation (deterministic)
-                        (40  -- base ValuSkin match
-                         + LEAST(pp.level * 4, 20)  -- level fit
-                         + CASE WHEN COALESCE(us.price_band, 'mid-tier') IN ('mid-tier', 'premium') THEN 15 ELSE 0 END  -- price overlap
+                        LEAST(100.0,
+                         25  -- base ValuSkin match
+                         + LEAST((pp.level - $2 + 1) * 5, 15)  -- level fit
                          + LEAST(COALESCE(pp.real_score, 0) / 10, 10)  -- trust bonus
                          + LEAST(COALESCE(far.engagement_authenticity_score, 50) / 10, 10)  -- audit bonus
+                         + LEAST(COALESCE(crm.reputation_score, 50) / 10, 10)  -- accountability / repeat trust
+                         + LEAST(COALESCE(ch.avg_roi_pct, 0) / 12, 8)  -- sales-driving performance
+                         + LEAST(COALESCE(ch.total_conversions, 0), 40) / 10  -- conversion volume
+                         + CASE  -- fair price fit without changing workflow
+                             WHEN oc.reward_amount <= 0 OR COALESCE(ch.avg_deal_amount, 0) <= 0 THEN 8
+                             WHEN oc.reward_amount >= ch.avg_deal_amount * 0.85
+                                  AND oc.reward_amount <= ch.avg_deal_amount * 1.20 THEN 13
+                             WHEN oc.reward_amount >= ch.avg_deal_amount * 0.65 THEN 9
+                             WHEN oc.reward_amount >= ch.avg_deal_amount * 0.50 THEN 5
+                             ELSE 1
+                           END
                          + CASE WHEN $3 = TRUE THEN 5 ELSE 0 END  -- advance bonus
+                         + CASE  -- smaller creators can still win on quality/performance
+                             WHEN COALESCE(ch.completed_deals, 0) BETWEEN 1 AND 5
+                                  AND (
+                                      COALESCE(crm.reputation_score, 50) >= 60
+                                      OR COALESCE(far.engagement_authenticity_score, 50) >= 70
+                                      OR COALESCE(ch.avg_roi_pct, 0) >= 25
+                                  )
+                             THEN 5 ELSE 0
+                           END
                         )::numeric(5,2) AS match_score,
                         CASE
                             WHEN COALESCE(ap.creator_requires_advance, FALSE) = TRUE AND $3 = FALSE THEN FALSE
@@ -693,8 +808,17 @@ impl MatchingService {
                     JOIN personas p ON pp.persona_id = p.id AND p.exists = TRUE
                     JOIN professions pr ON pp.profession_id = pr.id
                     LEFT JOIN user_settings us ON p.owner_user_id = us.user_id
-                    LEFT JOIN follower_audit_results far ON far.persona_id = p.id
+                    LEFT JOIN creator_reputation_metrics crm ON crm.creator_user_id = p.owner_user_id
+                    LEFT JOIN creator_history ch ON ch.creator_persona_id = p.id
+                    LEFT JOIN LATERAL (
+                        SELECT engagement_authenticity_score
+                        FROM follower_audit_results
+                        WHERE persona_id = p.id
+                        ORDER BY audited_at DESC
+                        LIMIT 1
+                    ) far ON TRUE
                     LEFT JOIN advance_preferences ap ON ap.user_id = p.owner_user_id
+                    CROSS JOIN opportunity_context oc
                     WHERE pr.name = $1
                       AND pp.level >= $2
                       AND p.owner_user_id != $4
@@ -712,6 +836,12 @@ impl MatchingService {
                             'trust_score', sc.trust_score,
                             'price_band', sc.price_band,
                             'audit_score', sc.audit_score,
+                            'reputation_score', sc.reputation_score,
+                            'avg_deal_amount', sc.avg_deal_amount,
+                            'avg_roi_pct', sc.avg_roi_pct,
+                            'total_conversions', sc.total_conversions,
+                            'completed_deals', sc.completed_deals,
+                            'reward_amount', (SELECT reward_amount FROM opportunity_context),
                             'advance_compatible', sc.advance_compatible,
                             'requires_advance', sc.requires_advance
                         ),
@@ -739,6 +869,7 @@ impl MatchingService {
             .bind(req.min_level)
             .bind(brand_offers_advance)
             .bind(brand_user_id)
+            .bind(opportunity_id)
             .fetch_optional(&self.pool)
             .await?
             .unwrap_or(0);

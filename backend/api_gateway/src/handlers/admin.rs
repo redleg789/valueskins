@@ -1,11 +1,13 @@
 //! Admin API Handlers — leaderboard, platform stats, feature flags,
 //! user management, GDPR requests, disputes, PII audit.
+//! OPERATIONAL DASHBOARD: dispute resolution, analytics, commission controls
 //!
 //! All handlers enforce admin role via claims check.
 
 use actix_web::{web, HttpMessage, HttpRequest, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
+use chrono::{DateTime, Utc};
 
 /// Extract user_id from JWT claims (any authenticated user).
 fn get_user_id(req: &HttpRequest) -> Result<i64, HttpResponse> {
@@ -887,4 +889,268 @@ pub async fn update_platform_config(
             HttpResponse::InternalServerError().json(serde_json::json!({"error": "Failed to update config"}))
         }
     }
+}
+
+// ────────────────────────────────────────────────────────────────
+// OPERATIONAL DASHBOARD ENDPOINTS (NEW)
+// ────────────────────────────────────────────────────────────────
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AdminDashboardMetrics {
+    pub date: chrono::NaiveDate,
+    pub daily_active_users: i64,
+    pub new_creators: i64,
+    pub new_brands: i64,
+    pub deals_created: i64,
+    pub deals_completed: i64,
+    pub total_gmv_cents: i64,
+    pub platform_revenue_cents: i64,
+    pub pending_disputes: i64,
+    pub pending_payouts: i64,
+}
+
+/// GET /admin/dashboard/metrics — Daily metrics snapshot
+pub async fn get_dashboard_metrics(
+    req: HttpRequest,
+    pool: web::Data<PgPool>,
+) -> impl Responder {
+    if let Err(resp) = require_admin(&req) { return resp; }
+
+    let today = chrono::Local::now().naive_local().date();
+
+    let dau: i64 = sqlx::query_scalar(
+        "SELECT COUNT(DISTINCT user_id) FROM analytics_events WHERE DATE(timestamp) = $1"
+    )
+    .bind(today)
+    .fetch_one(pool.get_ref())
+    .await
+    .unwrap_or(0);
+
+    let new_creators: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM personas WHERE DATE(created_at) = $1 AND persona_type = 'creator'"
+    )
+    .bind(today)
+    .fetch_one(pool.get_ref())
+    .await
+    .unwrap_or(0);
+
+    let new_brands: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM brands WHERE DATE(created_at) = $1"
+    )
+    .bind(today)
+    .fetch_one(pool.get_ref())
+    .await
+    .unwrap_or(0);
+
+    let deals_created: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM deal_rooms WHERE DATE(created_at) = $1"
+    )
+    .bind(today)
+    .fetch_one(pool.get_ref())
+    .await
+    .unwrap_or(0);
+
+    let deals_completed: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM deal_rooms WHERE DATE(approved_at) = $1"
+    )
+    .bind(today)
+    .fetch_one(pool.get_ref())
+    .await
+    .unwrap_or(0);
+
+    let total_gmv_cents: i64 = sqlx::query_scalar(
+        r#"SELECT COALESCE(SUM(CAST(reward_amount AS BIGINT)), 0)
+           FROM opportunities o
+           WHERE DATE(o.created_at) = $1"#
+    )
+    .bind(today)
+    .fetch_one(pool.get_ref())
+    .await
+    .unwrap_or(0);
+
+    let platform_revenue_cents = (total_gmv_cents as f64 * 0.05) as i64;
+
+    let pending_disputes: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM disputes WHERE status IN ('open', 'in_review')"
+    )
+    .fetch_one(pool.get_ref())
+    .await
+    .unwrap_or(0);
+
+    let pending_payouts: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM payout_ledger WHERE processor_status = 'pending'"
+    )
+    .fetch_one(pool.get_ref())
+    .await
+    .unwrap_or(0);
+
+    let metrics = AdminDashboardMetrics {
+        date: today,
+        daily_active_users: dau,
+        new_creators,
+        new_brands,
+        deals_created,
+        deals_completed,
+        total_gmv_cents,
+        platform_revenue_cents,
+        pending_disputes,
+        pending_payouts,
+    };
+
+    HttpResponse::Ok().json(metrics)
+}
+
+#[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
+pub struct DisputeRecord {
+    pub id: i64,
+    pub deal_id: i64,
+    pub filed_by_user_id: i64,
+    pub dispute_type: String,
+    pub description: String,
+    pub status: String,
+    pub filed_at: DateTime<Utc>,
+    pub resolved_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct DisputeResolutionRequest {
+    pub resolution: String,
+    pub admin_notes: String,
+}
+
+/// GET /admin/disputes — List pending disputes
+pub async fn list_disputes(
+    req: HttpRequest,
+    pool: web::Data<PgPool>,
+    status: web::Query<std::collections::HashMap<String, String>>,
+) -> impl Responder {
+    if let Err(resp) = require_admin(&req) { return resp; }
+
+    let status_filter = status.get("status").map(|s| s.as_str());
+
+    let disputes: Vec<DisputeRecord> = if let Some(s) = status_filter {
+        sqlx::query_as(
+            "SELECT id, deal_id, filed_by_user_id, dispute_type, description, status, filed_at, resolved_at FROM disputes WHERE status = $1 ORDER BY filed_at DESC LIMIT 100"
+        )
+        .bind(s)
+        .fetch_all(pool.get_ref())
+        .await
+        .unwrap_or_default()
+    } else {
+        sqlx::query_as(
+            "SELECT id, deal_id, filed_by_user_id, dispute_type, description, status, filed_at, resolved_at FROM disputes ORDER BY filed_at DESC LIMIT 100"
+        )
+        .fetch_all(pool.get_ref())
+        .await
+        .unwrap_or_default()
+    };
+
+    HttpResponse::Ok().json(disputes)
+}
+
+/// POST /admin/disputes/:id/resolve — Resolve a dispute
+pub async fn resolve_dispute(
+    req: HttpRequest,
+    path: web::Path<i64>,
+    body: web::Json<DisputeResolutionRequest>,
+    pool: web::Data<PgPool>,
+) -> impl Responder {
+    if let Err(resp) = require_admin(&req) { return resp; }
+
+    let dispute_id = path.into_inner();
+
+    sqlx::query(
+        "UPDATE disputes SET status = 'resolved', resolution = $2, resolved_at = NOW() WHERE id = $1"
+    )
+    .bind(dispute_id)
+    .bind(&body.resolution)
+    .execute(pool.get_ref())
+    .await
+    .ok();
+
+    HttpResponse::Ok().json(serde_json::json!({
+        "status": "resolved",
+        "dispute_id": dispute_id,
+        "resolution": body.resolution,
+        "resolved_at": Utc::now()
+    }))
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CommissionConfig {
+    pub commission_rate_pct: f64,
+    pub payment_model: String,
+}
+
+/// GET /admin/commissions — Get commission config
+pub async fn get_commission_config(
+    req: HttpRequest,
+    pool: web::Data<PgPool>,
+) -> impl Responder {
+    if let Err(resp) = require_admin(&req) { return resp; }
+
+    let config: Option<(f64, String)> = sqlx::query_as(
+        "SELECT commission_rate_pct, payment_model FROM platform_commission_config WHERE active = TRUE ORDER BY created_at DESC LIMIT 1"
+    )
+    .fetch_optional(pool.get_ref())
+    .await
+    .ok()
+    .flatten();
+
+    let (rate, model) = config.unwrap_or((5.0, "brand_paid".to_string()));
+
+    HttpResponse::Ok().json(CommissionConfig {
+        commission_rate_pct: rate,
+        payment_model: model,
+    })
+}
+
+/// POST /admin/commissions — Update commission config
+pub async fn update_commission_config(
+    req: HttpRequest,
+    body: web::Json<CommissionConfig>,
+    pool: web::Data<PgPool>,
+) -> impl Responder {
+    if let Err(resp) = require_admin(&req) { return resp; }
+
+    if body.commission_rate_pct < 0.0 || body.commission_rate_pct > 50.0 {
+        return HttpResponse::BadRequest().json(serde_json::json!({
+            "error": "commission_out_of_range"
+        }));
+    }
+
+    sqlx::query("UPDATE platform_commission_config SET active = FALSE WHERE active = TRUE")
+        .execute(pool.get_ref())
+        .await
+        .ok();
+
+    sqlx::query(
+        "INSERT INTO platform_commission_config (commission_rate_pct, payment_model, active, created_at) VALUES ($1, $2, TRUE, NOW())"
+    )
+    .bind(body.commission_rate_pct)
+    .bind(&body.payment_model)
+    .execute(pool.get_ref())
+    .await
+    .ok();
+
+    HttpResponse::Ok().json(serde_json::json!({
+        "status": "updated",
+        "commission_rate_pct": body.commission_rate_pct
+    }))
+}
+
+/// GET /admin/health — System health check
+pub async fn health_check(
+    req: HttpRequest,
+    pool: web::Data<PgPool>,
+) -> impl Responder {
+    if let Err(resp) = require_admin(&req) { return resp; }
+
+    let db_ok = sqlx::query("SELECT 1").fetch_optional(pool.get_ref()).await.is_ok();
+
+    HttpResponse::Ok().json(serde_json::json!({
+        "status": if db_ok { "healthy" } else { "degraded" },
+        "database": if db_ok { "ok" } else { "error" },
+        "timestamp": Utc::now()
+    }))
 }

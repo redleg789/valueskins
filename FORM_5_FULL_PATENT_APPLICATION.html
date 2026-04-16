@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>FORM 5 - APPLICATION FOR PATENT</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 9pt;
+            line-height: 1.4;
+            color: #000;
+            background: white;
+            padding: 20px;
+        }
+        .container {
+            max-width: 8.5in;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 10px;
+        }
+        .header h1 {
+            font-size: 12pt;
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+        .header p {
+            font-size: 10pt;
+            font-weight: bold;
+        }
+        .section {
+            margin-top: 12px;
+            margin-bottom: 12px;
+        }
+        .section-title {
+            font-weight: bold;
+            font-size: 10pt;
+            margin-bottom: 8px;
+            padding: 3px 0;
+            border-bottom: 1px solid #000;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 8px;
+        }
+        td {
+            padding: 4px 6px;
+            border: 1px solid #ccc;
+            vertical-align: top;
+        }
+        .label {
+            font-weight: bold;
+            width: 25%;
+            background-color: #f0f0f0;
+        }
+        input[type="text"], input[type="email"], input[type="tel"], input[type="date"] {
+            width: 95%;
+            border: none;
+            border-bottom: 1px dotted #000;
+            padding: 2px;
+            font-family: Arial, sans-serif;
+            font-size: 9pt;
+        }
+        input[type="checkbox"] {
+            margin-right: 5px;
+        }
+        .checkbox-group {
+            margin: 4px 0;
+            margin-left: 0.3in;
+        }
+        .checkbox-inline {
+            display: inline-block;
+            margin-right: 15px;
+        }
+        .indent {
+            margin-left: 0.3in;
+        }
+        p {
+            margin-bottom: 6px;
+            line-height: 1.5;
+            text-align: justify;
+        }
+        .page-break {
+            page-break-after: always;
+            margin: 30px 0;
+        }
+        .fee-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .fee-table th {
+            background-color: #000;
+            color: white;
+            padding: 5px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .fee-table td {
+            padding: 4px 6px;
+            border: 1px solid #ccc;
+            text-align: center;
+        }
+        .fee-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        ul {
+            margin-left: 0.3in;
+            margin-bottom: 8px;
+        }
+        li {
+            margin-bottom: 4px;
+        }
+        .signature-box {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .sig-line {
+            display: inline-block;
+            width: 2.2in;
+            margin: 0 15px;
+        }
+        .sig-line-text {
+            border-bottom: 1px solid #000;
+            height: 35px;
+            margin-bottom: 3px;
+        }
+        .sig-label {
+            font-size: 8pt;
+            font-weight: bold;
+        }
+        @media print {
+            body {
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>FORM 5 - APPLICATION FOR PATENT</h1>
+            <p>Full Patent Application (to be filed within 12 months of provisional filing)</p>
+        </div>
+
+        <div class="section">
+            <div class="section-title">SECTION 1: APPLICATION METADATA</div>
+            <table>
+                <tr>
+                    <td class="label">Application Type:</td>
+                    <td>
+                        <label class="checkbox-inline"><input type="checkbox"> Provisional</label>
+                        <label class="checkbox-inline"><input type="checkbox"> Regular/Full Patent</label>
+                        <label class="checkbox-inline"><input type="checkbox"> Amendment</label>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label">Provisional Application Reference:</td>
+                    <td>
+                        <p><strong>Number:</strong> <input type="text" style="width: 60%;"></p>
+                        <p><strong>Filing Date:</strong> <input type="date" value="2026-04-09"></p>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label">Patent Specification Title:</td>
+                    <td><input type="text" value="System and Method for Dynamic Value Exchange Between Digital Content Creators and Brand Entities Through Adaptive Persona-Based Commerce"></td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <div class="section-title">SECTION 2: APPLICANT INFORMATION</div>
+            <p style="font-weight: bold;">Primary Applicant:</p>
+            <table>
+                <tr>
+                    <td class="label">Name:</td>
+                    <td><input type="text" value="Saketh Velamuri"></td>
+                </tr>
+                <tr>
+                    <td class="label">Designation:</td>
+                    <td><input type="text" value="Founder/Inventor" placeholder="E.g., Founder, Inventor, CEO"></td>
+                </tr>
+                <tr>
+                    <td class="label">Entity Type:</td>
+                    <td>
+                        <label class="checkbox-inline"><input type="checkbox" checked> Individual</label>
+                        <label class="checkbox-inline"><input type="checkbox"> Company</label>
+                        <label class="checkbox-inline"><input type="checkbox"> Government</label>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label">Residential/Registered Address:</td>
+                    <td>
+                        <textarea style="width: 95%; border: none; border-bottom: 1px dotted #000;" rows="2" placeholder="Street Address, City, State, PIN, Country"></textarea>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label">Email:</td>
+                    <td><input type="email"></td>
+                </tr>
+                <tr>
+                    <td class="label">Phone:</td>
+                    <td><input type="tel"></td>
+                </tr>
+                <tr>
+                    <td class="label">Applicant Category:</td>
+                    <td>
+                        <label class="checkbox-inline"><input type="checkbox" checked> Individual (Resident) - ₹9,000</label>
+                        <label class="checkbox-inline"><input type="checkbox"> Start-up - ₹4,500</label>
+                        <label class="checkbox-inline"><input type="checkbox"> Micro Entity - ₹1,800</label>
+                        <label class="checkbox-inline"><input type="checkbox"> Others - ₹18,000</label>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <div class="section-title">SECTION 3: APPLICANT'S DECLARATION</div>
+            <p class="indent">I/We hereby declare that:</p>
+            <ol style="margin-left: 0.5in; margin-bottom: 10px;">
+                <li>I am/We are the true and first inventor(s)/discoverer(s) of the invention for which patent protection is sought.</li>
+                <li>I/We have not knowingly concealed any material information related to the patentability of this invention.</li>
+                <li>The specification filed herewith correctly describes my/our invention.</li>
+                <li>I/We am/are entitled to the patent applied for.</li>
+                <li>I/We understand the patent grant implies a statutory obligation to disclose material information during prosecution.</li>
+            </ol>
+        </div>
+
+        <div class="section">
+            <div class="section-title">SECTION 4: SPECIFICATION DETAILS</div>
+            <table>
+                <tr>
+                    <td class="label">Total Number of Pages:</td>
+                    <td><input type="text"></td>
+                </tr>
+                <tr>
+                    <td class="label">Number of Claims:</td>
+                    <td><input type="text" value="10"></td>
+                </tr>
+                <tr>
+                    <td class="label">Number of Drawings/Figures:</td>
+                    <td><input type="text" value="7"></td>
+                </tr>
+            </table>
+
+            <p style="font-weight: bold; margin-top: 10px;">List of Figures:</p>
+            <ul>
+                <li>Figure 1: System Architecture Overview</li>
+                <li>Figure 2: Data Flow Diagram</li>
+                <li>Figure 3: Value Matching Engine Conceptual Model</li>
+                <li>Figure 4: Workflow State Diagram</li>
+                <li>Figure 5: Creator Persona Adaptation</li>
+                <li>Figure 6: Value Assessment Framework</li>
+                <li>Figure 7: Platform Integration Architecture</li>
+            </ul>
+        </div>
+
+        <div class="page-break"></div>
+
+        <div class="section">
+            <div class="section-title">SECTION 5: TECHNICAL FIELD & CLASSIFICATION</div>
+            <table>
+                <tr>
+                    <td class="label">Technical Field:</td>
+                    <td><input type="text" value="Information Technology / Software Systems / E-Commerce Platform"></td>
+                </tr>
+                <tr>
+                    <td class="label">IPC Classification:</td>
+                    <td><input type="text" placeholder="E.g., G06F 17/30, G06Q 30/00"></td>
+                </tr>
+                <tr>
+                    <td class="label">CPC Classification:</td>
+                    <td><input type="text" placeholder="E.g., G06Q 30/00"></td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <div class="section-title">SECTION 6: NOVELTY & INVENTIVE STEP STATEMENT</div>
+            <p style="font-weight: bold;">Novelty:</p>
+            <p class="indent">The present invention provides a novel combination of: (1) Real-time multi-platform creator data aggregation and normalization, (2) Dynamic persona adaptation mechanisms, (3) Proprietary multi-dimensional affinity scoring algorithms, (4) Integrated workflow state machine for deal management, (5) Comprehensive value assessment framework for intangible creator assets.</p>
+
+            <p style="font-weight: bold;">Inventive Step/Non-Obviousness:</p>
+            <p class="indent">The invention is non-obvious to a person having ordinary skill in the art because: (1) The technical problem of platform fragmentation in creator commerce was not previously recognized as requiring unified solution, (2) Dynamic persona adaptation while maintaining creator authenticity is a non-obvious technical challenge, (3) The multi-dimensional affinity scoring incorporating audience quality metrics represents novel combination.</p>
+        </div>
+
+        <div class="section">
+            <div class="section-title">SECTION 7: INDUSTRIAL APPLICABILITY</div>
+            <p class="indent">The invention is industrially applicable as it:</p>
+            <ul>
+                <li>Addresses real commercial need in multi-billion dollar creator commerce industry</li>
+                <li>Can be implemented using standard software engineering practices</li>
+                <li>Supports scalable architecture for millions of creators and thousands of brands</li>
+                <li>Provides multiple revenue models (commissions, premium features, API access)</li>
+                <li>Meets active market demand from brands and creators</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <div class="section-title">SECTION 8: EXAMINATION REQUEST</div>
+            <p>Do you request examination of this application?</p>
+            <div class="checkbox-group">
+                <label><input type="checkbox" checked> Yes (Fee: as per applicant category)</label>
+            </div>
+            <div class="checkbox-group">
+                <label><input type="checkbox"> No (File later, within time limit)</label>
+            </div>
+            <p style="margin-top: 10px;">If Yes:</p>
+            <table>
+                <tr>
+                    <td class="label">Examination Fee:</td>
+                    <td><input type="text" placeholder="₹"></td>
+                </tr>
+                <tr>
+                    <td class="label">Payment Date:</td>
+                    <td><input type="date"></td>
+                </tr>
+                <tr>
+                    <td class="label">Payment Reference:</td>
+                    <td><input type="text" placeholder="Transaction ID or DD No."></td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <div class="section-title">SECTION 9: PRIORITY CLAIM</div>
+            <p>Do you claim priority from provisional application?</p>
+            <div class="checkbox-group">
+                <label><input type="checkbox" checked> Yes</label>
+                <label style="margin-left: 20px;"><input type="checkbox"> No</label>
+            </div>
+            <p style="margin-top: 10px;">If Yes:</p>
+            <table>
+                <tr>
+                    <td class="label">Provisional Application Number:</td>
+                    <td><input type="text"></td>
+                </tr>
+                <tr>
+                    <td class="label">Provisional Filing Date:</td>
+                    <td><input type="date" value="2026-04-09"></td>
+                </tr>
+                <tr>
+                    <td class="label">Priority Date:</td>
+                    <td><input type="date" value="2026-04-09"></td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <div class="section-title">SECTION 10: CORRESPONDENCE ADDRESS</div>
+            <table>
+                <tr>
+                    <td class="label">Address for Patent Office:</td>
+                    <td>
+                        <label style="display: block; margin-bottom: 8px;"><input type="checkbox" checked> Same as applicant</label>
+                        <textarea style="width: 95%; border: 1px dotted #000;" rows="3" placeholder="OR Enter different address"></textarea>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="label">Phone:</td>
+                    <td><input type="tel"></td>
+                </tr>
+                <tr>
+                    <td class="label">Email:</td>
+                    <td><input type="email"></td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="page-break"></div>
+
+        <div class="section">
+            <div class="section-title">SECTION 11: DOCUMENTS CHECKLIST</div>
+            <p>Please confirm all required documents are attached:</p>
+            <div class="checkbox-group">
+                <label><input type="checkbox"> Form 5 (Signed)</label>
+            </div>
+            <div class="checkbox-group">
+                <label><input type="checkbox"> Complete Patent Specification</label>
+            </div>
+            <div class="checkbox-group">
+                <label><input type="checkbox"> Claims (10 claims as described)</label>
+            </div>
+            <div class="checkbox-group">
+                <label><input type="checkbox"> Drawings (7 figures as referenced)</label>
+            </div>
+            <div class="checkbox-group">
+                <label><input type="checkbox"> Abstract</label>
+            </div>
+            <div class="checkbox-group">
+                <label><input type="checkbox"> Declaration of Inventorship (Form 3, signed)</label>
+            </div>
+            <div class="checkbox-group">
+                <label><input type="checkbox"> Power of Attorney (if using agent)</label>
+            </div>
+            <div class="checkbox-group">
+                <label><input type="checkbox"> Examination fee proof</label>
+            </div>
+            <div class="checkbox-group">
+                <label><input type="checkbox"> Priority document (provisional application copy)</label>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">SECTION 12: APPLICANT'S SIGNATURE & DECLARATION</div>
+            <p class="indent" style="margin-bottom: 20px;">I/We hereby declare that the information provided in this Form 5 and supporting documents is true and correct to the best of my/our knowledge and belief.</p>
+            <div class="signature-box">
+                <div class="sig-line">
+                    <div class="sig-line-text"></div>
+                    <div class="sig-label">Signature</div>
+                </div>
+                <div class="sig-line">
+                    <div class="sig-line-text"></div>
+                    <div class="sig-label">Date</div>
+                </div>
+            </div>
+            <p style="text-align: center; margin-top: 15px;">
+                <strong>Full Name (Print):</strong> ___________________________
+            </p>
+            <p style="text-align: center;">
+                <strong>Place:</strong> ___________________________
+            </p>
+        </div>
+
+        <p style="margin-top: 30px; font-size: 7pt; text-align: center; color: #666;">
+            For assistance: http://www.ipindia.gov.in | patent@ipindia.gov.in<br>
+            Patents Act, 1970; Patents Rules, 2003 (as amended)
+        </p>
+    </div>
+</body>
+</html>

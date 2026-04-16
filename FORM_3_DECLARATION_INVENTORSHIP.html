@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>FORM 3 - DECLARATION AS TO INVENTORSHIP</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 10pt;
+            line-height: 1.4;
+            color: #000;
+            background: white;
+            padding: 20px;
+        }
+        .container {
+            max-width: 8.5in;
+            margin: 0 auto;
+            background: white;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 10px;
+        }
+        .header h1 {
+            font-size: 12pt;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .header p {
+            font-size: 11pt;
+            font-weight: bold;
+        }
+        .section {
+            margin-top: 15px;
+            margin-bottom: 15px;
+        }
+        .section-title {
+            font-weight: bold;
+            font-size: 11pt;
+            margin-bottom: 8px;
+            text-decoration: underline;
+        }
+        .part-title {
+            font-weight: bold;
+            font-size: 11pt;
+            margin-top: 10px;
+            margin-bottom: 8px;
+        }
+        p {
+            margin-bottom: 8px;
+            text-align: justify;
+        }
+        .indent {
+            margin-left: 0.5in;
+        }
+        .double-space {
+            line-height: 2;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+        }
+        td {
+            padding: 6px 8px;
+            border: 1px solid #ccc;
+            vertical-align: top;
+        }
+        .label {
+            font-weight: bold;
+            width: 30%;
+            background-color: #f5f5f5;
+        }
+        input[type="text"], input[type="email"], input[type="tel"], input[type="date"] {
+            width: 95%;
+            border: none;
+            border-bottom: 1px dotted #000;
+            padding: 2px;
+            font-family: Arial;
+        }
+        input[type="checkbox"] {
+            margin-right: 8px;
+        }
+        .checkbox-group {
+            margin: 6px 0;
+            margin-left: 0.5in;
+        }
+        .signature-area {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .sig-block {
+            display: inline-block;
+            width: 2.5in;
+            margin: 0 20px;
+        }
+        .sig-line {
+            border-bottom: 1px solid #000;
+            height: 40px;
+            margin-bottom: 5px;
+        }
+        .sig-label {
+            font-size: 9pt;
+            font-weight: bold;
+        }
+        .page-break {
+            page-break-after: always;
+            margin-top: 40px;
+            margin-bottom: 40px;
+        }
+        .declaration {
+            margin: 15px 0;
+            padding: 10px;
+            border: 1px solid #ccc;
+            line-height: 1.6;
+        }
+        .numbered {
+            margin-left: 0.3in;
+            text-indent: -0.3in;
+        }
+        @media print {
+            body {
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>FORM 3 - DECLARATION AS TO INVENTORSHIP</h1>
+            <p>Indian Patent Office</p>
+        </div>
+
+        <div class="section">
+            <div class="section-title">PART A: APPLICATION IDENTIFICATION</div>
+            <table>
+                <tr>
+                    <td class="label">Patent Application Number:</td>
+                    <td><input type="text" placeholder="To be filled by Patent Office after provisional filing"></td>
+                </tr>
+                <tr>
+                    <td class="label">Filing Date:</td>
+                    <td><input type="date" value="2026-04-09"></td>
+                </tr>
+                <tr>
+                    <td class="label">Patent Title:</td>
+                    <td><input type="text" value="System and Method for Dynamic Value Exchange Between Digital Content Creators and Brand Entities Through Adaptive Persona-Based Commerce"></td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <div class="section-title">PART B: DECLARATION BY INVENTOR(S)</div>
+            <p class="indent">I/We hereby declare that:</p>
+
+            <div class="part-title">1. INVENTORSHIP CLAIM</div>
+            <p class="indent">I am/We are the true and first inventor(s) of the invention titled above, and the invention is a result of my/our own research, development, and creative effort.</p>
+
+            <div class="checkbox-group">
+                <label><input type="checkbox"> Single Inventor (complete Part B-I below)</label>
+            </div>
+            <div class="checkbox-group">
+                <label><input type="checkbox"> Joint Inventors (complete Part B-II below for each inventor)</label>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="part-title">PART B-I: SINGLE INVENTOR DECLARATION</div>
+            <table>
+                <tr>
+                    <td class="label">Full Name of Inventor:</td>
+                    <td><input type="text" value="Saketh Velamuri"></td>
+                </tr>
+                <tr>
+                    <td class="label">Date of Birth:</td>
+                    <td><input type="date"></td>
+                </tr>
+                <tr>
+                    <td class="label">Nationality:</td>
+                    <td><input type="text" value="Indian"></td>
+                </tr>
+                <tr>
+                    <td class="label">Residential Address:</td>
+                    <td><textarea style="width: 95%; border: none; border-bottom: 1px dotted #000;" rows="3" placeholder="Street, City, State, PIN, Country"></textarea></td>
+                </tr>
+                <tr>
+                    <td class="label">Email Address:</td>
+                    <td><input type="email"></td>
+                </tr>
+                <tr>
+                    <td class="label">Phone Number:</td>
+                    <td><input type="tel"></td>
+                </tr>
+                <tr>
+                    <td class="label">Passport/Aadhar Number:</td>
+                    <td><input type="text"></td>
+                </tr>
+                <tr>
+                    <td class="label">Employer/Organization Name:</td>
+                    <td><input type="text" placeholder="If applicable"></td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <div class="part-title">PART C: DECLARATION OF ORIGINALITY</div>
+            <p class="indent">I/We hereby solemnly declare that:</p>
+
+            <p class="numbered indent"><strong>1. ORIGINAL CREATION:</strong> The invention described in the provisional specification is an original creation and does not infringe upon any existing patents, copyrights, or intellectual property rights of any other person or entity.</p>
+
+            <p class="numbered indent"><strong>2. PRIOR DISCLOSURE:</strong> The invention has NOT been previously disclosed, published, patented, or in public use in any country prior to the filing date of this application, except as disclosed in the specification or as may be required by law.</p>
+
+            <p class="numbered indent"><strong>3. NO PRIOR APPLICATION:</strong> No patent application for this invention has been filed in any other country, except as disclosed below:</p>
+            <div style="margin-left: 1in;">
+                <p>Previous Patent Applications (if any):</p>
+                <table style="margin-top: 10px;">
+                    <tr>
+                        <td class="label">Application Number:</td>
+                        <td><input type="text"></td>
+                    </tr>
+                    <tr>
+                        <td class="label">Country:</td>
+                        <td><input type="text"></td>
+                    </tr>
+                    <tr>
+                        <td class="label">Filing Date:</td>
+                        <td><input type="date"></td>
+                    </tr>
+                    <tr>
+                        <td class="label">Current Status:</td>
+                        <td><input type="text"></td>
+                    </tr>
+                </table>
+            </div>
+
+            <p class="numbered indent"><strong>4. INVENTIVE STEP:</strong> The invention is not obvious to a person skilled in the art, and it constitutes a non-obvious improvement over existing technologies.</p>
+
+            <p class="numbered indent"><strong>5. INDUSTRIAL APPLICABILITY:</strong> The invention is capable of industrial application and can be used in a practical manner for commercial purposes.</p>
+
+            <p class="numbered indent"><strong>6. NO RESTRICTIONS:</strong> I/We have not assigned this invention to any third party, and no third party has any ownership, rights, or claims to this invention except as disclosed herein.</p>
+
+            <p class="numbered indent"><strong>7. AUTHORITY TO FILE:</strong> I/We am/are authorized to file this patent application and make this declaration on behalf of myself/ourselves.</p>
+        </div>
+
+        <div class="page-break"></div>
+
+        <div class="section">
+            <div class="part-title">PART D: ADDITIONAL DECLARATIONS</div>
+
+            <p style="font-weight: bold;">D1. Government Funding:</p>
+            <p class="indent">Has this invention been developed with government funding or grant support?</p>
+            <div class="checkbox-group">
+                <label><input type="checkbox"> Yes</label>
+                <label style="margin-left: 20px;"><input type="checkbox"> No</label>
+            </div>
+            <p class="indent" style="margin-top: 10px;">If Yes, provide details:</p>
+            <table style="margin-left: 0.5in;">
+                <tr>
+                    <td class="label">Funding Agency:</td>
+                    <td><input type="text"></td>
+                </tr>
+                <tr>
+                    <td class="label">Grant/Project Number:</td>
+                    <td><input type="text"></td>
+                </tr>
+                <tr>
+                    <td class="label">Funding Amount:</td>
+                    <td><input type="text" placeholder="₹"></td>
+                </tr>
+                <tr>
+                    <td class="label">Project Duration:</td>
+                    <td><input type="text" placeholder="From _______ To _______"></td>
+                </tr>
+            </table>
+
+            <p style="font-weight: bold; margin-top: 15px;">D2. Academic/Institutional Affiliation:</p>
+            <p class="indent">Is/Was the inventor affiliated with any academic or research institution during development?</p>
+            <div class="checkbox-group">
+                <label><input type="checkbox"> Yes</label>
+                <label style="margin-left: 20px;"><input type="checkbox"> No</label>
+            </div>
+            <p class="indent" style="margin-top: 10px;">If Yes, provide details:</p>
+            <table style="margin-left: 0.5in;">
+                <tr>
+                    <td class="label">Institution Name:</td>
+                    <td><input type="text"></td>
+                </tr>
+                <tr>
+                    <td class="label">Department/Lab:</td>
+                    <td><input type="text"></td>
+                </tr>
+                <tr>
+                    <td class="label">Period of Affiliation:</td>
+                    <td><input type="text" placeholder="From _______ To _______"></td>
+                </tr>
+            </table>
+
+            <p style="font-weight: bold; margin-top: 15px;">D3. Third Party Involvement:</p>
+            <p class="indent">Have any third parties (employees, contractors, collaborators) contributed to this invention?</p>
+            <div class="checkbox-group">
+                <label><input type="checkbox"> Yes</label>
+                <label style="margin-left: 20px;"><input type="checkbox"> No</label>
+            </div>
+            <p class="indent" style="margin-top: 10px;">If Yes, provide details and attach assignment agreements if applicable.</p>
+        </div>
+
+        <div class="section">
+            <div class="part-title">PART E: INVENTOR'S SIGNATURE & VERIFICATION</div>
+            <p class="declaration">
+                I/We hereby solemnly and sincerely declare that the information provided above is true and correct to the best of my/our knowledge and belief.
+            </p>
+            <div style="margin-top: 30px; text-align: center;">
+                <div class="sig-block">
+                    <div class="sig-line"></div>
+                    <div class="sig-label">Signature</div>
+                </div>
+                <div class="sig-block">
+                    <div class="sig-line"></div>
+                    <div class="sig-label">Date</div>
+                </div>
+            </div>
+            <p style="text-align: center; margin-top: 20px;">
+                <strong>Full Name (Print):</strong> ___________________________
+            </p>
+            <p style="text-align: center;">
+                <strong>Place:</strong> ___________________________
+            </p>
+        </div>
+
+        <p style="margin-top: 40px; font-size: 8pt; color: #666; text-align: center; page-break-before: always;">
+            For further information, contact: Indian Patent Office - http://www.ipindia.gov.in
+        </p>
+    </div>
+</body>
+</html>

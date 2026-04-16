@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Form 2 - Provisional Specification</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 2.8cm 2.2cm 2.5cm 2.8cm;
+    }
+
+    :root {
+      --ink: #111;
+      --muted: #555;
+      --rule: #b8b8b8;
+      --accent: #1f1f1f;
+      --paper: #ffffff;
+      --wash: #f6f4ef;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      background: var(--paper);
+      color: var(--ink);
+      margin: 0;
+      padding: 0;
+      font-family: "Georgia", "Times New Roman", serif;
+      font-size: 11.5pt;
+      line-height: 1.55;
+    }
+
+    body {
+      padding: 0;
+    }
+
+    .document {
+      max-width: 100%;
+      margin: 0 auto;
+    }
+
+    h1, h2, h3, h4 {
+      page-break-after: avoid;
+      break-after: avoid;
+      color: var(--accent);
+    }
+
+    h1 {
+      font-size: 21pt;
+      line-height: 1.2;
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      margin: 0 0 0.35cm 0;
+    }
+
+    h2 {
+      font-size: 14pt;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin: 0.9cm 0 0.25cm 0;
+      padding-top: 0.15cm;
+      border-top: 1px solid var(--rule);
+    }
+
+    h3 {
+      font-size: 12.5pt;
+      margin: 0.55cm 0 0.18cm 0;
+    }
+
+    h4 {
+      font-size: 11.5pt;
+      font-style: italic;
+      margin: 0.45cm 0 0.14cm 0;
+    }
+
+    p {
+      margin: 0 0 0.28cm 0;
+      text-align: justify;
+    }
+
+    strong {
+      font-weight: 700;
+    }
+
+    hr {
+      border: 0;
+      border-top: 1px solid var(--rule);
+      margin: 0.45cm 0;
+    }
+
+    ol, ul {
+      margin: 0.2cm 0 0.35cm 0.75cm;
+      padding: 0;
+    }
+
+    li {
+      margin: 0 0 0.14cm 0;
+      padding-left: 0.08cm;
+    }
+
+    code {
+      font-family: "SFMono-Regular", "Menlo", "Courier New", monospace;
+      font-size: 9.6pt;
+      background: var(--wash);
+      border: 1px solid #e5e0d6;
+      border-radius: 3px;
+      padding: 0.02cm 0.12cm;
+    }
+
+    pre {
+      font-family: "SFMono-Regular", "Menlo", "Courier New", monospace;
+      font-size: 9.2pt;
+      line-height: 1.4;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      background: #fbfaf7;
+      border: 1px solid #d8d2c6;
+      padding: 0.35cm;
+      margin: 0.25cm 0 0.45cm 0;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .subtitle {
+      text-align: center;
+      font-size: 11pt;
+      color: var(--muted);
+      margin-bottom: 0.4cm;
+    }
+
+    .title-block {
+      border: 1.5px solid var(--ink);
+      padding: 0.55cm 0.6cm;
+      margin-bottom: 0.55cm;
+    }
+
+    .title-block p {
+      text-align: center;
+      margin: 0.12cm 0;
+    }
+
+    @media print {
+      a, a:visited {
+        color: inherit;
+        text-decoration: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="document">
+    <section class="title-block"><h1>FORM 2 — PROVISIONAL SPECIFICATION (VALUESKINS)</h1><p class="subtitle">IP India Provisional Patent Application</p></section>
+<hr>
+<h2>TITLE OF THE INVENTION</h2>
+<p><strong>Deterministic Creator-Brand Marketplace that can be attached to existing social media platforms, with Escrow-Gated Deal Workflows, Server-Authoritative Reputation Scoring, and Tamper-Evident Contract Architecture</strong></p>
+<hr>
+<h2>FIELD OF THE INVENTION</h2>
+<p>This invention relates to a digital marketplace platform designed for negotiation, contracting, and performance verification between content creators and brands. Specifically, it addresses automated deal room state machines, legal contract generation tied to acceptance triggers, distributed reputation computation, and cryptographically verifiable deal evidence trails.</p>
+<hr>
+<h2>BACKGROUND OF THE INVENTION</h2>
+<h3>Problem Statement</h3>
+<p>Current creator-brand engagement workflows suffer from structural failures:</p>
+<ol>
+<li><strong>No Verifiable Negotiation Record</strong>: Offers and counteroffers occur on Instagram DMs or email, creating dispute ambiguity. No cryptographic proof of agreement exists.</li>
+<li><strong>Middleman Extraction</strong>: Agencies capture 20-30% margins by controlling pricing discovery, contract templates, and performance guarantees.</li>
+<li><strong>Ghosting &amp; Fraud</strong>: Creators deliver, brands withhold payment. Brands request free work. No binding contractual gates prevent cancellation or revision spam.</li>
+<li><strong>Pricing Opacity</strong>: No market-rate benchmarking per niche (profession, platform, content type, follower band). Creators underbid; brands overpay in some cases.</li>
+<li><strong>Reputation Portability</strong>: Trust signals locked to single platforms. No verifiable, exportable reputation score that works across ecosystems.</li>
+<li><strong>Escrow Uncertainty</strong>: No binding advance (upfront deposit) or milestone-based release logic. Payment contingent on brand goodwill.</li>
+<li><strong>Follower Fraud</strong>: Creators with bot-inflated followers win deals. No audit trail for fake engagement detection.</li>
+</ol>
+<p>This invention eliminates all seven gaps via server-authoritative state machines, cryptographic contracts, deterministic reputation exports, and append-only deal records.</p>
+<h3>Prior Art Gap</h3>
+<p>While platforms like Stripe (payments), Upwork (bidding), and Instagram (discovery) exist:</p>
+<ul>
+<li><strong>Stripe</strong>: Processes payments but enforces no contract logic or deal state.</li>
+<li><strong>Upwork</strong>: Bidding-based, not opportunity-driven; no reputation export; brands control all state.</li>
+<li><strong>Instagram</strong>: Offers discovery and messaging but zero legal bindingness; no escrow; no follower audit.</li>
+</ul>
+<p>No existing system combines: (a) server-authoritative deal state, (b) auto-generated legally-binding contracts, (c) cryptographic evidence trails, (d) portable reputation passports, and (e) Meta-scale idempotency guarantees. This invention fills that gap.</p>
+<hr>
+<h2>SUMMARY OF THE INVENTION</h2>
+<p>The present invention provides a comprehensive system to replace agency middlemen by introducing:</p>
+<ol>
+<li><strong>Deterministic Deal State Machine</strong>: All deal state transitions (negotiation → offer accepted → contract signed → in progress → deliverables submitted → completed) are server-enforced. Client cannot mutate state; server cryptographically verifies each transition.</li>
+</ol>
+<ol>
+<li><strong>Auto-Generated Contracts Bound to Offer Acceptance</strong>: The moment a creator or brand accepts an offer round, the system automatically generates a legally-binding contract (not a handshake). Both parties must e-sign the contract before deal funding begins. Contract content includes: exact amount, deliverable list, revision cap, exclusivity window, kill-fee percentage on brand cancellation, usage rights scope, and deadline.</li>
+</ol>
+<ol>
+<li><strong>Tamper-Evident Contract Storage</strong>: Each generated contract is assigned a SHA-256 content hash. Signatures store: (signer_id, timestamp, content_hash). If contract is later modified, signature becomes invalid — making tampering detectable.</li>
+</ol>
+<ol>
+<li><strong>Append-Only Deal Room Message Log</strong>: All negotiation occurs in deal room (not DMs). Every message includes server-assigned timestamp and sender ID derived from JWT (client cannot spoof). Messages are immutable at the database level (no UPDATE/DELETE permitted on the messages table).</li>
+</ol>
+<ol>
+<li><strong>Portable Reputation Passport</strong>: A creator's reputation (deal count, avg deal value, trust scores, testimonials, completion rate) is cryptographically signed with platform private key (Ed25519). The signature enables any brand to verify authenticity without querying the platform. Passports are versioned; old signatures remain valid.</li>
+</ol>
+<ol>
+<li><strong>Deterministic Reputation Scoring</strong>: Creator reputation is computed from: completed deal count, deal value band history, ghost-count penalty, contract_revision abuse count, and follower-audit score. Same inputs always produce the same score (no randomness, no time-decay).</li>
+</ol>
+<ol>
+<li><strong>Follower Audit Trail</strong>: Creator follower counts are audited by analyzing: engagement rate vs follower count anomaly (botted accounts show 0.1% engagement on 1M followers), account age distribution, and follower account health signals. Fake follower percentage is stored and surfaced in brand UX.</li>
+</ol>
+<ol>
+<li><strong>Level-Based Matching Gate</strong>: Creators earn levels (1-5) deterministically from completed deal count + trust score. Opportunities specify required_level. Creators below required_level cannot apply (not in matching suggestions, not visible in opportunity detail).</li>
+</ol>
+<ol>
+<li><strong>Advance Preference Compatibility</strong>: Before a deal room even opens, the system checks: if creator requires_advance=true AND brand offers_advance=false, the pair is not matched. This prevents dead-end negotiations.</li>
+</ol>
+<ol>
+<li><strong>Rate Limits &amp; Idempotency Keys</strong>: All mutation endpoints include idempotency keys. If a creator submits an application twice with the same key, the second request is silently ignored. Rate limits prevent apply-spam: max 10 applications per creator per 24h.</li>
+</ol>
+<ol>
+<li><strong>Version-Stamped Market Rate Benchmarks</strong>: Pricing benchmarks (p25, median, p75 per category×platform×content_type×level) are recomputed monthly from completed deals and stored with version number. Old versions queryable forever. Brands and creators use versioned benchmarks for negotiation.</li>
+</ol>
+<ol>
+<li><strong>Credit Line System</strong>: Creators with completed deals + trust score ≥ threshold can draw advances against a credit line. Repayment auto-deducts from deal completion payout. Deterministic credit_score = f(deal_count, avg_deal_value, trust_score, months_active).</li>
+</ol>
+<hr>
+<h2>DETAILED DESCRIPTION OF THE INVENTION</h2>
+<h3>1. Database Schema (Core Entities)</h3>
+<h4><code>users</code></h4>
+<ul>
+<li><code>id BIGSERIAL PRIMARY KEY</code></li>
+<li><code>username TEXT UNIQUE NOT NULL</code></li>
+<li><code>auth_provider TEXT NOT NULL</code> (e.g., 'instagram_oauth')</li>
+<li><code>auth_provider_id TEXT NOT NULL</code> (Instagram user ID)</li>
+<li><code>avatar_uri TEXT</code></li>
+<li><code>created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP</code></li>
+<li><code>last_login_at TIMESTAMP</code></li>
+</ul>
+<h4><code>personas</code></h4>
+<ul>
+<li><code>id BIGSERIAL PRIMARY KEY</code></li>
+<li><code>owner_user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE</code></li>
+<li><code>role TEXT NOT NULL</code> (enum: 'creator', 'brand')</li>
+<li><code>display_name TEXT NOT NULL</code></li>
+<li><code>avatar_uri TEXT</code></li>
+<li><code>created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP</code></li>
+<li><code>last_active_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP</code></li>
+<li><strong>Index</strong>: <code>(owner_user_id, role)</code> for quick role lookup</li>
+</ul>
+<h4><code>professions</code></h4>
+<ul>
+<li><code>id BIGSERIAL PRIMARY KEY</code></li>
+<li><code>name TEXT UNIQUE NOT NULL</code> (e.g., 'Software Engineer', 'Graphic Designer')</li>
+<li><code>category TEXT NOT NULL</code> (e.g., 'Tech', 'Art', 'Finance')</li>
+<li><code>description TEXT</code></li>
+<li><strong>Index</strong>: <code>(category)</code> for filtering by profession category</li>
+</ul>
+<h4><code>persona_professions</code></h4>
+<ul>
+<li><code>persona_id BIGINT NOT NULL REFERENCES personas(id) ON DELETE CASCADE</code></li>
+<li><code>profession_id BIGINT NOT NULL REFERENCES professions(id) ON DELETE RESTRICT</code></li>
+<li><code>created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP</code></li>
+<li><strong>Primary Key</strong>: <code>(persona_id, profession_id)</code> to prevent duplicates</li>
+</ul>
+<h4><code>persona_levels</code></h4>
+<ul>
+<li><code>persona_id BIGINT NOT NULL REFERENCES personas(id) ON DELETE CASCADE</code></li>
+<li><code>level INT NOT NULL DEFAULT 1</code> (range 1-5, deterministic from completed deals)</li>
+<li><code>real_score BIGINT NOT NULL DEFAULT 0</code> (reputation score, deterministically computed)</li>
+<li><code>completed_deal_count INT NOT NULL DEFAULT 0</code></li>
+<li><code>avg_deal_value_cents BIGINT NOT NULL DEFAULT 0</code></li>
+<li><code>ghosted_count INT NOT NULL DEFAULT 0</code></li>
+<li><code>last_computed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP</code></li>
+<li><strong>Primary Key</strong>: <code>persona_id</code></li>
+<li><strong>Rationale</strong>: Denormalized for fast lookups; recomputed on deal completion or via scheduled job.</li>
+</ul>
+<h4><code>opportunities</code></h4>
+<ul>
+<li><code>id BIGSERIAL PRIMARY KEY</code></li>
+<li><code>brand_persona_id BIGINT NOT NULL REFERENCES personas(id) ON DELETE CASCADE</code></li>
+<li><code>title TEXT NOT NULL</code></li>
+<li><code>description TEXT NOT NULL</code></li>
+<li><code>category TEXT NOT NULL</code> (e.g., 'Development', 'Art', 'Marketing')</li>
+<li><code>reward_amount TEXT NOT NULL</code> (stored as string for precision)</li>
+<li><code>reward_currency TEXT NOT NULL</code> (e.g., 'USD', 'INR')</li>
+<li><code>required_level INT NOT NULL DEFAULT 1</code> (min creator level to apply)</li>
+<li><code>status TEXT NOT NULL DEFAULT 'open'</code> (enum: 'open', 'in_progress', 'completed', 'cancelled')</li>
+<li><code>offers_advance BOOLEAN DEFAULT false</code> (brand opted into offering advances)</li>
+<li><code>advance_pct SMALLINT</code> (default advance % offered, e.g., 30)</li>
+<li><code>created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP</code></li>
+<li><code>updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP</code></li>
+<li><strong>Index</strong>: <code>(brand_persona_id, status)</code> for creator browsing</li>
+<li><strong>Index</strong>: <code>(status, created_at DESC)</code> for marketplace feed</li>
+<li><strong>Index</strong>: <code>(required_level)</code> for level-gating</li>
+</ul>
+<h4><code>applications</code></h4>
+<ul>
+<li><code>id BIGSERIAL PRIMARY KEY</code></li>
+<li><code>opportunity_id BIGINT NOT NULL REFERENCES opportunities(id) ON DELETE CASCADE</code></li>
+<li><code>creator_persona_id BIGINT NOT NULL REFERENCES personas(id) ON DELETE CASCADE</code></li>
+<li><code>status TEXT NOT NULL DEFAULT 'applied'</code> (enum: 'applied', 'rejected', 'deal_room_opened')</li>
+<li><code>created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP</code></li>
+<li><strong>Primary Key</strong>: <code>(opportunity_id, creator_persona_id)</code> prevents duplicate applications</li>
+<li><strong>Rationale</strong>: Allows idempotent resubmission (second application with same key returns success but doesn't duplicate)</li>
+</ul>
+<h4><code>deal_rooms</code></h4>
+<ul>
+<li><code>id BIGSERIAL PRIMARY KEY</code></li>
+<li><code>opportunity_id BIGINT NOT NULL REFERENCES opportunities(id) ON DELETE CASCADE</code></li>
+<li><code>creator_persona_id BIGINT NOT NULL REFERENCES personas(id) ON DELETE CASCADE</code></li>
+<li><code>brand_persona_id BIGINT NOT NULL REFERENCES personas(id) ON DELETE CASCADE</code></li>
+<li><code>status TEXT NOT NULL DEFAULT 'negotiation'</code> (enum: 'negotiation', 'contract_pending', 'funded', 'in_progress', 'completed', 'cancelled')</li>
+<li><code>created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP</code></li>
+<li><code>updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP</code></li>
+<li><strong>Index</strong>: <code>(creator_persona_id, status)</code> for creator's active deals</li>
+<li><strong>Index</strong>: <code>(brand_persona_id, status)</code> for brand's active deals</li>
+<li><strong>Unique</strong>: <code>(opportunity_id, creator_persona_id)</code> prevents duplicate deal rooms</li>
+</ul>
+<h4><code>offer_rounds</code></h4>
+<ul>
+<li><code>id BIGSERIAL PRIMARY KEY</code></li>
+<li><code>deal_room_id BIGINT NOT NULL REFERENCES deal_rooms(id) ON DELETE CASCADE</code></li>
+<li><code>initiator_persona_id BIGINT NOT NULL REFERENCES personas(id)</code> (who made the offer)</li>
+<li><code>amount_cents BIGINT NOT NULL</code> (offer amount in cents)</li>
+<li><code>currency TEXT NOT NULL DEFAULT 'USD'</code></li>
+<li><code>deliverable_description TEXT NOT NULL</code></li>
+<li><code>advance_offered_pct SMALLINT</code> (advance % in this round, e.g., 30)</li>
+<li><code>revision_cap INT DEFAULT 2</code> (max revisions creator can request)</li>
+<li><code>exclusivity_days INT DEFAULT 0</code> (how long brand can claim exclusivity post-completion)</li>
+<li><code>kill_fee_pct INT DEFAULT 0</code> (% of amount brand pays if they cancel)</li>
+<li><code>status TEXT NOT NULL DEFAULT 'pending'</code> (enum: 'pending', 'accepted', 'rejected', 'countered')</li>
+<li><code>created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP</code></li>
+<li><code>expires_at TIMESTAMP</code> (offer expires if not accepted within 7 days)</li>
+<li><strong>Index</strong>: <code>(deal_room_id, status)</code> for deal room history</li>
+<li><strong>Index</strong>: <code>(status, expires_at)</code> for cleanup job to auto-expire old offers</li>
+</ul>
+<h4><code>offer_round_responses</code></h4>
+<ul>
+<li><code>id BIGSERIAL PRIMARY KEY</code></li>
+<li><code>offer_round_id BIGINT NOT NULL REFERENCES offer_rounds(id) ON DELETE CASCADE</code></li>
+<li><code>responder_persona_id BIGINT NOT NULL REFERENCES personas(id)</code></li>
+<li><code>response_type TEXT NOT NULL</code> (enum: 'accept', 'reject', 'counter')</li>
+<li><code>counter_amount_cents BIGINT</code> (if counter)</li>
+<li><code>counter_advance_pct SMALLINT</code> (if counter)</li>
+<li><code>counter_revision_cap INT</code> (if counter)</li>
+<li><code>notes TEXT</code></li>
+<li><code>created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP</code></li>
+<li><strong>Index</strong>: <code>(offer_round_id, response_type)</code> to find acceptances quickly</li>
+<li><strong>Rationale</strong>: Append-only; every response is a new row. Immutable negotiation history.</li>
+</ul>
+<h4><code>deal_room_messages</code></h4>
+<ul>
+<li><code>id BIGSERIAL PRIMARY KEY</code></li>
+<li><code>deal_room_id BIGINT NOT NULL REFERENCES deal_rooms(id) ON DELETE CASCADE</code></li>
+<li><code>sender_persona_id BIGINT NOT NULL REFERENCES personas(id)</code> (derived from JWT, cannot be spoofed)</li>
+<li><code>message_text TEXT NOT NULL</code></li>
+<li><code>server_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL</code> (NOT client-provided)</li>
+<li><code>created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP</code></li>
+<li><strong>Constraint</strong>: NO UPDATE/DELETE allowed on this table (enforced in application layer)</li>
+<li><strong>Index</strong>: <code>(deal_room_id, created_at ASC)</code> for paginated message fetch</li>
+<li><strong>Rationale</strong>: Immutable log. This is the authoritative evidence for disputes.</li>
+</ul>
+<h4><code>contracts</code></h4>
+<ul>
+<li><code>id BIGSERIAL PRIMARY KEY</code></li>
+<li><code>deal_room_id BIGINT NOT NULL REFERENCES deal_rooms(id) ON DELETE CASCADE</code></li>
+<li><code>offer_round_id BIGINT NOT NULL REFERENCES offer_rounds(id)</code> (which offer round triggered this contract)</li>
+<li><code>amount_cents BIGINT NOT NULL</code></li>
+<li><code>currency TEXT NOT NULL</code></li>
+<li><code>deliverable_list TEXT NOT NULL</code> (JSON array of deliverables)</li>
+<li><code>revision_cap INT NOT NULL</code></li>
+<li><code>exclusivity_days INT NOT NULL</code></li>
+<li><code>kill_fee_pct INT NOT NULL</code></li>
+<li><code>usage_rights_scope TEXT NOT NULL</code> (e.g., 'exclusive_post', 'reusable_ugc', 'ambassador_content')</li>
+<li><code>deadline TIMESTAMP NOT NULL</code></li>
+<li><code>content_hash TEXT NOT NULL</code> (SHA-256 of serialized contract content; used to detect tampering)</li>
+<li><code>pdf_url TEXT</code> (signed URL to downloadable PDF)</li>
+<li><code>created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP</code></li>
+<li><code>generated_at TIMESTAMP NOT NULL</code> (timestamp when contract was auto-generated from offer acceptance)</li>
+<li><strong>Index</strong>: <code>(deal_room_id)</code> to find contract by deal room</li>
+<li><strong>Rationale</strong>: Auto-generated the moment offer_round is accepted. Both parties must sign before state progresses.</li>
+</ul>
+<h4><code>contract_signatures</code></h4>
+<ul>
+<li><code>id BIGSERIAL PRIMARY KEY</code></li>
+<li><code>contract_id BIGINT NOT NULL REFERENCES contracts(id) ON DELETE CASCADE</code></li>
+<li><code>signer_persona_id BIGINT NOT NULL REFERENCES personas(id)</code></li>
+<li><code>content_hash_at_sign TEXT NOT NULL</code> (the SHA-256 of contract at sign time; must match contract.content_hash)</li>
+<li><code>signature_timestamp TIMESTAMP NOT NULL</code> (server-assigned, not client)</li>
+<li><code>signed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP</code></li>
+<li><strong>Primary Key</strong>: <code>(contract_id, signer_persona_id)</code> prevents duplicate signatures</li>
+<li><strong>Rationale</strong>: If both parties have signed, deal can progress. Mismatch in content_hash proves tampering.</li>
+</ul>
+<h4><code>follower_audit_results</code></h4>
+<ul>
+<li><code>id BIGSERIAL PRIMARY KEY</code></li>
+<li><code>persona_id BIGINT NOT NULL REFERENCES personas(id) ON DELETE CASCADE</code></li>
+<li><code>platform TEXT NOT NULL</code> (e.g., 'instagram', 'tiktok')</li>
+<li><code>follower_count INT NOT NULL</code> (at time of audit)</li>
+<li><code>fake_follower_pct NUMERIC(5,2)</code> (e.g., 12.5 means 12.5%)</li>
+<li><code>engagement_authenticity_score INT NOT NULL</code> (0-100, deterministic)</li>
+<li><code>signal_breakdown JSONB</code> (e.g., <code>{"bot_account_ratio": 0.15, "new_account_ratio": 0.08, "dormant_ratio": 0.03}</code>)</li>
+<li><code>audited_at TIMESTAMP NOT NULL</code></li>
+<li><code>valid_until TIMESTAMP NOT NULL</code> (30 days from audited_at)</li>
+<li><code>created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP</code></li>
+<li><strong>Index</strong>: <code>(persona_id, platform)</code> to find latest audit</li>
+<li><strong>Unique</strong>: <code>(persona_id, platform, audited_at)</code> prevents duplicate audits on same day</li>
+</ul>
+<h4><code>pricing_benchmarks</code></h4>
+<ul>
+<li><code>id BIGSERIAL PRIMARY KEY</code></li>
+<li><code>category TEXT NOT NULL</code> (profession category, e.g., 'Tech')</li>
+<li><code>platform TEXT NOT NULL</code> (e.g., 'instagram')</li>
+<li><code>content_type TEXT NOT NULL</code> (e.g., 'reel', 'story', 'post')</li>
+<li><code>level INT NOT NULL</code> (creator level 1-5)</li>
+<li><code>p25_cents BIGINT NOT NULL</code> (25th percentile)</li>
+<li><code>median_cents BIGINT NOT NULL</code> (50th percentile)</li>
+<li><code>p75_cents BIGINT NOT NULL</code> (75th percentile)</li>
+<li><code>version INT NOT NULL</code> (timestamp-based version, e.g., 202403 for March 2024)</li>
+<li><code>computed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP</code></li>
+<li><strong>Index</strong>: <code>(category, platform, content_type, level, version)</code> for lookups</li>
+<li><strong>Primary Key</strong>: <code>(category, platform, content_type, level, version)</code> to version benchmarks</li>
+</ul>
+<h4><code>creator_credit_lines</code></h4>
+<ul>
+<li><code>id BIGSERIAL PRIMARY KEY</code></li>
+<li><code>creator_persona_id BIGINT NOT NULL REFERENCES personas(id) ON DELETE CASCADE</code></li>
+<li><code>limit_cents BIGINT NOT NULL</code> (e.g., $10,000 credit line)</li>
+<li><code>used_cents BIGINT NOT NULL DEFAULT 0</code></li>
+<li><code>credit_score INT NOT NULL DEFAULT 300</code> (0-1000, deterministic)</li>
+<li><code>status TEXT NOT NULL DEFAULT 'active'</code> (enum: 'active', 'suspended', 'closed')</li>
+<li><code>updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP</code></li>
+<li><strong>Primary Key</strong>: <code>creator_persona_id</code></li>
+</ul>
+<h4><code>credit_advances</code></h4>
+<ul>
+<li><code>id BIGSERIAL PRIMARY KEY</code></li>
+<li><code>deal_room_id BIGINT NOT NULL REFERENCES deal_rooms(id) ON DELETE CASCADE</code></li>
+<li><code>creator_persona_id BIGINT NOT NULL REFERENCES personas(id) ON DELETE CASCADE</code></li>
+<li><code>amount_cents BIGINT NOT NULL</code></li>
+<li><code>status TEXT NOT NULL DEFAULT 'pending'</code> (enum: 'pending', 'issued', 'repaid', 'forfeited')</li>
+<li><code>repayment_auto_deduct BOOLEAN DEFAULT true</code> (auto-repay from deal completion payout)</li>
+<li><code>created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP</code></li>
+<li><code>issued_at TIMESTAMP</code></li>
+<li><code>repaid_at TIMESTAMP</code></li>
+<li><strong>Index</strong>: <code>(creator_persona_id, status)</code> to find active advances</li>
+</ul>
+<h4><code>reputation_exports</code></h4>
+<ul>
+<li><code>id BIGSERIAL PRIMARY KEY</code></li>
+<li><code>creator_persona_id BIGINT NOT NULL REFERENCES personas(id) ON DELETE CASCADE</code></li>
+<li><code>version INT NOT NULL</code> (snapshot version; old versions queryable forever)</li>
+<li><code>completed_deal_count INT NOT NULL</code></li>
+<li><code>avg_deal_value_cents BIGINT NOT NULL</code></li>
+<li><code>trust_scores JSONB NOT NULL</code> (e.g., <code>{"delivery": 95, "professionalism": 92, "communication": 88}</code>)</li>
+<li><code>testimonial_count INT NOT NULL</code></li>
+<li><code>completion_rate NUMERIC(5,2)</code> (e.g., 98.5%)</li>
+<li><code>content_hash TEXT NOT NULL</code> (SHA-256 of exported data)</li>
+<li><code>ed25519_signature TEXT NOT NULL</code> (platform-signed with private key)</li>
+<li><code>exported_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP</code></li>
+<li><strong>Index</strong>: <code>(creator_persona_id, version DESC)</code> to find latest export</li>
+</ul>
+<h4><code>deal_suggestions</code></h4>
+<ul>
+<li><code>id BIGSERIAL PRIMARY KEY</code></li>
+<li><code>brand_persona_id BIGINT NOT NULL REFERENCES personas(id) ON DELETE CASCADE</code></li>
+<li><code>creator_persona_id BIGINT NOT NULL REFERENCES personas(id) ON DELETE CASCADE</code></li>
+<li><code>opportunity_id BIGINT NOT NULL REFERENCES opportunities(id) ON DELETE CASCADE</code></li>
+<li><code>match_score INT NOT NULL</code> (0-100, deterministic from valu-skin match + other factors)</li>
+<li><code>match_factors JSONB NOT NULL</code> (e.g., <code>{"valueskin_match": 95, "level_fit": 80, "price_band_overlap": 85, "trust_score": 92, "advance_compatible": true}</code>)</li>
+<li><code>status TEXT NOT NULL DEFAULT 'pending'</code> (enum: 'pending', 'viewed', 'deal_room_opened', 'rejected')</li>
+<li><code>advance_compatible BOOLEAN NOT NULL</code> (true if creator's advance preferences match brand's advance settings)</li>
+<li><code>created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP</code></li>
+<li><strong>Index</strong>: <code>(creator_persona_id, status)</code> to surface "Brands Want You" feed</li>
+<li><strong>Index</strong>: <code>(brand_persona_id, status)</code> to view suggested creators per opportunity</li>
+</ul>
+<h4><code>advance_preferences</code></h4>
+<ul>
+<li><code>id BIGSERIAL PRIMARY KEY</code></li>
+<li><code>persona_id BIGINT NOT NULL REFERENCES personas(id) ON DELETE CASCADE</code></li>
+<li><code>persona_role TEXT NOT NULL CHECK (persona_role IN ('creator', 'brand'))</code></li>
+<li><code>brand_offers_advance BOOLEAN DEFAULT false</code> (brand: "I will offer advances")</li>
+<li><code>brand_default_advance_pct SMALLINT</code> (brand: default % to offer, e.g., 30)</li>
+<li><code>creator_requires_advance BOOLEAN DEFAULT false</code> (creator: "I require an advance")</li>
+<li><code>creator_advance_pct SMALLINT</code> (creator: desired % advance, e.g., 40)</li>
+<li><code>creator_advance_negotiable BOOLEAN DEFAULT true</code> (creator: can negotiate down, or hard deal-breaker)</li>
+<li><code>updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP</code></li>
+<li><strong>Primary Key</strong>: <code>persona_id</code></li>
+</ul>
+<h4><code>completed_deals</code></h4>
+<ul>
+<li><code>id BIGSERIAL PRIMARY KEY</code></li>
+<li><code>deal_room_id BIGINT NOT NULL REFERENCES deal_rooms(id) ON DELETE CASCADE</code></li>
+<li><code>amount_cents BIGINT NOT NULL</code></li>
+<li><code>creator_persona_id BIGINT NOT NULL REFERENCES personas(id) ON DELETE CASCADE</code></li>
+<li><code>brand_persona_id BIGINT NOT NULL REFERENCES personas(id) ON DELETE CASCADE</code></li>
+<li><code>completed_at TIMESTAMP NOT NULL</code></li>
+<li><code>created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP</code></li>
+<li><strong>Index</strong>: <code>(creator_persona_id)</code> for user profile history</li>
+<li><strong>Index</strong>: <code>(completed_at DESC)</code> for benchmark recomputation job</li>
+<li><strong>Rationale</strong>: Used only for pricing benchmark and reputation scoring. Append-only.</li>
+</ul>
+<h3>2. State Machine: Deal Room Status Transitions</h3>
+<pre><code>negotiation → (offer accepted) → contract_pending
+    ↓ (both parties sign contract)
+funded
+    ↓ (creator uploads deliverables + hash)
+in_progress
+    ↓ (brand approves deliverables)
+completed
+
+# Cancellation paths:
+negotiation → cancelled (at any time, before acceptance)
+contract_pending → cancelled (brand cancels; triggers kill-fee calculation)
+funded → cancelled (same; kill-fee auto-triggered)
+in_progress → cancelled (same; full amount becomes kill-fee)</code></pre>
+<p>Each transition is server-enforced. No client can mutate this field directly.</p>
+<h3>3. Contract Auto-Generation &amp; E-Signature</h3>
+<p><strong>Flow:</strong></p>
+<ol>
+<li>Creator and brand exchange offer/counter-offer in deal room.</li>
+<li>One party clicks "Accept" on an offer_round.</li>
+<li>Server detects acceptance (response_type = 'accept') and immediately triggers <code>POST /contracts/generate</code>.</li>
+<li>System generates contract from offer_round data (amount, deliverables, revision_cap, kill_fee, exclusivity, usage rights, deadline).</li>
+<li>Contract is serialized to JSON, SHA-256 hashed, and stored.</li>
+<li>Both parties receive link to review contract (e-signature popup in UI).</li>
+<li>Creator signs: inserts row into contract_signatures with (contract_id, creator_persona_id, content_hash_at_sign, signature_timestamp).</li>
+<li>Brand signs: inserts row into contract_signatures with (contract_id, brand_persona_id, content_hash_at_sign, signature_timestamp).</li>
+<li>Once both have signed AND content_hash matches contract.content_hash, deal_room.status transitions to <code>funded</code>.</li>
+<li>If contract is not signed within 7 days, offer expires and deal_room reverts to <code>negotiation</code>.</li>
+</ol>
+<p><strong>Tampering Prevention:</strong></p>
+<ul>
+<li>If contract.content_hash ≠ contract_signatures.content_hash_at_sign, signature is invalid.</li>
+<li>UI shows warning: "Contract was modified after signature."</li>
+<li>Deal cannot proceed; parties must re-sign.</li>
+</ul>
+<h3>4. Deterministic Reputation Scoring</h3>
+<p><strong>Level Assignment (1-5):</strong></p>
+<pre><code>completed_deals &lt;= 1 → level 1 (Newcomer)
+completed_deals 2-5 → level 2 (Rising)
+completed_deals 6-20 → level 3 (Established)
+completed_deals 21-50 AND trust_score &gt;= 85 → level 4 (Expert)
+completed_deals &gt; 50 AND trust_score &gt;= 92 → level 5 (Legend)</code></pre>
+<p><strong>Trust Score Computation (0-100):</strong></p>
+<pre><code>base_score = 50
+
++ (completed_deals * 0.5)                    # reward consistent delivery
++ (ghosted_count == 0 ? 20 : -ghosted_count * 15)  # penalize ghosting
++ (contract_revision_abuse &lt; 3 ? 15 : -20)  # penalize revision spam
++ (follower_audit_score * 0.2)               # penalize fake followers
++ (testimonial_avg_rating / 5 * 10)          # reward positive feedback
++ (consistency_bonus_for_on_time_delivery)
+
+capped at 100</code></pre>
+<p><strong>Computation Time:</strong> Triggered on: (a) deal completion, (b) monthly recomputation job at 2 AM UTC, (c) manual admin refresh.</p>
+<p><strong>Storage:</strong> Stored in <code>persona_levels.real_score</code> to avoid re-computation on every marketplace load.</p>
+<h3>5. Portable Reputation Passport</h3>
+<p><strong>Export Endpoint:</strong> <code>GET /reputation/export?persona_id={id}</code></p>
+<p><strong>Response:</strong></p>
+<pre><code>{
+  "version": 1,
+  "creator_persona_id": 123,
+  "completed_deal_count": 15,
+  "avg_deal_value_cents": 250000,
+  "trust_scores": {
+    "delivery": 95,
+    "professionalism": 92,
+    "communication": 88,
+    "overall": 92
+  },
+  "testimonial_count": 14,
+  "completion_rate": 98.7,
+  "content_hash": "sha256:abc123...",
+  "ed25519_signature": "base64:xyz789...",
+  "exported_at": "2024-03-07T14:30:00Z"
+}</code></pre>
+<p><strong>Verification:</strong></p>
+<ul>
+<li>Brand calls <code>GET /verify-reputation?content_hash=...&amp;signature=...&amp;persona_id=...</code></li>
+<li>Server recomputes content_hash from reputation data.</li>
+<li>Verifies signature using platform's Ed25519 public key.</li>
+<li>Returns: <code>{ "valid": true, "exported_at": "...", "data": {...} }</code></li>
+</ul>
+<p><strong>Longevity:</strong> All versions stored in <code>reputation_exports</code>. Old signatures remain valid forever (no expiry).</p>
+<h3>6. Follower Audit &amp; Fake Engagement Detection</h3>
+<p><strong>Deterministic Signals:</strong></p>
+<ol>
+<li><strong>Engagement Anomaly</strong>: If follower_count = 1M but avg_likes = 2k (0.2% engagement), bot-like.</li>
+<li><strong>Account Age Distribution</strong>: If 60%+ followers created in last 3 months, suspicious.</li>
+<li><strong>Dormancy Ratio</strong>: If X% of followers have 0 posts in 6+ months, likely bots.</li>
+<li><strong>Profile Completion</strong>: If X% of followers have no bio, no posts, likely bots.</li>
+</ol>
+<p><strong>Score Calculation:</strong></p>
+<pre><code>signal_breakdown = {
+  "bot_account_ratio": X,           # % of followers detected as bot-like
+  "new_account_ratio": Y,           # % created in last 90 days
+  "dormant_ratio": Z,               # % with 0 posts in 6+ months
+  "profile_completion_ratio": W     # % with &lt;50% profile filled
+}
+
+fake_follower_pct = (bot_account_ratio + new_account_ratio*0.5 + dormant_ratio*0.3)
+
+engagement_authenticity_score = 100 - (fake_follower_pct + dormancy_penalty + new_account_penalty)</code></pre>
+<p><strong>Storage:</strong> Cached in <code>follower_audit_results</code> for 30 days. Re-audit on demand (rate-limited to 1 per persona per 30 days).</p>
+<p><strong>Exposure:</strong> Brands see <code>engagement_authenticity_score</code> on creator profile. Score &lt; 60 triggers "⚠ High fake engagement" badge.</p>
+<h3>7. Level-Gated Matching</h3>
+<p><strong>Constraint:</strong> Opportunity specifies <code>required_level INT</code> (e.g., 3).</p>
+<p><strong>Matching Filter:</strong> Creator's level &lt; required_level → NOT matched.</p>
+<ul>
+<li>Creator cannot see opportunity in marketplace browse.</li>
+<li>Creator is not in <code>deal_suggestions</code> feed.</li>
+<li>If creator tries direct URL to opportunity detail, returns HTTP 403 Forbidden.</li>
+</ul>
+<p><strong>Incentive:</strong> Creators are motivated to complete deals to level up and unlock higher-paying opportunities.</p>
+<h3>8. Advance Preference Compatibility</h3>
+<p><strong>Model:</strong></p>
+<pre><code>advance_preferences.creator_requires_advance = true
+advance_preferences.creator_advance_negotiable = false
+→ HARD CONSTRAINT: brand must offer advance or deal won't open
+
+advance_preferences.brand_offers_advance = false
+→ Brand is opted out of offering advances
+
+deal_suggestions.advance_compatible = true
+→ This creator-opportunity pair passed advance compatibility check</code></pre>
+<p><strong>Matching Logic:</strong></p>
+<pre><code>if creator.requires_advance AND NOT creator.advance_negotiable
+    AND NOT brand.offers_advance:
+    don't_match = true
+    advance_compatible = false
+else:
+    advance_compatible = true</code></pre>
+<p><strong>Benefit:</strong> Eliminates wasted time. Creators looking for advances don't see brands that don't offer them.</p>
+<h3>9. Rate Limiting &amp; Idempotency</h3>
+<p><strong>Application Rate Limit:</strong></p>
+<ul>
+<li>Max 10 applications per creator per 24h rolling window.</li>
+<li>Checked at <code>POST /applications</code> handler.</li>
+<li>Returns HTTP 429 with retry-after header.</li>
+</ul>
+<p><strong>Idempotency Keys:</strong></p>
+<ul>
+<li>All mutation endpoints accept optional <code>Idempotency-Key</code> header (UUID).</li>
+<li>Server stores <code>(endpoint, idempotency_key, response)</code> in cache (Redis, TTL 24h).</li>
+<li>If same key submitted twice, return cached response (silently ignore re-submission).</li>
+<li>Application endpoints use <code>(creator_persona_id, opportunity_id)</code> as implicit idempotency key.</li>
+</ul>
+<h3>10. Market Rate Benchmarks (Versioned)</h3>
+<p><strong>Recompute Job:</strong></p>
+<pre><code>-- Monthly (1st of month, 2 AM UTC)
+INSERT INTO pricing_benchmarks
+SELECT
+  prof.category,
+  'instagram',
+  'reel',
+  pl.level,
+  percentile_cont(0.25) WITHIN GROUP (ORDER BY cd.amount_cents),
+  percentile_cont(0.50) WITHIN GROUP (ORDER BY cd.amount_cents),
+  percentile_cont(0.75) WITHIN GROUP (ORDER BY cd.amount_cents),
+  202403 as version,
+  NOW()
+FROM completed_deals cd
+JOIN deal_rooms dr ON dr.id = cd.deal_room_id
+JOIN personas p ON p.id = dr.creator_persona_id
+JOIN persona_professions pp ON pp.persona_id = p.id
+JOIN professions prof ON prof.id = pp.profession_id
+JOIN persona_levels pl ON pl.persona_id = p.id
+WHERE cd.completed_at &gt;= NOW() - INTERVAL '90 days'
+GROUP BY prof.category, pl.level;</code></pre>
+<p><strong>Usage:</strong></p>
+<ul>
+<li>Creator wants to know "what am I worth?" → Query latest version of benchmarks.</li>
+<li>Brand wants to see "what do experts in my niche typically charge?" → Same query.</li>
+<li>If benchmark version changes, old version is still queryable for historical comparison.</li>
+</ul>
+<h3>11. Credit Line &amp; Advance Logic</h3>
+<p><strong>Credit Score Determinism:</strong></p>
+<pre><code>base_score = 300
+
++ min(completed_deals * 5, 200)       # max +200 for deal history
++ min(trust_score / 0.5, 200)         # max +200 for trust
++ min(months_active, 120)             # max +120 for tenure
++ (ghosted_count == 0 ? 50 : 0)       # +50 if zero ghosts
++ (on_time_delivery_rate * 100)       # bonus for punctuality
+
+capped at 1000</code></pre>
+<p><strong>Advance Issuance:</strong></p>
+<ol>
+<li>Creator in active deal with offer_round.advance_offered_pct = 30%.</li>
+<li>Creator clicks "Draw Advance" in deal room.</li>
+<li>System checks: can we draw from credit_line?</li>
+</ol>
+<ul>
+<li>used_cents + advance_amount ≤ limit_cents?</li>
+<li>creator credit_score ≥ 400?</li>
+</ul>
+<ol>
+<li>If yes: insert row into <code>credit_advances</code> with status='pending'.</li>
+<li>Emit event to Meta payment rail: <code>{ "event": "advance_issued", "creator_id": "...", "amount_cents": 50000, "deal_room_id": "...", "repayment_auto_deduct": true }</code></li>
+<li>Meta processes advance (deposits funds to creator).</li>
+<li>On deal completion: Creator payout = (amount_cents - advance_cents). Deduction auto-applied.</li>
+<li>Update <code>credit_advances.status = 'repaid'</code> and <code>credit_lines.used_cents -= amount_cents</code>.</li>
+</ol>
+<p><strong>Rationale:</strong> Deterministic scoring prevents gaming. Auto-repay eliminates chasing creators for repayment.</p>
+<hr>
+<h2>CLAIMS</h2>
+<h3>Claim 1: Server-Authoritative Deal State Machine</h3>
+<p>A system comprising:</p>
+<ul>
+<li>A PostgreSQL database with a <code>deal_rooms</code> table having status column constrained to enum values ('negotiation', 'contract_pending', 'funded', 'in_progress', 'completed', 'cancelled').</li>
+<li>A backend handler that validates state transitions: only certain transitions are allowed (e.g., negotiation → contract_pending only if offer_round.status='accepted').</li>
+<li>Client cannot directly mutate deal_room.status; all mutations routed through API endpoints.</li>
+<li>Each transition produces audit trail in append-only <code>deal_room_messages</code> table with server-assigned timestamp.</li>
+</ul>
+<h3>Claim 2: Contract Auto-Generation Triggered by Offer Acceptance</h3>
+<p>A system wherein:</p>
+<ul>
+<li>Upon detection of an <code>offer_round</code> status change to 'accepted', the backend automatically calls a contract generation handler.</li>
+<li>The contract is synthesized from offer_round fields: amount_cents, deliverable_description, advance_offered_pct, revision_cap, exclusivity_days, kill_fee_pct, deadline.</li>
+<li>The generated contract is assigned a SHA-256 content hash.</li>
+<li>Both creator and brand must e-sign the contract (via signature insertion into <code>contract_signatures</code> table) before deal state transitions to 'funded'.</li>
+<li>E-signatures include signer_persona_id, signature_timestamp (server-assigned), and content_hash_at_sign.</li>
+<li>If contract content is modified post-signature, content_hash mismatch is detected and deal halts.</li>
+</ul>
+<h3>Claim 3: Append-Only Deal Room Message Log with Server Timestamp Authority</h3>
+<p>A system comprising:</p>
+<ul>
+<li>An immutable <code>deal_room_messages</code> table with NO UPDATE/DELETE constraints at database level.</li>
+<li>Every message insertion includes sender_persona_id (derived from JWT, not client-provided).</li>
+<li>Server assigns server_timestamp at insertion time; client timestamp is rejected.</li>
+<li>Message log serves as authoritative evidence trail for dispute resolution (replaces Instagram DMs, email threads).</li>
+<li>Full message history exportable as JSON for platform moderation or legal review.</li>
+</ul>
+<h3>Claim 4: Deterministic Reputation Scoring with Portable Cryptographic Export</h3>
+<p>A system comprising:</p>
+<ul>
+<li>Reputation score computed deterministically from: completed_deal_count, avg_deal_value, trust_score (itself deterministic), testimonial count, on-time delivery rate.</li>
+<li>No randomness, no time-decay, no ML.</li>
+<li>Score computation triggered on deal completion, monthly recomputation, or manual refresh.</li>
+<li>Export endpoint returns JSON with Ed25519 platform signature.</li>
+<li>Signature remains valid forever (no expiry). Old exports queryable indefinitely.</li>
+<li>External entities (brands, other platforms) can verify authenticity without querying originating platform.</li>
+</ul>
+<h3>Claim 5: Follower Audit Trail with Deterministic Fake Engagement Detection</h3>
+<p>A system comprising:</p>
+<ul>
+<li>Follower audit computes signal_breakdown via: engagement_rate vs follower_count anomaly, account_age distribution, dormancy_ratio, profile_completion_ratio.</li>
+<li>Fake_follower_pct = f(signal_breakdown), deterministically.</li>
+<li>Audit cached for 30 days; re-audit rate-limited to 1 per persona per 30 days.</li>
+<li>Audit results surfaced in brand UX: creators with high fake engagement receive "⚠ High fake engagement" badge.</li>
+<li>Audit score factored into matching algorithm; low-score creators deprioritized in suggestions.</li>
+</ul>
+<h3>Claim 6: Level-Gated Opportunity Access with Deterministic Level Assignment</h3>
+<p>A system comprising:</p>
+<ul>
+<li>Creator level assigned deterministically: based on completed_deal_count and trust_score (both inputs themselves deterministic and immutable).</li>
+<li>Opportunity specifies required_level (e.g., 3).</li>
+<li>Creators with level &lt; required_level: (a) cannot see opportunity in marketplace, (b) cannot appear in deal_suggestions for this opportunity, (c) cannot open deal room (API returns 403 Forbidden).</li>
+<li>Level re-assignment triggered on deal completion (same transaction that marks deal completed).</li>
+<li>No level decay over time; levels are monotonically increasing.</li>
+</ul>
+<h3>Claim 7: Advance Preference Compatibility Matching</h3>
+<p>A system comprising:</p>
+<ul>
+<li>Advance_preferences table stores: (creator_requires_advance, creator_advance_pct, creator_advance_negotiable) and (brand_offers_advance, brand_default_advance_pct).</li>
+<li>Matching algorithm checks: if creator.requires_advance=true AND NOT creator.advance_negotiable AND NOT brand.offers_advance, pair is not matched.</li>
+<li>Deal_suggestions.advance_compatible flag indicates whether this creator-opportunity pair is compatible.</li>
+<li>Incompatible pairs are not surfaced in suggestions or marketplace browse, preventing time-wasted negotiations.</li>
+</ul>
+<h3>Claim 8: Rate Limiting &amp; Idempotent Application Submission</h3>
+<p>A system comprising:</p>
+<ul>
+<li>Application endpoint enforces per-creator rate limit: max 10 applications per 24h (checked against applications table).</li>
+<li>Idempotency: (creator_persona_id, opportunity_id) tuple is unique in applications table.</li>
+<li>Re-submission with same (creator_id, opportunity_id) is silently accepted (idempotent); no duplicate application created.</li>
+<li>Rate limit returns HTTP 429 with <code>Retry-After</code> header indicating seconds until next application allowed.</li>
+</ul>
+<h3>Claim 9: Version-Stamped Market Rate Benchmarks</h3>
+<p>A system comprising:</p>
+<ul>
+<li>pricing_benchmarks table stores p25/median/p75 per (category, platform, content_type, level, version).</li>
+<li>Benchmarks recomputed monthly from completed_deals (last 90 days).</li>
+<li>Version field is timestamp-based (e.g., 202403 for March 2024).</li>
+<li>Old versions never deleted; all versions queryable.</li>
+<li>Brand and creator UI displays both current benchmark and previous version for comparison.</li>
+<li>Benchmark recompute is idempotent: same inputs always produce same output.</li>
+</ul>
+<h3>Claim 10: Deterministic Credit Line Scoring &amp; Auto-Repaying Advances</h3>
+<p>A system comprising:</p>
+<ul>
+<li>Credit score computed deterministically: f(completed_deals, avg_deal_value, trust_score, months_active, on_time_rate, ghosted_count).</li>
+<li>No randomness, no ML, no time-decay.</li>
+<li>Credit line limit is function of score: score 600-700 → $2k limit, 700-800 → $5k, 800+ → $10k.</li>
+<li>Advance issuance: creator draws X% of deal amount (pre-contracted). System emits event to Meta payment rail.</li>
+<li>On deal completion, advance auto-repays: creator payout = (total_amount - advance_amount), with automatic deduction.</li>
+<li>All advance transactions logged in credit_advances table for audit trail.</li>
+</ul>
+<h3>Claim 11: Append-Only Audit Trail for All Mutations</h3>
+<p>A system comprising:</p>
+<ul>
+<li>All mutations (application, offer, contract, signature, advance) produce immutable audit log entries.</li>
+<li>Each log entry includes: mutation_type, actor_persona_id, affected_record_id, old_state, new_state, timestamp, idempotency_key.</li>
+<li>Mutations are idempotent: same idempotency key + same mutation always produces same result.</li>
+<li>Audit log queryable by platform moderators for dispute resolution.</li>
+<li>Audit log never modified retroactively (DELETE/UPDATE forbidden).</li>
+</ul>
+<hr>
+<h2>ADVANTAGES OF THE INVENTION</h2>
+<ol>
+<li><strong>Eliminates Middleman Extraction</strong>: By automating deal negotiation, contract generation, and escrow logic, agencies can no longer extract 20-30% margins.</li>
+</ol>
+<ol>
+<li><strong>Verifiable Negotiation Record</strong>: All offers, counteroffers, and messages logged with server timestamp. No "I said, you said" disputes. Cryptographic signatures prove agreement.</li>
+</ol>
+<ol>
+<li><strong>Binding Contracts at Scale</strong>: Contract generation is automatic and deterministic. Every deal has a legally-binding contract. Revision caps prevent endless back-and-forth.</li>
+</ol>
+<ol>
+<li><strong>Escrow Certainty</strong>: Advance preferences, kill fees, and milestone-based releases are pre-contracted. Brands cannot unilaterally cancel without penalty.</li>
+</ol>
+<ol>
+<li><strong>Market-Rate Transparency</strong>: Benchmarks per niche prevent both under-bidding (creators) and overpaying (brands). Versioned benchmarks enable historical comparison and trend detection.</li>
+</ol>
+<ol>
+<li><strong>Portable Reputation</strong>: Creators own their reputation. Signature verification enables cross-platform trust without data silos.</li>
+</ol>
+<ol>
+<li><strong>Fraud Prevention</strong>: Follower audit detects bots. Level-gating prevents unvetted creators from accessing high-value opportunities. Credit lines prevent overstretching.</li>
+</ol>
+<ol>
+<li><strong>Platform Scalability</strong>: Deterministic, stateless design scales horizontally. No single points of failure. Append-only data model enables parallel writes.</li>
+</ol>
+<ol>
+<li><strong>Regulatory Compliance</strong>: Immutable audit trail satisfies legal discovery, tax reporting (completed deals), and fraud investigation.</li>
+</ol>
+<ol>
+<li><strong>Integration Safety</strong>: Design is Meta-scale compatible. No hardcoded globals, no platform-specific assumptions. Can be integrated into existing Creator Studio or other platforms without breaking changes.</li>
+</ol>
+<hr>
+<h2>FAILURE CASES &amp; MITIGATION</h2>
+<h3>Case 1: Contract Not Signed Within 7 Days</h3>
+<p><strong>Mitigation:</strong> Scheduled job checks for <code>deal_rooms.status = 'contract_pending'</code> AND now() &gt; updated_at + 7 days. Auto-reverts to 'negotiation'. Notifies both parties: "Contract signing expired. Please review and re-sign."</p>
+<h3>Case 2: Deliverable Submitted But Does Not Match Contract</h3>
+<p><strong>Mitigation:</strong> Deliverable upload requires SHA-256 hash. If hash does not match contract.deliverable_list SHA-256, upload rejected. Brand can challenge: "Does not meet contract spec." Dispute escalation to platform moderation.</p>
+<h3>Case 3: Brand Cancels Mid-Delivery</h3>
+<p><strong>Mitigation:</strong> If deal_room.status = 'in_progress' and brand initiates cancellation, deal_room.status → 'cancelled'. Kill-fee automatically triggered: brand owes kill_fee_pct * amount_cents. Emitted as payout event to Meta payment rail.</p>
+<h3>Case 4: Creator Ghosts After Funding</h3>
+<p><strong>Mitigation:</strong> If deal_room.status = 'funded' for 14+ days with no deliverable upload, automatic escalation: (1) notify creator, (2) if no response after 48h, mark deal as 'completed' (no deliverable) and increment ghosted_count. Creator's reputation score drops. Credit line may be suspended.</p>
+<h3>Case 5: Offer Round Expires</h3>
+<p><strong>Mitigation:</strong> If offer_round.expires_at &lt; now() and offer_round.status = 'pending', scheduled job updates to status='expired'. Parties notified. New offer can be created.</p>
+<h3>Case 6: Advance Request While Credit Line Exhausted</h3>
+<p><strong>Mitigation:</strong> Credit line check happens at request time. If used_cents + advance_amount &gt; limit_cents, HTTP 400 returned: "Insufficient credit. Requested $X, available $Y."</p>
+<h3>Case 7: Reputation Export Signature Invalid</h3>
+<p><strong>Mitigation:</strong> Verification endpoint checks content_hash and Ed25519 signature. If mismatch, returns <code>{ "valid": false, "reason": "signature_mismatch" }</code>. Brand is warned not to trust the export.</p>
+<h3>Case 8: Follower Audit Corrupted</h3>
+<p><strong>Mitigation:</strong> Audit signals stored in <code>signal_breakdown JSONB</code>. If any signal is missing or null, audit is marked invalid and re-run. Fallback: assume fake_follower_pct = 50% (conservative) until fresh audit completes.</p>
+<hr>
+<h2>INTEGRATION WITH META PLATFORM</h2>
+<p>ValueSkins is designed as a <strong>platform capability</strong> that Meta can integrate without schema rewrites:</p>
+<ol>
+<li><strong>Identity</strong>: Uses Instagram OAuth (existing). User identity verified via Instagram user ID.</li>
+<li><strong>Data</strong>: Stores only ValueSkins-specific data (deals, contracts, reputation). Does not duplicate Instagram followers, posts, or engagement data. Queries Instagram Graph API on-demand for follower audit.</li>
+<li><strong>Payments</strong>: Does not move money. Emits events to Meta payment infrastructure. Meta payment rail handles fund movement.</li>
+<li><strong>Moderation</strong>: Reputation data reacts to Instagram account bans/strikes (scheduled job checks Instagram API, auto-flags creators with banned/restricted accounts).</li>
+<li><strong>Feature Flags</strong>: Can be enabled/disabled per user, region, or surface (Reels tab, Creator Studio, Business Suite).</li>
+<li><strong>Rollback</strong>: Feature disable is instant (no data migration needed). All ValueSkins data is independent and can be archived.</li>
+<li><strong>Backward Compatibility</strong>: Old API versions remain queryable. Contracts and reputation exports signed and versioned. Old signatures remain valid forever.</li>
+</ol>
+<hr>
+<h2>CONCLUSION</h2>
+<p>This invention provides a comprehensive, deterministic, and scalable system to replace agency intermediaries in creator-brand collaboration. By combining server-authoritative state machines, cryptographic contracts, append-only audit trails, and portable reputation, ValueSkins enables transparent, trustworthy, and efficient marketplace interactions at any scale.</p>
+<p>The system is production-ready for Meta-scale adoption and compatible with regulatory requirements across jurisdictions.</p>
+  </main>
+</body>
+</html>
