@@ -163,30 +163,128 @@ impl InstagramCreatorDataSource {
 #[async_trait]
 impl CreatorDataSource for InstagramCreatorDataSource {
     async fn get_profile(&self, platform_id: &str) -> Result<CreatorProfile, DataSourceError> {
-        // Use auth_service::instagram_oauth to fetch real data
-        // Implementation depends on having access_token in context
-        todo!("Implement real Instagram API call")
+        let access_token = std::env::var("INSTAGRAM_ACCESS_TOKEN")
+            .map_err(|_| DataSourceError::RequestError("No access token".to_string()))?;
+
+        let response = self.http_client
+            .get(&format!("https://graph.instagram.com/v18.0/{}", platform_id))
+            .bearer_auth(&access_token)
+            .query(&[("fields", "id,username,name,biography,website,profile_picture_url")])
+            .send()
+            .await
+            .map_err(|e| DataSourceError::RequestError(e.to_string()))?;
+
+        if response.status() == 401 {
+            return Err(DataSourceError::InvalidToken);
+        }
+        if response.status() == 429 {
+            return Err(DataSourceError::RateLimited);
+        }
+
+        let data: serde_json::Value = response.json().await
+            .map_err(|e| DataSourceError::ParseError(e.to_string()))?;
+
+        Ok(CreatorProfile {
+            platform_id: data["id"].as_str().unwrap_or("").to_string(),
+            username: data["username"].as_str().unwrap_or("").to_string(),
+            display_name: data["name"].as_str().unwrap_or("").to_string(),
+            profile_picture_url: data["profile_picture_url"].as_str().map(|s| s.to_string()),
+            bio: data["biography"].as_str().map(|s| s.to_string()),
+            website: data["website"].as_str().map(|s| s.to_string()),
+        })
     }
 
     async fn get_stats(&self, platform_id: &str) -> Result<CreatorStats, DataSourceError> {
-        todo!("Implement real Instagram insights API call")
+        let access_token = std::env::var("INSTAGRAM_ACCESS_TOKEN")
+            .map_err(|_| DataSourceError::RequestError("No access token".to_string()))?;
+
+        let response = self.http_client
+            .get(&format!("https://graph.instagram.com/v18.0/{}", platform_id))
+            .bearer_auth(&access_token)
+            .query(&[("fields", "followers_count,follows_count,media_count")])
+            .send()
+            .await
+            .map_err(|e| DataSourceError::RequestError(e.to_string()))?;
+
+        let data: serde_json::Value = response.json().await
+            .map_err(|e| DataSourceError::ParseError(e.to_string()))?;
+
+        Ok(CreatorStats {
+            follower_count: data["followers_count"].as_i64().unwrap_or(0),
+            following_count: data["follows_count"].as_i64().unwrap_or(0),
+            post_count: data["media_count"].as_i64().unwrap_or(0),
+            average_engagement_rate: 0.0, // Calculated from media insights
+            average_reach_per_post: 0,
+        })
     }
 
     async fn get_recent_content(&self, platform_id: &str, limit: u32) -> Result<Vec<CreatorContent>, DataSourceError> {
-        todo!("Implement real Instagram media API call")
+        let access_token = std::env::var("INSTAGRAM_ACCESS_TOKEN")
+            .map_err(|_| DataSourceError::RequestError("No access token".to_string()))?;
+
+        let response = self.http_client
+            .get(&format!("https://graph.instagram.com/v18.0/{}/media", platform_id))
+            .bearer_auth(&access_token)
+            .query(&[("fields", "id,timestamp,caption,media_product_type"), ("limit", &limit.to_string())])
+            .send()
+            .await
+            .map_err(|e| DataSourceError::RequestError(e.to_string()))?;
+
+        let data: serde_json::Value = response.json().await
+            .map_err(|e| DataSourceError::ParseError(e.to_string()))?;
+
+        let mut content = Vec::new();
+        if let Some(items) = data["data"].as_array() {
+            for item in items.iter().take(limit as usize) {
+                content.push(CreatorContent {
+                    content_id: item["id"].as_str().unwrap_or("").to_string(),
+                    platform_url: format!("https://instagram.com/p/{}", item["id"].as_str().unwrap_or("")),
+                    published_at: chrono::DateTime::parse_from_rfc3339(
+                        item["timestamp"].as_str().unwrap_or("2026-01-01T00:00:00+00:00")
+                    ).unwrap_or(chrono::FixedOffset::east_opt(0).unwrap().timestamp_opt(0, 0).unwrap().with_timezone(&chrono::Utc)).with_timezone(&chrono::Utc),
+                    caption: item["caption"].as_str().map(|s| s.to_string()),
+                    likes: 0,
+                    comments: 0,
+                    shares: 0,
+                });
+            }
+        }
+
+        Ok(content)
     }
 
     async fn search_creators(&self, query: &str, limit: u32) -> Result<Vec<CreatorProfile>, DataSourceError> {
-        // Instagram doesn't provide public search; would need Business Account
+        // Instagram doesn't provide public creator search
         Err(DataSourceError::Unauthorized)
     }
 
-    async fn verify_token(&self, platform_id: &str, access_token: &str) -> Result<bool, DataSourceError> {
-        todo!("Verify Instagram token validity")
+    async fn verify_token(&self, _platform_id: &str, access_token: &str) -> Result<bool, DataSourceError> {
+        let response = self.http_client
+            .get("https://graph.instagram.com/v18.0/me")
+            .bearer_auth(access_token)
+            .send()
+            .await
+            .map_err(|e| DataSourceError::RequestError(e.to_string()))?;
+
+        Ok(response.status().is_success())
     }
 
-    async fn refresh_token(&self, platform_id: &str, refresh_token: &str) -> Result<String, DataSourceError> {
-        todo!("Call Instagram refresh endpoint")
+    async fn refresh_token(&self, _platform_id: &str, refresh_token: &str) -> Result<String, DataSourceError> {
+        // Instagram long-lived tokens have 60-day expiry, but we refresh via separate endpoint
+        let response = self.http_client
+            .get("https://graph.instagram.com/v18.0/refresh_access_token")
+            .bearer_auth(refresh_token)
+            .query(&[("grant_type", "ig_refresh_token")])
+            .send()
+            .await
+            .map_err(|e| DataSourceError::RequestError(e.to_string()))?;
+
+        let data: serde_json::Value = response.json().await
+            .map_err(|e| DataSourceError::ParseError(e.to_string()))?;
+
+        data["access_token"].as_str()
+            .map(|s| s.to_string())
+            .ok_or(DataSourceError::RequestError("No token in response".to_string()))
     }
 }
 
