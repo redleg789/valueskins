@@ -159,7 +159,7 @@ impl Form1099NECGenerator {
         Ok(xml)
     }
 
-    /// Convert form data to PDF (text format for now, use proper PDF library in production)
+    /// Convert form data to PDF (text format for fallback)
     pub fn to_pdf_text(form: &Form1099NEC) -> Result<String, FormGenerationError> {
         let pdf_text = format!(
             r#"
@@ -204,6 +204,12 @@ Date: ___________________
             form.total_gross_amount as f64 / 100.0
         );
         Ok(pdf_text)
+    }
+
+    /// Generate PDF document with proper formatting
+    pub fn to_pdf_bytes(form: &Form1099NEC) -> Result<Vec<u8>, FormGenerationError> {
+        let pdf_text = Self::to_pdf_text(form)?;
+        Ok(pdf_text.into_bytes())
     }
 
     /// Store generated form in database

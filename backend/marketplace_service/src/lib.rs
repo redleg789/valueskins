@@ -10,6 +10,7 @@ pub mod models;
 pub mod service;
 pub mod reputation_service;
 pub mod fraud_service;
+pub mod fraud_detection;
 pub mod underwriting_service;
 pub mod dispute_service;
 pub mod barter_service;

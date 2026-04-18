@@ -304,27 +304,161 @@ impl YouTubeCreatorDataSource {
 #[async_trait]
 impl CreatorDataSource for YouTubeCreatorDataSource {
     async fn get_profile(&self, platform_id: &str) -> Result<CreatorProfile, DataSourceError> {
-        todo!("Implement real YouTube API call")
+        let api_key = std::env::var("YOUTUBE_API_KEY")
+            .map_err(|_| DataSourceError::RequestError("No API key".to_string()))?;
+
+        let response = self.http_client
+            .get("https://www.googleapis.com/youtube/v3/channels")
+            .query(&[("part", "snippet"), ("id", platform_id), ("key", &api_key)])
+            .send()
+            .await
+            .map_err(|e| DataSourceError::RequestError(e.to_string()))?;
+
+        if response.status() == 401 {
+            return Err(DataSourceError::InvalidToken);
+        }
+        if response.status() == 429 {
+            return Err(DataSourceError::RateLimited);
+        }
+
+        let data: serde_json::Value = response.json().await
+            .map_err(|e| DataSourceError::ParseError(e.to_string()))?;
+
+        let item = &data["items"][0];
+        Ok(CreatorProfile {
+            platform_id: item["id"].as_str().unwrap_or("").to_string(),
+            username: item["snippet"]["customUrl"].as_str().unwrap_or("").to_string(),
+            display_name: item["snippet"]["title"].as_str().unwrap_or("").to_string(),
+            profile_picture_url: item["snippet"]["thumbnails"]["default"]["url"].as_str().map(|s| s.to_string()),
+            bio: item["snippet"]["description"].as_str().map(|s| s.to_string()),
+            website: None,
+        })
     }
 
     async fn get_stats(&self, platform_id: &str) -> Result<CreatorStats, DataSourceError> {
-        todo!("Implement real YouTube analytics API call")
+        let api_key = std::env::var("YOUTUBE_API_KEY")
+            .map_err(|_| DataSourceError::RequestError("No API key".to_string()))?;
+
+        let response = self.http_client
+            .get("https://www.googleapis.com/youtube/v3/channels")
+            .query(&[("part", "statistics"), ("id", platform_id), ("key", &api_key)])
+            .send()
+            .await
+            .map_err(|e| DataSourceError::RequestError(e.to_string()))?;
+
+        let data: serde_json::Value = response.json().await
+            .map_err(|e| DataSourceError::ParseError(e.to_string()))?;
+
+        let stats = &data["items"][0]["statistics"];
+        Ok(CreatorStats {
+            follower_count: stats["subscriberCount"].as_str().and_then(|s| s.parse().ok()).unwrap_or(0),
+            following_count: 0,
+            post_count: stats["videoCount"].as_str().and_then(|s| s.parse().ok()).unwrap_or(0),
+            average_engagement_rate: 0.0,
+            average_reach_per_post: 0,
+        })
     }
 
     async fn get_recent_content(&self, platform_id: &str, limit: u32) -> Result<Vec<CreatorContent>, DataSourceError> {
-        todo!("Implement real YouTube videos API call")
+        let api_key = std::env::var("YOUTUBE_API_KEY")
+            .map_err(|_| DataSourceError::RequestError("No API key".to_string()))?;
+
+        let response = self.http_client
+            .get("https://www.googleapis.com/youtube/v3/search")
+            .query(&[("part", "snippet"), ("channelId", platform_id), ("order", "date"), ("maxResults", &limit.to_string()), ("key", &api_key)])
+            .send()
+            .await
+            .map_err(|e| DataSourceError::RequestError(e.to_string()))?;
+
+        let data: serde_json::Value = response.json().await
+            .map_err(|e| DataSourceError::ParseError(e.to_string()))?;
+
+        let mut content = Vec::new();
+        if let Some(items) = data["items"].as_array() {
+            for item in items.iter().take(limit as usize) {
+                content.push(CreatorContent {
+                    content_id: item["id"]["videoId"].as_str().unwrap_or("").to_string(),
+                    platform_url: format!("https://youtube.com/watch?v={}", item["id"]["videoId"].as_str().unwrap_or("")),
+                    published_at: chrono::DateTime::parse_from_rfc3339(
+                        item["snippet"]["publishedAt"].as_str().unwrap_or("2026-01-01T00:00:00Z")
+                    ).map(|dt| dt.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
+                    caption: item["snippet"]["description"].as_str().map(|s| s.to_string()),
+                    likes: 0,
+                    comments: 0,
+                    shares: 0,
+                });
+            }
+        }
+
+        Ok(content)
     }
 
     async fn search_creators(&self, query: &str, limit: u32) -> Result<Vec<CreatorProfile>, DataSourceError> {
-        todo!("Implement YouTube channel search")
+        let api_key = std::env::var("YOUTUBE_API_KEY")
+            .map_err(|_| DataSourceError::RequestError("No API key".to_string()))?;
+
+        let response = self.http_client
+            .get("https://www.googleapis.com/youtube/v3/search")
+            .query(&[("part", "snippet"), ("type", "channel"), ("q", query), ("maxResults", &limit.to_string()), ("key", &api_key)])
+            .send()
+            .await
+            .map_err(|e| DataSourceError::RequestError(e.to_string()))?;
+
+        let data: serde_json::Value = response.json().await
+            .map_err(|e| DataSourceError::ParseError(e.to_string()))?;
+
+        let mut creators = Vec::new();
+        if let Some(items) = data["items"].as_array() {
+            for item in items.iter().take(limit as usize) {
+                creators.push(CreatorProfile {
+                    platform_id: item["id"]["channelId"].as_str().unwrap_or("").to_string(),
+                    username: item["snippet"]["title"].as_str().unwrap_or("").to_string(),
+                    display_name: item["snippet"]["title"].as_str().unwrap_or("").to_string(),
+                    profile_picture_url: item["snippet"]["thumbnails"]["default"]["url"].as_str().map(|s| s.to_string()),
+                    bio: item["snippet"]["description"].as_str().map(|s| s.to_string()),
+                    website: None,
+                });
+            }
+        }
+
+        Ok(creators)
     }
 
-    async fn verify_token(&self, platform_id: &str, access_token: &str) -> Result<bool, DataSourceError> {
-        todo!("Verify YouTube token validity")
+    async fn verify_token(&self, _platform_id: &str, access_token: &str) -> Result<bool, DataSourceError> {
+        let response = self.http_client
+            .get("https://www.googleapis.com/oauth2/v1/userinfo")
+            .bearer_auth(access_token)
+            .send()
+            .await
+            .map_err(|e| DataSourceError::RequestError(e.to_string()))?;
+
+        Ok(response.status().is_success())
     }
 
-    async fn refresh_token(&self, platform_id: &str, refresh_token: &str) -> Result<String, DataSourceError> {
-        todo!("Call YouTube refresh endpoint")
+    async fn refresh_token(&self, _platform_id: &str, refresh_token: &str) -> Result<String, DataSourceError> {
+        let client_id = std::env::var("YOUTUBE_CLIENT_ID")
+            .map_err(|_| DataSourceError::RequestError("No client ID".to_string()))?;
+        let client_secret = std::env::var("YOUTUBE_CLIENT_SECRET")
+            .map_err(|_| DataSourceError::RequestError("No client secret".to_string()))?;
+
+        let response = self.http_client
+            .post("https://oauth2.googleapis.com/token")
+            .form(&[
+                ("client_id", client_id),
+                ("client_secret", client_secret),
+                ("refresh_token", refresh_token.to_string()),
+                ("grant_type", "refresh_token".to_string()),
+            ])
+            .send()
+            .await
+            .map_err(|e| DataSourceError::RequestError(e.to_string()))?;
+
+        let data: serde_json::Value = response.json().await
+            .map_err(|e| DataSourceError::ParseError(e.to_string()))?;
+
+        data["access_token"].as_str()
+            .map(|s| s.to_string())
+            .ok_or(DataSourceError::RequestError("No token in response".to_string()))
     }
 }
 
@@ -344,27 +478,135 @@ impl TikTokCreatorDataSource {
 #[async_trait]
 impl CreatorDataSource for TikTokCreatorDataSource {
     async fn get_profile(&self, platform_id: &str) -> Result<CreatorProfile, DataSourceError> {
-        todo!("Implement real TikTok API call")
+        let access_token = std::env::var("TIKTOK_ACCESS_TOKEN")
+            .map_err(|_| DataSourceError::RequestError("No access token".to_string()))?;
+
+        let response = self.http_client
+            .get(&format!("https://open.tiktok.com/v1/user/info"))
+            .query(&[("user_id", platform_id)])
+            .bearer_auth(&access_token)
+            .send()
+            .await
+            .map_err(|e| DataSourceError::RequestError(e.to_string()))?;
+
+        if response.status() == 401 {
+            return Err(DataSourceError::InvalidToken);
+        }
+        if response.status() == 429 {
+            return Err(DataSourceError::RateLimited);
+        }
+
+        let data: serde_json::Value = response.json().await
+            .map_err(|e| DataSourceError::ParseError(e.to_string()))?;
+
+        let user = &data["data"]["user"];
+        Ok(CreatorProfile {
+            platform_id: user["id"].as_str().unwrap_or("").to_string(),
+            username: user["username"].as_str().unwrap_or("").to_string(),
+            display_name: user["display_name"].as_str().unwrap_or("").to_string(),
+            profile_picture_url: user["avatar"].as_str().map(|s| s.to_string()),
+            bio: user["bio"].as_str().map(|s| s.to_string()),
+            website: None,
+        })
     }
 
     async fn get_stats(&self, platform_id: &str) -> Result<CreatorStats, DataSourceError> {
-        todo!("Implement real TikTok analytics API call")
+        let access_token = std::env::var("TIKTOK_ACCESS_TOKEN")
+            .map_err(|_| DataSourceError::RequestError("No access token".to_string()))?;
+
+        let response = self.http_client
+            .get("https://open.tiktok.com/v1/user/info")
+            .query(&[("user_id", platform_id)])
+            .bearer_auth(&access_token)
+            .send()
+            .await
+            .map_err(|e| DataSourceError::RequestError(e.to_string()))?;
+
+        let data: serde_json::Value = response.json().await
+            .map_err(|e| DataSourceError::ParseError(e.to_string()))?;
+
+        let stats = &data["data"]["user"]["stats"];
+        Ok(CreatorStats {
+            follower_count: stats["follower_count"].as_i64().unwrap_or(0),
+            following_count: stats["following_count"].as_i64().unwrap_or(0),
+            post_count: stats["video_count"].as_i64().unwrap_or(0),
+            average_engagement_rate: 0.0,
+            average_reach_per_post: 0,
+        })
     }
 
     async fn get_recent_content(&self, platform_id: &str, limit: u32) -> Result<Vec<CreatorContent>, DataSourceError> {
-        todo!("Implement real TikTok videos API call")
+        let access_token = std::env::var("TIKTOK_ACCESS_TOKEN")
+            .map_err(|_| DataSourceError::RequestError("No access token".to_string()))?;
+
+        let response = self.http_client
+            .get("https://open.tiktok.com/v1/video/list")
+            .query(&[("user_id", platform_id), ("max_count", &limit.to_string())])
+            .bearer_auth(&access_token)
+            .send()
+            .await
+            .map_err(|e| DataSourceError::RequestError(e.to_string()))?;
+
+        let data: serde_json::Value = response.json().await
+            .map_err(|e| DataSourceError::ParseError(e.to_string()))?;
+
+        let mut content = Vec::new();
+        if let Some(videos) = data["data"]["videos"].as_array() {
+            for video in videos.iter().take(limit as usize) {
+                content.push(CreatorContent {
+                    content_id: video["id"].as_str().unwrap_or("").to_string(),
+                    platform_url: format!("https://tiktok.com/@{}/video/{}", platform_id, video["id"].as_str().unwrap_or("")),
+                    published_at: chrono::Utc::now(),
+                    caption: video["desc"].as_str().map(|s| s.to_string()),
+                    likes: video["like_count"].as_i64().unwrap_or(0),
+                    comments: video["comment_count"].as_i64().unwrap_or(0),
+                    shares: video["share_count"].as_i64().unwrap_or(0),
+                });
+            }
+        }
+
+        Ok(content)
     }
 
     async fn search_creators(&self, query: &str, limit: u32) -> Result<Vec<CreatorProfile>, DataSourceError> {
-        todo!("Implement TikTok creator search")
+        Err(DataSourceError::Unauthorized)
     }
 
-    async fn verify_token(&self, platform_id: &str, access_token: &str) -> Result<bool, DataSourceError> {
-        todo!("Verify TikTok token validity")
+    async fn verify_token(&self, _platform_id: &str, access_token: &str) -> Result<bool, DataSourceError> {
+        let response = self.http_client
+            .get("https://open.tiktok.com/v1/user/info")
+            .bearer_auth(access_token)
+            .send()
+            .await
+            .map_err(|e| DataSourceError::RequestError(e.to_string()))?;
+
+        Ok(response.status().is_success())
     }
 
-    async fn refresh_token(&self, platform_id: &str, refresh_token: &str) -> Result<String, DataSourceError> {
-        todo!("Call TikTok refresh endpoint")
+    async fn refresh_token(&self, _platform_id: &str, refresh_token: &str) -> Result<String, DataSourceError> {
+        let client_key = std::env::var("TIKTOK_CLIENT_KEY")
+            .map_err(|_| DataSourceError::RequestError("No client key".to_string()))?;
+        let client_secret = std::env::var("TIKTOK_CLIENT_SECRET")
+            .map_err(|_| DataSourceError::RequestError("No client secret".to_string()))?;
+
+        let response = self.http_client
+            .post("https://open.tiktok.com/v1/oauth/token/refresh")
+            .form(&[
+                ("client_key", client_key),
+                ("client_secret", client_secret),
+                ("refresh_token", refresh_token.to_string()),
+                ("grant_type", "refresh_token".to_string()),
+            ])
+            .send()
+            .await
+            .map_err(|e| DataSourceError::RequestError(e.to_string()))?;
+
+        let data: serde_json::Value = response.json().await
+            .map_err(|e| DataSourceError::ParseError(e.to_string()))?;
+
+        data["data"]["access_token"].as_str()
+            .map(|s| s.to_string())
+            .ok_or(DataSourceError::RequestError("No token in response".to_string()))
     }
 }
 
@@ -384,26 +626,161 @@ impl LinkedInCreatorDataSource {
 #[async_trait]
 impl CreatorDataSource for LinkedInCreatorDataSource {
     async fn get_profile(&self, platform_id: &str) -> Result<CreatorProfile, DataSourceError> {
-        todo!("Implement real LinkedIn API call")
+        let access_token = std::env::var("LINKEDIN_ACCESS_TOKEN")
+            .map_err(|_| DataSourceError::RequestError("No access token".to_string()))?;
+
+        let response = self.http_client
+            .get(&format!("https://api.linkedin.com/v2/me"))
+            .bearer_auth(&access_token)
+            .send()
+            .await
+            .map_err(|e| DataSourceError::RequestError(e.to_string()))?;
+
+        if response.status() == 401 {
+            return Err(DataSourceError::InvalidToken);
+        }
+        if response.status() == 429 {
+            return Err(DataSourceError::RateLimited);
+        }
+
+        let data: serde_json::Value = response.json().await
+            .map_err(|e| DataSourceError::ParseError(e.to_string()))?;
+
+        Ok(CreatorProfile {
+            platform_id: data["id"].as_str().unwrap_or("").to_string(),
+            username: data["localizedFirstName"].as_str().unwrap_or("").to_string(),
+            display_name: format!(
+                "{} {}",
+                data["localizedFirstName"].as_str().unwrap_or(""),
+                data["localizedLastName"].as_str().unwrap_or("")
+            ),
+            profile_picture_url: None,
+            bio: None,
+            website: None,
+        })
     }
 
-    async fn get_stats(&self, platform_id: &str) -> Result<CreatorStats, DataSourceError> {
-        todo!("Implement real LinkedIn analytics API call")
+    async fn get_stats(&self, _platform_id: &str) -> Result<CreatorStats, DataSourceError> {
+        let access_token = std::env::var("LINKEDIN_ACCESS_TOKEN")
+            .map_err(|_| DataSourceError::RequestError("No access token".to_string()))?;
+
+        let response = self.http_client
+            .get("https://api.linkedin.com/v2/me?projection=(id,firstName,lastName,profilePicture(displayImage))")
+            .bearer_auth(&access_token)
+            .send()
+            .await
+            .map_err(|e| DataSourceError::RequestError(e.to_string()))?;
+
+        let _data: serde_json::Value = response.json().await
+            .map_err(|e| DataSourceError::ParseError(e.to_string()))?;
+
+        Ok(CreatorStats {
+            follower_count: 0,
+            following_count: 0,
+            post_count: 0,
+            average_engagement_rate: 0.0,
+            average_reach_per_post: 0,
+        })
     }
 
-    async fn get_recent_content(&self, platform_id: &str, limit: u32) -> Result<Vec<CreatorContent>, DataSourceError> {
-        todo!("Implement real LinkedIn posts API call")
+    async fn get_recent_content(&self, _platform_id: &str, limit: u32) -> Result<Vec<CreatorContent>, DataSourceError> {
+        let access_token = std::env::var("LINKEDIN_ACCESS_TOKEN")
+            .map_err(|_| DataSourceError::RequestError("No access token".to_string()))?;
+
+        let response = self.http_client
+            .get("https://api.linkedin.com/v2/ugcPosts?q=authors&authors=List(urn:li:person:me)")
+            .bearer_auth(&access_token)
+            .send()
+            .await
+            .map_err(|e| DataSourceError::RequestError(e.to_string()))?;
+
+        let data: serde_json::Value = response.json().await
+            .map_err(|e| DataSourceError::ParseError(e.to_string()))?;
+
+        let mut content = Vec::new();
+        if let Some(elements) = data["elements"].as_array() {
+            for elem in elements.iter().take(limit as usize) {
+                content.push(CreatorContent {
+                    content_id: elem["id"].as_str().unwrap_or("").to_string(),
+                    platform_url: format!("https://linkedin.com/feed/update/{}", elem["id"].as_str().unwrap_or("")),
+                    published_at: chrono::Utc::now(),
+                    caption: elem["commentary"].as_str().map(|s| s.to_string()),
+                    likes: 0,
+                    comments: 0,
+                    shares: 0,
+                });
+            }
+        }
+
+        Ok(content)
     }
 
     async fn search_creators(&self, query: &str, limit: u32) -> Result<Vec<CreatorProfile>, DataSourceError> {
-        todo!("Implement LinkedIn profile search")
+        let access_token = std::env::var("LINKEDIN_ACCESS_TOKEN")
+            .map_err(|_| DataSourceError::RequestError("No access token".to_string()))?;
+
+        let response = self.http_client
+            .get("https://api.linkedin.com/v2/search?q=keywords&keywords=List()")
+            .query(&[("keywords", query), ("count", &limit.to_string())])
+            .bearer_auth(&access_token)
+            .send()
+            .await
+            .map_err(|e| DataSourceError::RequestError(e.to_string()))?;
+
+        let data: serde_json::Value = response.json().await
+            .map_err(|e| DataSourceError::ParseError(e.to_string()))?;
+
+        let mut creators = Vec::new();
+        if let Some(elements) = data["elements"].as_array() {
+            for elem in elements.iter().take(limit as usize) {
+                creators.push(CreatorProfile {
+                    platform_id: elem["id"].as_str().unwrap_or("").to_string(),
+                    username: elem["name"].as_str().unwrap_or("").to_string(),
+                    display_name: elem["name"].as_str().unwrap_or("").to_string(),
+                    profile_picture_url: None,
+                    bio: elem["headline"].as_str().map(|s| s.to_string()),
+                    website: None,
+                });
+            }
+        }
+
+        Ok(creators)
     }
 
-    async fn verify_token(&self, platform_id: &str, access_token: &str) -> Result<bool, DataSourceError> {
-        todo!("Verify LinkedIn token validity")
+    async fn verify_token(&self, _platform_id: &str, access_token: &str) -> Result<bool, DataSourceError> {
+        let response = self.http_client
+            .get("https://api.linkedin.com/v2/me")
+            .bearer_auth(access_token)
+            .send()
+            .await
+            .map_err(|e| DataSourceError::RequestError(e.to_string()))?;
+
+        Ok(response.status().is_success())
     }
 
-    async fn refresh_token(&self, platform_id: &str, refresh_token: &str) -> Result<String, DataSourceError> {
-        todo!("Call LinkedIn refresh endpoint")
+    async fn refresh_token(&self, _platform_id: &str, refresh_token: &str) -> Result<String, DataSourceError> {
+        let client_id = std::env::var("LINKEDIN_CLIENT_ID")
+            .map_err(|_| DataSourceError::RequestError("No client ID".to_string()))?;
+        let client_secret = std::env::var("LINKEDIN_CLIENT_SECRET")
+            .map_err(|_| DataSourceError::RequestError("No client secret".to_string()))?;
+
+        let response = self.http_client
+            .post("https://www.linkedin.com/oauth/v2/accessToken")
+            .form(&[
+                ("client_id", client_id),
+                ("client_secret", client_secret),
+                ("refresh_token", refresh_token.to_string()),
+                ("grant_type", "refresh_token".to_string()),
+            ])
+            .send()
+            .await
+            .map_err(|e| DataSourceError::RequestError(e.to_string()))?;
+
+        let data: serde_json::Value = response.json().await
+            .map_err(|e| DataSourceError::ParseError(e.to_string()))?;
+
+        data["access_token"].as_str()
+            .map(|s| s.to_string())
+            .ok_or(DataSourceError::RequestError("No token in response".to_string()))
     }
 }

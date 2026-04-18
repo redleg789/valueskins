@@ -19,7 +19,10 @@ const cspHeader = [
 
 const nextConfig: NextConfig = {
   output: 'standalone',
-  reactCompiler: true,
+  reactCompiler: false,
+  turbopack: {
+    root: __dirname,
+  },
 
   // Performance: compress responses
   compress: true,
