@@ -33,7 +33,21 @@ let posts = [
 ];
 
 let likes = new Map<string, Set<string>>(); // postId -> Set of userIds who liked
-let comments = new Map<string, Array<{ userId: string; text: string; createdAt: string }>>();
+
+interface Comment {
+  id: string;
+  postId: string;
+  userId: string;
+  userName: string;
+  userHandle: string;
+  userAvatar: string;
+  text: string;
+  createdAt: string;
+  likes: number;
+  replies: Comment[];
+}
+
+let comments = new Map<string, Comment[]>();
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
   const userToken = req.headers.authorization?.replace('Bearer ', '');
@@ -84,10 +98,20 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       return res.status(200).json({ success: true, likes: post.likes });
     }
 
+    if (action === 'comments' && postId) {
+      // Get comments for a post
+      const postComments = comments.get(String(postId)) || [];
+      return res.status(200).json(postComments);
+    }
+
     if (action === 'comment' && postId) {
       const { text } = req.body;
       if (!text || text.trim().length === 0) {
         return res.status(400).json({ error: 'Comment cannot be empty' });
+      }
+
+      if (text.length > 500) {
+        return res.status(400).json({ error: 'Comment too long (max 500 chars)' });
       }
 
       const post = posts.find(p => p.id === String(postId));
@@ -97,15 +121,24 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
         comments.set(String(postId), []);
       }
 
-      const postComments = comments.get(String(postId))!;
-      postComments.push({
+      const newComment: Comment = {
+        id: `comment_${Date.now()}`,
+        postId: String(postId),
         userId: userToken,
+        userName: 'You',
+        userHandle: '@yourhandle',
+        userAvatar: '👤',
         text,
         createdAt: new Date().toISOString(),
-      });
+        likes: 0,
+        replies: [],
+      };
+
+      const postComments = comments.get(String(postId))!;
+      postComments.push(newComment);
 
       post.comments += 1;
-      return res.status(201).json({ success: true, comments: postComments });
+      return res.status(201).json(newComment);
     }
 
     // Create new post

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
+import CommentsModal from '@/components/CommentsModal';
 
 interface Post {
   id: string;
@@ -22,6 +23,7 @@ export default function Home() {
   const [newPost, setNewPost] = useState('');
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [selectedPostForComments, setSelectedPostForComments] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -190,7 +192,10 @@ export default function Home() {
 
                     {/* Engagement */}
                     <div className="flex justify-between text-gray-500 mt-3 max-w-md text-sm">
-                      <button className="hover:text-blue-400 flex items-center gap-2">
+                      <button
+                        onClick={() => setSelectedPostForComments(post.id)}
+                        className="hover:text-blue-400 flex items-center gap-2"
+                      >
                         💬 {post.comments}
                       </button>
                       <button className="hover:text-green-400 flex items-center gap-2">
@@ -239,6 +244,12 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      <CommentsModal
+        postId={selectedPostForComments || ''}
+        isOpen={!!selectedPostForComments}
+        onClose={() => setSelectedPostForComments(null)}
+      />
     </div>
   );
 }
