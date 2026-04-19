@@ -1,118 +1,186 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 
-interface Creator {
-  id: number;
+interface User {
+  id: string;
   name: string;
-  username: string;
+  handle: string;
   followers: number;
-  engagement_rate: number;
-  tier: string;
-  reputation_score: number;
-  niche: string;
-  platforms: string[];
+  following: number;
+  avatar: string;
+  bio: string;
+  verified: boolean;
+  engagement: number;
+  posts: number;
 }
 
 export default function Discover() {
   const router = useRouter();
-  const [creators, setCreators] = useState<Creator[]>([]);
-  const [filter, setFilter] = useState('all');
+  const [users, setUsers] = useState<User[]>([]);
+  const [following, setFollowing] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
-  const [userType, setUserType] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    const token = localStorage.getItem('auth_token');
-    const type = localStorage.getItem('user_type');
-    if (!token) {
-      router.push('/auth/login');
-      return;
-    }
-
-    setUserType(type);
-    fetchCreators(token);
+    fetchUsers();
   }, []);
 
-  const fetchCreators = async (token: string) => {
+  const fetchUsers = async () => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/creators/discover`, {
-        headers: { Authorization: `Bearer ${token}` },
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch('/api/users?action=discover', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
       });
-      const data = await res.json();
-      setCreators(data.creators || []);
+      const data = await response.json();
+      setUsers(data);
       setLoading(false);
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Failed to fetch users:', error);
       setLoading(false);
     }
   };
 
-  const filteredCreators = creators.filter((c) => {
-    if (filter === 'all') return true;
-    return c.tier.toLowerCase() === filter.toLowerCase();
-  });
+  const handleFollow = async (targetUserId: string) => {
+    const token = localStorage.getItem('auth_token');
+    try {
+      const response = await fetch(`/api/users?action=follow&targetUserId=${targetUserId}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
 
-  if (loading) return <div className="flex items-center justify-center h-screen">Loading...</div>;
+      if (response.ok) {
+        setFollowing(new Set([...following, targetUserId]));
+        setUsers(users.map(u =>
+          u.id === targetUserId
+            ? { ...u, followers: u.followers + 1 }
+            : u
+        ));
+      }
+    } catch (error) {
+      console.error('Failed to follow user:', error);
+    }
+  };
+
+  const handleUnfollow = async (targetUserId: string) => {
+    const token = localStorage.getItem('auth_token');
+    try {
+      const response = await fetch(`/api/users?action=unfollow&targetUserId=${targetUserId}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const newFollowing = new Set(following);
+        newFollowing.delete(targetUserId);
+        setFollowing(newFollowing);
+        setUsers(users.map(u =>
+          u.id === targetUserId
+            ? { ...u, followers: Math.max(0, u.followers - 1) }
+            : u
+        ));
+      }
+    } catch (error) {
+      console.error('Failed to unfollow user:', error);
+    }
+  };
+
+  const filteredUsers = users.filter(u =>
+    u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    u.handle.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <button onClick={() => router.back()} className="text-blue-600 mb-6">← Back</button>
+    <div className="min-h-screen bg-black text-white">
+      <div className="border-b border-gray-700 sticky top-0 z-50 bg-black/80 backdrop-blur">
+        <div className="max-w-2xl mx-auto px-4 py-3">
+          <h1 className="text-2xl font-bold">Discover</h1>
+        </div>
+      </div>
 
-        <h1 className="text-3xl font-bold mb-8">Discover Creators</h1>
-
-        <div className="mb-8 flex space-x-2">
-          {['all', 'nano', 'micro', 'midtier', 'macro'].map((tier) => (
-            <button
-              key={tier}
-              onClick={() => setFilter(tier)}
-              className={`px-4 py-2 rounded-lg font-semibold transition ${
-                filter === tier
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
-              }`}
-            >
-              {tier.charAt(0).toUpperCase() + tier.slice(1)}
-            </button>
-          ))}
+      <div className="grid grid-cols-12 gap-4 max-w-6xl mx-auto">
+        <div className="col-span-3 border-r border-gray-700 p-4 hidden lg:block">
+          <nav className="space-y-4">
+            <a href="/" className="block text-xl font-bold hover:text-blue-400">🏠 Home</a>
+            <a href="/discover" className="block text-xl hover:text-blue-400">🔍 Discover</a>
+            <a href="/notifications" className="block text-xl hover:text-blue-400">🔔 Notifications</a>
+            <a href="/chat" className="block text-xl hover:text-blue-400">💬 Messages</a>
+            <a href="/creator/my-profile" className="block text-xl hover:text-blue-400">👤 My Profile</a>
+          </nav>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredCreators.map((creator) => (
-            <div key={creator.id} className="bg-white rounded-lg shadow hover:shadow-lg transition cursor-pointer" onClick={() => router.push(`/creator/${creator.id}`)}>
-              <div className="h-32 bg-gradient-to-r from-blue-400 to-blue-600"></div>
-              <div className="p-6 -mt-12 relative">
-                <div className="w-20 h-20 bg-gray-300 rounded-full mx-auto mb-4 border-4 border-white"></div>
-                <h3 className="text-lg font-bold text-center">{creator.name}</h3>
-                <p className="text-gray-600 text-center text-sm">@{creator.username}</p>
+        <div className="col-span-12 lg:col-span-6 border-r border-gray-700 p-4">
+          <div className="mb-6">
+            <input
+              type="text"
+              placeholder="Search creators, brands..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-gray-900 text-white rounded-full px-4 py-3 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
 
-                <div className="grid grid-cols-2 gap-2 mt-4 text-center">
-                  <div>
-                    <p className="text-2xl font-bold text-blue-600">{(creator.followers / 1000).toFixed(0)}K</p>
-                    <p className="text-xs text-gray-600">Followers</p>
+          {loading ? (
+            <div className="text-center text-gray-500 py-8">Loading creators...</div>
+          ) : (
+            <div className="space-y-4">
+              {filteredUsers.map((user) => (
+                <div
+                  key={user.id}
+                  className="border border-gray-700 rounded-2xl p-4 hover:bg-gray-900/50 cursor-pointer transition"
+                  onClick={() => router.push(`/creator/profile?id=${user.id}`)}
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex items-center gap-3 flex-1">
+                      <div className="text-4xl">{user.avatar}</div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-bold hover:underline">{user.name}</h3>
+                          {user.verified && <span>✓</span>}
+                        </div>
+                        <p className="text-gray-500">{user.handle}</p>
+                        <p className="text-gray-500 text-sm">{user.followers.toLocaleString()} followers · {user.engagement.toFixed(1)}% engagement</p>
+                        <p className="text-gray-400 text-sm mt-1">{user.bio}</p>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-2xl font-bold text-green-600">{creator.engagement_rate.toFixed(1)}%</p>
-                    <p className="text-xs text-gray-600">Engagement</p>
-                  </div>
-                </div>
-
-                <div className="mt-4 flex justify-center space-x-2">
-                  <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">{creator.tier}</span>
-                  <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full">{creator.niche}</span>
-                </div>
-
-                <div className="mt-4 p-3 bg-gray-50 rounded-lg text-center">
-                  <p className="text-sm font-semibold">Score: {creator.reputation_score}/100</p>
-                </div>
-
-                {userType === 'brand' && (
-                  <button className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg">
-                    View Profile
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (following.has(user.id)) {
+                        handleUnfollow(user.id);
+                      } else {
+                        handleFollow(user.id);
+                      }
+                    }}
+                    className={`w-full py-2 rounded-full font-bold text-sm transition ${
+                      following.has(user.id)
+                        ? 'bg-gray-700 hover:bg-gray-600 text-white'
+                        : 'bg-blue-600 hover:bg-blue-700 text-white'
+                    }`}
+                  >
+                    {following.has(user.id) ? 'Following' : 'Follow'}
                   </button>
-                )}
-              </div>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
+        </div>
+
+        <div className="col-span-3 p-4 hidden lg:block">
+          <div className="bg-gray-900 rounded-2xl p-4">
+            <h3 className="font-bold mb-4">Trending Niches</h3>
+            <div className="space-y-2">
+              {['#Fashion', '#Tech', '#Lifestyle', '#Business', '#Travel'].map(tag => (
+                <p key={tag} className="hover:text-blue-400 cursor-pointer text-sm">{tag}</p>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -1,201 +1,103 @@
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
-
-interface Message {
-  id: number;
-  sender_id: number;
-  sender_name: string;
-  content: string;
-  timestamp: string;
-  deal_id: number;
-}
-
-interface Conversation {
-  id: number;
-  deal_id: number;
-  other_user_name: string;
-  last_message: string;
-  last_message_time: string;
-  unread_count: number;
-}
+import { useState } from 'react';
 
 export default function Chat() {
-  const router = useRouter();
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [selectedConversation, setSelectedConversation] = useState<number | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [newMessage, setNewMessage] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<any>(null);
+  const [selectedChat, setSelectedChat] = useState<string | null>('nike');
+  const [messageText, setMessageText] = useState('');
 
-  useEffect(() => {
-    const token = localStorage.getItem('auth_token');
-    if (!token) {
-      router.push('/auth/login');
-      return;
-    }
+  const chats = [
+    { id: 'nike', name: 'Nike', icon: '🏃', lastMessage: 'Excited to work with you!', time: '2h' },
+    { id: 'apple', name: 'Apple', icon: '🍎', lastMessage: 'When can you start?', time: '4h' },
+    { id: 'sarah', name: 'Sarah Chen', icon: '👩‍🎨', lastMessage: 'Thanks for the opportunity', time: '1h' },
+  ];
 
-    fetchUser(token);
-    fetchConversations(token);
-  }, []);
-
-  useEffect(() => {
-    if (selectedConversation) {
-      const token = localStorage.getItem('auth_token');
-      if (token) fetchMessages(token, selectedConversation);
-    }
-  }, [selectedConversation]);
-
-  const fetchUser = async (token: string) => {
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      setUser(data);
-    } catch (error) {
-      console.error('Error:', error);
-    }
-  };
-
-  const fetchConversations = async (token: string) => {
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/chat/conversations`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      setConversations(data.conversations || []);
-      setLoading(false);
-    } catch (error) {
-      console.error('Error:', error);
-      setLoading(false);
-    }
-  };
-
-  const fetchMessages = async (token: string, conversationId: number) => {
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/chat/conversations/${conversationId}/messages`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      setMessages(data.messages || []);
-    } catch (error) {
-      console.error('Error:', error);
-    }
-  };
-
-  const sendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newMessage.trim() || !selectedConversation) return;
-
-    const token = localStorage.getItem('auth_token');
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/chat/messages/send`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          conversation_id: selectedConversation,
-          content: newMessage,
-        }),
-      });
-
-      if (res.ok) {
-        setNewMessage('');
-        const token = localStorage.getItem('auth_token');
-        if (token) fetchMessages(token, selectedConversation);
-      }
-    } catch (error) {
-      console.error('Error:', error);
-    }
-  };
-
-  if (loading) return <div className="flex items-center justify-center h-screen">Loading...</div>;
+  const messages = [
+    { id: 1, sender: 'Nike', text: 'Hi! We loved your application', own: false },
+    { id: 2, sender: 'You', text: 'Thank you! I\'m excited about this', own: true },
+    { id: 3, sender: 'Nike', text: 'When can you film the content?', own: false },
+    { id: 4, sender: 'You', text: 'I\'m free next week', own: true },
+  ];
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* Conversations List */}
-      <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
-        <div className="p-4 border-b border-gray-200">
-          <h2 className="text-xl font-bold">Messages</h2>
+    <div className="min-h-screen bg-black text-white flex">
+      {/* Sidebar */}
+      <div className="w-80 border-r border-gray-700 hidden md:flex flex-col">
+        <div className="p-4 border-b border-gray-700">
+          <h2 className="text-2xl font-bold">Messages</h2>
         </div>
         <div className="flex-1 overflow-y-auto">
-          {conversations.length === 0 ? (
-            <div className="p-4 text-gray-500 text-center">No conversations yet</div>
-          ) : (
-            conversations.map((conv) => (
-              <button
-                key={conv.id}
-                onClick={() => setSelectedConversation(conv.id)}
-                className={`w-full p-4 border-b border-gray-100 text-left hover:bg-gray-50 transition ${
-                  selectedConversation === conv.id ? 'bg-blue-50' : ''
-                }`}
-              >
-                <p className="font-semibold">{conv.other_user_name}</p>
-                <p className="text-sm text-gray-600 truncate">{conv.last_message}</p>
-                <p className="text-xs text-gray-500 mt-1">{new Date(conv.last_message_time).toLocaleDateString()}</p>
-                {conv.unread_count > 0 && (
-                  <span className="inline-block bg-blue-600 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center mt-2">
-                    {conv.unread_count}
-                  </span>
-                )}
-              </button>
-            ))
-          )}
+          {chats.map(chat => (
+            <button
+              key={chat.id}
+              onClick={() => setSelectedChat(chat.id)}
+              className={`w-full p-4 border-b border-gray-700 hover:bg-gray-900/50 text-left transition ${
+                selectedChat === chat.id ? 'bg-gray-900' : ''
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div className="text-3xl">{chat.icon}</div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold">{chat.name}</p>
+                  <p className="text-gray-500 text-sm truncate">{chat.lastMessage}</p>
+                  <p className="text-gray-600 text-xs">{chat.time} ago</p>
+                </div>
+              </div>
+            </button>
+          ))}
         </div>
       </div>
 
       {/* Chat Area */}
       <div className="flex-1 flex flex-col">
-        {selectedConversation ? (
+        {selectedChat ? (
           <>
-            <div className="p-4 border-b border-gray-200 bg-white">
-              <h2 className="text-lg font-semibold">
-                {conversations.find((c) => c.id === selectedConversation)?.other_user_name}
-              </h2>
+            {/* Header */}
+            <div className="border-b border-gray-700 p-4 flex items-center gap-3">
+              <div className="text-4xl">{chats.find(c => c.id === selectedChat)?.icon}</div>
+              <div>
+                <h3 className="font-bold">{chats.find(c => c.id === selectedChat)?.name}</h3>
+                <p className="text-gray-500 text-sm">Active now</p>
+              </div>
             </div>
 
+            {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {messages.map((msg) => (
+              {messages.map(msg => (
                 <div
                   key={msg.id}
-                  className={`flex ${msg.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
+                  className={`flex ${msg.own ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-xs px-4 py-2 rounded-lg ${
-                      msg.sender_id === user?.id
+                    className={`max-w-xs px-4 py-2 rounded-2xl ${
+                      msg.own
                         ? 'bg-blue-600 text-white'
-                        : 'bg-gray-200 text-gray-900'
+                        : 'bg-gray-800 text-gray-100'
                     }`}
                   >
-                    <p className="text-sm">{msg.content}</p>
-                    <p className="text-xs mt-1 opacity-70">{new Date(msg.timestamp).toLocaleTimeString()}</p>
+                    <p>{msg.text}</p>
                   </div>
                 </div>
               ))}
             </div>
 
-            <form onSubmit={sendMessage} className="p-4 border-t border-gray-200 bg-white flex space-x-2">
-              <input
-                type="text"
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                placeholder="Type a message..."
-                className="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
-              />
-              <button
-                type="submit"
-                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg"
-              >
-                Send
-              </button>
-            </form>
+            {/* Input */}
+            <div className="border-t border-gray-700 p-4">
+              <div className="flex gap-3">
+                <input
+                  type="text"
+                  value={messageText}
+                  onChange={(e) => setMessageText(e.target.value)}
+                  placeholder="Say something..."
+                  className="flex-1 bg-gray-900 text-white rounded-full px-4 py-3 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <button className="bg-blue-600 hover:bg-blue-700 text-white rounded-full w-10 h-10 flex items-center justify-center font-bold">
+                  📤
+                </button>
+              </div>
+            </div>
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center text-gray-500">
-            Select a conversation to start messaging
+          <div className="flex items-center justify-center h-full">
+            <p className="text-gray-500">Select a conversation</p>
           </div>
         )}
       </div>
