@@ -2116,6 +2116,239 @@ jobs:
 
 ---
 
+## PART 29: IP OWNERSHIP & DUE DILIGENCE (THE VIBE-CODING TRAP)
+
+### The Problem
+
+Vibe coding gets you to MVP. But it kills your funding deal.
+
+**The Pattern**:
+1. You build fast using AI, open-source, third-party tools
+2. MVP works. Investor interested.
+3. Legal due diligence begins...
+4. Deal falls apart.
+
+**Why**: Investors don't ask "does it work?" — they ask "who owns it?"
+
+If ownership is unclear, risk shifts entirely to investor. And when risk increases, deals pause or disappear.
+
+### What Investors Check in IP Due Diligence
+
+```
+1. CLEAN IP OWNERSHIP
+   ✓ You own 100% of the code, not shared with anyone
+   ✓ No ambiguity on authorship or licensing
+   ✗ "We used Claude to write it" (unclear if Anthropic has claims)
+   ✗ "Open-source contributions that we modified" (GPL compliance issues)
+
+2. IP ASSIGNMENTS FROM DEVELOPERS/FREELANCERS
+   ✓ All developers signed IP assignment agreements
+   ✓ Every contractor explicitly assigned rights to you
+   ✓ No unpaid freelancers with unresolved IP claims
+   ✗ Friend helped build MVP (no contract = they own their code)
+   ✗ Hired via Fiverr (deliverables ambiguous; seller may retain rights)
+
+3. OPEN-SOURCE LICENSE COMPLIANCE
+   ✓ All dependencies documented (SBOM: Software Bill of Materials)
+   ✓ GPL/AGPL code isolated; commercial code separate
+   ✓ All licenses compatible with your business model
+   ✗ Using GPL library without open-sourcing your app (viral license breach)
+   ✗ No license audit; "probably fine" (investors hate this)
+   ✗ Unlicensed dependencies (legal nightmare; no right to use)
+
+4. AI-GENERATED CODE OWNERSHIP
+   ✓ Clear terms with AI tools (do you own the output?)
+   ✓ If using Claude/ChatGPT: understand Anthropic/OpenAI's claims
+   ✓ Document which code is AI-generated for transparency
+   ✗ Unclear who owns Claude-generated code (Anthropic policy?)
+   ✗ Using AI code commercially when terms say "personal use only"
+   ✗ No record of what was AI vs. human-written
+
+5. DATA PROTECTION & PRIVACY
+   ✓ GDPR/CCPA compliant data handling
+   ✓ User consent documented and provable
+   ✓ Privacy policy legally vetted
+   ✗ Collecting data without user consent (GDPR violation)
+   ✗ Using third-party data without licensing agreements
+
+6. VALID CONTRACTS & CORPORATE STRUCTURE
+   ✓ Incorporation completed properly (LLC/C-Corp)
+   ✓ Founder equity split documented in cap table
+   ✓ All founder agreements signed (vesting, IP assignment, NDA)
+   ✗ No formal incorporation ("just operating as me")
+   ✗ Verbal agreements between co-founders (unenforceable)
+   ✗ One founder claims 100% equity; another disagrees
+
+7. EMPLOYMENT & CONTRACTOR AGREEMENTS
+   ✓ All employees/contractors signed IP assignment + confidentiality agreements
+   ✓ No unpaid work with unresolved claims
+   ✓ Clear employment terms (full-time, part-time, contractor status)
+   ✗ Founder's spouse helped with design (no agreement = joint ownership)
+   ✗ Early employees didn't sign IP assignment (they own their code)
+   ✗ Friend contributed a major feature as a favor (could sue for equity)
+
+### The Vibe-Coding Audit Checklist
+
+Before your next investor call, verify ALL of these:
+
+```markdown
+IP OWNERSHIP:
+☐ You have 100% ownership of all source code
+☐ No ambiguity on who wrote what
+☐ All contributors signed IP assignments
+☐ No unpaid work with unresolved claims
+
+AI-GENERATED CODE:
+☐ Documented which code is AI-generated
+☐ Verified Anthropic/OpenAI terms of service (commercial use allowed?)
+☐ If using Claude: terms allow commercial code generation? (CHECK THIS)
+☐ If using ChatGPT: OpenAI's business terms reviewed?
+☐ No "personal use only" code in production
+
+OPEN-SOURCE COMPLIANCE:
+☐ Full dependency list documented (npm list --depth=0)
+☐ All licenses identified (npm ls --all)
+☐ No GPL/AGPL in commercial product (unless open-sourcing)
+☐ No unlicensed dependencies (run license-report tool)
+☐ SBOM (Software Bill of Materials) generated
+
+THIRD-PARTY TOOLS & SERVICES:
+☐ Supabase: ToS reviewed (data ownership, commercial use allowed?)
+☐ Vercel: Terms reviewed (code ownership, deployment rights?)
+☐ AWS/Cloud: Data ownership clear; no restrictions on use?
+☐ Stripe: Terms allow your use case?
+☐ Each tool's ToS checked for commercial use clause
+
+DATA & PRIVACY:
+☐ GDPR-compliant user consent mechanism
+☐ Privacy policy legally vetted (not ChatGPT-generated)
+☐ Data deletion on request (30-day automation)
+☐ No third-party data used without license
+
+LEGAL STRUCTURE:
+☐ Incorporated as LLC or C-Corp (not sole proprietorship)
+☐ EIN obtained (tax ID)
+☐ Cap table documented (who owns what %)
+☐ Founder agreements signed by all founders (IP assignment, vesting, NDA)
+☐ Corporate bylaws in place
+
+CONTRACTS:
+☐ All developers signed IP assignment agreement
+☐ All contractors signed IP assignment agreement
+☐ Employee agreements in place (employment + confidentiality)
+☐ Co-founder agreement signed (equity split, role, exit terms)
+☐ Any advisors/mentors contributed? (get IP assignment in writing)
+
+DOCUMENTATION:
+☐ README.md lists all open-source dependencies + versions
+☐ CONTRIBUTORS.md lists who wrote what
+☐ LICENSE.md specifies your code's license (MIT/Apache/Proprietary)
+☐ OPEN_SOURCE_AUDIT.md documents license compliance
+☐ IP_OWNERSHIP.md documents who owns what code
+
+READY FOR DUE DILIGENCE?
+☐ All of above checked
+☐ Lawyer reviewed IP ownership and contracts
+☐ Dependency audit passed
+☐ No "probably fine" answers
+```
+
+### Critical: AI Tool Terms of Service
+
+**ANTHROPIC CLAUDE (THIS TOOL)**:
+- Check current terms at anthropic.com/terms
+- Q: Do I own Claude-generated code?
+- Q: Can I use it commercially?
+- Q: Any attribution required?
+- **Action**: Read ToS before deploying production code
+
+**OPENAI CHATGPT**:
+- Business terms at openai.com/business
+- Q: Does OpenAI have any claim to my code?
+- Q: Can I use in commercial product?
+- Q: Data retention/usage by OpenAI?
+- **Action**: If using ChatGPT, get OpenAI business terms in writing
+
+**VERCEL/SUPABASE/AWS**:
+- Each platform's ToS has IP clauses
+- Supabase PostgreSQL data: who owns schema?
+- Vercel deployments: who owns build artifacts?
+- **Action**: Legal review before deploying production
+
+### If IP Ownership is Unclear
+
+**DO NOT PROCEED TO FUNDRAISING.**
+
+Instead:
+
+1. **Get legal review** ($2-5K from startup lawyer)
+   - Review AI tool ToS
+   - Review all third-party tool ToS
+   - Review all developer agreements
+   - Identify ownership gaps
+
+2. **Remediate ownership gaps** (can be fast):
+   - Get retroactive IP assignments from contributors (they usually agree)
+   - Replace unclear open-source with compatible licenses
+   - Document AI-generated code origin
+   - Update privacy policy + consent mechanism
+
+3. **Create IP ownership document** (1-page summary):
+   ```
+   INTELLECTUAL PROPERTY OWNERSHIP STATEMENT
+   
+   ValueSkins owns 100% of:
+   - Frontend code (Next.js, React) — built by [Names] under IP assignment
+   - Backend code (Rust, PostgreSQL) — built by [Names] under IP assignment
+   - Matching algorithm — proprietary, built in-house
+   - Compliance automation — built in-house
+   
+   Third-party components:
+   - Supabase PostgreSQL (free tier) — we own our schema, Supabase owns platform
+   - Vercel deployment — we own code, Vercel owns CI/CD infrastructure
+   - Dependencies: [npm ls output] — all licenses compatible (see OPEN_SOURCE_AUDIT.md)
+   
+   Open-source contributions:
+   - All open-source code contributed by [Names] assigned to ValueSkins
+   - GPL compliance: [explain strategy]
+   
+   AI-generated code:
+   - ~X% of code generated by Claude (Anthropic) — commercial use terms verified
+   - All AI code reviewed and modified by human developers — falls under human ownership
+   - Anthropic has no claim to final code (verified via ToS review)
+   
+   Conclusion: ValueSkins has clear, defensible ownership of all code.
+   ```
+
+4. **Get this signed by your lawyer**
+   - Takes 1 week
+   - Costs $1-2K
+   - Investors need this before moving forward
+
+### Why This Matters
+
+**Without clear IP ownership**:
+- Investor's lawyers flag risk
+- Deal pauses for 3-6 months (ownership cleanup)
+- Best case: deal happens at lower valuation (investor "risk discount")
+- Worst case: deal dies
+
+**With clear IP ownership**:
+- Due diligence is smooth (no IP surprises)
+- Investor confident in investment
+- Deal closes faster
+- Higher valuation (no risk discount)
+
+### The Cost of Getting This Wrong
+
+**Tea App Founder**: Used open-source GPL library without paying attention to license. Investor's lawyers discovered violation during due diligence. Deal paused 6 months for cleanup. Final deal valuation cut by 20% due to "legal risk." Cost: $2M in valuation loss + 6 months lost time.
+
+**ChatGPT-Built Startup**: Built entire MVP with ChatGPT. Investor asked "Do you own this code?" Founder said "Yeah, I generated it." Investor's lawyers reviewed OpenAI ToS. Found: ToS ambiguous on ownership. Investor required written confirmation from OpenAI that they don't own the code. OpenAI refused to provide it. Deal died. Cost: Complete.
+
+**Contractor Without IP Assignment**: Hired contractor to build payment processor. No IP assignment agreement. Contractor claimed co-ownership. During due diligence, contractor demanded equity. Negotiation took 3 months. Cost: Founder had to give 5% equity to resolve claim.
+
+---
+
 ## ENFORCEMENT
 
 **THIS IS NOT OPTIONAL. VIOLATIONS = LOSS OF COMPANY.**
@@ -2135,11 +2368,12 @@ jobs:
 - Vendor risk: managed
 - Testing: continuous
 - Compliance: audited quarterly
+- **IP Ownership: clean & documented** ← NEW
 
 **You will not be sued if you follow this.**
 
 ---
 
-**Last Updated**: 2026-04-18  
-**Enforcer**: Security + Legal Team  
+**Last Updated**: 2026-04-19  
+**Enforcer**: Security + Legal + IP Team  
 **Status**: MANDATORY ON ALL CODE + OPERATIONS**
