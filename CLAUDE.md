@@ -3289,6 +3289,330 @@ Data Protection
 
 ---
 
+## PART 32: DEPLOYMENT SECURITY CHECKLIST (BEFORE GO-LIVE)
+
+### Authentication & Sessions (PART 1 covered)
+
+**Pre-Deploy Verification**:
+```
+☐ Passwords hashed with bcrypt (12+ rounds)
+  - Test: plaintext password never appears in logs/database
+  - Verify: password_hash != password in DB
+
+☐ Session management
+  - Sessions expire after 30 min idle (enforced on server, not client)
+  - Sessions stored in Redis (not cookies)
+  - Session cookie: HttpOnly, Secure, SameSite=Strict
+  - One active session per user (invalidate old on new login)
+
+☐ Login rate limiting
+  - Max 5 failed attempts → 15 min lockout
+  - Track by username + IP
+  - Log all failed attempts
+
+☐ Password reset
+  - Token-based (not email link)
+  - Token valid 15 minutes only (one-time use)
+  - Force new password + logout all sessions
+
+☐ Multi-factor auth (if sensitive operations)
+  - Optional for general use
+  - Required for admin/payment operations
+  - TOTP or SMS (not email-based)
+```
+
+### Authorization (PART 3 covered)
+
+**Pre-Deploy Verification**:
+```
+☐ IDOR (Insecure Direct Object Reference) prevention
+  - Test: Can user A access user B's data?
+  - Example: GET /api/v1/profiles/123 (user 456 logged in)
+    - Must return 403 (forbidden) if user 456 ≠ 123
+  - Check ALL endpoints for IDOR:
+    * /api/v1/users/:id
+    * /api/v1/posts/:id
+    * /api/v1/deals/:id
+    * /api/v1/messages/:id
+
+☐ Role-based access control
+  - Admin can: view users, ban accounts, modify system settings
+  - Creator can: create posts, apply to opportunities, message brands
+  - Brand can: create campaigns, approve creators, message creators
+  - Unauthenticated: view public feed, landing page, only that
+
+☐ Middleware authorization
+  - Every endpoint checks role before business logic
+  - Deny by default (403 unless explicitly allowed)
+  
+☐ Database-level RLS (Row-Level Security)
+  - All sensitive tables have RLS enabled
+  - RLS policy enforces ownership check
+  - Example:
+    ```sql
+    CREATE POLICY user_isolation ON posts
+      FOR SELECT
+      USING (auth.uid() = user_id OR auth.role() = 'admin');
+    ```
+```
+
+### Secrets Management (PART 8 covered)
+
+**Pre-Deploy Verification**:
+```
+☐ No secrets in code
+  - Grep for: passwords, API keys, JWT secrets, database URLs
+  - Command: git-secrets scan (or grep -r "password|api_key|secret")
+  - All secrets in environment variables only
+
+☐ Environment variables
+  - Local: .env.local (gitignored)
+  - Staging: Vercel environment config
+  - Production: AWS Secrets Manager or Vercel secrets
+  - Rotation: API keys rotated quarterly
+
+☐ API keys scoped
+  - Database: read-only user + admin user (separate)
+  - Stripe: restricted to payment operations only
+  - AWS: least-privilege IAM policy
+  - Supabase: anon key + service role key (never expose service key)
+
+☐ Exposed keys scan
+  - Run git-secrets or Gitleaks to detect any exposed keys in history
+  - If found: rotate key immediately (old key is compromised)
+```
+
+### Input Validation (PART 1 covered)
+
+**Pre-Deploy Verification**:
+```
+☐ Schema validation on ALL endpoints
+  - Reject unknown fields
+  - Type coercion with explicit casting
+  - Length limits enforced (min/max)
+  - Whitelist allowed characters
+  - Test with: curl with malformed JSON, extra fields, missing required fields
+
+☐ SQL injection prevention (PART 1 covered)
+  - Every query uses parameterized statements
+  - Test injection patterns: ', ", --, /*, SELECT, UNION, DROP
+  - Grep for: `${`, `+` (string concat) in SQL queries
+
+☐ XSS prevention (PART 1 covered)
+  - User input sanitized before rendering
+  - DOMPurify or library used for HTML content
+  - Test: Post <img src=x onerror=alert(1)> to feed → must be escaped
+
+☐ CSRF prevention (PART 1 covered)
+  - Every POST/PUT/DELETE has CSRF token
+  - Token sent in form body (not URL param)
+  - SameSite=Strict cookie
+```
+
+### Rate Limiting (PART 6 covered)
+
+**Pre-Deploy Verification**:
+```
+☐ Per-user rate limits
+  - Login: 20 attempts/hour per user
+  - API: 100 requests/minute per user
+  - LLM calls: 100/day per user
+  - Test: Send >100 requests in 1 minute → status 429 returned
+
+☐ Per-IP rate limits
+  - Signup: 10 accounts/hour per IP
+  - Login: 50 attempts/hour per IP
+  - Unauthenticated API: 1000 req/hour per IP
+
+☐ Redis-based rate limiting
+  - Counter stored in Redis (TTL-based)
+  - No database queries on each request
+  - Responds fast (< 10ms latency)
+
+☐ Graceful degradation
+  - Rate limit exceeded → return 429 with Retry-After header
+  - Don't return error page, keep it lightweight
+```
+
+### HTTPS & Security Headers (PART 10 covered)
+
+**Pre-Deploy Verification**:
+```
+☐ TLS 1.3+ required
+  - Vercel: automatic (enforced)
+  - Custom server: verify with: nmap --script ssl-enum-ciphers
+  - Test: https://www.ssllabs.com/ (A+ rating)
+
+☐ HSTS header
+  - Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+  - Force HTTPS for all users
+
+☐ CSP (Content Security Policy)
+  - default-src 'self'
+  - script-src 'self' (no 'unsafe-inline')
+  - style-src 'self' 'unsafe-inline' (inline styles needed for Next.js hydration)
+  - Prevent inline scripts, external script loading
+
+☐ X-Frame-Options: DENY
+  - Prevent clickjacking
+
+☐ X-Content-Type-Options: nosniff
+  - Prevent MIME-type sniffing
+
+☐ Referrer-Policy: strict-origin-when-cross-origin
+  - Don't leak referrer to external sites
+```
+
+### Logging & Monitoring (PART 9 covered)
+
+**Pre-Deploy Verification**:
+```
+☐ Structured logging
+  - JSON format (not plain text)
+  - Include: timestamp, level, service, user_id (hashed), endpoint, error, duration
+  - Example:
+    ```json
+    {
+      "timestamp": "2026-04-19T14:30:45Z",
+      "level": "error",
+      "service": "auth",
+      "user_id": "sha256(user_id)",
+      "endpoint": "/api/v1/login",
+      "error": "Invalid password",
+      "status_code": 401,
+      "duration_ms": 42
+    }
+    ```
+
+☐ No PII in logs
+  - Never log: plaintext passwords, email addresses, phone numbers
+  - Hash user_id if logging
+  - Test: grep logs for @ symbol (emails) → should be 0 results
+
+☐ Log rotation
+  - Daily rotation at midnight UTC
+  - 30 days hot storage, 90 days cold storage
+  - Encryption at rest
+
+☐ Alerts configured
+  - Failed logins >3 in 5 min
+  - API abuse >1000 req/min
+  - Database errors >10/min
+  - Response time >500ms on >10% of requests
+  - Page on-call engineer when triggered
+```
+
+### Data Protection (PART 4-5 covered)
+
+**Pre-Deploy Verification**:
+```
+☐ Encryption at rest
+  - Sensitive fields encrypted: email, phone, payment tokens
+  - Algorithm: AES-256-GCM
+  - Test: Connect to DB, raw row shows ciphertext (not plaintext)
+
+☐ Encryption in transit
+  - TLS 1.3 minimum
+  - All APIs use HTTPS
+  - Verify: curl -I https://api.example.com (shows HTTP/2 or HTTP/3)
+
+☐ Database backups
+  - Daily automatic backups
+  - Cross-region replication (different AWS region)
+  - Encryption in S3 (KMS key)
+  - Test restore monthly (staging environment)
+  - Retention: 90 days
+
+☐ Sensitive data cleanup
+  - Logs: delete after 30 days (for privacy)
+  - Analytics: delete after 90 days
+  - Backups: delete after 90 days
+  - User data: delete on account deletion (or 30 days with automated nightly cron)
+```
+
+### Dependency Security (PART 7 covered)
+
+**Pre-Deploy Verification**:
+```
+☐ npm audit
+  - Run: npm audit --production
+  - Zero high/critical vulnerabilities
+  - Test: npm audit should pass before deploy
+
+☐ No known vulnerabilities
+  - Use Snyk or WhiteSource to scan dependencies
+  - Check transitive dependencies (npm ls --all)
+
+☐ License compliance
+  - No GPL/AGPL in production (unless open-sourcing)
+  - All licenses compatible with commercial use
+  - Run: cyclonedx-npm for SBOM (Software Bill of Materials)
+
+☐ Dependency pinning
+  - No floating versions ("^4.0.0")
+  - Pin exact versions ("4.0.2")
+  - Commit package-lock.json
+```
+
+### Pre-Deploy Checklist
+
+**Run this before every production deploy**:
+
+```
+Security
+☐ Password hashing (bcrypt 12+)
+☐ Session expiry (30 min)
+☐ Login rate limiting (5 failed attempts → 15 min lockout)
+☐ IDOR prevention (test each endpoint)
+☐ RBAC enforced (admin/creator/brand checks)
+☐ RLS enabled on sensitive tables
+
+Secrets
+☐ No secrets in code (git-secrets scan)
+☐ All env vars configured (Vercel secrets dashboard)
+☐ API keys scoped (database, Stripe, AWS)
+☐ No exposed keys in git history
+
+Input Validation
+☐ Schema validation on all endpoints
+☐ SQL injection tests passed (parameterized queries)
+☐ XSS tests passed (user input sanitized)
+☐ CSRF tokens present on state-changing endpoints
+
+Rate Limiting
+☐ Per-user rate limits configured
+☐ Per-IP rate limits configured
+☐ Graceful 429 responses
+
+HTTPS & Headers
+☐ TLS 1.3+ enforced
+☐ HSTS header set
+☐ CSP header set
+☐ X-Frame-Options: DENY
+☐ X-Content-Type-Options: nosniff
+
+Logging
+☐ Structured JSON logging
+☐ No PII in logs
+☐ Log rotation configured
+☐ Alerts configured + tested
+
+Data Protection
+☐ Encryption at rest (AES-256-GCM)
+☐ Encryption in transit (TLS 1.3)
+☐ Database backups automated
+☐ Sensitive data cleanup scheduled
+
+Dependencies
+☐ npm audit passed (zero high/critical)
+☐ No GPL/AGPL in production
+☐ Package-lock.json committed
+```
+
+**If ANY checkbox is unchecked: DO NOT DEPLOY.**
+
+---
+
 ## ENFORCEMENT
 
 **THIS IS NOT OPTIONAL. VIOLATIONS = LOSS OF COMPANY.**
