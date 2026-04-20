@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 
+export const getServerSideProps = async () => {
+  return { props: {} };
+};
+
 export default function Login() {
   const router = useRouter();
   const [userType, setUserType] = useState<'creator' | 'brand' | null>(null);

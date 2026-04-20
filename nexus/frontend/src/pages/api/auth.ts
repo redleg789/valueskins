@@ -9,6 +9,11 @@
 
 import { NextApiRequest, NextApiResponse } from 'next';
 import crypto from 'crypto';
+import { checkDDoSProtection } from '@/lib/security/ddos-protection';
+import { injectionPrevention } from '@/lib/security/injection-prevention';
+import { enforceTLS, validatePublicKeyPin, verifyCertificateValidity } from '@/lib/security/tls-pinning';
+import { scanForSecrets, logWithoutSecrets, validateEnvironmentSecrets } from '@/lib/security/secrets-scanner';
+import { calculateAnomalyScore } from '@/lib/security/intrusion-detection';
 
 // Mock token store (in production: use JWT signed by secret)
 const VALID_TOKENS = new Map<string, { userId: string; role: string; createdAt: number }>();
@@ -77,6 +82,32 @@ function checkRateLimit(ip: string): boolean {
 }
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+
+  enforceTLS(req, res, () => {});
+  validatePublicKeyPin(req, res, () => {});
+  verifyCertificateValidity(req, res, () => {});
+
+  checkDDoSProtection(req, res, () => {});
+
+  injectionPrevention(req, res, () => {});
+
+  const secrets = scanForSecrets(req.body);
+  if (secrets.found) {
+    console.error('Secrets detected:', logWithoutSecrets(secrets.locations));
+    return res.status(400).json({ error: 'Invalid request' });
+  }
+
+  const secretsValid = validateEnvironmentSecrets();
+  if (!secretsValid.valid && process.env.NODE_ENV === 'production') {
+    console.error('Missing environment secrets:', secretsValid.missing);
+    return res.status(500).json({ error: 'Internal error' });
+  }
+
   // CORS - only allow same-origin
   const origin = req.headers.origin;
   if (origin && !origin.includes('localhost') && !origin.includes('vercel.app')) {
@@ -89,6 +120,11 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     if (action === 'login') {
       const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
       const ipStr = typeof ip === 'string' ? ip : ip[0];
+
+      const anomaly = calculateAnomalyScore(req, email);
+      if (anomaly.isAnomaly && anomaly.score >= 8) {
+        return res.status(403).json({ error: 'Login attempt blocked. Verify identity.' });
+      }
 
       // Rate limit: 5 attempts per 15 minutes per IP
       if (!checkRateLimit(ipStr)) {

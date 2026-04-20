@@ -9,19 +9,14 @@ interface PrivacyDashboardProps {
 
 export default function PrivacyDashboard({ user, onClose }: PrivacyDashboardProps) {
   const [deleting, setDeleting] = useState(false)
-  const privacyData = getPrivacyDashboardData(user)
 
   const handleExportData = async () => {
-    const payload = {
-      user: {
-        id: user.id,
-        name: user.name,
-        handle: user.handle,
-        created_at: new Date().toISOString()
-      },
-      exported_at: new Date().toISOString()
+    try {
+      await downloadDataExport(user.id)
+    } catch (error) {
+      console.error('Export failed:', error)
+      alert('Failed to export data')
     }
-    downloadDataExport(payload)
   }
 
   const handleDeleteAccount = async () => {
@@ -29,11 +24,11 @@ export default function PrivacyDashboard({ user, onClose }: PrivacyDashboardProp
 
     setDeleting(true)
     try {
-      const result = await deleteAccountPermanently(user.id)
-      if (result.success) {
-        window.location.href = '/auth/login'
-      }
-    } finally {
+      await deleteAccountPermanently(user.id)
+      window.location.href = '/auth/login'
+    } catch (error) {
+      console.error('Deletion failed:', error)
+      alert('Failed to delete account')
       setDeleting(false)
     }
   }
@@ -52,38 +47,38 @@ export default function PrivacyDashboard({ user, onClose }: PrivacyDashboardProp
           <div>
             <h3 className="font-semibold text-white mb-2">What We Collect</h3>
             <div className="bg-gray-800 p-3 rounded text-sm text-gray-300 space-y-1">
-              <div>Profile: {privacyData.data_collected.profile.join(', ')}</div>
-              <div>Activity: {privacyData.data_collected.activity.join(', ')}</div>
-              <div>Messages: {privacyData.data_collected.interactions[0]}</div>
+              <div>Profile: name, email, username, bio</div>
+              <div>Activity: posts, comments, messages</div>
+              <div>Interactions: follows, likes</div>
             </div>
           </div>
 
           <div>
             <h3 className="font-semibold text-white mb-2">What We DON'T Collect</h3>
             <div className="bg-gray-800 p-3 rounded text-sm text-gray-300">
-              {privacyData.data_not_collected.join(' • ')}
+              Location • Device identifiers • Browsing history • Behavioral profiling
             </div>
           </div>
 
           <div>
             <h3 className="font-semibold text-white mb-2">Tracking</h3>
             <div className="bg-gray-800 p-3 rounded text-sm text-green-400">
-              ✓ {privacyData.tracking}
+              ✓ No third-party tracking
             </div>
           </div>
 
           <div>
             <h3 className="font-semibold text-white mb-2">Data Sharing</h3>
             <div className="bg-gray-800 p-3 rounded text-sm text-green-400">
-              ✓ {privacyData.data_sharing}
+              ✓ We never sell or share your data
             </div>
           </div>
 
           <div>
             <h3 className="font-semibold text-white mb-2">Security</h3>
             <div className="bg-gray-800 p-3 rounded text-sm text-gray-300 space-y-1">
-              <div>Messages: {privacyData.encryption.messages}</div>
-              <div>Storage: {privacyData.encryption.storage}</div>
+              <div>Messages: Encrypted in transit (TLS 1.3+)</div>
+              <div>Storage: AES-256-GCM encryption at rest</div>
             </div>
           </div>
 

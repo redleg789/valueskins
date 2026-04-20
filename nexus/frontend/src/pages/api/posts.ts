@@ -3,6 +3,11 @@ import { validateToken } from './auth';
 import { db, initDb, logAudit } from '@/lib/db';
 import DOMPurify from 'isomorphic-dompurify';
 import crypto from 'crypto';
+import { checkDDoSProtection } from '@/lib/security/ddos-protection';
+import { injectionPrevention } from '@/lib/security/injection-prevention';
+import { enforceTLS, validatePublicKeyPin, verifyCertificateValidity } from '@/lib/security/tls-pinning';
+import { scanForSecrets, logWithoutSecrets } from '@/lib/security/secrets-scanner';
+import { calculateAnomalyScore } from '@/lib/security/intrusion-detection';
 
 initDb();
 
@@ -29,6 +34,22 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+
+  enforceTLS(req, res, () => {});
+  validatePublicKeyPin(req, res, () => {});
+  verifyCertificateValidity(req, res, () => {});
+
+  checkDDoSProtection(req, res, () => {});
+
+  injectionPrevention(req, res, () => {});
+
+  const secrets = scanForSecrets(req.body);
+  if (secrets.found) {
+    console.error('Secrets detected in request:', logWithoutSecrets(secrets.locations));
+    return res.status(400).json({ error: 'Invalid payload' });
+  }
 
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith('Bearer ')) {
@@ -40,6 +61,15 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
 
   if (!user) {
     return res.status(401).json({ error: 'Invalid token' });
+  }
+
+  const anomaly = calculateAnomalyScore(req, user.userId);
+  if (anomaly.isAnomaly) {
+    res.setHeader('X-Anomaly-Score', anomaly.score.toString());
+    if (anomaly.score >= 9) {
+      logAudit(user.userId, 'INTRUSION_DETECTED', JSON.stringify(anomaly.factors));
+      return res.status(403).json({ error: 'Suspicious activity. Please verify identity.' });
+    }
   }
 
   const rateLimitKey = `${user.userId}:${req.method}:${req.query.action || 'default'}`;
@@ -65,8 +95,8 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
         db.prepare('UPDATE posts SET likes = likes + 1 WHERE id = ?').run(postId);
       }
 
-      const updatedPost = db.prepare('SELECT likes FROM posts WHERE id = ?').get(postId);
-      return res.status(200).json({ success: true, likes: updatedPost.likes });
+      const updatedPost = db.prepare('SELECT likes FROM posts WHERE id = ?').get(postId) as any;
+      return res.status(200).json({ success: true, likes: updatedPost?.likes || 0 });
     }
 
     if (action === 'comment' && postId) {
@@ -93,7 +123,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     const { postId } = req.body;
     if (!postId) return res.status(400).json({ error: 'postId required' });
 
-    const post = db.prepare('SELECT * FROM posts WHERE id = ?').get(postId);
+    const post = db.prepare('SELECT * FROM posts WHERE id = ?').get(postId) as any;
     if (!post) return res.status(404).json({ error: 'Post not found' });
     if (post.userId !== user.userId && user.role !== 'admin') return res.status(403).json({ error: 'Forbidden' });
 

@@ -1,7 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import crypto from 'crypto';
-import helmet from 'helmet';
-import cors from 'cors';
 
 // Rate limiting store
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
@@ -84,14 +82,13 @@ export function corsMiddleware(req: NextApiRequest, res: NextApiResponse, next: 
 }
 
 export function inputValidation(req: NextApiRequest, res: NextApiResponse, next: () => void) {
-  // Validate JSON
   if (req.method === 'POST' || req.method === 'PUT') {
-    if (!req.is('application/json')) {
+    const contentType = req.headers['content-type'] || '';
+    if (!contentType.includes('application/json')) {
       res.status(400).json({ error: 'Content-Type must be application/json' });
       return;
     }
 
-    // Check payload size (max 10KB)
     const contentLength = parseInt(req.headers['content-length'] || '0', 10);
     if (contentLength > 10 * 1024) {
       res.status(413).json({ error: 'Payload too large' });
