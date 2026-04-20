@@ -43,7 +43,7 @@ class HttpClient {
         this.token = null;
         if (typeof window !== 'undefined') {
             // Clear persisted user profile (non-secret)
-            localStorage.removeItem('valueskins_user');
+            sessionStorage.removeItem('valueskins_user');
         }
     }
 
@@ -95,7 +95,7 @@ class AuthClient {
         if (result.data?.token) {
             this.http.setToken(result.data.token);
             if (typeof window !== 'undefined') {
-                localStorage.setItem('valueskins_user', JSON.stringify(result.data.user));
+                sessionStorage.setItem('valueskins_user', JSON.stringify(result.data.user));
             }
         }
         return result;
@@ -111,7 +111,7 @@ class AuthClient {
 
     getUser(): UserProfile | null {
         if (typeof window === 'undefined') return null;
-        const stored = localStorage.getItem('valueskins_user');
+        const stored = sessionStorage.getItem('valueskins_user');
         if (!stored) return null;
         try { return JSON.parse(stored); } catch { return null; }
     }

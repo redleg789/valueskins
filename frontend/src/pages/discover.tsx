@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
+import { getDemoToken } from '@/lib/demoSession';
 
 interface User {
   id: string;
@@ -27,7 +28,7 @@ export default function Discover() {
 
   const fetchUsers = async () => {
     try {
-      const token = localStorage.getItem('auth_token');
+      const token = getDemoToken();
       const response = await fetch('/api/users?action=discover', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -43,7 +44,7 @@ export default function Discover() {
   };
 
   const handleFollow = async (targetUserId: string) => {
-    const token = localStorage.getItem('auth_token');
+    const token = getDemoToken();
     try {
       const response = await fetch(`/api/users?action=follow&targetUserId=${targetUserId}`, {
         method: 'POST',
@@ -66,7 +67,7 @@ export default function Discover() {
   };
 
   const handleUnfollow = async (targetUserId: string) => {
-    const token = localStorage.getItem('auth_token');
+    const token = getDemoToken();
     try {
       const response = await fetch(`/api/users?action=unfollow&targetUserId=${targetUserId}`, {
         method: 'POST',

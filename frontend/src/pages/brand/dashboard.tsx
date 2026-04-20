@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
+import { clearDemoSession, getDemoToken } from '@/lib/demoSession';
 
 export default function BrandDashboard() {
   const router = useRouter();
@@ -13,7 +14,7 @@ export default function BrandDashboard() {
   });
 
   useEffect(() => {
-    const token = localStorage.getItem('auth_token');
+    const token = getDemoToken();
     if (!token) {
       router.push('/auth/login');
       return;
@@ -59,8 +60,7 @@ export default function BrandDashboard() {
   ];
 
   const handleLogout = () => {
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('user_type');
+    clearDemoSession();
     router.push('/auth/login');
   };
 

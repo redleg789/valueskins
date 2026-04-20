@@ -142,11 +142,10 @@ export default function Home() {
         <div className="col-span-3 border-r border-gray-700 p-4 hidden lg:block sticky top-20 h-screen">
           <nav className="space-y-4">
             <a href="/" className="block text-xl font-bold hover:text-blue-400">🏠 Home</a>
+            <a href="/creator/dashboard" className="block text-xl hover:text-blue-400">📊 Dashboard</a>
             <a href="/deals-feed" className="block text-xl hover:text-blue-400">💼 Deals</a>
             <a href="/discover" className="block text-xl hover:text-blue-400">🔍 Discover</a>
-            <a href="/notifications" className="block text-xl hover:text-blue-400">🔔 Notifications</a>
             <a href="/chat" className="block text-xl hover:text-blue-400">💬 Messages</a>
-            <a href="/creator-profile?id=me" className="block text-xl hover:text-blue-400">👤 My Profile</a>
           </nav>
         </div>
 
@@ -212,22 +211,22 @@ export default function Home() {
                     </div>
                     <p className="text-white mt-2 text-base leading-normal">{post.content}</p>
 
-                    {/* Engagement */}
+                    {/* Actions (no metrics shown) */}
                     <div className="flex justify-between text-gray-500 mt-3 max-w-md text-sm">
                       <button
                         onClick={() => setSelectedPostForComments(post.id)}
-                        className="hover:text-blue-400 flex items-center gap-2"
+                        className="hover:text-blue-400"
                       >
-                        💬 {post.comments}
+                        💬 Reply
                       </button>
-                      <button className="hover:text-green-400 flex items-center gap-2">
-                        🔄 {post.shares}
+                      <button className="hover:text-green-400">
+                        🔄 Share
                       </button>
                       <button
                         onClick={() => toggleLike(post.id)}
-                        className={`flex items-center gap-2 ${post.liked ? 'text-red-500' : 'hover:text-red-400'}`}
+                        className={post.liked ? 'text-red-500' : 'hover:text-red-400'}
                       >
-                        {post.liked ? '❤️' : '🤍'} {post.likes}
+                        {post.liked ? '❤️' : '🤍'}
                       </button>
                       <button className="hover:text-blue-400">📤</button>
                     </div>

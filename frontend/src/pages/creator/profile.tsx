@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
+import { clearDemoSession, getDemoToken } from '@/lib/demoSession';
 
 interface User {
   id: string;
@@ -36,8 +37,7 @@ export default function CreatorProfile() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('auth_token');
-    setCurrentUserId(token || '');
+    setCurrentUserId('user_123');
 
     if (id) {
       fetchProfile();
@@ -46,7 +46,7 @@ export default function CreatorProfile() {
 
   const fetchProfile = async () => {
     try {
-      const token = localStorage.getItem('auth_token');
+      const token = getDemoToken();
       const response = await fetch(`/api/users?action=profile&userId=${id}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -69,7 +69,7 @@ export default function CreatorProfile() {
 
   const handleFollow = async () => {
     try {
-      const token = localStorage.getItem('auth_token');
+      const token = getDemoToken();
       const response = await fetch(`/api/users?action=follow&targetUserId=${id}`, {
         method: 'POST',
         headers: {
@@ -90,7 +90,7 @@ export default function CreatorProfile() {
 
   const handleUnfollow = async () => {
     try {
-      const token = localStorage.getItem('auth_token');
+      const token = getDemoToken();
       const response = await fetch(`/api/users?action=unfollow&targetUserId=${id}`, {
         method: 'POST',
         headers: {
@@ -127,8 +127,7 @@ export default function CreatorProfile() {
           <h1 className="text-xl font-bold">{user.name}</h1>
           <button
             onClick={() => {
-              localStorage.removeItem('auth_token');
-              localStorage.removeItem('user_type');
+              clearDemoSession();
               router.push('/auth/login');
             }}
             className="text-sm text-gray-400 hover:text-white"

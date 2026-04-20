@@ -50,11 +50,15 @@ impl TaxReporter {
         creator_id: &str,
         tax_year: i32,
     ) -> Result<CreatorTaxReport, TaxError> {
+        let creator_persona_id = creator_id
+            .parse::<i64>()
+            .map_err(|_| TaxError::InvalidCreatorId)?;
+
         // Query all completed deals for creator in tax year
         let earnings: (Option<i64>,) = sqlx::query_as(
             "SELECT SUM(CAST(total_amount * 100 AS BIGINT)) FROM completed_deals WHERE creator_persona_id = $1 AND EXTRACT(YEAR FROM completed_at) = $2"
         )
-        .bind(creator_id.parse::<i64>().unwrap_or(0))
+        .bind(creator_persona_id)
         .bind(tax_year as i32)
         .fetch_one(&self.pool)
         .await
@@ -135,6 +139,7 @@ impl TaxReporter {
 pub enum TaxError {
     NotFound,
     BelowThreshold,
+    InvalidCreatorId,
     DatabaseError(String),
     FormGenerationError(String),
 }
@@ -144,6 +149,7 @@ impl std::fmt::Display for TaxError {
         match self {
             TaxError::NotFound => write!(f, "Creator not found"),
             TaxError::BelowThreshold => write!(f, "Earnings below $600 threshold"),
+            TaxError::InvalidCreatorId => write!(f, "Invalid creator id"),
             TaxError::DatabaseError(e) => write!(f, "Database error: {}", e),
             TaxError::FormGenerationError(e) => write!(f, "Form generation error: {}", e),
         }

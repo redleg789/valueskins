@@ -2,6 +2,7 @@
 //! Supports: Instagram, YouTube, TikTok, LinkedIn, mock
 
 use async_trait::async_trait;
+use chrono::TimeZone;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -241,7 +242,8 @@ impl CreatorDataSource for InstagramCreatorDataSource {
                     platform_url: format!("https://instagram.com/p/{}", item["id"].as_str().unwrap_or("")),
                     published_at: chrono::DateTime::parse_from_rfc3339(
                         item["timestamp"].as_str().unwrap_or("2026-01-01T00:00:00+00:00")
-                    ).unwrap_or(chrono::FixedOffset::east_opt(0).unwrap().timestamp_opt(0, 0).unwrap().with_timezone(&chrono::Utc)).with_timezone(&chrono::Utc),
+                    ).map(|timestamp| timestamp.with_timezone(&chrono::Utc))
+                     .unwrap_or_else(|_| chrono::Utc.timestamp_opt(0, 0).single().unwrap()),
                     caption: item["caption"].as_str().map(|s| s.to_string()),
                     likes: 0,
                     comments: 0,

@@ -82,25 +82,25 @@ impl GoogleOAuthClient {
 
     /// Verify and decode ID token
     pub async fn verify_id_token(&self, id_token: &str) -> Result<GoogleUserInfo, OAuthError> {
-        // Get Google's public keys
-        let keys_response = self.http_client
-            .get("https://www.googleapis.com/oauth2/v3/certs")
+        let response = self.http_client
+            .get("https://oauth2.googleapis.com/tokeninfo")
+            .query(&[("id_token", id_token)])
             .send()
             .await
             .map_err(|e| OAuthError::RequestError(e.to_string()))?;
 
-        // Decode JWT header to get kid
-        let header_parts: Vec<&str> = id_token.split('.').collect();
-        if header_parts.len() != 3 {
+        if !response.status().is_success() {
             return Err(OAuthError::InvalidToken);
         }
 
-        // In production: validate JWT signature using kid
-        // For MVP: trust Google's HTTPS connection
-        // Decode payload
-        let payload = base64_decode(header_parts[1])?;
-        let user_info: GoogleUserInfo = serde_json::from_str(&payload)
-            .map_err(|_| OAuthError::InvalidToken)?;
+        let user_info: GoogleUserInfo = response
+            .json()
+            .await
+            .map_err(|e| OAuthError::RequestError(e.to_string()))?;
+
+        if user_info.sub.is_empty() || user_info.email.is_empty() || !user_info.email_verified {
+            return Err(OAuthError::InvalidToken);
+        }
 
         Ok(user_info)
     }
@@ -169,20 +169,3 @@ impl std::fmt::Display for OAuthError {
 }
 
 impl std::error::Error for OAuthError {}
-
-/// Simple base64 decoder for JWT
-fn base64_decode(s: &str) -> Result<String, OAuthError> {
-    use base64::{engine::general_purpose::URL_SAFE, Engine};
-
-    // Add padding if needed
-    let mut padded = s.to_string();
-    while padded.len() % 4 != 0 {
-        padded.push('=');
-    }
-
-    let decoded = URL_SAFE
-        .decode(padded.as_bytes())
-        .map_err(|_| OAuthError::InvalidToken)?;
-
-    String::from_utf8(decoded).map_err(|_| OAuthError::InvalidToken)
-}

@@ -4,6 +4,7 @@
 use serde::{Deserialize, Serialize};
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
+use sqlx::{Postgres, QueryBuilder};
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct Opportunity {
@@ -146,36 +147,52 @@ impl DatabaseOpportunitySource {
 #[async_trait]
 impl OpportunityDataSource for DatabaseOpportunitySource {
     async fn search_opportunities(&self, query: OpportunityQuery) -> Result<Vec<Opportunity>, SourceError> {
-        let status_filter = if query.status == "all" {
-            vec!["open", "in_progress", "closed", "completed"].join("','")
-        } else {
-            query.status.clone()
+        let statuses: Vec<&str> = match query.status.as_str() {
+            "all" => vec!["open", "in_progress", "closed", "completed"],
+            "open" | "in_progress" | "closed" | "completed" => vec![query.status.as_str()],
+            _ => return Err(SourceError::ValidationError("Invalid opportunity status filter".to_string())),
         };
 
-        let mut sql = format!(
-            "SELECT * FROM opportunities WHERE platform = '{}' AND status IN ('{}')",
-            query.platform, status_filter
-        );
+        let mut builder: QueryBuilder<Postgres> =
+            QueryBuilder::new("SELECT * FROM opportunities WHERE platform = ");
+        builder.push_bind(&query.platform);
+        builder.push(" AND status IN (");
+
+        {
+            let mut separated = builder.separated(", ");
+            for status in &statuses {
+                separated.push_bind(status);
+            }
+        }
+
+        builder.push(")");
 
         if let Some(prof) = &query.profession {
-            sql.push_str(&format!(" AND required_professions @> '[\"{}\"]'", prof));
+            let profession_json = serde_json::to_string(&vec![prof.clone()])
+                .map_err(|_| SourceError::ValidationError("Invalid profession filter".to_string()))?;
+            builder.push(" AND required_professions @> ");
+            builder.push_bind(profession_json);
         }
         if let Some(min_budget) = query.min_budget {
-            sql.push_str(&format!(" AND budget_max >= {}", min_budget));
+            builder.push(" AND budget_max >= ");
+            builder.push_bind(min_budget);
         }
         if let Some(max_budget) = query.max_budget {
-            sql.push_str(&format!(" AND budget_min <= {}", max_budget));
+            builder.push(" AND budget_min <= ");
+            builder.push_bind(max_budget);
         }
         if let Some(deal_type) = &query.deal_type {
-            sql.push_str(&format!(" AND deal_type = '{}'", deal_type));
+            builder.push(" AND deal_type = ");
+            builder.push_bind(deal_type);
         }
 
-        sql.push_str(&format!(
-            " ORDER BY created_at DESC LIMIT {} OFFSET {}",
-            query.limit, query.offset
-        ));
+        builder.push(" ORDER BY created_at DESC LIMIT ");
+        builder.push_bind(query.limit.max(1).min(100));
+        builder.push(" OFFSET ");
+        builder.push_bind(query.offset.max(0));
 
-        sqlx::query_as::<_, Opportunity>(&sql)
+        builder
+            .build_query_as::<Opportunity>()
             .fetch_all(&self.pool)
             .await
             .map_err(|e| SourceError::DatabaseError(e.to_string()))
@@ -268,30 +285,40 @@ impl OpportunityDataSource for DatabaseOpportunitySource {
     }
 
     async fn update_opportunity(&self, id: &str, updates: UpdateOpportunityRequest) -> Result<Opportunity, SourceError> {
-        let mut sql = "UPDATE opportunities SET updated_at = NOW()".to_string();
+        let mut builder: QueryBuilder<Postgres> =
+            QueryBuilder::new("UPDATE opportunities SET updated_at = NOW()");
 
         if let Some(title) = &updates.title {
-            sql.push_str(&format!(", title = '{}'", title.replace("'", "''")));
+            builder.push(", title = ");
+            builder.push_bind(title);
         }
         if let Some(desc) = &updates.description {
-            sql.push_str(&format!(", description = '{}'", desc.replace("'", "''")));
+            builder.push(", description = ");
+            builder.push_bind(desc);
         }
         if let Some(min) = updates.budget_min {
-            sql.push_str(&format!(", budget_min = {}", min));
+            builder.push(", budget_min = ");
+            builder.push_bind(min);
         }
         if let Some(max) = updates.budget_max {
-            sql.push_str(&format!(", budget_max = {}", max));
+            builder.push(", budget_max = ");
+            builder.push_bind(max);
         }
         if let Some(status) = &updates.status {
-            sql.push_str(&format!(", status = '{}'", status));
+            builder.push(", status = ");
+            builder.push_bind(status);
         }
         if let Some(deadline) = updates.deadline_at {
-            sql.push_str(&format!(", deadline_at = '{}'", deadline.to_rfc3339()));
+            builder.push(", deadline_at = ");
+            builder.push_bind(deadline);
         }
 
-        sql.push_str(&format!(" WHERE id = '{}' RETURNING *", id));
+        builder.push(" WHERE id = ");
+        builder.push_bind(id);
+        builder.push(" RETURNING *");
 
-        sqlx::query_as::<_, Opportunity>(&sql)
+        builder
+            .build_query_as::<Opportunity>()
             .fetch_optional(&self.pool)
             .await
             .map_err(|e| SourceError::DatabaseError(e.to_string()))?

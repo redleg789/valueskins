@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { getDemoToken } from '@/lib/demoSession';
 
 interface Comment {
   id: string;
@@ -45,7 +46,7 @@ export default function CommentsModal({ postId, isOpen, onClose }: CommentsModal
     if (!newComment.trim()) return;
 
     setLoading(true);
-    const token = localStorage.getItem('auth_token');
+    const token = getDemoToken();
     try {
       const response = await fetch(`/api/posts?action=comment&postId=${postId}`, {
         method: 'POST',

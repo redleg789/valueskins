@@ -1,23 +1,33 @@
 import { useState } from 'react';
-import { useRouter } from 'next/router';
+import { isDemoModeEnabled } from '@/lib/demoMode';
+import { setDemoSession } from '@/lib/demoSession';
 
 export default function Login() {
-  const router = useRouter();
   const [userType, setUserType] = useState<'creator' | 'brand' | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const handleOAuthLogin = (platform: string) => {
+  const handleOAuthLogin = async () => {
     if (!userType) return;
+    if (!isDemoModeEnabled()) return;
     setLoading(true);
-    localStorage.setItem('user_type', userType);
-    localStorage.setItem('auth_token', 'demo_token_' + Date.now());
-    setTimeout(() => {
-      if (userType === 'creator') {
-        window.location.href = '/creator/dashboard';
-      } else {
-        window.location.href = '/brand/dashboard';
+    try {
+      const response = await fetch('/api/auth/demo-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userType }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create demo session');
       }
-    }, 500);
+
+      const data = (await response.json()) as { token: string };
+      setDemoSession(data.token, userType);
+
+      window.location.href = userType === 'creator' ? '/creator/dashboard' : '/brand/dashboard';
+    } catch {
+      setLoading(false);
+    }
   };
 
   if (!userType) {
@@ -34,13 +44,13 @@ export default function Login() {
               onClick={() => setUserType('creator')}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-4 rounded-xl transition text-lg"
             >
-              I'm a Creator 🎬
+              I&apos;m a Creator 🎬
             </button>
             <button
               onClick={() => setUserType('brand')}
               className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 px-4 rounded-xl transition text-lg"
             >
-              I'm a Brand 🏢
+              I&apos;m a Brand 🏢
             </button>
           </div>
 
@@ -73,28 +83,28 @@ export default function Login() {
           {userType === 'creator' && (
             <>
               <button
-                onClick={() => handleOAuthLogin('instagram')}
+                onClick={handleOAuthLogin}
                 disabled={loading}
                 className="w-full bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-bold py-4 px-4 rounded-xl transition disabled:opacity-50"
               >
                 {loading ? 'Connecting...' : '📸 Instagram'}
               </button>
               <button
-                onClick={() => handleOAuthLogin('youtube')}
+                onClick={handleOAuthLogin}
                 disabled={loading}
                 className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-4 rounded-xl transition disabled:opacity-50"
               >
                 {loading ? 'Connecting...' : '▶️ YouTube'}
               </button>
               <button
-                onClick={() => handleOAuthLogin('tiktok')}
+                onClick={handleOAuthLogin}
                 disabled={loading}
                 className="w-full bg-gray-800 hover:bg-gray-700 text-white font-bold py-4 px-4 rounded-xl transition disabled:opacity-50"
               >
                 {loading ? 'Connecting...' : '🎵 TikTok'}
               </button>
               <button
-                onClick={() => handleOAuthLogin('linkedin')}
+                onClick={handleOAuthLogin}
                 disabled={loading}
                 className="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-4 px-4 rounded-xl transition disabled:opacity-50"
               >
@@ -106,14 +116,14 @@ export default function Login() {
           {userType === 'brand' && (
             <>
               <button
-                onClick={() => handleOAuthLogin('google')}
+                onClick={handleOAuthLogin}
                 disabled={loading}
                 className="w-full bg-white hover:bg-gray-100 text-black font-bold py-4 px-4 rounded-xl transition disabled:opacity-50"
               >
                 {loading ? 'Connecting...' : '🔷 Google'}
               </button>
               <button
-                onClick={() => handleOAuthLogin('email')}
+                onClick={handleOAuthLogin}
                 disabled={loading}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-4 rounded-xl transition disabled:opacity-50"
               >
@@ -124,7 +134,7 @@ export default function Login() {
         </div>
 
         <p className="text-xs text-gray-500 mt-8 text-center">
-          Demo mode: All logins work instantly
+          {isDemoModeEnabled() ? 'Demo mode: All logins work instantly' : 'Demo mode is disabled'}
         </p>
       </div>
     </div>

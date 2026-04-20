@@ -1,6 +1,8 @@
 import { NextApiRequest, NextApiResponse } from 'next';
+import { isDemoModeEnabled } from '@/lib/demoMode';
+import { validateDemoToken } from '@/lib/server/demoAuth';
 
-let users = [
+const users = [
   {
     id: 'user_123',
     name: 'Sarah Chen',
@@ -51,16 +53,22 @@ let users = [
   },
 ];
 
-let follows = new Map<string, Set<string>>(); // userId -> Set of following userIds
+const follows = new Map<string, Set<string>>(); // userId -> Set of following userIds
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
   const { action, userId, targetUserId } = req.query;
   const userToken = req.headers.authorization?.replace('Bearer ', '');
+  const demoSession = validateDemoToken(userToken);
+  const currentUserId = demoSession?.sub ?? null;
+
+  if (!isDemoModeEnabled()) {
+    return res.status(403).json({ error: 'Demo API disabled' });
+  }
 
   if (req.method === 'GET') {
     if (action === 'discover') {
       // Get all users except the current user
-      const filteredUsers = users.filter(u => u.id !== userToken);
+      const filteredUsers = users.filter(u => u.id !== currentUserId);
       return res.status(200).json(filteredUsers);
     }
 
@@ -72,8 +80,8 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       return res.status(200).json(user);
     }
 
-    if (action === 'me' && userToken) {
-      const user = users.find(u => u.id === userToken);
+    if (action === 'me' && currentUserId) {
+      const user = users.find(u => u.id === currentUserId);
       if (!user) {
         return res.status(404).json({ error: 'User not found' });
       }
@@ -93,15 +101,15 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 
   if (req.method === 'POST') {
-    if (!userToken) {
+    if (!currentUserId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
     if (action === 'follow' && targetUserId) {
-      if (!follows.has(userToken)) {
-        follows.set(userToken, new Set());
+      if (!follows.has(currentUserId)) {
+        follows.set(currentUserId, new Set());
       }
-      follows.get(userToken)!.add(String(targetUserId));
+      follows.get(currentUserId)!.add(String(targetUserId));
 
       const targetUser = users.find(u => u.id === String(targetUserId));
       if (targetUser) {
@@ -112,8 +120,8 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     }
 
     if (action === 'unfollow' && targetUserId) {
-      if (follows.has(userToken)) {
-        follows.get(userToken)!.delete(String(targetUserId));
+      if (follows.has(currentUserId)) {
+        follows.get(currentUserId)!.delete(String(targetUserId));
       }
 
       const targetUser = users.find(u => u.id === String(targetUserId));

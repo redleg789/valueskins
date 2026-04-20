@@ -160,6 +160,10 @@ pub async fn metrics_handler(req: actix_web::HttpRequest) -> HttpResponse {
                     .body("Unauthorized");
             }
         }
+    } else if std::env::var("APP_ENV").map(|v| v == "production").unwrap_or(false) {
+        return HttpResponse::ServiceUnavailable()
+            .content_type("text/plain")
+            .body("Metrics disabled: missing METRICS_BEARER_TOKEN");
     }
 
     HttpResponse::Ok()

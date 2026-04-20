@@ -37,7 +37,7 @@ pub enum RecommendedAction {
     Approve,                     // Safe to approve for deals
     ApproveWithMonitoring,       // Approve but flag for reviews
     RequireAdditionalVerification, // Ask for ID, address, etc
-    SuspendPending Investigation, // Temp suspend pending human review
+    SuspendPendingInvestigation, // Temp suspend pending human review
     Reject,                      // Reject outright
 }
 
@@ -87,7 +87,7 @@ impl FraudDetectionEngine {
         account_linked_accounts: usize,
     ) -> FraudRiskAssessment {
         let mut risk_factors = Vec::new();
-        let mut total_risk = 0.0;
+        let mut total_risk: f64 = 0.0;
 
         // 1. ACCOUNT AGE (0-15 points)
         let age_risk = match account_age_days {
@@ -244,7 +244,7 @@ impl FraudDetectionEngine {
             RiskLevel::Green => RecommendedAction::Approve,
             RiskLevel::Yellow => RecommendedAction::ApproveWithMonitoring,
             RiskLevel::Orange => RecommendedAction::RequireAdditionalVerification,
-            RiskLevel::Red => RecommendedAction::SuspendPending Investigation,
+            RiskLevel::Red => RecommendedAction::SuspendPendingInvestigation,
         };
 
         FraudRiskAssessment {

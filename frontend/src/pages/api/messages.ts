@@ -1,4 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
+import { isDemoModeEnabled } from '@/lib/demoMode';
+import { validateDemoToken } from '@/lib/server/demoAuth';
 
 interface Message {
   id: string;
@@ -21,7 +23,7 @@ interface Conversation {
   unreadCount: { [key: string]: number };
 }
 
-let conversations: Conversation[] = [
+const conversations: Conversation[] = [
   {
     id: 'conv_1',
     participants: ['user_123', 'user_456'],
@@ -42,7 +44,7 @@ let conversations: Conversation[] = [
   },
 ];
 
-let messages: Message[] = [
+const messages: Message[] = [
   {
     id: 'msg_1',
     conversationId: 'conv_1',
@@ -77,10 +79,16 @@ let messages: Message[] = [
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
   const userToken = req.headers.authorization?.replace('Bearer ', '');
+  const demoSession = validateDemoToken(userToken);
 
-  if (!userToken) {
+  if (!isDemoModeEnabled()) {
+    return res.status(403).json({ error: 'Demo API disabled' });
+  }
+
+  if (!demoSession) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
+  const userId = demoSession.sub;
 
   if (req.method === 'GET') {
     const { action, conversationId } = req.query;
@@ -88,12 +96,12 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     if (action === 'conversations') {
       // Get all conversations for user
       const userConversations = conversations
-        .filter(c => c.participants.includes(userToken))
+        .filter(c => c.participants.includes(userId))
         .map(c => ({
           ...c,
-          otherParticipantId: c.participants.find(p => p !== userToken),
-          otherParticipantName: c.participantNames[c.participants.find(p => p !== userToken) || ''],
-          otherParticipantAvatar: c.participantAvatars[c.participants.find(p => p !== userToken) || ''],
+          otherParticipantId: c.participants.find(p => p !== userId),
+          otherParticipantName: c.participantNames[c.participants.find(p => p !== userId) || ''],
+          otherParticipantAvatar: c.participantAvatars[c.participants.find(p => p !== userId) || ''],
         }))
         .sort((a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime());
 
@@ -124,12 +132,12 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       if (!conversation) {
         conversation = {
           id: `conv_${conversations.length + 1}`,
-          participants: [userToken, recipientId],
-          participantNames: { [userToken]: 'You', [recipientId]: recipientName },
-          participantAvatars: { [userToken]: '👤', [recipientId]: recipientAvatar },
+          participants: [userId, recipientId],
+          participantNames: { [userId]: 'You', [recipientId]: recipientName },
+          participantAvatars: { [userId]: '👤', [recipientId]: recipientAvatar },
           lastMessage: content,
           lastMessageTime: new Date().toISOString(),
-          unreadCount: { [userToken]: 0, [recipientId]: 1 },
+          unreadCount: { [userId]: 0, [recipientId]: 1 },
         };
         conversations.push(conversation);
       } else {
@@ -142,7 +150,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       const newMessage: Message = {
         id: `msg_${messages.length + 1}`,
         conversationId: conversation.id,
-        senderId: userToken,
+        senderId: userId,
         senderName: 'You',
         senderAvatar: '👤',
         content,
@@ -157,7 +165,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     if (action === 'mark-read' && req.body.conversationId) {
       const conversation = conversations.find(c => c.id === req.body.conversationId);
       if (conversation) {
-        conversation.unreadCount[userToken] = 0;
+        conversation.unreadCount[userId] = 0;
       }
 
       // Mark all messages in conversation as read

@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
+import { clearDemoSession, getDemoToken } from '@/lib/demoSession';
+import { demoUserIdFromToken } from '@/lib/demoMode';
 
 interface Conversation {
   id: string;
@@ -32,6 +34,10 @@ export default function Chat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [messageText, setMessageText] = useState('');
   const [loading, setLoading] = useState(true);
+  const currentUserId = (() => {
+    const token = getDemoToken();
+    return token ? demoUserIdFromToken(token) : '';
+  })();
 
   useEffect(() => {
     fetchConversations();
@@ -41,7 +47,7 @@ export default function Chat() {
 
   const fetchConversations = async () => {
     try {
-      const token = localStorage.getItem('auth_token');
+      const token = getDemoToken();
       const response = await fetch('/api/messages?action=conversations', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -58,7 +64,7 @@ export default function Chat() {
 
   const fetchMessages = async (conversationId: string) => {
     try {
-      const token = localStorage.getItem('auth_token');
+      const token = getDemoToken();
       const response = await fetch(`/api/messages?action=messages&conversationId=${conversationId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -90,7 +96,7 @@ export default function Chat() {
     e.preventDefault();
     if (!messageText.trim() || !selectedConversation) return;
 
-    const token = localStorage.getItem('auth_token');
+    const token = getDemoToken();
     try {
       const response = await fetch('/api/messages?action=send', {
         method: 'POST',
@@ -125,8 +131,7 @@ export default function Chat() {
           <h2 className="text-2xl font-bold">Messages</h2>
           <button
             onClick={() => {
-              localStorage.removeItem('auth_token');
-              localStorage.removeItem('user_type');
+              clearDemoSession();
               router.push('/auth/login');
             }}
             className="text-sm text-gray-400 hover:text-white"
@@ -160,7 +165,7 @@ export default function Chat() {
                       })}
                     </p>
                   </div>
-                  {conversation.unreadCount && conversation.unreadCount[localStorage.getItem('auth_token') || ''] > 0 && (
+                  {conversation.unreadCount && conversation.unreadCount[currentUserId] > 0 && (
                     <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
                   )}
                 </div>
@@ -191,11 +196,11 @@ export default function Chat() {
                 messages.map(msg => (
                   <div
                     key={msg.id}
-                    className={`flex ${msg.senderId === localStorage.getItem('auth_token') ? 'justify-end' : 'justify-start'}`}
+                    className={`flex ${msg.senderId === currentUserId ? 'justify-end' : 'justify-start'}`}
                   >
                     <div
                       className={`max-w-xs px-4 py-2 rounded-2xl ${
-                        msg.senderId === localStorage.getItem('auth_token')
+                        msg.senderId === currentUserId
                           ? 'bg-blue-600 text-white'
                           : 'bg-gray-800 text-gray-100'
                       }`}

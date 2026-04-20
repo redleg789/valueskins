@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
+import { clearDemoSession, getDemoToken } from '@/lib/demoSession';
 
 interface User {
   id: string;
@@ -38,7 +39,7 @@ export default function MyProfile() {
 
   const fetchProfile = async () => {
     try {
-      const token = localStorage.getItem('auth_token');
+      const token = getDemoToken();
       const response = await fetch(`/api/users?action=me`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -50,7 +51,7 @@ export default function MyProfile() {
       // Fetch user's posts
       const postsResponse = await fetch('/api/posts');
       const allPosts = await postsResponse.json();
-      const creatorPosts = allPosts.filter((p: Post) => p.userId === token);
+      const creatorPosts = allPosts.filter((p: Post) => p.userId === 'user_123');
       setUserPosts(creatorPosts);
       setLoading(false);
     } catch (error) {
@@ -74,8 +75,7 @@ export default function MyProfile() {
           <h1 className="text-2xl font-bold">Nexus</h1>
           <button
             onClick={() => {
-              localStorage.removeItem('auth_token');
-              localStorage.removeItem('user_type');
+              clearDemoSession();
               router.push('/auth/login');
             }}
             className="text-sm text-gray-400 hover:text-white"

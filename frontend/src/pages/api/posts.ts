@@ -1,8 +1,10 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { runEthicalGuards } from '@/lib/ethicalGuards'
+import { isDemoModeEnabled } from '@/lib/demoMode'
+import { validateDemoToken } from '@/lib/server/demoAuth'
 
 // Mock database for MVP
-let posts = [
+const posts = [
   {
     id: '1',
     userId: 'user_123',
@@ -33,7 +35,7 @@ let posts = [
   },
 ];
 
-let likes = new Map<string, Set<string>>(); // postId -> Set of userIds who liked
+const likes = new Map<string, Set<string>>(); // postId -> Set of userIds who liked
 
 interface Comment {
   id: string;
@@ -48,11 +50,16 @@ interface Comment {
   replies: Comment[];
 }
 
-let comments = new Map<string, Comment[]>();
+const comments = new Map<string, Comment[]>();
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
   const userToken = req.headers.authorization?.replace('Bearer ', '');
   const { action, postId } = req.query;
+  const demoSession = validateDemoToken(userToken);
+
+  if (!isDemoModeEnabled()) {
+    return res.status(403).json({ error: 'Demo API disabled' });
+  }
 
   if (req.method === 'GET') {
     if (action === 'feed') {
@@ -65,9 +72,10 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 
   if (req.method === 'POST') {
-    if (!userToken) {
+    if (!demoSession) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
+    const userId = demoSession.sub;
 
     if (action === 'like' && postId) {
       const post = posts.find(p => p.id === String(postId));
@@ -78,8 +86,8 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       }
 
       const postLikes = likes.get(String(postId))!;
-      if (!postLikes.has(userToken)) {
-        postLikes.add(userToken);
+      if (!postLikes.has(userId)) {
+        postLikes.add(userId);
         post.likes += 1;
       }
 
@@ -91,8 +99,8 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       if (!post) return res.status(404).json({ error: 'Post not found' });
 
       const postLikes = likes.get(String(postId));
-      if (postLikes && postLikes.has(userToken)) {
-        postLikes.delete(userToken);
+      if (postLikes && postLikes.has(userId)) {
+        postLikes.delete(userId);
         post.likes = Math.max(0, post.likes - 1);
       }
 
@@ -125,7 +133,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       const newComment: Comment = {
         id: `comment_${Date.now()}`,
         postId: String(postId),
-        userId: userToken,
+        userId,
         userName: 'You',
         userHandle: '@yourhandle',
         userAvatar: '👤',
@@ -165,7 +173,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
 
     const newPost = {
       id: String(posts.length + 1),
-      userId: userToken,
+      userId,
       author: 'Your Name',
       handle: '@yourhandle',
       avatar: '👤',

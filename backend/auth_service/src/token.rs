@@ -123,6 +123,12 @@ impl TokenManager {
     }
 }
 
+pub fn create_token(user_id: i64, role: &str) -> Result<String, AuthError> {
+    let secret = std::env::var("JWT_SECRET").map_err(|_| AuthError::TokenCreationError)?;
+    let manager = TokenManager::new(&secret);
+    manager.create_token(user_id, "", role, None)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

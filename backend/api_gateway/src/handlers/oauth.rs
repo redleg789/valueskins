@@ -6,6 +6,35 @@ use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
 use chrono::Utc;
+use std::collections::HashMap;
+use std::sync::{Mutex, OnceLock};
+use std::time::{Duration, Instant};
+
+const OAUTH_STATE_TTL: Duration = Duration::from_secs(600);
+
+fn oauth_state_store() -> &'static Mutex<HashMap<String, Instant>> {
+    static OAUTH_STATES: OnceLock<Mutex<HashMap<String, Instant>>> = OnceLock::new();
+    OAUTH_STATES.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+fn store_oauth_state(state: &str) {
+    if let Ok(mut states) = oauth_state_store().lock() {
+        let now = Instant::now();
+        states.retain(|_, created_at| now.duration_since(*created_at) < OAUTH_STATE_TTL);
+        states.insert(state.to_string(), now);
+    }
+}
+
+fn consume_oauth_state(state: &str) -> bool {
+    if let Ok(mut states) = oauth_state_store().lock() {
+        let now = Instant::now();
+        states.retain(|_, created_at| now.duration_since(*created_at) < OAUTH_STATE_TTL);
+        if let Some(created_at) = states.remove(state) {
+            return now.duration_since(created_at) < OAUTH_STATE_TTL;
+        }
+    }
+    false
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct OAuthCallbackRequest {
@@ -41,9 +70,7 @@ pub async fn start_oauth(
 ) -> HttpResponse {
     let platform = req.platform.to_lowercase();
     let state = Uuid::new_v4().to_string();
-
-    // Store state in Redis for CSRF protection (implementation pending)
-    // For now, state validation happens at callback
+    store_oauth_state(&state);
 
     let auth_url = match platform.as_str() {
         "google" => {
@@ -127,8 +154,11 @@ pub async fn oauth_callback(
 ) -> HttpResponse {
     let platform = platform.to_lowercase();
     let code = &query.code;
-
-    // Verify state token (implement Redis lookup)
+    if !consume_oauth_state(&query.state) {
+        return HttpResponse::BadRequest().json(serde_json::json!({
+            "error": "invalid_oauth_state"
+        }));
+    }
 
     match platform.as_str() {
         "google" => handle_google_callback(code, &pool).await,
@@ -207,7 +237,7 @@ async fn handle_google_callback(code: &str, pool: &PgPool) -> HttpResponse {
     };
 
     // Create JWT token
-    let jwt_token = match auth_service::token::create_token(user_id, "user") {
+    let jwt_token = match auth_service::token::create_token(user_id, "brand") {
         Ok(token) => token,
         Err(_) => return HttpResponse::InternalServerError().json(serde_json::json!({
             "error": "token_generation_failed"

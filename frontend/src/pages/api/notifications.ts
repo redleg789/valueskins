@@ -1,4 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
+import { isDemoModeEnabled } from '@/lib/demoMode';
+import { validateDemoToken } from '@/lib/server/demoAuth';
 
 interface Notification {
   id: string;
@@ -14,7 +16,7 @@ interface Notification {
   read: boolean;
 }
 
-let notifications: Notification[] = [
+const notifications: Notification[] = [
   {
     id: '1',
     userId: 'user_123',
@@ -56,15 +58,21 @@ let notifications: Notification[] = [
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
   const userToken = req.headers.authorization?.replace('Bearer ', '');
+  const demoSession = validateDemoToken(userToken);
 
-  if (!userToken) {
+  if (!isDemoModeEnabled()) {
+    return res.status(403).json({ error: 'Demo API disabled' });
+  }
+
+  if (!demoSession) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
+  const userId = demoSession.sub;
 
   if (req.method === 'GET') {
     // Get notifications for current user
     const userNotifications = notifications
-      .filter(n => n.userId === userToken)
+      .filter(n => n.userId === userId)
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     return res.status(200).json(userNotifications);
@@ -86,7 +94,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
 
       const newNotification: Notification = {
         id: String(notifications.length + 1),
-        userId: userToken,
+        userId,
         type,
         actor: actorName,
         actorId,
@@ -104,7 +112,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
 
     if (action === 'mark-all-read') {
       notifications.forEach(n => {
-        if (n.userId === userToken) {
+        if (n.userId === userId) {
           n.read = true;
         }
       });

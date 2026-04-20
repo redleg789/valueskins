@@ -11,10 +11,7 @@ use chrono::{DateTime, Utc};
 
 /// Extract user_id from JWT claims (any authenticated user).
 fn get_user_id(req: &HttpRequest) -> Result<i64, HttpResponse> {
-    req.extensions()
-        .get::<auth_service::token::Claims>()
-        .map(|c| c.sub.parse::<i64>().unwrap_or(0))
-        .ok_or_else(|| HttpResponse::Unauthorized().json(serde_json::json!({"error": "Authentication required"})))
+    crate::handlers::parse_authenticated_user_id(req)
 }
 
 /// Extract and validate admin role from JWT claims.
@@ -32,7 +29,11 @@ fn require_admin(req: &HttpRequest) -> Result<i64, HttpResponse> {
         })));
     }
 
-    Ok(claims.sub.parse::<i64>().unwrap_or(0))
+    claims.sub.parse::<i64>().map_err(|_| {
+        HttpResponse::Unauthorized().json(serde_json::json!({
+            "error": "Invalid authentication token"
+        }))
+    })
 }
 
 #[derive(Deserialize)]
@@ -1018,8 +1019,8 @@ pub struct DisputeResolutionRequest {
     pub admin_notes: String,
 }
 
-/// GET /admin/disputes — List pending disputes
-pub async fn list_disputes(
+/// Legacy dispute endpoint kept out of the main route tree.
+pub async fn list_disputes_legacy(
     req: HttpRequest,
     pool: web::Data<PgPool>,
     status: web::Query<std::collections::HashMap<String, String>>,
@@ -1048,8 +1049,8 @@ pub async fn list_disputes(
     HttpResponse::Ok().json(disputes)
 }
 
-/// POST /admin/disputes/:id/resolve — Resolve a dispute
-pub async fn resolve_dispute(
+/// Legacy dispute endpoint kept out of the main route tree.
+pub async fn resolve_dispute_legacy(
     req: HttpRequest,
     path: web::Path<i64>,
     body: web::Json<DisputeResolutionRequest>,

@@ -1,7 +1,23 @@
-use actix_web::{web, HttpRequest, HttpResponse};
+use actix_web::{web, HttpMessage, HttpRequest, HttpResponse};
 use serde_json::json;
 use sqlx::PgPool;
 use crate::interest_service::{InterestService, CreateInterestSignupRequest};
+
+fn require_admin(req: &HttpRequest) -> Result<i64, HttpResponse> {
+    let extensions = req.extensions();
+    let claims = extensions
+        .get::<auth_service::token::Claims>()
+        .ok_or_else(|| HttpResponse::Unauthorized().json(json!({"error": "Authentication required"})))?;
+
+    if claims.role != "admin" {
+        return Err(HttpResponse::Forbidden().json(json!({"error": "Admin access required"})));
+    }
+
+    claims
+        .sub
+        .parse::<i64>()
+        .map_err(|_| HttpResponse::Unauthorized().json(json!({"error": "Invalid authentication token"})))
+}
 
 /// POST /interest/signup - Create new creator interest signup (public endpoint)
 pub async fn create_interest_signup(
@@ -62,9 +78,12 @@ pub async fn get_interest_signup(
 pub async fn list_interest_signups(
     pool: web::Data<PgPool>,
     query: web::Query<std::collections::HashMap<String, String>>,
-    _req: HttpRequest,
+    req: HttpRequest,
 ) -> HttpResponse {
-    // In production: verify admin role from JWT claims
+    if let Err(resp) = require_admin(&req) {
+        return resp;
+    }
+
     let status = query.get("status").map(|s| s.as_str());
     let limit = query
         .get("limit")
@@ -91,9 +110,12 @@ pub async fn list_interest_signups(
 /// GET /admin/interest/stats - Get conversion statistics (admin only)
 pub async fn get_interest_stats(
     pool: web::Data<PgPool>,
-    _req: HttpRequest,
+    req: HttpRequest,
 ) -> HttpResponse {
-    // In production: verify admin role from JWT claims
+    if let Err(resp) = require_admin(&req) {
+        return resp;
+    }
+
     let service = InterestService::new(pool.get_ref().clone());
 
     match service.get_stats().await {
@@ -108,8 +130,10 @@ pub async fn contact_interest_signup(
     signup_id: web::Path<i64>,
     req: HttpRequest,
 ) -> HttpResponse {
-    // In production: extract admin_user_id from JWT claims
-    let admin_user_id = 999i64; // Mock admin ID
+    let admin_user_id = match require_admin(&req) {
+        Ok(id) => id,
+        Err(resp) => return resp,
+    };
 
     let service = InterestService::new(pool.get_ref().clone());
 
@@ -132,7 +156,12 @@ pub async fn convert_interest_signup(
     pool: web::Data<PgPool>,
     signup_id: web::Path<i64>,
     body: web::Json<serde_json::Value>,
+    req: HttpRequest,
 ) -> HttpResponse {
+    if let Err(resp) = require_admin(&req) {
+        return resp;
+    }
+
     let user_id = match body.get("user_id").and_then(|v| v.as_i64()) {
         Some(uid) => uid,
         None => {
@@ -161,14 +190,17 @@ pub async fn reject_interest_signup(
     pool: web::Data<PgPool>,
     signup_id: web::Path<i64>,
     body: web::Json<serde_json::Value>,
+    req: HttpRequest,
 ) -> HttpResponse {
+    let admin_user_id = match require_admin(&req) {
+        Ok(id) => id,
+        Err(resp) => return resp,
+    };
+
     let reason = match body.get("reason").and_then(|v| v.as_str()) {
         Some(r) => r,
         None => "No reason provided",
     };
-
-    // In production: extract admin_user_id from JWT claims
-    let admin_user_id = 999i64;
 
     let service = InterestService::new(pool.get_ref().clone());
 

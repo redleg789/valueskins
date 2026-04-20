@@ -28,6 +28,11 @@ impl S3Uploader {
         Self { config }
     }
 
+    fn allow_insecure_mock_behavior() -> bool {
+        std::env::var("ALLOW_INSECURE_STORAGE_MOCKS").ok().as_deref() == Some("true")
+            && std::env::var("RUST_ENV").ok().as_deref() != Some("production")
+    }
+
     /// Generate presigned URL for browser upload
     /// Creator uploads video directly to S3, backend never touches video bytes
     pub fn get_presigned_upload_url(
@@ -52,9 +57,13 @@ impl S3Uploader {
         let upload_id = uuid::Uuid::new_v4().to_string();
         let s3_key = format!("deliverables/{}/{}/{}", deal_id, timestamp, file_name);
 
-        // Build presigned URL
-        // In production: use AWS SDK (rusoto or aws-sdk-rust)
-        // For MVP: construct presigned URL manually
+        if !Self::allow_insecure_mock_behavior() {
+            return Err(S3Error::ConfigError(
+                "S3 presigning is not configured; refusing to return unsigned upload URLs".to_string(),
+            ));
+        }
+
+        // Build mock URL only when explicitly allowed outside production.
         let expires_in = 3600; // 1 hour
         let expires_at = (chrono::Utc::now() + chrono::Duration::hours(1)).to_rfc3339();
 
@@ -78,10 +87,14 @@ impl S3Uploader {
         s3_key: &str,
         expires_in_hours: i32,
     ) -> Result<String, S3Error> {
-        let expires_at = chrono::Utc::now() + chrono::Duration::hours(expires_in_hours as i64);
+        let _expires_at = chrono::Utc::now() + chrono::Duration::hours(expires_in_hours as i64);
 
-        // In production: sign this with AWS credentials
-        // For MVP: return unsigned URL (public read permission on bucket)
+        if !Self::allow_insecure_mock_behavior() {
+            return Err(S3Error::ConfigError(
+                "S3 view URL signing is not configured; refusing to return unsigned view URLs".to_string(),
+            ));
+        }
+
         let url = format!(
             "https://{}.s3.{}.amazonaws.com/{}",
             self.config.bucket, self.config.region, s3_key
@@ -92,23 +105,35 @@ impl S3Uploader {
 
     /// Delete file from S3
     pub async fn delete_file(&self, s3_key: &str) -> Result<(), S3Error> {
-        // In production: use AWS SDK
-        // For MVP: just log the deletion
+        if !Self::allow_insecure_mock_behavior() {
+            return Err(S3Error::ConfigError(
+                "S3 deletion is not configured".to_string(),
+            ));
+        }
+
         tracing::info!("Would delete S3 file: {}", s3_key);
         Ok(())
     }
 
     /// Check if file exists (for verification)
     pub async fn file_exists(&self, s3_key: &str) -> Result<bool, S3Error> {
-        // In production: HEAD request to S3
-        // For MVP: always return true (assume upload succeeded)
+        if !Self::allow_insecure_mock_behavior() {
+            return Err(S3Error::ConfigError(
+                "S3 metadata checks are not configured".to_string(),
+            ));
+        }
+
         Ok(true)
     }
 
     /// Get file metadata (size, upload time)
     pub async fn get_file_metadata(&self, s3_key: &str) -> Result<FileMetadata, S3Error> {
-        // In production: HEAD request and parse headers
-        // For MVP: mock metadata
+        if !Self::allow_insecure_mock_behavior() {
+            return Err(S3Error::ConfigError(
+                "S3 metadata checks are not configured".to_string(),
+            ));
+        }
+
         Ok(FileMetadata {
             size_bytes: 1_000_000_000,
             uploaded_at: chrono::Utc::now(),

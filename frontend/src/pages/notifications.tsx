@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
+import { clearDemoSession, getDemoToken } from '@/lib/demoSession';
 
 interface Notification {
   id: string;
@@ -28,7 +29,7 @@ export default function Notifications() {
 
   const fetchNotifications = async () => {
     try {
-      const token = localStorage.getItem('auth_token');
+      const token = getDemoToken();
       const response = await fetch('/api/notifications', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -44,7 +45,7 @@ export default function Notifications() {
   };
 
   const markAsRead = async (notificationId: string) => {
-    const token = localStorage.getItem('auth_token');
+    const token = getDemoToken();
     try {
       await fetch(`/api/notifications?action=mark-read`, {
         method: 'POST',
@@ -92,8 +93,7 @@ export default function Notifications() {
           <h1 className="text-2xl font-bold">Notifications</h1>
           <button
             onClick={() => {
-              localStorage.removeItem('auth_token');
-              localStorage.removeItem('user_type');
+              clearDemoSession();
               router.push('/auth/login');
             }}
             className="text-sm text-gray-400 hover:text-white"

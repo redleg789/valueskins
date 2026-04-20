@@ -119,7 +119,7 @@ impl UnifiedCreatorProfile {
         platform_count: usize,
         is_verified: bool,
     ) -> f64 {
-        let mut score = 50.0; // baseline
+        let mut score: f64 = 50.0; // baseline
 
         // Follower authenticity signals
         if follower_count > 10_000 && follower_count < 10_000_000 {
@@ -167,7 +167,7 @@ impl UnifiedCreatorProfile {
         post_consistency_score: f64, // 0-1: how consistent their posting is
     ) -> f64 {
         // Red flags for bot/fake accounts
-        let mut risk = 0.0;
+        let mut risk: f64 = 0.0;
 
         // Follower count red flags
         if follower_count < 100 || follower_count > 100_000_000 {
@@ -211,7 +211,7 @@ impl UnifiedCreatorProfile {
         platforms: &HashMap<String, PlatformPresence>,
         follower_count_variance: f64, // 0-1: how different followers are across platforms
     ) -> f64 {
-        let mut score = 50.0; // baseline
+        let mut score: f64 = 50.0; // baseline
 
         // More platforms = more authentic (harder to fake across multiple)
         match platforms.len() {

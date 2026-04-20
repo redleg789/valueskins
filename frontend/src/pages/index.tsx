@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import CommentsModal from '@/components/CommentsModal';
 import { MAX_FEED_POSTS_PER_PAGE } from '@/lib/guards/addictiveDesign';
+import { clearDemoSession, getDemoToken, getDemoUserType } from '@/lib/demoSession';
 
 interface Post {
   id: string;
@@ -28,8 +29,8 @@ export default function Home() {
 
   useEffect(() => {
     setMounted(true);
-    const token = localStorage.getItem('auth_token');
-    const userType = localStorage.getItem('user_type');
+    const token = getDemoToken();
+    const userType = getDemoUserType();
 
     if (!token || !userType) {
       router.push('/auth/login');
@@ -54,7 +55,7 @@ export default function Home() {
 
     setLoading(true);
     try {
-      const token = localStorage.getItem('auth_token');
+      const token = getDemoToken();
       const response = await fetch('/api/posts', {
         method: 'POST',
         headers: {
@@ -79,7 +80,7 @@ export default function Home() {
   };
 
   const toggleLike = async (postId: string) => {
-    const token = localStorage.getItem('auth_token');
+    const token = getDemoToken();
     const post = posts.find(p => p.id === postId);
     if (!post) return;
 
@@ -106,8 +107,7 @@ export default function Home() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('user_type');
+    clearDemoSession();
     router.push('/auth/login');
   };
 

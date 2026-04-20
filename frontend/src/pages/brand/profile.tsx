@@ -1,4 +1,5 @@
 import { useRouter } from 'next/router';
+import { clearDemoSession } from '@/lib/demoSession';
 
 export default function BrandProfile() {
   const router = useRouter();
@@ -10,8 +11,7 @@ export default function BrandProfile() {
           <h1 className="text-2xl font-bold">Nexus</h1>
           <button
             onClick={() => {
-              localStorage.removeItem('auth_token');
-              localStorage.removeItem('user_type');
+              clearDemoSession();
               router.push('/auth/login');
             }}
             className="text-sm text-gray-400 hover:text-white"

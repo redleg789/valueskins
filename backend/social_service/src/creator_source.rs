@@ -277,9 +277,7 @@ pub struct CreatorSourceFactory;
 impl CreatorSourceFactory {
     pub fn create(use_real_api: bool) -> Arc<dyn CreatorDataSource> {
         if use_real_api {
-            // TODO: Wire Instagram/YouTube/TikTok/LinkedIn API implementations here
-            // For now, always use mock
-            Arc::new(MockCreatorSource::new())
+            panic!("Real creator data source is not implemented; refusing to fall back to mock data");
         } else {
             Arc::new(MockCreatorSource::new())
         }
@@ -288,13 +286,21 @@ impl CreatorSourceFactory {
     /// Factory that reads from environment variable
     /// Set CREATOR_DATA_SOURCE=instagram|mock (default: mock)
     pub fn from_env() -> Arc<dyn CreatorDataSource> {
+        let is_production = std::env::var("RUST_ENV").ok().as_deref() == Some("production");
         let source = std::env::var("CREATOR_DATA_SOURCE")
-            .unwrap_or_else(|_| "mock".to_string())
+            .unwrap_or_else(|_| {
+                if is_production {
+                    panic!("CREATOR_DATA_SOURCE must be set in production");
+                }
+                "mock".to_string()
+            })
             .to_lowercase();
 
         match source.as_str() {
             "instagram" | "api" => Self::create(true),
-            _ => Self::create(false),
+            "mock" if !is_production => Self::create(false),
+            "mock" => panic!("Mock creator data source is not allowed in production"),
+            _ => panic!("Unsupported CREATOR_DATA_SOURCE value: {}", source),
         }
     }
 }
