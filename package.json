@@ -1,25 +1,26 @@
 {
-  "name": "valueskins",
+  "name": "valueskins-monorepo",
   "version": "0.1.0",
   "private": true,
-  "description": "The creator economy infrastructure platform",
+  "description": "ValueSkins (creator economy) + Nexus (anti-Meta social) platform",
   "scripts": {
-    "dev": "npm run dev --prefix ./frontend",
-    "build": "npm run build --prefix ./frontend",
-    "start": "npm run start --prefix ./frontend",
-    "lint": "npm run lint --prefix ./frontend",
-    "install:all": "npm install && npm install --prefix ./frontend",
-    "clean": "rm -rf frontend/node_modules frontend/.next && npm cache clean --force"
+    "dev:valueskins": "npm run dev --prefix ./frontend",
+    "dev:nexus": "npm run dev --prefix ./nexus/frontend",
+    "build:valueskins": "npm run build --prefix ./frontend",
+    "build:nexus": "npm run build --prefix ./nexus/frontend",
+    "install:all": "npm install && npm install --prefix ./frontend && npm install --prefix ./nexus/frontend",
+    "clean": "rm -rf frontend/node_modules frontend/.next nexus/frontend/node_modules nexus/frontend/.next && npm cache clean --force"
   },
   "workspaces": [
     "frontend",
+    "nexus/frontend",
     "backend"
   ],
   "keywords": [
     "creator-economy",
-    "reputation",
-    "verification",
-    "equity"
+    "social-media",
+    "anti-meta",
+    "ethical-design"
   ],
   "dependencies": {
     "pdf-lib": "^1.17.1"

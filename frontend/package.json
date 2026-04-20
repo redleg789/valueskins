@@ -1,7 +1,8 @@
 {
-  "name": "frontend",
+  "name": "valueskins",
   "version": "0.1.0",
   "private": true,
+  "description": "ValueSkins: Creator economy marketplace infrastructure",
   "scripts": {
     "predev": "node scripts/generate-sticker-manifest.js",
     "dev": "next dev -p 3001",
