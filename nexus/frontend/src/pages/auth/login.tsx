@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
+import { getGoogleAuthUrl, getGitHubAuthUrl } from '@/lib/oauth';
 
 export const getServerSideProps = async () => {
   return { props: {} };
@@ -9,6 +10,18 @@ export default function Login() {
   const router = useRouter();
   const [userType, setUserType] = useState<'creator' | 'brand' | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const handleGoogleLogin = () => {
+    setLoading(true);
+    localStorage.setItem('user_type', userType || 'user');
+    window.location.href = getGoogleAuthUrl();
+  };
+
+  const handleGitHubLogin = () => {
+    setLoading(true);
+    localStorage.setItem('user_type', userType || 'user');
+    window.location.href = getGitHubAuthUrl();
+  };
 
   const handleOAuthLogin = (platform: string) => {
     if (!userType) return;
@@ -110,21 +123,38 @@ export default function Login() {
           {userType === 'brand' && (
             <>
               <button
-                onClick={() => handleOAuthLogin('google')}
+                onClick={handleGoogleLogin}
                 disabled={loading}
                 className="w-full bg-white hover:bg-gray-100 text-black font-bold py-4 px-4 rounded-xl transition disabled:opacity-50"
               >
                 {loading ? 'Connecting...' : '🔷 Google'}
               </button>
               <button
-                onClick={() => handleOAuthLogin('email')}
+                onClick={handleGitHubLogin}
                 disabled={loading}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-4 rounded-xl transition disabled:opacity-50"
+                className="w-full bg-gray-800 hover:bg-gray-700 text-white font-bold py-4 px-4 rounded-xl transition disabled:opacity-50"
               >
-                {loading ? 'Connecting...' : '✉️ Email'}
+                {loading ? 'Connecting...' : '🐙 GitHub'}
               </button>
             </>
           )}
+
+          <div className="my-4 border-t border-gray-700"></div>
+
+          <button
+            onClick={handleGoogleLogin}
+            disabled={loading}
+            className="w-full bg-white hover:bg-gray-100 text-black font-bold py-3 px-4 rounded-lg transition disabled:opacity-50 text-sm"
+          >
+            {loading ? 'Connecting...' : '🔷 Continue with Google'}
+          </button>
+          <button
+            onClick={handleGitHubLogin}
+            disabled={loading}
+            className="w-full bg-gray-800 hover:bg-gray-700 text-white font-bold py-3 px-4 rounded-lg transition disabled:opacity-50 text-sm"
+          >
+            {loading ? 'Connecting...' : '🐙 Continue with GitHub'}
+          </button>
         </div>
 
         <p className="text-xs text-gray-500 mt-8 text-center">
