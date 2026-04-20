@@ -15,37 +15,52 @@ logger = logging.getLogger(__name__)
 
 class DataCleaner:
     def __init__(self):
-        # Blocklists for filtering
+        # ABSOLUTE BLOCKLISTS - block everything
         self.profanities = [
             'shit', 'damn', 'hell', 'crap', 'ass', 'asshole', 'bastard',
-            'bitch', 'dammit', 'goddamn', 'fuck', 'fucking', 'fuckup'
+            'bitch', 'dammit', 'goddamn', 'fuck', 'fucking', 'fuckup', 'ass',
+            'piss', 'cunt', 'dick', 'cock', 'pussy', 'whore', 'slut'
         ]
 
         self.political_terms = [
-            'election', 'vote', 'candidate', 'campaign', 'congress', 'senator',
+            'election', 'vote', 'candidate', 'campaign', 'congress', 'senate', 'senator',
             'democrat', 'republican', 'political party', 'liberal', 'conservative',
             'trump', 'biden', 'obama', 'maga', 'blm', 'antifa', 'socialism',
-            'communism', 'fascism', 'government overreach'
+            'communism', 'fascism', 'government', 'politics', 'political', 'legislation',
+            'parliament', 'congress', 'minister', 'diplomat', 'political movement'
         ]
 
         self.religious_terms = [
-            'god', 'jesus', 'allah', 'buddha', 'krishna', 'pray', 'prayer',
-            'faith', 'believe in god', 'church', 'mosque', 'temple', 'synagogue',
-            'bible', 'quran', 'torah', 'gospel', 'holy', 'sacred', 'divine',
-            'salvation', 'sin', 'heaven', 'hell', 'convert', 'mission', 'evangel'
+            'god', 'jesus', 'allah', 'buddha', 'krishna', 'brahman', 'pray', 'prayer',
+            'faith', 'believe in god', 'church', 'mosque', 'temple', 'synagogue', 'mandir',
+            'bible', 'quran', 'torah', 'vedas', 'gospel', 'holy', 'sacred', 'divine',
+            'salvation', 'sin', 'heaven', 'hell', 'convert', 'mission', 'evangel',
+            'blessing', 'curse', 'spiritual', 'religion', 'religious', 'atheist', 'agnostic',
+            'priest', 'imam', 'rabbi', 'monk', 'nun', 'spiritual', 'meditation', 'yoga',
+            'hinduism', 'islam', 'christianity', 'judaism', 'buddhism', 'sikhism',
+            'catholic', 'protestant', 'orthodox', 'sunni', 'shia', 'dharma', 'karma'
+        ]
+
+        self.caste_terms = [
+            'brahmin', 'kshatriya', 'vaishya', 'shudra', 'dalit', 'obc', 'sc', 'st',
+            'backward', 'caste', 'untouchable', 'scheduled', 'tribe', 'general',
+            'upper caste', 'lower caste', 'caste system', 'jati'
         ]
 
         self.sexual_terms = [
             'sex', 'porn', 'xxx', 'nudes', 'onlyfans', 'escort', 'sex work',
             'explicit', 'nsfw', 'horny', 'cock', 'pussy', 'blowjob', 'cum',
-            'penetrate', 'orgasm', 'sexual intercourse', 'prostitute'
+            'penetrate', 'orgasm', 'sexual intercourse', 'prostitute', 'dating',
+            'seduction', 'flirt', 'sexy', 'erotic', 'sexual', 'strip', 'nude',
+            'XXX', 'adult content', 'xxx rated'
         ]
 
         self.hate_speech = [
             'kill yourself', 'kys', 'faggot', 'nigger', 'chink', 'spic',
             'retard', 'should die', 'piece of trash', 'worthless', 'loser',
             'i hope you', 'you\'re disgusting', 'hate you', 'kill all',
-            'subhuman', 'vermin'
+            'subhuman', 'vermin', 'scum', 'degenerate', 'inferior', 'superior',
+            'ethnic cleansing', 'genocide', 'racial', 'racist', 'discrimination'
         ]
 
     def contains_blocklist_content(self, text: str) -> Tuple[bool, str]:

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import CommentsModal from '@/components/CommentsModal';
 import { MAX_FEED_POSTS_PER_PAGE } from '@/lib/guards/addictiveDesign';
+import { checkContent, getWarningComponent } from '@/lib/contentBlocker';
 
 interface Post {
   id: string;
@@ -25,6 +26,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [selectedPostForComments, setSelectedPostForComments] = useState<string | null>(null);
+  const [contentWarning, setContentWarning] = useState<any>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -51,6 +53,13 @@ export default function Home() {
 
   const handleCreatePost = async () => {
     if (!newPost.trim()) return;
+
+    // Check content before allowing upload
+    const contentCheck = checkContent(newPost);
+    if (contentCheck.blocked) {
+      setContentWarning(getWarningComponent(newPost));
+      return;
+    }
 
     setLoading(true);
     try {
@@ -145,12 +154,23 @@ export default function Home() {
         <div className="col-span-12 lg:col-span-6 border-r border-gray-700">
           {/* Compose Post */}
           <div className="border-b border-gray-700 p-4">
+            {contentWarning && (
+              <div className="bg-red-900/30 border border-red-700 rounded-lg p-3 mb-4">
+                <p className="text-red-400 text-sm font-bold">{contentWarning.message}</p>
+                {contentWarning.blockedTerms.length > 0 && (
+                  <p className="text-red-300 text-xs mt-1">Blocked terms: {contentWarning.blockedTerms.slice(0, 3).join(', ')}</p>
+                )}
+              </div>
+            )}
             <div className="flex gap-4">
               <div className="text-2xl">👤</div>
               <div className="flex-1">
                 <textarea
                   value={newPost}
-                  onChange={(e) => setNewPost(e.target.value)}
+                  onChange={(e) => {
+                    setNewPost(e.target.value);
+                    setContentWarning(null);
+                  }}
                   placeholder="What's happening?!"
                   className="w-full bg-transparent text-xl text-white placeholder-gray-500 resize-none focus:outline-none"
                   rows={3}
@@ -160,7 +180,7 @@ export default function Home() {
                   <span className="text-gray-500 text-sm">{newPost.length}/280</span>
                   <button
                     onClick={handleCreatePost}
-                    disabled={loading || !newPost.trim()}
+                    disabled={loading || !newPost.trim() || contentWarning}
                     className="bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white font-bold px-8 py-2 rounded-full transition"
                   >
                     {loading ? 'Posting...' : 'Post'}
