@@ -1,4 +1,5 @@
-import { NextApiRequest, NextApiResponse } from 'next';
+import { NextApiRequest, NextApiResponse } from 'next'
+import { runEthicalGuards } from '@/lib/ethicalGuards'
 
 // Mock database for MVP
 let posts = [
@@ -150,6 +151,16 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
 
     if (content.length > 280) {
       return res.status(400).json({ error: 'Content too long (max 280 chars)' });
+    }
+
+    // Run ethical guards
+    const guards = runEthicalGuards(content);
+    if (!guards.allowed) {
+      return res.status(400).json({
+        error: 'Post violates community guidelines',
+        violations: guards.violations,
+        feedback: guards.feedback
+      });
     }
 
     const newPost = {

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import CommentsModal from '@/components/CommentsModal';
+import { MAX_FEED_POSTS_PER_PAGE } from '@/lib/guards/addictiveDesign';
 
 interface Post {
   id: string;
@@ -132,10 +133,11 @@ export default function Home() {
         <div className="col-span-3 border-r border-gray-700 p-4 hidden lg:block sticky top-20 h-screen">
           <nav className="space-y-4">
             <a href="/" className="block text-xl font-bold hover:text-blue-400">🏠 Home</a>
+            <a href="/deals-feed" className="block text-xl hover:text-blue-400">💼 Deals</a>
             <a href="/discover" className="block text-xl hover:text-blue-400">🔍 Discover</a>
             <a href="/notifications" className="block text-xl hover:text-blue-400">🔔 Notifications</a>
             <a href="/chat" className="block text-xl hover:text-blue-400">💬 Messages</a>
-            <a href="/creator/my-profile" className="block text-xl hover:text-blue-400">👤 My Profile</a>
+            <a href="/creator-profile?id=me" className="block text-xl hover:text-blue-400">👤 My Profile</a>
           </nav>
         </div>
 
