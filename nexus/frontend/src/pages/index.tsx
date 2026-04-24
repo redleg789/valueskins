@@ -1,8 +1,7 @@
+'use client';
+
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import CommentsModal from '@/components/CommentsModal';
-import { MAX_FEED_POSTS_PER_PAGE } from '@/lib/guards/addictiveDesign';
-import { checkContent, getWarningComponent } from '@/lib/contentBlocker';
 
 interface Post {
   id: string;
@@ -16,6 +15,8 @@ interface Post {
   likes: number;
   comments: number;
   shares: number;
+  saves: number;
+  hashtags: string[];
   liked: boolean;
 }
 
@@ -24,253 +25,272 @@ export default function Home() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [newPost, setNewPost] = useState('');
   const [loading, setLoading] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  const [selectedPostForComments, setSelectedPostForComments] = useState<string | null>(null);
-  const [contentWarning, setContentWarning] = useState<any>(null);
+  const [ready, setReady] = useState(false);
+  const [showComments, setShowComments] = useState(false);
+  const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
 
   useEffect(() => {
-    setMounted(true);
-    const token = localStorage.getItem('auth_token');
-    const userType = localStorage.getItem('user_type');
-
-    if (!token || !userType) {
-      router.push('/auth/login');
-      return;
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('auth_token');
+      const storedUserType = localStorage.getItem('user_type');
+      if (!token || !storedUserType) {
+        router.push('/auth/login');
+        return;
+      }
     }
-
-    fetchPosts();
+    setReady(true);
   }, [router]);
 
-  const fetchPosts = async () => {
-    try {
-      const response = await fetch('/api/posts');
-      const data = await response.json();
-      setPosts(data);
-    } catch (error) {
-      console.error('Failed to fetch posts:', error);
-    }
+  const extractHashtags = (content: string): string[] => {
+    const matches = content.match(/#[\w]+/g);
+    return matches ? matches.map(t => t.toLowerCase()) : [];
   };
 
   const handleCreatePost = async () => {
     if (!newPost.trim()) return;
-
-    // Check content before allowing upload
-    const contentCheck = checkContent(newPost);
-    if (contentCheck.blocked) {
-      setContentWarning(getWarningComponent(newPost));
-      return;
-    }
-
     setLoading(true);
     try {
       const token = localStorage.getItem('auth_token');
       const response = await fetch('/api/posts', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ content: newPost }),
       });
-
       if (response.ok) {
         const post = await response.json();
-        setPosts([post, ...posts]);
+        const postsWithHashtag = { ...post, hashtags: extractHashtags(newPost) };
+        setPosts([postsWithHashtag, ...posts]);
         setNewPost('');
-      } else {
-        alert('Failed to create post');
       }
-    } catch (error) {
-      console.error('Error creating post:', error);
+    } catch (e) {
+      console.error(e);
     } finally {
       setLoading(false);
     }
   };
 
-  const toggleLike = async (postId: string) => {
+  const handleLike = async (postId: string) => {
     const token = localStorage.getItem('auth_token');
     const post = posts.find(p => p.id === postId);
     if (!post) return;
-
+    const action = post.liked ? 'unlike' : 'like';
     try {
-      const action = post.liked ? 'unlike' : 'like';
       const response = await fetch(`/api/posts?action=${action}&postId=${postId}`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+        headers: { 'Authorization': `Bearer ${token}` },
       });
-
       if (response.ok) {
         const data = await response.json();
-        setPosts(posts.map(p =>
-          p.id === postId
-            ? { ...p, liked: !p.liked, likes: data.likes }
-            : p
-        ));
+        setPosts(posts.map(p => p.id === postId ? { ...p, liked: !p.liked, likes: data.likes } : p));
       }
-    } catch (error) {
-      console.error('Error toggling like:', error);
+    } catch (e) {
+      console.error(e);
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('user_type');
-    router.push('/auth/login');
-  };
-
-  if (!mounted) return null;
+  if (!ready) {
+    return (
+      <div className="min-h-screen bg-surface flex items-center justify-center">
+        <div className="text-primary">Loading...</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      {/* Header */}
-      <div className="border-b border-gray-700 sticky top-0 z-50 bg-black/80 backdrop-blur">
-        <div className="max-w-2xl mx-auto px-4 py-3 flex justify-between items-center">
-          <h1 className="text-2xl font-bold">Nexus</h1>
-          <button
-            onClick={handleLogout}
-            className="text-sm text-gray-400 hover:text-white"
-          >
-            Logout
-          </button>
+    <div className="min-h-screen bg-surface text-on-surface">
+      {/* Top App Bar */}
+      <header className="fixed top-0 w-full z-50 bg-surface-container/80 backdrop-blur-xl border-b border-outline-variant/20">
+        <div className="flex justify-between items-center px-6 h-20">
+          <span className="text-3xl font-black italic -rotate-2 tracking-tighter text-primary bg-surface-container-highest px-4 py-1 rounded-sm shadow-[4px_4px_0px_0px_rgba(213,0,249,0.3)] font-headline">
+            Nexus
+          </span>
+          <div className="flex items-center gap-6 text-primary">
+            <button className="hover:text-primary hover:bg-zinc-800/50 transition-all p-2 rounded-full">
+              <span className="material-symbols-outlined text-2xl">notifications</span>
+            </button>
+            <button className="hover:text-primary hover:bg-zinc-800/50 transition-all p-2 rounded-full">
+              <span className="material-symbols-outlined text-2xl">account_circle</span>
+            </button>
+          </div>
         </div>
-      </div>
+      </header>
 
-      <div className="grid grid-cols-12 gap-4 max-w-6xl mx-auto">
-        {/* Sidebar */}
-        <div className="col-span-3 border-r border-gray-700 p-4 hidden lg:block sticky top-20 h-screen">
-          <nav className="space-y-4">
-            <a href="/" className="block text-xl font-bold hover:text-blue-400">🏠 Home</a>
-            <a href="/creator/dashboard" className="block text-xl hover:text-blue-400">📊 Dashboard</a>
-            <a href="/deals-feed" className="block text-xl hover:text-blue-400">💼 Deals</a>
-            <a href="/discover" className="block text-xl hover:text-blue-400">🔍 Discover</a>
-            <a href="/chat" className="block text-xl hover:text-blue-400">💬 Messages</a>
-          </nav>
-        </div>
-
-        {/* Feed */}
-        <div className="col-span-12 lg:col-span-6 border-r border-gray-700">
-          {/* Compose Post */}
-          <div className="border-b border-gray-700 p-4">
-            {contentWarning && (
-              <div className="bg-red-900/30 border border-red-700 rounded-lg p-3 mb-4">
-                <p className="text-red-400 text-sm font-bold">{contentWarning.message}</p>
-                {contentWarning.blockedTerms.length > 0 && (
-                  <p className="text-red-300 text-xs mt-1">Blocked terms: {contentWarning.blockedTerms.slice(0, 3).join(', ')}</p>
-                )}
+      {/* Main Layout */}
+      <div className="flex pt-20">
+        {/* Side Navigation */}
+        <nav className="hidden md:flex flex-col h-[calc(100vh-5rem)] w-64 bg-surface border-r border-zinc-800/20 fixed left-0 py-8 gap-6 z-40 overflow-y-auto">
+          <div className="px-6 mb-4">
+            <div className="flex items-center gap-4 cursor-pointer">
+              <div className="avatar-ring">
+                <img alt="User Profile" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuClSH9Q7nncb6hIbYUZjvavwuAtTrOqvcMh1rAU_bc_EBBOCR0Nbjj6GfUAT2CPITYWbXop1eYqf24Xjqakqa3H_LUAwxtZoFCNT51e7pZhQqYIKaLjkgsGhDibrrYlOA03kM4AtoXG-cS3CDzpnVsFEXvG5TQpFj17eaJ1Hnn3QALMZWU9mCZyGu3tzamU5ZNi-LLeVmRYtXF0QwaFQCAQZtcq-Lk8VMKSApLxH7cKBonKEc174msDiUU6e2QjaQG4jdb921IsZiio" />
               </div>
-            )}
-            <div className="flex gap-4">
-              <div className="text-2xl">👤</div>
-              <div className="flex-1">
-                <textarea
-                  value={newPost}
-                  onChange={(e) => {
-                    setNewPost(e.target.value);
-                    setContentWarning(null);
-                  }}
-                  placeholder="What's happening?!"
-                  className="w-full bg-transparent text-xl text-white placeholder-gray-500 resize-none focus:outline-none"
-                  rows={3}
-                  maxLength={280}
-                />
-                <div className="flex justify-between items-center mt-4">
-                  <span className="text-gray-500 text-sm">{newPost.length}/280</span>
-                  <button
-                    onClick={handleCreatePost}
-                    disabled={loading || !newPost.trim() || contentWarning}
-                    className="bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white font-bold px-8 py-2 rounded-full transition"
-                  >
-                    {loading ? 'Posting...' : 'Post'}
+              <div>
+                <h3 className="font-headline font-bold text-on-surface">The Voyager</h3>
+                <p className="text-xs text-primary font-label tracking-widest uppercase">Digital Alchemist</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex flex-col gap-2 font-label uppercase tracking-widest text-xs">
+            <a className="flex items-center gap-4 text-primary bg-surface-container-high -rotate-1 py-3 px-6 shadow-[-4px_4px_0px_0px_rgba(213,0,249,0.3)]" href="/">
+              <span className="material-symbols-outlined">auto_awesome</span>
+              <span>Feed</span>
+            </a>
+            <a className="nav-item" href="/discover">
+              <span className="material-symbols-outlined">explore</span>
+              <span>Discover</span>
+            </a>
+            <a className="nav-item" href="/chat">
+              <span className="material-symbols-outlined">chat_bubble</span>
+              <span>Messages</span>
+            </a>
+            <a className="nav-item" href="/wall">
+              <span className="material-symbols-outlined">book</span>
+              <span>Grimoire</span>
+            </a>
+            <a className="nav-item" href="#">
+              <span className="material-symbols-outlined">settings</span>
+              <span>Settings</span>
+            </a>
+          </div>
+          
+          <div className="mt-auto px-6">
+            <button className="btn-primary w-full">
+              New Entry
+            </button>
+          </div>
+        </nav>
+
+        {/* Main Content */}
+        <main className="w-full md:ml-64 p-4 md:p-8 lg:p-12 min-h-screen">
+          <div className="max-w-4xl mx-auto space-y-12">
+            {/* Composer Section */}
+            <section className="card-surface p-6 md:p-8 relative mt-4">
+              <div className="absolute -top-3 -left-2 bg-secondary-container text-on-secondary-container px-3 py-1 font-headline italic font-bold text-sm marker-bg rotate-2">
+                Jot down thoughts...
+              </div>
+              <textarea
+                className="w-full bg-surface-container-highest border-0 border-b-2 border-outline-variant/50 focus:border-primary focus:ring-0 text-on-surface placeholder:text-on-surface-variant font-body resize-none py-4 mt-2"
+                placeholder="What is resonating in the void?"
+                rows={3}
+                value={newPost}
+                onChange={(e) => setNewPost(e.target.value)}
+              />
+              <div className="flex justify-between items-center mt-4">
+                <div className="flex gap-4 text-secondary">
+                  <button className="hover:text-primary transition-colors">
+                    <span className="material-symbols-outlined">image</span>
+                  </button>
+                  <button className="hover:text-primary transition-colors">
+                    <span className="material-symbols-outlined">mic</span>
+                  </button>
+                  <button className="hover:text-primary transition-colors">
+                    <span className="material-symbols-outlined">location_on</span>
                   </button>
                 </div>
+                <button
+                  onClick={handleCreatePost}
+                  disabled={loading || !newPost.trim()}
+                  className="btn-secondary"
+                >
+                  {loading ? 'Scribing...' : 'Scribe'}
+                </button>
               </div>
-            </div>
-          </div>
+            </section>
 
-          {/* Posts Feed */}
-          {posts.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">
-              <p>No posts yet. Be the first to post! 🚀</p>
+            {/* Trending Section */}
+            <div className="relative inline-block mt-8 mb-4">
+              <div className="absolute inset-0 bg-primary-container marker-bg -rotate-2 scale-110 opacity-80"></div>
+              <h2 className="relative text-3xl font-headline font-black italic text-on-primary-container px-4 py-1">
+                Trending Scribbles
+              </h2>
             </div>
-          ) : (
-            posts.map(post => (
-              <div key={post.id} className="border-b border-gray-700 p-4 hover:bg-gray-900/50 cursor-pointer transition">
-                <div className="flex gap-3">
-                  <div className="text-3xl">{post.avatar}</div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold hover:underline">{post.author}</span>
-                      {post.verified && <span>✓</span>}
-                      <span className="text-gray-500">{post.handle}</span>
-                      <span className="text-gray-500">·</span>
-                      <span className="text-gray-500 text-sm">
-                        {new Date(post.createdAt).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <p className="text-white mt-2 text-base leading-normal">{post.content}</p>
 
-                    {/* Actions (no metrics shown) */}
-                    <div className="flex justify-between text-gray-500 mt-3 max-w-md text-sm">
-                      <button
-                        onClick={() => setSelectedPostForComments(post.id)}
-                        className="hover:text-blue-400"
-                      >
-                        💬 Reply
-                      </button>
-                      <button className="hover:text-green-400">
-                        🔄 Share
-                      </button>
-                      <button
-                        onClick={() => toggleLike(post.id)}
-                        className={post.liked ? 'text-red-500' : 'hover:text-red-400'}
-                      >
-                        {post.liked ? '❤️' : '🤍'}
-                      </button>
-                      <button className="hover:text-blue-400">📤</button>
+            {/* Posts Feed */}
+            {posts.length === 0 ? (
+              <div className="p-8 text-center text-on-surface-variant">
+                <p>No posts yet. Be the first to scribe!</p>
+              </div>
+            ) : (
+              posts.map((post, index) => (
+                <article
+                  key={post.id}
+                  className={index === 0 ? 'card-glow' : 'card-surface'}
+                >
+                  <div className="flex items-start justify-between mb-6">
+                    <div className="flex gap-4 items-center">
+                      <div className="w-10 h-10 rounded-full bg-surface-container-highest overflow-hidden">
+                        <img alt="Avatar" className="w-full h-full object-cover" src={post.avatar || 'https://via.placeholder.com/40'} />
+                      </div>
+                      <div>
+                        <h4 className="font-headline font-bold text-primary">{post.author}</h4>
+                        <p className="text-xs text-on-surface-variant">
+                          {new Date(post.createdAt).toLocaleDateString()}
+                          {post.verified && <span className="ml-1">✓</span>}
+                        </p>
+                      </div>
                     </div>
+                    <button className="text-outline-variant hover:text-primary">
+                      <span className="material-symbols-outlined">more_horiz</span>
+                    </button>
                   </div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-
-        {/* Right Sidebar */}
-        <div className="col-span-3 p-4 hidden lg:block">
-          <div className="bg-gray-900 rounded-2xl p-4 mb-4">
-            <input
-              type="text"
-              placeholder="Search Nexus"
-              className="w-full bg-gray-800 text-white rounded-full px-4 py-2 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+                  
+                  <div className="mb-6">
+                    <p className="text-lg leading-relaxed text-on-surface/90 font-body mb-4">
+                      {post.content}
+                    </p>
+                    
+                    {post.hashtags && post.hashtags.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {post.hashtags.slice(0, 3).map((tag) => (
+                          <span key={tag} className="tag-secondary">#{tag}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="flex gap-6 text-on-surface-variant font-label text-sm border-t border-outline-variant/20 pt-4">
+                    <button
+                      onClick={() => handleLike(post.id)}
+                      className={`flex items-center gap-2 hover:text-secondary transition-colors group ${post.liked ? 'text-secondary' : ''}`}
+                    >
+                      <span className="material-symbols-outlined group-hover:-translate-y-1 transition-transform">
+                        favorite
+                      </span>
+                      <span>{post.likes}</span>
+                    </button>
+                    <button
+                      onClick={() => { setSelectedPostId(post.id); setShowComments(true); }}
+                      className="flex items-center gap-2 hover:text-secondary transition-colors group"
+                    >
+                      <span className="material-symbols-outlined group-hover:-translate-y-1 transition-transform">chat_bubble</span>
+                      <span>{post.comments}</span>
+                    </button>
+                    <button className="flex items-center gap-2 hover:text-secondary transition-colors group ml-auto">
+                      <span className="material-symbols-outlined group-hover:rotate-12 transition-transform">share</span>
+                    </button>
+                  </div>
+                </article>
+              ))
+            )}
           </div>
-
-          <div className="bg-gray-900 rounded-2xl p-4">
-            <h2 className="text-xl font-bold mb-4">What's happening</h2>
-            <div className="space-y-4">
-              {[
-                { category: 'Opportunities', trend: '#SafariCollab', posts: '45.2K' },
-                { category: 'Trending', trend: '#CreatorLife', posts: '123K' },
-                { category: 'Featured Brands', trend: 'Nike Collab', posts: 'See opportunities' },
-              ].map((item, i) => (
-                <div key={i} className="hover:bg-gray-800 p-2 rounded cursor-pointer">
-                  <div className="text-gray-500 text-sm">{item.category}</div>
-                  <div className="font-bold">{item.trend}</div>
-                  <div className="text-gray-500 text-sm">{item.posts}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+        </main>
       </div>
 
-      <CommentsModal
-        postId={selectedPostForComments || ''}
-        isOpen={!!selectedPostForComments}
-        onClose={() => setSelectedPostForComments(null)}
-      />
+      {/* Comments Modal */}
+      {showComments && selectedPostId && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50" onClick={() => setShowComments(false)}>
+          <div className="bg-black border border-outline-variant rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="border-b border-outline-variant p-4 flex justify-between items-center">
+              <h2 className="text-xl font-bold">Comments</h2>
+              <button onClick={() => setShowComments(false)} className="text-zinc-400 hover:text-white text-2xl">✕</button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4">
+              <p className="text-zinc-500 text-center">Comments feature coming soon</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

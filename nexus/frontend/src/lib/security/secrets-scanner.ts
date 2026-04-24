@@ -1,18 +1,19 @@
 import crypto from 'crypto';
 
 const SECRET_PATTERNS = {
-  awsAccessKey: /AKIA[0-9A-Z]{16}/,
-  awsSecretKey: /aws_secret_access_key\s*=\s*[A-Za-z0-9/+=]{40}/,
-  apiKey: /api[_-]?key\s*=\s*[A-Za-z0-9\-_.]{32,}/i,
-  privateKey: /-----BEGIN (RSA|DSA|EC|OPENSSH) PRIVATE KEY-----/,
-  jwtToken: /eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/,
-  databaseUrl: /postgres:\/\/[^:]+:[^@]+@[^\/]+\/[^\s]+/,
-  slackToken: /xox[baprs]-[0-9a-zA-Z\-]{10,255}/,
-  githubToken: /ghp_[0-9a-zA-Z]{36}/,
-  mongodbUri: /mongodb\+?srv:\/\/[^:]+:[^@]+@/,
-  sqlConnectionString: /Server=.+;User\s*=.+;Password=.+/i,
-  stripeKey: /sk_live_[0-9a-zA-Z]{24,}/,
-  googleApiKey: /AIza[0-9A-Za-z_-]{35}/,
+  awsAccessKey: /AKIA[0-9A-Z]{16}/g,
+  awsSecretKey: /(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}/g,
+  apiKey: /(api[_-]?key|apikey)\s*[:=]\s*['"]?[A-Za-z0-9\-_.]{32,}['"]?/gi,
+  privateKey: /-----BEGIN (RSA|DSA|EC|OPENSSH) PRIVATE KEY-----/g,
+  jwtToken: /eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]*/g,
+  databaseUrl: /postgres:\/\/[^:]+:[^@]+@[^\/]+\/[^\s]+/g,
+  slackToken: /xox[baprs]-[0-9a-zA-Z\-]{10,255}/g,
+  githubToken: /ghp_[0-9a-zA-Z]{36}/g,
+  mongodbUri: /mongodb\+?srv:\/\/[^:]+:[^@]+@/g,
+  sqlConnectionString: /Server=.+;User\s*=.+;Password=.+/gi,
+  stripeKey: /sk_live_[0-9a-zA-Z]{24,}/g,
+  googleApiKey: /AIza[0-9A-Za-z_-]{35}/g,
+  genericToken: /['"]?[a-z_]*token['"]?\s*[:=]\s*['"]?[A-Za-z0-9\-_.]{20,}['"]?/gi,
 };
 
 export function scanForSecrets(obj: unknown, depth: number = 0): { found: boolean; locations: string[] } {
@@ -24,12 +25,13 @@ export function scanForSecrets(obj: unknown, depth: number = 0): { found: boolea
 
   function scan(value: unknown, path: string = ''): void {
     if (typeof value === 'string') {
-      for (const [secretType, pattern] of Object.entries(SECRET_PATTERNS)) {
-        if (pattern.test(value)) {
-          locations.push(`${secretType} at ${path || 'root'}`);
-        }
+    for (const [secretType, pattern] of Object.entries(SECRET_PATTERNS)) {
+      const regex = new RegExp(pattern.source, pattern.flags);
+      if (regex.test(value)) {
+        locations.push(`${secretType} at ${path || 'root'}`);
       }
     }
+  }
 
     if (typeof value === 'object' && value !== null) {
       for (const [key, val] of Object.entries(value)) {
@@ -63,7 +65,12 @@ export function maskSecrets(str: string): string {
 
 export function logWithoutSecrets(data: unknown): unknown {
   const serialized = JSON.stringify(data);
-  return JSON.parse(maskSecrets(serialized));
+  let masked = maskSecrets(serialized);
+  masked = masked.replace(/"[^"]*token[^"]*":\s*"[^"]*"/gi, '"[REDACTED]"');
+  masked = masked.replace(/"password":\s*"[^"]*"/gi, '"password": "[REDACTED]"');
+  masked = masked.replace(/"apiKey":\s*"[^"]*"/gi, '"apiKey": "[REDACTED]"');
+  masked = masked.replace(/"secret":\s*"[^"]*"/gi, '"secret": "[REDACTED]"');
+  return JSON.parse(masked);
 }
 
 export function validateEnvironmentSecrets(): { valid: boolean; missing: string[] } {

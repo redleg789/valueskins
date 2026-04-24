@@ -1,68 +1,65 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
-import { getGoogleAuthUrl, getGitHubAuthUrl } from '@/lib/oauth';
-
-export const getServerSideProps = async () => {
-  return { props: {} };
-};
 
 export default function Login() {
   const router = useRouter();
   const [userType, setUserType] = useState<'creator' | 'brand' | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const handleGoogleLogin = () => {
+  const handleDemoLogin = (type: 'creator' | 'brand') => {
     setLoading(true);
-    localStorage.setItem('user_type', userType || 'user');
-    window.location.href = getGoogleAuthUrl();
-  };
-
-  const handleGitHubLogin = () => {
-    setLoading(true);
-    localStorage.setItem('user_type', userType || 'user');
-    window.location.href = getGitHubAuthUrl();
-  };
-
-  const handleOAuthLogin = (platform: string) => {
-    if (!userType) return;
-    setLoading(true);
-    localStorage.setItem('user_type', userType);
+    localStorage.setItem('user_type', type);
     localStorage.setItem('auth_token', 'demo_token_' + Date.now());
+    
     setTimeout(() => {
-      if (userType === 'creator') {
-        window.location.href = '/creator/dashboard';
+      if (type === 'creator') {
+        router.push('/creator/dashboard');
       } else {
-        window.location.href = '/brand/dashboard';
+        router.push('/brand/dashboard');
       }
     }, 500);
   };
 
   if (!userType) {
     return (
-      <div className="flex items-center justify-center h-screen bg-black">
-        <div className="max-w-md w-full px-6">
+      <div className="min-h-screen bg-surface flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
           <div className="text-center mb-12">
-            <h1 className="text-5xl font-black text-white mb-2">Nexus</h1>
-            <p className="text-xl text-gray-400">Where creators meet opportunities</p>
+            <h1 className="text-6xl font-black italic -rotate-2 tracking-tighter text-primary bg-surface-container-highest px-6 py-2 rounded-sm shadow-[8px_8px_0px_0px_rgba(213,0,249,0.3)] font-headline inline-block">
+              Nexus
+            </h1>
+            <p className="text-xl text-on-surface-variant mt-6 font-body">Where creators meet opportunities</p>
           </div>
 
-          <div className="space-y-4">
-            <button
-              onClick={() => setUserType('creator')}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-4 rounded-xl transition text-lg"
-            >
-              I'm a Creator 🎬
-            </button>
-            <button
-              onClick={() => setUserType('brand')}
-              className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 px-4 rounded-xl transition text-lg"
-            >
-              I'm a Brand 🏢
-            </button>
+          <div className="card-surface p-8">
+            <h2 className="text-2xl font-headline font-bold mb-6 text-center">Join the Grimoire</h2>
+            
+            <div className="space-y-4">
+              <button
+                onClick={() => setUserType('creator')}
+                className="w-full bg-surface-container-highest hover:bg-surface-bright text-on-surface font-headline font-bold py-5 px-6 rounded-sm transition-all border-2 border-transparent hover:border-primary"
+              >
+                <span className="material-symbols-outlined text-2xl mr-3 align-middle">movie</span>
+                I am a Creator
+              </button>
+              <button
+                onClick={() => setUserType('brand')}
+                className="w-full bg-surface-container-highest hover:bg-surface-bright text-on-surface font-headline font-bold py-5 px-6 rounded-sm transition-all border-2 border-transparent hover:border-secondary"
+              >
+                <span className="material-symbols-outlined text-2xl mr-3 align-middle">store</span>
+                I am a Brand
+              </button>
+            </div>
+
+            <div className="mt-8 pt-6 border-t border-outline-variant">
+              <p className="text-center text-sm text-on-surface-variant">
+                Demo mode: Click any option to enter instantly
+              </p>
+            </div>
           </div>
 
-          <p className="text-xs text-gray-500 mt-8 text-center">
-            By continuing, you agree to our Terms of Service and Privacy Policy
+          <p className="text-xs text-center text-on-surface-variant mt-6">
+            By continuing, you agree to our Terms of Service
           </p>
         </div>
       </div>
@@ -70,96 +67,86 @@ export default function Login() {
   }
 
   return (
-    <div className="flex items-center justify-center h-screen bg-black">
-      <div className="max-w-md w-full px-6">
+    <div className="min-h-screen bg-surface flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
         <button
           onClick={() => setUserType(null)}
-          className="text-blue-400 hover:text-blue-300 mb-8 text-sm font-bold"
+          className="flex items-center gap-2 text-primary mb-8 font-headline hover:text-primary-dim transition-colors"
         >
-          ← Back
+          <span className="material-symbols-outlined">arrow_back</span>
+          Back
         </button>
 
-        <div className="mb-12">
-          <h1 className="text-4xl font-black text-white mb-2">
-            {userType === 'creator' ? 'Welcome, Creator' : 'Welcome, Brand'}
-          </h1>
-          <p className="text-gray-400">Connect your account to get started</p>
+        <div className="card-surface p-8">
+          <div className="mb-8">
+            <h1 className="text-3xl font-headline font-black italic text-primary mb-2">
+              {userType === 'creator' ? 'Welcome, Creator' : 'Welcome, Brand'}
+            </h1>
+            <p className="text-on-surface-variant">Connect your account to begin</p>
+          </div>
+
+          <div className="space-y-3">
+            {userType === 'creator' && (
+              <>
+                <button
+                  onClick={() => handleDemoLogin('creator')}
+                  disabled={loading}
+                  className="w-full bg-[#E1306C] hover:bg-[#c62858] text-white font-headline font-bold py-4 px-6 rounded-sm transition-all flex items-center justify-center gap-3"
+                >
+                  <span className="material-symbols-outlined">photo_camera</span>
+                  {loading ? 'Connecting...' : 'Instagram'}
+                </button>
+                <button
+                  onClick={() => handleDemoLogin('creator')}
+                  disabled={loading}
+                  className="w-full bg-[#FF0000] hover:bg-[#cc0000] text-white font-headline font-bold py-4 px-6 rounded-sm transition-all flex items-center justify-center gap-3"
+                >
+                  <span className="material-symbols-outlined">play_arrow</span>
+                  {loading ? 'Connecting...' : 'YouTube'}
+                </button>
+                <button
+                  onClick={() => handleDemoLogin('creator')}
+                  disabled={loading}
+                  className="w-full bg-surface-container-highest hover:bg-surface-bright text-on-surface font-headline font-bold py-4 px-6 rounded-sm transition-all border border-outline-variant flex items-center justify-center gap-3"
+                >
+                  <span className="material-symbols-outlined">link</span>
+                  {loading ? 'Connecting...' : 'TikTok'}
+                </button>
+              </>
+            )}
+
+            {userType === 'brand' && (
+              <>
+                <button
+                  onClick={() => handleDemoLogin('brand')}
+                  disabled={loading}
+                  className="w-full bg-white hover:bg-gray-100 text-black font-headline font-bold py-4 px-6 rounded-sm transition-all flex items-center justify-center gap-3"
+                >
+                  <span className="material-symbols-outlined">search</span>
+                  {loading ? 'Connecting...' : 'Continue with Google'}
+                </button>
+                <button
+                  onClick={() => handleDemoLogin('brand')}
+                  disabled={loading}
+                  className="w-full bg-[#333] hover:bg-[#1a1a1a] text-white font-headline font-bold py-4 px-6 rounded-sm transition-all flex items-center justify-center gap-3"
+                >
+                  <span className="material-symbols-outlined">code</span>
+                  {loading ? 'Connecting...' : 'Continue with GitHub'}
+                </button>
+              </>
+            )}
+          </div>
+
+          <div className="mt-6 pt-6 border-t border-outline-variant">
+            <button
+              onClick={() => handleDemoLogin(userType)}
+              disabled={loading}
+              className="w-full btn-primary"
+            >
+              {loading ? 'Entering...' : 'Skip & Enter Demo'}
+            </button>
+          </div>
         </div>
-
-        <div className="space-y-3">
-          {userType === 'creator' && (
-            <>
-              <button
-                onClick={() => handleOAuthLogin('instagram')}
-                disabled={loading}
-                className="w-full bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-bold py-4 px-4 rounded-xl transition disabled:opacity-50"
-              >
-                {loading ? 'Connecting...' : '📸 Instagram'}
-              </button>
-              <button
-                onClick={() => handleOAuthLogin('youtube')}
-                disabled={loading}
-                className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-4 rounded-xl transition disabled:opacity-50"
-              >
-                {loading ? 'Connecting...' : '▶️ YouTube'}
-              </button>
-              <button
-                onClick={() => handleOAuthLogin('tiktok')}
-                disabled={loading}
-                className="w-full bg-gray-800 hover:bg-gray-700 text-white font-bold py-4 px-4 rounded-xl transition disabled:opacity-50"
-              >
-                {loading ? 'Connecting...' : '🎵 TikTok'}
-              </button>
-              <button
-                onClick={() => handleOAuthLogin('linkedin')}
-                disabled={loading}
-                className="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-4 px-4 rounded-xl transition disabled:opacity-50"
-              >
-                {loading ? 'Connecting...' : '💼 LinkedIn'}
-              </button>
-            </>
-          )}
-
-          {userType === 'brand' && (
-            <>
-              <button
-                onClick={handleGoogleLogin}
-                disabled={loading}
-                className="w-full bg-white hover:bg-gray-100 text-black font-bold py-4 px-4 rounded-xl transition disabled:opacity-50"
-              >
-                {loading ? 'Connecting...' : '🔷 Google'}
-              </button>
-              <button
-                onClick={handleGitHubLogin}
-                disabled={loading}
-                className="w-full bg-gray-800 hover:bg-gray-700 text-white font-bold py-4 px-4 rounded-xl transition disabled:opacity-50"
-              >
-                {loading ? 'Connecting...' : '🐙 GitHub'}
-              </button>
-            </>
-          )}
-
-          <div className="my-4 border-t border-gray-700"></div>
-
-          <button
-            onClick={handleGoogleLogin}
-            disabled={loading}
-            className="w-full bg-white hover:bg-gray-100 text-black font-bold py-3 px-4 rounded-lg transition disabled:opacity-50 text-sm"
-          >
-            {loading ? 'Connecting...' : '🔷 Continue with Google'}
-          </button>
-          <button
-            onClick={handleGitHubLogin}
-            disabled={loading}
-            className="w-full bg-gray-800 hover:bg-gray-700 text-white font-bold py-3 px-4 rounded-lg transition disabled:opacity-50 text-sm"
-          >
-            {loading ? 'Connecting...' : '🐙 Continue with GitHub'}
-          </button>
-        </div>
-
-        <p className="text-xs text-gray-500 mt-8 text-center">
-          Demo mode: All logins work instantly
-        </p>
       </div>
     </div>
   );

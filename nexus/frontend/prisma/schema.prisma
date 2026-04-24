@@ -1,7 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
+// Nexus + ValueSkins Complete Database Schema
+// All tables for production marketplace + social platform
 
 generator client {
   provider = "prisma-client"
@@ -10,4 +8,805 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============ CORE USER MANAGEMENT ============
+
+model User {
+  id                String      @id @default(cuid())
+  email             String      @unique
+  passwordHash      String
+  name              String
+  handle            String      @unique
+  bio               String?
+  avatar            String?
+  banner            String?
+  userType          UserType    @default(CREATOR) // CREATOR or BRAND
+  verified          Boolean     @default(false)
+  verifiedAt        DateTime?
+  followers         Int         @default(0)
+  following         Int         @default(0)
+
+  // Authentication
+  emailVerified     Boolean     @default(false)
+  emailVerifiedAt   DateTime?
+  twoFactorEnabled  Boolean     @default(false)
+  lastLoginAt       DateTime?
+
+  // Profile data
+  phone             String?
+  socialLinks       Json? // {instagram, youtube, tiktok, linkedin}
+  portfolioUrl      String?
+
+  // Bank details for payouts
+  bankAccountName   String?
+  bankAccountNumber String? // encrypted
+  bankIFSC          String?
+  bankCountry       String?
+  taxId             String? // SSN/PAN/ABN
+
+  // Creator specific
+  creatorNiche      String? // fashion, tech, lifestyle, etc
+  rateCardMinimum   Int? // minimum deal amount in paise
+  availabilityCalendar Json? // busy dates
+
+  // Brand specific
+  companyName       String?
+  companySize       String?
+
+  // Account status
+  status            UserStatus  @default(ACTIVE) // ACTIVE, SUSPENDED, DELETED
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  deletedAt         DateTime?
+
+  // Relations
+  posts             Post[]
+  deals             Deal[]
+  creatorDeals      DealApplication[] @relation("Creator")
+  sentMessages      Message[]   @relation("Sender")
+  receivedMessages  Message[]   @relation("Recipient")
+  conversations     Conversation[] @relation("Participants")
+  comments          Comment[]
+  likes              Like[]
+  notifications     Notification[]
+  sentPayments      Payment[]   @relation("Payer")
+  receivedPayments  Payment[]   @relation("Payee")
+  disputes          Dispute[]
+  reviews           Review[]
+  followers         Follows[] @relation("Follower")
+  following         Follows[] @relation("Following")
+  auditLogs         AuditLog[]
+
+  @@index([email])
+  @@index([handle])
+  @@index([userType])
+  @@index([createdAt])
+  @@fulltext([name, handle, bio]) // full-text search
+}
+
+enum UserType {
+  CREATOR
+  BRAND
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+// ============ SOCIAL FEATURES ============
+
+model Post {
+  id                String      @id @default(cuid())
+  userId            String
+  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  content           String
+  hashtags          String[] // #fashion, #tech
+  mediaUrls         String[] // images/videos
+  mentions          String[] // @handle mentions
+
+  likeCount         Int         @default(0)
+  commentCount      Int         @default(0)
+  shareCount        Int         @default(0)
+
+  // Status
+  visibility        PostVisibility @default(PUBLIC) // PUBLIC, PRIVATE, FOLLOWERS_ONLY
+  status            PostStatus   @default(PUBLISHED) // DRAFT, PUBLISHED, DELETED
+
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  deletedAt         DateTime?
+
+  // Relations
+  likes             Like[]
+  comments          Comment[]
+  shares            Share[]
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([hashtags])
+  @@fulltext([content])
+}
+
+enum PostVisibility {
+  PUBLIC
+  PRIVATE
+  FOLLOWERS_ONLY
+}
+
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+  DELETED
+}
+
+model Like {
+  id                String      @id @default(cuid())
+  userId            String
+  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId            String
+  post              Post        @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  createdAt         DateTime    @default(now())
+
+  @@unique([userId, postId])
+  @@index([postId])
+  @@index([userId])
+}
+
+model Comment {
+  id                String      @id @default(cuid())
+  userId            String
+  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId            String
+  post              Post        @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  parentCommentId   String? // for nested replies
+  parentComment     Comment? @relation("CommentReplies", fields: [parentCommentId], references: [id], onDelete: Cascade)
+  replies           Comment[] @relation("CommentReplies")
+
+  content           String
+  mentions          String[] // @handle
+
+  likeCount         Int         @default(0)
+
+  // Moderation
+  flagged           Boolean     @default(false)
+  flagReason        String?
+  flaggedBy         String?
+
+  status            CommentStatus @default(PUBLISHED)
+
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  editedAt          DateTime?
+  deletedAt         DateTime?
+
+  @@index([postId])
+  @@index([userId])
+  @@index([parentCommentId])
+  @@fulltext([content])
+}
+
+enum CommentStatus {
+  PUBLISHED
+  FLAGGED
+  HIDDEN
+  DELETED
+}
+
+model Share {
+  id                String      @id @default(cuid())
+  postId            String
+  post              Post        @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId            String // who shared
+  platform          String // twitter, linkedin, whatsapp
+  createdAt         DateTime    @default(now())
+
+  @@index([postId])
+}
+
+model Follows {
+  id                String      @id @default(cuid())
+  followerId        String
+  follower          User        @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  followingId       String
+  following         User        @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  createdAt         DateTime    @default(now())
+
+  @@unique([followerId, followingId])
+  @@index([followingId])
+}
+
+// ============ DEALS / CAMPAIGNS ============
+
+model Deal {
+  id                String      @id @default(cuid())
+  brandId           String
+  brand             User        @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  title             String
+  description       String
+  budget            Int // in paise (smallest currency unit)
+  currency          String      @default("INR")
+
+  // Requirements
+  niche             String[] // fashion, tech, lifestyle
+  creatorTierMin    CreatorTier @default(BRONZE)
+  followerCountMin  Int         @default(0)
+  engagementRate    Float?
+
+  // Timeline
+  applicationDeadline DateTime
+  deliveryDeadline  DateTime
+
+  // Deliverables
+  deliverableType   String[] // instagram_post, tiktok_video, youtube_shorts, etc
+  deliverableCount  Int
+  specificRequirements String?
+
+  // Status machine
+  state             DealState   @default(DRAFT) // DRAFT, POSTED, PUBLISHED, ACTIVE, COMPLETED, DISPUTED, RESOLVED
+  publishedAt       DateTime?
+
+  // Visibility
+  visibility        String      @default("PUBLIC")
+
+  // Approval
+  maxApplications   Int?
+  applicantsCount   Int         @default(0)
+
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  deletedAt         DateTime?
+
+  // Relations
+  applications      DealApplication[]
+  paymentSchedule   PaymentSchedule[]
+  disputes          Dispute[]
+
+  @@index([brandId])
+  @@index([state])
+  @@index([createdAt])
+  @@index([niche])
+  @@fulltext([title, description])
+}
+
+enum DealState {
+  DRAFT
+  POSTED
+  PUBLISHED
+  ACTIVE
+  COMPLETED
+  DISPUTED
+  RESOLVED
+}
+
+enum CreatorTier {
+  BRONZE // < 10k followers
+  SILVER // 10k - 100k
+  GOLD   // 100k - 1M
+  PLATINUM // 1M+
+}
+
+model DealApplication {
+  id                String      @id @default(cuid())
+  dealId            String
+  deal              Deal        @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  creatorId         String
+  creator           User        @relation("Creator", fields: [creatorId], references: [id], onDelete: Cascade)
+
+  status            ApplicationStatus @default(PENDING)
+  submittedAt       DateTime    @default(now())
+
+  // Application data
+  motivation        String?
+  portfolioLinks    String[]
+  priceQuote        Int? // if negotiable
+
+  // Timeline
+  approvedAt        DateTime?
+  rejectedAt        DateTime?
+  rejectionReason   String?
+
+  // Delivery tracking
+  deliveryStatus    DeliveryStatus @default(PENDING) // PENDING, SUBMITTED, APPROVED, REJECTED, REVISION_REQUESTED
+  submittedDeliverables String[] // URLs to deliverables
+  revisionsRequested Int         @default(0)
+  lastRevisionDeadline DateTime?
+
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  @@unique([dealId, creatorId])
+  @@index([dealId])
+  @@index([creatorId])
+  @@index([status])
+}
+
+enum ApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  WITHDRAWN
+}
+
+enum DeliveryStatus {
+  PENDING
+  SUBMITTED
+  APPROVED
+  REJECTED
+  REVISION_REQUESTED
+  COMPLETED
+}
+
+// ============ MESSAGING ============
+
+model Conversation {
+  id                String      @id @default(cuid())
+
+  participants      User[] @relation("Participants")
+  participantIds    String[] // denormalized for query efficiency
+
+  subject           String?
+  dealId            String? // link to deal if conversation is about a deal
+
+  lastMessageAt     DateTime?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  // Relations
+  messages          Message[]
+
+  @@index([participantIds])
+  @@index([lastMessageAt])
+}
+
+model Message {
+  id                String      @id @default(cuid())
+  conversationId    String
+  conversation      Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  senderId          String
+  sender            User        @relation("Sender", fields: [senderId], references: [id], onDelete: Cascade)
+  recipientId       String
+  recipient         User        @relation("Recipient", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  content           String
+  mediaUrl          String?
+  mentions          String[]
+
+  // Read status
+  readAt            DateTime?
+
+  // Reactions
+  reactions         Json? // {emoji: [userId]}
+
+  // Deletion
+  status            MessageStatus @default(SENT)
+
+  createdAt         DateTime    @default(now())
+  editedAt          DateTime?
+  deletedAt         DateTime?
+
+  @@index([conversationId])
+  @@index([senderId])
+  @@index([recipientId])
+  @@index([createdAt])
+  @@fulltext([content])
+}
+
+enum MessageStatus {
+  DRAFT
+  SENT
+  DELIVERED
+  READ
+  DELETED
+}
+
+// ============ NOTIFICATIONS ============
+
+model Notification {
+  id                String      @id @default(cuid())
+  userId            String
+  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type              NotificationType
+
+  // Actor (who triggered the notification)
+  actorId           String?
+  actorName         String?
+
+  // Content
+  title             String
+  message           String
+  metadata          Json? // deal_id, post_id, comment_id, etc
+
+  // Read status
+  readAt            DateTime?
+
+  // Delivery
+  emailSent         Boolean     @default(false)
+  emailSentAt       DateTime?
+  pushSent          Boolean     @default(false)
+  pushSentAt        DateTime?
+  inAppSeen         Boolean     @default(false)
+  inAppSeenAt       DateTime?
+
+  createdAt         DateTime    @default(now())
+  deletedAt         DateTime?
+
+  @@index([userId])
+  @@index([type])
+  @@index([readAt])
+  @@index([createdAt])
+}
+
+enum NotificationType {
+  DEAL_OFFER
+  DEAL_APPROVED
+  DEAL_REJECTED
+  DEAL_COMPLETED
+  DEAL_DISPUTE_OPENED
+  MESSAGE_RECEIVED
+  COMMENT_ON_POST
+  MENTION
+  FOLLOW
+  LIKE_ON_POST
+  PAYMENT_RECEIVED
+  PAYMENT_FAILED
+  PAYOUT_PROCESSED
+  REVIEW_RECEIVED
+}
+
+// ============ PAYMENTS & PAYOUTS ============
+
+model Payment {
+  id                String      @id @default(cuid())
+
+  payerId           String
+  payer             User        @relation("Payer", fields: [payerId], references: [id], onDelete: Cascade)
+  payeeId           String
+  payee             User        @relation("Payee", fields: [payeeId], references: [id], onDelete: Cascade)
+
+  dealApplicationId String? // link to deal application
+
+  amount            Int // in paise
+  currency          String      @default("INR")
+  serviceFee        Int // platform fee
+  tax               Int // GST or applicable tax
+  netAmount         Int // amount - fee - tax
+
+  // Razorpay integration
+  razorpayOrderId   String?
+  razorpayPaymentId String?
+  razorpaySignature String?
+
+  // Payment method
+  paymentMethod     String? // credit_card, upi, wallet, etc
+
+  // Status
+  status            PaymentStatus @default(INITIATED)
+
+  // Dispute info
+  disputedAt        DateTime?
+  disputeReason     String?
+
+  createdAt         DateTime    @default(now())
+  completedAt       DateTime?
+  failedAt          DateTime?
+
+  // Relations
+  dispute           Dispute?
+
+  @@index([payerId])
+  @@index([payeeId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum PaymentStatus {
+  INITIATED
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REFUNDED
+  DISPUTED
+}
+
+model PaymentSchedule {
+  id                String      @id @default(cuid())
+  dealId            String
+  deal              Deal        @relation(fields: [dealId], references: [id], onDelete: Cascade)
+
+  paymentNumber     Int // 1st payment, 2nd payment, etc
+  amount            Int // in paise
+  dueDate           DateTime
+
+  // Status
+  status            ScheduleStatus @default(PENDING)
+  paidAt            DateTime?
+
+  createdAt         DateTime    @default(now())
+
+  @@unique([dealId, paymentNumber])
+  @@index([dealId])
+  @@index([status])
+}
+
+enum ScheduleStatus {
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+model Payout {
+  id                String      @id @default(cuid())
+  creatorId         String
+  creator           User        @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  amount            Int // in paise
+  currency          String      @default("INR")
+
+  // Razorpay payout
+  razorpayPayoutId  String?
+  razorpayTransferId String?
+
+  // Status
+  status            PayoutStatus @default(INITIATED)
+
+  // Timeline
+  requestedAt       DateTime    @default(now())
+  processedAt       DateTime?
+  completedAt       DateTime?
+  failedAt          DateTime?
+  failureReason     String?
+
+  // Source
+  relatedPayments   String[] // payment IDs that contributed to this payout
+
+  createdAt         DateTime    @default(now())
+
+  @@index([creatorId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum PayoutStatus {
+  INITIATED
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+// ============ DISPUTES & RESOLUTION ============
+
+model Dispute {
+  id                String      @id @default(cuid())
+  paymentId         String?
+  payment           Payment?    @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  dealId            String?
+  deal              Deal?       @relation(fields: [dealId], references: [id], onDelete: Cascade)
+
+  openedBy          String
+  openedAt          DateTime    @default(now())
+
+  type              DisputeType
+  reason            String
+  description       String
+
+  // Evidence
+  evidence          String[]
+
+  // Resolution
+  status            DisputeStatus @default(OPEN)
+  resolvedAt        DateTime?
+  resolution        String?
+  resolutionType    ResolutionType?
+
+  // Admin
+  assignedTo        String? // moderator
+
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  @@index([paymentId])
+  @@index([dealId])
+  @@index([status])
+  @@index([openedAt])
+}
+
+enum DisputeType {
+  QUALITY_ISSUE
+  NON_DELIVERY
+  PAYMENT_ISSUE
+  MISCOMMUNICATION
+  TERMS_VIOLATION
+}
+
+enum DisputeStatus {
+  OPEN
+  INVESTIGATING
+  RESOLVED
+  ESCALATED
+  CLOSED
+}
+
+enum ResolutionType {
+  REFUND
+  REWORK
+  PARTIAL_REFUND
+  ACCEPT_WORK
+}
+
+// ============ REVIEWS & RATINGS ============
+
+model Review {
+  id                String      @id @default(cuid())
+  reviewerId        String
+  reviewer          User        @relation(fields: [reviewerId], references: [id], onDelete: Cascade)
+
+  revieweeId        String? // creator being reviewed
+  reviewee          User? @relation(fields: [revieweeId], references: [id], onDelete: SetNull)
+
+  rating            Int // 1-5 stars
+  comment           String?
+
+  // Context
+  dealApplicationId String? // which deal this is about
+
+  // Moderation
+  flagged           Boolean     @default(false)
+
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  @@index([revieweeId])
+  @@index([reviewerId])
+  @@index([rating])
+}
+
+// ============ CREATOR VERIFICATION ============
+
+model CreatorVerification {
+  id                String      @id @default(cuid())
+  creatorId         String      @unique
+  creator           User        @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  // Social proof
+  instagramHandle   String?
+  instagramFollowers Int?
+  instagramVerified Boolean     @default(false)
+
+  youtubeChannel    String?
+  youtubeSubscribers Int?
+  youtubeVerified   Boolean     @default(false)
+
+  tiktokHandle      String?
+  tiktokFollowers   Int?
+  tiktokVerified    Boolean     @default(false)
+
+  linkedinUrl       String?
+  linkedinVerified  Boolean     @default(false)
+
+  // Verification status
+  status            VerificationStatus @default(PENDING)
+  verifiedAt        DateTime?
+  verificationNotes String?
+
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+  RESUBMIT_REQUIRED
+}
+
+// ============ ADMIN & MODERATION ============
+
+model AuditLog {
+  id                String      @id @default(cuid())
+  userId            String?
+  user              User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  action            String // created_post, updated_profile, processed_payment, etc
+  entityType        String // post, user, deal, payment
+  entityId          String?
+
+  changes           Json? // old values vs new values
+  ipAddress         String?
+  userAgent         String?
+
+  createdAt         DateTime    @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model ModerationFlag {
+  id                String      @id @default(cuid())
+  flaggedBy         String
+
+  targetType        String // post, comment, user
+  targetId          String
+
+  reason            String
+  description       String?
+  evidence          String[]
+
+  status            FlagStatus  @default(PENDING)
+  reviewedAt        DateTime?
+  reviewedBy        String?
+  action            String? // deleted, warned, suspended
+
+  createdAt         DateTime    @default(now())
+
+  @@index([targetType, targetId])
+  @@index([status])
+}
+
+enum FlagStatus {
+  PENDING
+  UNDER_REVIEW
+  RESOLVED
+  DISMISSED
+}
+
+// ============ PREFERENCES & SETTINGS ============
+
+model UserPreferences {
+  id                String      @id @default(cuid())
+  userId            String      @unique
+
+  // Notifications
+  emailNotifications Boolean     @default(true)
+  pushNotifications Boolean      @default(true)
+  inAppNotifications Boolean     @default(true)
+
+  // Privacy
+  profileVisibility String      @default("PUBLIC") // PUBLIC, PRIVATE, FOLLOWERS_ONLY
+  allowMessages     String      @default("EVERYONE") // EVERYONE, FOLLOWERS_ONLY, NONE
+
+  // Content preferences
+  adultContent      Boolean     @default(false)
+
+  // Email digest
+  weeklyDigest      Boolean     @default(true)
+
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+}
+
+// ============ SESSION MANAGEMENT ============
+
+model Session {
+  id                String      @id @default(cuid())
+  userId            String
+  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  token             String      @unique
+  expiresAt         DateTime
+
+  ipAddress         String?
+  userAgent         String?
+
+  createdAt         DateTime    @default(now())
+  lastActivityAt    DateTime    @updatedAt
+
+  @@index([userId])
+  @@index([expiresAt])
 }

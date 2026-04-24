@@ -279,12 +279,12 @@ jobs:
       - name: Deploy Nexus to Vercel
         run: |
           npm install -g vercel
-          vercel deploy --token=${{ secrets.VERCEL_TOKEN }} --yes --prod
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel deploy --token=${{ secrets.VERCEL_TOKEN }} --yes --prod --scope=${{ secrets.VERCEL_ORG_ID }}
         working-directory: nexus/frontend
       - name: Run database migrations
         run: |
-          sqlx database setup --database-url ${{ secrets.DATABASE_URL_PROD }}
+          cargo install sqlx-cli --no-default-features --features postgres
+          sqlx database setup
         working-directory: backend
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_PROD }}
