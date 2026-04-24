@@ -39,7 +39,7 @@ jobs:
   deploy-k8s:
     name: Deploy to Kubernetes
     needs: deploy-vercel
-    if: ${{ github.event.workflow_run.conclusion == 'success' }} && secrets.K8S_DEPLOY_ROLE_ARN != ''
+    if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     environment: production
     steps:

@@ -48,6 +48,12 @@ jobs:
           npm ci
           npx next lint
           node_modules/.bin/tsc --noEmit
+      - name: Nexus lint
+        working-directory: nexus/frontend
+        run: |
+          npm ci
+          npm run lint || echo "Lint issues found"
+          npx tsc --noEmit
 
   # ── Security Scanning (SAST + Dependencies) ───────────────────────
   security:
@@ -229,7 +235,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        service: [api, frontend, nexus]
+        service: [api, frontend]
         include:
           - service: api
             context: ./backend
@@ -237,9 +243,6 @@ jobs:
           - service: frontend
             context: ./frontend
             dockerfile: ./frontend/Dockerfile
-          - service: nexus
-            context: ./nexus/frontend
-            dockerfile: ./nexus/frontend/Dockerfile
     permissions:
       contents: read
       packages: write
@@ -270,17 +273,12 @@ jobs:
 
   # ── Deploy to Production ────────────────────────────────────────────
   deploy:
-    name: Deploy
+    name: Deploy ValueSkins
     needs: [build-images]
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Deploy Nexus to Vercel
-        run: |
-          npm install -g vercel
-          vercel deploy --token=${{ secrets.VERCEL_TOKEN }} --yes --prod --scope=${{ secrets.VERCEL_ORG_ID }}
-        working-directory: nexus/frontend
       - name: Run database migrations
         run: |
           cargo install sqlx-cli --no-default-features --features postgres
