@@ -37,14 +37,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       },
     });
 
-    const totalEarnings = payments.reduce((sum, p) => sum + p.netAmount, 0);
+    const totalEarnings = payments.reduce((sum: number, p: any) => sum + (p?.netAmount || 0), 0);
 
     // Month breakdown
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const monthlyPayments = payments.filter(p => p.completedAt && p.completedAt > thirtyDaysAgo);
-    const monthlyEarnings = monthlyPayments.reduce((sum, p) => sum + p.netAmount, 0);
+    const monthlyPayments = payments.filter((p: any) => p?.completedAt && p.completedAt > thirtyDaysAgo);
+    const monthlyEarnings = monthlyPayments.reduce((sum: number, p: any) => sum + (p?.netAmount || 0), 0);
 
     // Deal statistics
     const totalApplications = await prisma.dealApplication.count({
@@ -70,7 +70,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
     const avgRating = reviews.length > 0
-      ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
+      ? (reviews.reduce((sum: number, r: any) => sum + (r?.rating || 0), 0) / reviews.length).toFixed(1)
       : null;
 
     return res.status(200).json({

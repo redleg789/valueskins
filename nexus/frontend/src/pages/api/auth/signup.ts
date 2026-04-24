@@ -183,7 +183,7 @@ export default async function handler(
           error: error instanceof Error ? error.message : 'Unknown error',
         },
       },
-    }).catch(e => console.error('Failed to log error:', e));
+    }).catch((e: any) => console.error('Failed to log error:', e));
 
     return res.status(500).json({
       success: false,

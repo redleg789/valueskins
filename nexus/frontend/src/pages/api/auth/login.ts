@@ -75,7 +75,7 @@ export default async function handler(
           ipAddress: req.headers['x-forwarded-for'] as string || req.socket.remoteAddress,
           userAgent: req.headers['user-agent'],
         },
-      }).catch(e => console.error('Failed to log error:', e));
+      }).catch((e: any) => console.error('Failed to log error:', e));
 
       return res.status(401).json({
         success: false,
@@ -112,7 +112,7 @@ export default async function handler(
           ipAddress: req.headers['x-forwarded-for'] as string || req.socket.remoteAddress,
           userAgent: req.headers['user-agent'],
         },
-      }).catch(e => console.error('Failed to log error:', e));
+      }).catch((e: any) => console.error('Failed to log error:', e));
 
       return res.status(401).json({
         success: false,
@@ -183,7 +183,7 @@ export default async function handler(
           error: error instanceof Error ? error.message : 'Unknown error',
         },
       },
-    }).catch(e => console.error('Failed to log error:', e));
+    }).catch((e: any) => console.error('Failed to log error:', e));
 
     return res.status(500).json({
       success: false,

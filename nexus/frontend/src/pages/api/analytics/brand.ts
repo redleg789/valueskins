@@ -37,14 +37,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       },
     });
 
-    const totalSpent = payments.reduce((sum, p) => sum + p.amount, 0);
+    const totalSpent = payments.reduce((sum: number, p: any) => sum + (p?.amount || 0), 0);
 
     // Month breakdown
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const monthlyPayments = payments.filter(p => p.completedAt && p.completedAt > thirtyDaysAgo);
-    const monthlySpent = monthlyPayments.reduce((sum, p) => sum + p.amount, 0);
+    const monthlyPayments = payments.filter((p: any) => p?.completedAt && p.completedAt > thirtyDaysAgo);
+    const monthlySpent = monthlyPayments.reduce((sum: number, p: any) => sum + (p?.amount || 0), 0);
 
     // Campaign statistics
     const totalCampaigns = await prisma.deal.count({
@@ -71,7 +71,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       select: { id: true },
     });
 
-    const dealIds = deals.map(d => d.id);
+    const dealIds = deals.map((d: any) => d?.id);
 
     const totalApplications = await prisma.dealApplication.count({
       where: { dealId: { in: dealIds } },
