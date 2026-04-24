@@ -116,12 +116,12 @@ export default function Wall() {
               <span className="material-symbols-outlined">book</span>
               <span>Grimoire</span>
             </a>
-            <a className="nav-item" href="#">
+            <a className="nav-item" href="/settings">
               <span className="material-symbols-outlined">settings</span>
               <span>Settings</span>
             </a>
           </div>
-          
+
           <div className="mt-auto px-6">
             <button className="btn-primary w-full">
               New Entry

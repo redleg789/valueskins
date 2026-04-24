@@ -149,7 +149,7 @@ export default function Home() {
             <button className="hover:text-primary hover:bg-zinc-800/50 transition-all p-2 rounded-full">
               <span className="material-symbols-outlined text-2xl">notifications</span>
             </button>
-            <button className="hover:text-primary hover:bg-zinc-800/50 transition-all p-2 rounded-full">
+            <button onClick={() => router.push('/profile')} className="hover:text-primary hover:bg-zinc-800/50 transition-all p-2 rounded-full">
               <span className="material-symbols-outlined text-2xl">account_circle</span>
             </button>
           </div>
@@ -189,7 +189,7 @@ export default function Home() {
               <span className="material-symbols-outlined">book</span>
               <span>Grimoire</span>
             </a>
-            <a className="nav-item" href="#">
+            <a className="nav-item" href="/settings">
               <span className="material-symbols-outlined">settings</span>
               <span>Settings</span>
             </a>
