@@ -38,6 +38,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         select: {
           id: true,
           name: true,
+          email: true,
           handle: true,
           bio: true,
           avatar: true,
@@ -48,6 +49,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           following: true,
           creatorNiche: true,
           portfolioUrl: true,
+          phone: true,
+          twoFactorEnabled: true,
           createdAt: true,
         },
       });
@@ -80,6 +83,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         select: {
           id: true,
           name: true,
+          email: true,
           handle: true,
           bio: true,
           avatar: true,
@@ -88,6 +92,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           userType: true,
           followers: true,
           following: true,
+          phone: true,
+          twoFactorEnabled: true,
           createdAt: true,
         },
       });

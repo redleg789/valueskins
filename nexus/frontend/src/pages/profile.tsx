@@ -96,9 +96,9 @@ export default function Profile() {
       }
     };
 
+    setReady(true);
     fetchProfile();
     fetchUserPosts();
-    setReady(true);
   }, [router]);
 
   const handleSaveProfile = async () => {
