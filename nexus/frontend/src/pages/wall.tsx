@@ -3,9 +3,21 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 
+interface GrimoireEntry {
+  id: string;
+  title: string;
+  excerpt: string;
+  date: string;
+  type: string;
+  likes: number;
+  views: number;
+}
+
 export default function Wall() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
+  const [entries, setEntries] = useState<GrimoireEntry[]>([]);
+  const [userProfile, setUserProfile] = useState<any>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -15,43 +27,43 @@ export default function Wall() {
         return;
       }
     }
+
+    // Fetch user profile
+    const fetchProfile = async () => {
+      try {
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch('/api/users/profile', {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setUserProfile(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch profile:', error);
+      }
+    };
+
+    // Fetch grimoire entries
+    const fetchEntries = async () => {
+      try {
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch('/api/grimoire', {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setEntries(data.entries || []);
+        }
+      } catch (error) {
+        console.error('Failed to fetch entries:', error);
+      }
+    };
+
+    fetchProfile();
+    fetchEntries();
     setReady(true);
   }, [router]);
-
-  if (!ready) {
-    return (
-      <div className="min-h-screen bg-surface flex items-center justify-center">
-        <div className="text-primary">Loading...</div>
-      </div>
-    );
-  }
-
-  const entries = [
-    {
-      id: '1',
-      title: 'The Digital Renaissance',
-      excerpt: 'Exploring how AI is reshaping artistic expression...',
-      date: '2024-03-15',
-      type: 'Essay',
-      likes: 234,
-    },
-    {
-      id: '2',
-      title: 'Canvas to Code',
-      excerpt: 'My journey transitioning from traditional to digital art.',
-      date: '2024-03-10',
-      type: 'Reflection',
-      likes: 189,
-    },
-    {
-      id: '3',
-      title: 'Building in Public',
-      excerpt: 'Documenting the launch of my latest project day by day.',
-      date: '2024-03-05',
-      type: 'Journal',
-      likes: 456,
-    },
-  ];
 
   return (
     <div className="min-h-screen bg-surface text-on-surface">
@@ -126,21 +138,21 @@ export default function Wall() {
               <div className="relative">
                 <div className="flex items-start gap-6">
                   <div className="w-24 h-24 rounded-full bg-surface-container-highest overflow-hidden border-4 border-primary/30">
-                    <img alt="Profile" className="w-full h-full object-cover" src="https://via.placeholder.com/96" />
+                    <img alt="Profile" className="w-full h-full object-cover" src={userProfile?.avatar || 'https://via.placeholder.com/96'} />
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <h1 className="text-3xl font-headline font-black italic text-primary">The Voyager</h1>
-                      <span className="text-xs text-primary bg-primary/20 px-2 py-1 rounded-full font-label uppercase tracking-widest">Verified</span>
+                      <h1 className="text-3xl font-headline font-black italic text-primary">{userProfile?.name || 'Loading...'}</h1>
+                      {userProfile?.verified && <span className="text-xs text-primary bg-primary/20 px-2 py-1 rounded-full font-label uppercase tracking-widest">Verified</span>}
                     </div>
-                    <p className="text-sm text-on-surface-variant mb-4">@thevoyager</p>
+                    <p className="text-sm text-on-surface-variant mb-4">@{userProfile?.handle || 'user'}</p>
                     <p className="text-lg text-on-surface/90 mb-4">
-                      Digital Alchemist exploring the intersection of art and technology. Building in public.
+                      {userProfile?.bio || 'No bio yet'}
                     </p>
                     <div className="flex gap-6 text-sm">
-                      <span><strong className="text-primary">12.4K</strong> Followers</span>
-                      <span><strong className="text-primary">890</strong> Following</span>
-                      <span><strong className="text-primary">47</strong> Entries</span>
+                      <span><strong className="text-primary">{userProfile?.followers || 0}</strong> Followers</span>
+                      <span><strong className="text-primary">{userProfile?.following || 0}</strong> Following</span>
+                      <span><strong className="text-primary">{entries.length}</strong> Entries</span>
                     </div>
                   </div>
                 </div>

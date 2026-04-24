@@ -27,17 +27,54 @@ export default function BrandDashboard() {
     );
   }
 
-  const stats = [
-    { label: 'Active Campaigns', value: '3', icon: 'campaign' },
-    { label: 'Creators Working', value: '12', icon: 'groups' },
-    { label: 'Budget Used', value: '$4,200', icon: 'account_balance_wallet' },
-    { label: 'Total Reach', value: '234K', icon: 'public' },
-  ];
+  const [stats, setStats] = useState([
+    { label: 'Active Campaigns', value: '0', icon: 'campaign' },
+    { label: 'Creators Working', value: '0', icon: 'groups' },
+    { label: 'Budget Used', value: '$0', icon: 'account_balance_wallet' },
+    { label: 'Total Reach', value: '0', icon: 'public' },
+  ]);
 
-  const creators = [
-    { name: 'The Voyager', handle: '@thevoyager', followers: '12.4K', rate: '$500/post', status: 'Active' },
-    { name: 'Neon Dreams', handle: '@neondreams', followers: '8.9K', rate: '$200/post', status: 'Available' },
-  ];
+  const [creators, setCreators] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch('/api/users/profile', {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setStats([
+            { label: 'Active Campaigns', value: '0', icon: 'campaign' },
+            { label: 'Creators Working', value: '0', icon: 'groups' },
+            { label: 'Budget Used', value: '$0', icon: 'account_balance_wallet' },
+            { label: 'Total Reach', value: data.followers || '0', icon: 'public' },
+          ]);
+        }
+      } catch (error) {
+        console.error('Failed to fetch profile:', error);
+      }
+    };
+
+    const fetchCreators = async () => {
+      try {
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch('/api/discover/creators?limit=2', {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setCreators(data.creators || []);
+        }
+      } catch (error) {
+        console.error('Failed to fetch creators:', error);
+      }
+    };
+
+    fetchProfile();
+    fetchCreators();
+  }, []);
 
   return (
     <div className="min-h-screen bg-surface text-on-surface">
@@ -131,24 +168,19 @@ export default function BrandDashboard() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {creators.map((creator, index) => (
-                  <div key={index} className="card-surface p-6">
+                {creators.map((creator) => (
+                  <div key={creator.id} className="card-surface p-6">
                     <div className="flex items-start gap-4">
                       <div className="avatar-ring">
-                        <img alt={creator.name} className="w-full h-full object-cover" src="https://via.placeholder.com/48" />
+                        <img alt={creator.name} className="w-full h-full object-cover" src={creator.avatar || 'https://via.placeholder.com/48'} />
                       </div>
                       <div className="flex-1">
                         <h3 className="font-headline font-bold text-lg text-primary">{creator.name}</h3>
-                        <p className="text-sm text-on-surface-variant">{creator.handle}</p>
+                        <p className="text-sm text-on-surface-variant">@{creator.handle}</p>
                         <div className="flex gap-4 mt-2 text-sm">
-                          <span className="text-secondary">{creator.followers}</span>
-                          <span className="text-on-surface-variant">|</span>
-                          <span className="text-secondary">{creator.rate}</span>
+                          <span className="text-secondary">{creator.followers || 0} followers</span>
                         </div>
                       </div>
-                      <span className={`text-xs font-label uppercase ${creator.status === 'Active' ? 'text-secondary' : 'text-primary'}`}>
-                        {creator.status}
-                      </span>
                     </div>
                     <div className="flex gap-2 mt-4">
                       <button className="btn-secondary flex-1">Message</button>

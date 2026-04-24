@@ -4,9 +4,27 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { encrypt, decrypt, initEncryption, isEncryptionReady } from '@/lib/encryption';
 
+interface Conversation {
+  id: string;
+  name: string;
+  lastMessage: string;
+  time: string;
+  unread: number;
+  avatar: string;
+}
+
+interface Message {
+  id: string;
+  from: 'me' | 'them';
+  content: string;
+  time: string;
+}
+
 export default function Chat() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [message, setMessage] = useState('');
 
@@ -19,9 +37,70 @@ export default function Chat() {
       }
     }
     initEncryption();
+
+    // Fetch conversations
+    const fetchConversations = async () => {
+      try {
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch('/api/conversations', {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setConversations(data.conversations || []);
+          if (data.conversations && data.conversations.length > 0) {
+            setSelectedConversation(data.conversations[0].id);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch conversations:', error);
+      }
+    };
+
+    fetchConversations();
     setReady(true);
-    setSelectedConversation('artisan-studios');
   }, [router]);
+
+  // Fetch messages for selected conversation
+  useEffect(() => {
+    if (!selectedConversation) return;
+
+    const fetchMessages = async () => {
+      try {
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch(`/api/messages?conversationId=${selectedConversation}`, {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setMessages(data.messages || []);
+        }
+      } catch (error) {
+        console.error('Failed to fetch messages:', error);
+      }
+    };
+
+    fetchMessages();
+
+    // Connect to real-time messages
+    const token = localStorage.getItem('auth_token');
+    const eventSource = new EventSource(`/api/realtime/messages?conversationId=${selectedConversation}&token=${token}`);
+
+    eventSource.addEventListener('message', (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'new_message') {
+          setMessages(prev => [...prev, data.message]);
+        }
+      } catch (error) {
+        console.error('Failed to parse message event:', error);
+      }
+    });
+
+    return () => {
+      eventSource.close();
+    };
+  }, [selectedConversation]);
 
   if (!ready) {
     return (
@@ -31,32 +110,22 @@ export default function Chat() {
     );
   }
 
-  const conversations = [
-    { id: 'artisan-studios', name: 'Artisan Studios', lastMessage: 'Thanks for the collaboration!', time: '2m ago', unread: 2 },
-    { id: 'neon-dreams', name: 'Neon Dreams', lastMessage: 'The artwork looks amazing', time: '1h ago', unread: 0 },
-    { id: 'creative-co', name: 'Creative Co', lastMessage: 'When can we discuss the proposal?', time: '3h ago', unread: 0 },
-  ];
-
-  const messages = [
-    { id: '1', from: 'them', content: 'Hi! Thanks for accepting the collaboration request.', time: '10:30 AM' },
-    { id: '2', from: 'me', content: 'Hey! Excited to work on this project. What do you have in mind?', time: '10:32 AM' },
-    { id: '3', from: 'them', content: 'We were thinking a series of 5 posts showcasing our new art supplies.', time: '10:35 AM' },
-    { id: '4', from: 'them', content: 'Each post should highlight a different product from our collection.', time: '10:36 AM' },
-    { id: '5', from: 'me', content: 'Sounds great! I can create some time-lapse videos showing the supplies in action.', time: '10:40 AM' },
-    { id: '6', from: 'them', content: 'Perfect! That aligns with our brand perfectly.', time: '10:42 AM' },
-    { id: '7', from: 'them', content: 'Thanks for the collaboration!', time: '10:45 AM' },
-  ];
-
   const handleSend = async () => {
-    if (!message.trim()) return;
-    
+    if (!message.trim() || !selectedConversation) return;
+
     try {
-      const encrypted = await encrypt(message);
-      console.log('Encrypted message:', encrypted);
-      setMessage('');
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch('/api/conversations', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ conversationId: selectedConversation, content: message }),
+      });
+
+      if (response.ok) {
+        setMessage('');
+      }
     } catch (error) {
-      console.error('Encryption failed:', error);
-      setMessage('');
+      console.error('Failed to send message:', error);
     }
   };
 
@@ -94,7 +163,7 @@ export default function Chat() {
                 className={`w-full p-4 rounded-sm transition-colors flex items-center gap-3 ${selectedConversation === conv.id ? 'bg-surface-container-high' : 'hover:bg-surface-container-low'}`}
               >
                 <div className="w-12 h-12 rounded-full bg-surface-container-highest overflow-hidden flex-shrink-0">
-                  <img alt={conv.name} className="w-full h-full object-cover" src="https://via.placeholder.com/48" />
+                  <img alt={conv.name} className="w-full h-full object-cover" src={conv.avatar || 'https://via.placeholder.com/48'} />
                 </div>
                 <div className="flex-1 text-left">
                   <div className="flex justify-between items-center">
@@ -123,10 +192,10 @@ export default function Chat() {
                   <span className="material-symbols-outlined">arrow_back</span>
                 </button>
                 <div className="w-10 h-10 rounded-full bg-surface-container-highest overflow-hidden">
-                  <img alt="User" className="w-full h-full object-cover" src="https://via.placeholder.com/40" />
+                  <img alt="User" className="w-full h-full object-cover" src={conversations.find(c => c.id === selectedConversation)?.avatar || 'https://via.placeholder.com/40'} />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-headline font-bold text-primary">Artisan Studios</h3>
+                  <h3 className="font-headline font-bold text-primary">{conversations.find(c => c.id === selectedConversation)?.name || 'Chat'}</h3>
                   <p className="text-xs text-on-surface-variant">Active now</p>
                 </div>
                 <button className="text-primary hover:text-primary-dim transition-colors">

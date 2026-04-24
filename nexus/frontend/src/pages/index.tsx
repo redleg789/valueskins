@@ -38,7 +38,48 @@ export default function Home() {
         return;
       }
     }
+
+    // Fetch initial posts
+    const fetchPosts = async () => {
+      try {
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch('/api/posts', {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setPosts(data.posts || []);
+        }
+      } catch (error) {
+        console.error('Failed to fetch posts:', error);
+      }
+    };
+
+    fetchPosts();
     setReady(true);
+
+    // Connect to real-time feed
+    const token = localStorage.getItem('auth_token');
+    const eventSource = new EventSource(`/api/realtime/feed?token=${token}`);
+
+    eventSource.addEventListener('message', (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'new_post') {
+          setPosts(prev => [data.post, ...prev]);
+        }
+      } catch (error) {
+        console.error('Failed to parse event:', error);
+      }
+    });
+
+    eventSource.onerror = () => {
+      eventSource.close();
+    };
+
+    return () => {
+      eventSource.close();
+    };
   }, [router]);
 
   const extractHashtags = (content: string): string[] => {

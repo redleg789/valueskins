@@ -27,18 +27,38 @@ export default function CreatorDashboard() {
     );
   }
 
-  const stats = [
-    { label: 'Followers', value: '12.4K', icon: 'group' },
-    { label: 'Views', value: '89.2K', icon: 'visibility' },
-    { label: 'Engagement', value: '4.8%', icon: 'trending_up' },
-    { label: 'Earnings', value: '$2,340', icon: 'payments' },
-  ];
+  const [stats, setStats] = useState([
+    { label: 'Followers', value: '0', icon: 'group' },
+    { label: 'Views', value: '0', icon: 'visibility' },
+    { label: 'Engagement', value: '0%', icon: 'trending_up' },
+    { label: 'Earnings', value: '$0', icon: 'payments' },
+  ]);
 
-  const opportunities = [
-    { brand: 'Artisan Studios', type: 'Paid Collab', budget: '$500 - $1,000', deadline: '2 days left' },
-    { brand: 'Neon Gallery', type: 'Art Exchange', budget: '$200', deadline: '5 days left' },
-    { brand: 'Creative Co', type: 'Sponsorship', budget: '$1,500 - $3,000', deadline: '1 week left' },
-  ];
+  const [opportunities, setOpportunities] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch('/api/users/profile', {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setStats([
+            { label: 'Followers', value: data.followers || '0', icon: 'group' },
+            { label: 'Views', value: '0', icon: 'visibility' },
+            { label: 'Engagement', value: '0%', icon: 'trending_up' },
+            { label: 'Earnings', value: '$0', icon: 'payments' },
+          ]);
+        }
+      } catch (error) {
+        console.error('Failed to fetch profile:', error);
+      }
+    };
+
+    fetchProfile();
+  }, []);
 
   return (
     <div className="min-h-screen bg-surface text-on-surface">

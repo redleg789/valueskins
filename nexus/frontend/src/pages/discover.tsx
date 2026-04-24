@@ -7,6 +7,9 @@ export default function Discover() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
   const [activeTab, setActiveTab] = useState<'creators' | 'brands' | 'trending'>('creators');
+  const [creators, setCreators] = useState<any[]>([]);
+  const [brands, setBrands] = useState<any[]>([]);
+  const [trending, setTrending] = useState<any[]>([]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -19,6 +22,81 @@ export default function Discover() {
     setReady(true);
   }, [router]);
 
+  useEffect(() => {
+    // Fetch creators
+    const fetchCreators = async () => {
+      try {
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch('/api/discover/creators', {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setCreators(data.creators || []);
+        }
+      } catch (error) {
+        console.error('Failed to fetch creators:', error);
+      }
+    };
+
+    // Fetch brands
+    const fetchBrands = async () => {
+      try {
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch('/api/discover/brands', {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setBrands(data.brands || []);
+        }
+      } catch (error) {
+        console.error('Failed to fetch brands:', error);
+      }
+    };
+
+    // Fetch trending
+    const fetchTrending = async () => {
+      try {
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch('/api/discover/trending', {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setTrending(data.trending || []);
+        }
+      } catch (error) {
+        console.error('Failed to fetch trending:', error);
+      }
+    };
+
+    fetchCreators();
+    fetchBrands();
+    fetchTrending();
+
+    // Connect to real-time trending
+    const token = localStorage.getItem('auth_token');
+    const eventSource = new EventSource(`/api/realtime/trending?token=${token}`);
+
+    eventSource.addEventListener('message', (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'trending_hashtags') {
+          setTrending(data.trending);
+        } else if (data.type === 'trending_creators') {
+          setCreators(data.creators);
+        }
+      } catch (error) {
+        console.error('Failed to parse trending event:', error);
+      }
+    });
+
+    return () => {
+      eventSource.close();
+    };
+  }, []);
+
   if (!ready) {
     return (
       <div className="min-h-screen bg-surface flex items-center justify-center">
@@ -26,25 +104,6 @@ export default function Discover() {
       </div>
     );
   }
-
-  const creators = [
-    { name: 'Neon Dreams', handle: '@neondreams', followers: '8.9K', niche: 'Digital Art', avatar: 'https://via.placeholder.com/100' },
-    { name: 'Pixel Pioneer', handle: '@pixelpro', followers: '45.2K', niche: 'Gaming', avatar: 'https://via.placeholder.com/100' },
-    { name: 'Code Canvas', handle: '@codecanvas', followers: '23.1K', niche: 'Tech Art', avatar: 'https://via.placeholder.com/100' },
-    { name: 'Sound Sculptor', handle: '@soundsculpt', followers: '67.8K', niche: 'Music', avatar: 'https://via.placeholder.com/100' },
-  ];
-
-  const brands = [
-    { name: 'TechGear Pro', handle: '@techgearpro', followers: '234K', type: 'Electronics', avatar: 'https://via.placeholder.com/100' },
-    { name: 'StyleLab', handle: '@stylelab', followers: '189K', type: 'Fashion', avatar: 'https://via.placeholder.com/100' },
-  ];
-
-  const trending = [
-    { title: '#DigitalArtChallenge', posts: '12.4K' },
-    { title: '#CreatorEarnings', posts: '8.9K' },
-    { title: '#BrandCollab', posts: '5.2K' },
-    { title: '#NftArt', posts: '3.1K' },
-  ];
 
   return (
     <div className="min-h-screen bg-surface text-on-surface">
