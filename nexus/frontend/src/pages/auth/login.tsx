@@ -4,20 +4,37 @@ import { useRouter } from 'next/router';
 export default function Login() {
   const router = useRouter();
   const [userType, setUserType] = useState<'creator' | 'brand' | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [connectingWith, setConnectingWith] = useState<string | null>(null);
 
-  const handleDemoLogin = (type: 'creator' | 'brand') => {
-    setLoading(true);
-    localStorage.setItem('user_type', type);
-    localStorage.setItem('auth_token', 'demo_token_' + Date.now());
-    
-    setTimeout(() => {
-      if (type === 'creator') {
-        router.push('/creator/dashboard');
-      } else {
-        router.push('/brand/dashboard');
+  const handleGoogleLogin = async (type: 'creator' | 'brand') => {
+    setConnectingWith('google');
+    try {
+      const response = await fetch('/api/auth/google', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userType: type })
+      });
+      const data = await response.json();
+      if (data.token) {
+        localStorage.setItem('user_type', type);
+        localStorage.setItem('auth_token', data.token);
+        if (type === 'creator') {
+          router.push('/creator/dashboard');
+        } else {
+          router.push('/brand/dashboard');
+        }
       }
-    }, 500);
+    } catch (error) {
+      console.error('Google login failed:', error);
+    } finally {
+      setConnectingWith(null);
+    }
+  };
+
+  const handleGuestBrowse = () => {
+    localStorage.setItem('user_type', 'guest');
+    localStorage.setItem('auth_token', 'guest_token_' + Date.now());
+    router.push('/deals-feed');
   };
 
   if (!userType) {
@@ -32,8 +49,8 @@ export default function Login() {
           </div>
 
           <div className="card-surface p-8">
-            <h2 className="text-2xl font-headline font-bold mb-6 text-center">Join the Grimoire</h2>
-            
+            <h2 className="text-2xl font-headline font-bold mb-6 text-center">Join the Platform</h2>
+
             <div className="space-y-4">
               <button
                 onClick={() => setUserType('creator')}
@@ -50,16 +67,19 @@ export default function Login() {
                 I am a Brand
               </button>
             </div>
+          </div>
 
-            <div className="mt-8 pt-6 border-t border-outline-variant">
-              <p className="text-center text-sm text-on-surface-variant">
-                Demo mode: Click any option to enter instantly
-              </p>
-            </div>
+          <div className="mt-6 text-center">
+            <button
+              onClick={handleGuestBrowse}
+              className="text-primary hover:text-primary-dim font-headline transition-colors"
+            >
+              Browse as a guest
+            </button>
           </div>
 
           <p className="text-xs text-center text-on-surface-variant mt-6">
-            By continuing, you agree to our Terms of Service
+            By continuing, you agree to our <a href="/terms" className="text-primary hover:underline">Terms of Service</a>
           </p>
         </div>
       </div>
@@ -82,35 +102,19 @@ export default function Login() {
             <h1 className="text-3xl font-headline font-black italic text-primary mb-2">
               {userType === 'creator' ? 'Welcome, Creator' : 'Welcome, Brand'}
             </h1>
-            <p className="text-on-surface-variant">Connect your account to begin</p>
+            <p className="text-on-surface-variant">Login with</p>
           </div>
 
           <div className="space-y-3">
             {userType === 'creator' && (
               <>
                 <button
-                  onClick={() => handleDemoLogin('creator')}
-                  disabled={loading}
-                  className="w-full bg-[#E1306C] hover:bg-[#c62858] text-white font-headline font-bold py-4 px-6 rounded-sm transition-all flex items-center justify-center gap-3"
+                  onClick={() => handleGoogleLogin('creator')}
+                  disabled={connectingWith !== null}
+                  className="w-full bg-white hover:bg-gray-100 text-black font-headline font-bold py-4 px-6 rounded-sm transition-all flex items-center justify-center gap-3 disabled:opacity-50"
                 >
-                  <span className="material-symbols-outlined">photo_camera</span>
-                  {loading ? 'Connecting...' : 'Instagram'}
-                </button>
-                <button
-                  onClick={() => handleDemoLogin('creator')}
-                  disabled={loading}
-                  className="w-full bg-[#FF0000] hover:bg-[#cc0000] text-white font-headline font-bold py-4 px-6 rounded-sm transition-all flex items-center justify-center gap-3"
-                >
-                  <span className="material-symbols-outlined">play_arrow</span>
-                  {loading ? 'Connecting...' : 'YouTube'}
-                </button>
-                <button
-                  onClick={() => handleDemoLogin('creator')}
-                  disabled={loading}
-                  className="w-full bg-surface-container-highest hover:bg-surface-bright text-on-surface font-headline font-bold py-4 px-6 rounded-sm transition-all border border-outline-variant flex items-center justify-center gap-3"
-                >
-                  <span className="material-symbols-outlined">link</span>
-                  {loading ? 'Connecting...' : 'TikTok'}
+                  <span className="material-symbols-outlined">account_circle</span>
+                  {connectingWith === 'google' ? 'Connecting...' : 'Login with Google'}
                 </button>
               </>
             )}
@@ -118,20 +122,12 @@ export default function Login() {
             {userType === 'brand' && (
               <>
                 <button
-                  onClick={() => handleDemoLogin('brand')}
-                  disabled={loading}
-                  className="w-full bg-white hover:bg-gray-100 text-black font-headline font-bold py-4 px-6 rounded-sm transition-all flex items-center justify-center gap-3"
+                  onClick={() => handleGoogleLogin('brand')}
+                  disabled={connectingWith !== null}
+                  className="w-full bg-white hover:bg-gray-100 text-black font-headline font-bold py-4 px-6 rounded-sm transition-all flex items-center justify-center gap-3 disabled:opacity-50"
                 >
-                  <span className="material-symbols-outlined">search</span>
-                  {loading ? 'Connecting...' : 'Continue with Google'}
-                </button>
-                <button
-                  onClick={() => handleDemoLogin('brand')}
-                  disabled={loading}
-                  className="w-full bg-[#333] hover:bg-[#1a1a1a] text-white font-headline font-bold py-4 px-6 rounded-sm transition-all flex items-center justify-center gap-3"
-                >
-                  <span className="material-symbols-outlined">code</span>
-                  {loading ? 'Connecting...' : 'Continue with GitHub'}
+                  <span className="material-symbols-outlined">account_circle</span>
+                  {connectingWith === 'google' ? 'Connecting...' : 'Login with Google'}
                 </button>
               </>
             )}
@@ -139,11 +135,10 @@ export default function Login() {
 
           <div className="mt-6 pt-6 border-t border-outline-variant">
             <button
-              onClick={() => handleDemoLogin(userType)}
-              disabled={loading}
-              className="w-full btn-primary"
+              onClick={handleGuestBrowse}
+              className="w-full btn-secondary"
             >
-              {loading ? 'Entering...' : 'Skip & Enter Demo'}
+              Browse as a guest
             </button>
           </div>
         </div>

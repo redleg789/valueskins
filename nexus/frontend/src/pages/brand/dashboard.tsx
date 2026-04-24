@@ -44,9 +44,17 @@ export default function BrandDashboard() {
       {/* Top App Bar */}
       <header className="fixed top-0 w-full z-50 bg-surface-container/80 backdrop-blur-xl border-b border-outline-variant/20">
         <div className="flex justify-between items-center px-6 h-20">
-          <span className="text-3xl font-black italic -rotate-2 tracking-tighter text-primary bg-surface-container-highest px-4 py-1 rounded-sm shadow-[4px_4px_0px_0px_rgba(213,0,249,0.3)] font-headline">
-            Nexus
-          </span>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => router.push('/auth/login')}
+              className="text-primary hover:text-primary-dim transition-colors"
+            >
+              <span className="material-symbols-outlined text-2xl">arrow_back</span>
+            </button>
+            <span className="text-3xl font-black italic -rotate-2 tracking-tighter text-primary bg-surface-container-highest px-4 py-1 rounded-sm shadow-[4px_4px_0px_0px_rgba(213,0,249,0.3)] font-headline">
+              Nexus
+            </span>
+          </div>
           <div className="flex items-center gap-6 text-primary">
             <button className="hover:text-primary hover:bg-zinc-800/50 transition-all p-2 rounded-full">
               <span className="material-symbols-outlined text-2xl">notifications</span>
