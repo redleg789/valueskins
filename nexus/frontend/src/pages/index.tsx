@@ -189,6 +189,10 @@ export default function Home() {
               <span className="material-symbols-outlined">book</span>
               <span>Grimoire</span>
             </a>
+            <a className="nav-item" href="/opportunities">
+              <span className="material-symbols-outlined">work</span>
+              <span>Opportunities</span>
+            </a>
             <a className="nav-item" href="/settings">
               <span className="material-symbols-outlined">settings</span>
               <span>Settings</span>
