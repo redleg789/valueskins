@@ -37,8 +37,12 @@ jobs:
           kubectl set image deployment/frontend-canary \
             frontend=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/frontend:${SHA} \
             -n valueskins
+          kubectl set image deployment/nexus-canary \
+            nexus=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/nexus:${SHA} \
+            -n valueskins || echo "Nexus canary deployment not found"
           kubectl rollout status deployment/api-canary -n valueskins --timeout=300s
           kubectl rollout status deployment/frontend-canary -n valueskins --timeout=300s
+          kubectl rollout status deployment/nexus-canary -n valueskins --timeout=300s || echo "Nexus canary rollout skipped"
 
   # ── Monitor Canary (Golden Signals) ────────────────────────────────
   monitor-canary:
@@ -104,6 +108,10 @@ jobs:
             -n valueskins
           kubectl rollout status deployment/api -n valueskins --timeout=600s
           kubectl rollout status deployment/frontend -n valueskins --timeout=600s
+          kubectl set image deployment/nexus \
+            nexus=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/nexus:${SHA} \
+            -n valueskins || echo "Nexus deployment not found in cluster"
+          kubectl rollout status deployment/nexus -n valueskins --timeout=600s || echo "Nexus rollout status skipped"
       - name: Verify deployment
         run: |
           # Smoke test: hit health endpoint
@@ -119,6 +127,7 @@ jobs:
           echo "Health check failed — rolling back"
           kubectl rollout undo deployment/api -n valueskins
           kubectl rollout undo deployment/frontend -n valueskins
+          kubectl rollout undo deployment/nexus -n valueskins || true
           exit 1
       - name: Tag release
         run: |

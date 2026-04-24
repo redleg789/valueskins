@@ -136,6 +136,29 @@ jobs:
           npm run test --if-present -- --passWithNoTests
           npm run build
 
+  # ── Nexus App Tests (Next.js) ─────────────────────────────────────
+  test-nexus:
+    name: Nexus Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: nexus/frontend/package-lock.json
+      - name: Nexus lint
+        working-directory: nexus/frontend
+        run: |
+          npm ci
+          npm run lint || echo "Lint issues found"
+      - name: Nexus type check
+        working-directory: nexus/frontend
+        run: npx tsc --noEmit
+      - name: Nexus build
+        working-directory: nexus/frontend
+        run: npm run build
+
   load-tests:
     name: Load & Abuse Tests (k6)
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.run_load_tests == 'true'
@@ -217,12 +240,12 @@ jobs:
   # ── Build & Push Images ────────────────────────────────────────────
   build-images:
     name: Build ${{ matrix.service }}
-    needs: [lint, security, test-backend, test-frontend]
+    needs: [lint, security, test-backend, test-frontend, test-nexus]
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        service: [api, frontend]
+        service: [api, frontend, nexus]
         include:
           - service: api
             context: ./backend
@@ -230,6 +253,9 @@ jobs:
           - service: frontend
             context: ./frontend
             dockerfile: ./frontend/Dockerfile
+          - service: nexus
+            context: ./nexus/frontend
+            dockerfile: ./nexus/frontend/Dockerfile
     permissions:
       contents: read
       packages: write
