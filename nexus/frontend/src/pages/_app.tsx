@@ -1,8 +1,27 @@
 import '@/styles/globals.css';
 import { AppProps } from 'next/app';
 import Head from 'next/head';
+import { useRouter } from 'next/router';
+import { useEffect } from 'react';
+
+const PUBLIC_ROUTES = ['/auth/login'];
 
 export default function App({ Component, pageProps }: AppProps) {
+  const router = useRouter();
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const token = localStorage.getItem('auth_token');
+    const isPublicRoute = PUBLIC_ROUTES.includes(router.pathname);
+
+    if (!token && !isPublicRoute) {
+      router.push('/auth/login');
+    } else if (token && router.pathname === '/auth/login') {
+      router.push('/');
+    }
+  }, [router.pathname, router]);
+
   return (
     <>
       <Head>
