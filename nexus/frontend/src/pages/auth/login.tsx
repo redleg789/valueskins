@@ -6,10 +6,10 @@ export default function Login() {
   const [userType, setUserType] = useState<'creator' | 'brand' | null>(null);
   const [connectingWith, setConnectingWith] = useState<string | null>(null);
 
-  const handleGoogleLogin = async (type: 'creator' | 'brand') => {
-    setConnectingWith('google');
+  const handleOAuthLogin = async (provider: 'google' | 'apple', type: 'creator' | 'brand') => {
+    setConnectingWith(provider);
     try {
-      const response = await fetch('/api/auth/google', {
+      const response = await fetch(`/api/auth/${provider}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userType: type })
@@ -25,7 +25,7 @@ export default function Login() {
         }
       }
     } catch (error) {
-      console.error('Google login failed:', error);
+      console.error(`${provider} login failed:`, error);
     } finally {
       setConnectingWith(null);
     }
@@ -109,12 +109,20 @@ export default function Login() {
             {userType === 'creator' && (
               <>
                 <button
-                  onClick={() => handleGoogleLogin('creator')}
+                  onClick={() => handleOAuthLogin('google', 'creator')}
                   disabled={connectingWith !== null}
                   className="w-full bg-white hover:bg-gray-100 text-black font-headline font-bold py-4 px-6 rounded-sm transition-all flex items-center justify-center gap-3 disabled:opacity-50"
                 >
                   <span className="material-symbols-outlined">account_circle</span>
                   {connectingWith === 'google' ? 'Connecting...' : 'Login with Google'}
+                </button>
+                <button
+                  onClick={() => handleOAuthLogin('apple', 'creator')}
+                  disabled={connectingWith !== null}
+                  className="w-full bg-black hover:bg-gray-900 text-white font-headline font-bold py-4 px-6 rounded-sm transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+                >
+                  <span className="material-symbols-outlined">apple</span>
+                  {connectingWith === 'apple' ? 'Connecting...' : 'Login with Apple'}
                 </button>
               </>
             )}
@@ -122,12 +130,20 @@ export default function Login() {
             {userType === 'brand' && (
               <>
                 <button
-                  onClick={() => handleGoogleLogin('brand')}
+                  onClick={() => handleOAuthLogin('google', 'brand')}
                   disabled={connectingWith !== null}
                   className="w-full bg-white hover:bg-gray-100 text-black font-headline font-bold py-4 px-6 rounded-sm transition-all flex items-center justify-center gap-3 disabled:opacity-50"
                 >
                   <span className="material-symbols-outlined">account_circle</span>
                   {connectingWith === 'google' ? 'Connecting...' : 'Login with Google'}
+                </button>
+                <button
+                  onClick={() => handleOAuthLogin('apple', 'brand')}
+                  disabled={connectingWith !== null}
+                  className="w-full bg-black hover:bg-gray-900 text-white font-headline font-bold py-4 px-6 rounded-sm transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+                >
+                  <span className="material-symbols-outlined">apple</span>
+                  {connectingWith === 'apple' ? 'Connecting...' : 'Login with Apple'}
                 </button>
               </>
             )}
