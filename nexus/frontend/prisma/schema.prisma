@@ -33,6 +33,8 @@ model User {
   emailVerifiedAt   DateTime?
   twoFactorEnabled  Boolean     @default(false)
   lastLoginAt       DateTime?
+  oauthProvider     String? // google, apple
+  oauthId           String? // provider's user ID
 
   // Profile data
   phone             String?
@@ -63,6 +65,7 @@ model User {
 
   // Relations
   posts             Post[]
+  grimoires         GrimoireEntry[]
   deals             Deal[]
   creatorDeals      DealApplication[] @relation("Creator")
   sentMessages      Message[]   @relation("Sender")
@@ -142,6 +145,30 @@ enum PostStatus {
   DRAFT
   PUBLISHED
   DELETED
+}
+
+model GrimoireEntry {
+  id                String      @id @default(cuid())
+  userId            String
+  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title             String
+  content           String
+  entryType         String // Essay, Reflection, Journal, etc
+
+  likeCount         Int         @default(0)
+  viewCount         Int         @default(0)
+
+  visibility        PostVisibility @default(PUBLIC)
+  status            PostStatus   @default(PUBLISHED)
+
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  deletedAt         DateTime?
+
+  @@index([userId])
+  @@index([createdAt])
+  @@fulltext([title, content])
 }
 
 model Like {
