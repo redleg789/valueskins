@@ -19,6 +19,20 @@ interface UserAccount {
   twoFactorEnabled: boolean;
 }
 
+interface Session {
+  id: string;
+  createdAt: string;
+  lastActivityAt: string;
+  ipAddress?: string;
+  userAgent?: string;
+}
+
+interface LoginRecord {
+  timestamp: string;
+  ip: string;
+  device: string;
+}
+
 export default function Settings() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
@@ -29,6 +43,13 @@ export default function Settings() {
   const [showPasswordChange, setShowPasswordChange] = useState(false);
   const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' });
   const [darkMode, setDarkMode] = useState(false);
+  const [newEmail, setNewEmail] = useState('');
+  const [newPhone, setNewPhone] = useState('');
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [loginHistory, setLoginHistory] = useState<LoginRecord[]>([]);
+  const [quietHours, setQuietHours] = useState({ start: '', end: '' });
+  const [language, setLanguage] = useState('en');
+  const [mediaAutoplay, setMediaAutoplay] = useState('always');
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -64,14 +85,66 @@ export default function Settings() {
         if (response.ok) {
           const data = await response.json();
           setAccount({ name: data.name, email: data.email, phone: data.phone, twoFactorEnabled: data.twoFactorEnabled });
+          setNewEmail(data.email);
+          setNewPhone(data.phone || '');
         }
       } catch (error) {
         console.error('Failed to fetch account:', error);
       }
     };
 
+    const fetchSessions = async () => {
+      try {
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch('/api/security/sessions', {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setSessions(data.sessions || []);
+        }
+      } catch (error) {
+        console.error('Failed to fetch sessions:', error);
+      }
+    };
+
+    const fetchLoginHistory = async () => {
+      try {
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch('/api/security/login-history', {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setLoginHistory(data.loginHistory || []);
+        }
+      } catch (error) {
+        console.error('Failed to fetch login history:', error);
+      }
+    };
+
+    const fetchQuietHours = async () => {
+      try {
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch('/api/preferences/quiet-hours', {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setQuietHours(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch quiet hours:', error);
+      }
+    };
+
     fetchSettings();
     fetchAccount();
+    fetchSessions();
+    fetchLoginHistory();
+    fetchQuietHours();
+    setLanguage(localStorage.getItem('language') || 'en');
+    setMediaAutoplay(localStorage.getItem('mediaAutoplay') || 'always');
     setReady(true);
   }, [router]);
 
@@ -121,10 +194,123 @@ export default function Settings() {
         setPasswordForm({ current: '', new: '', confirm: '' });
         setSaved(true);
         setTimeout(() => setSaved(false), 3000);
+      } else {
+        alert('Failed to change password');
       }
     } catch (error) {
       console.error('Failed to change password:', error);
     }
+  };
+
+  const handleEmailUpdate = async () => {
+    if (!newEmail) return;
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch('/api/users/email', {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: newEmail }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setAccount({ ...account!, email: data.email });
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
+      } else {
+        alert('Failed to update email');
+      }
+    } catch (error) {
+      console.error('Failed to update email:', error);
+    }
+  };
+
+  const handlePhoneUpdate = async () => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch('/api/users/phone', {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: newPhone }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setAccount({ ...account!, phone: data.phone });
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
+      } else {
+        alert('Failed to update phone');
+      }
+    } catch (error) {
+      console.error('Failed to update phone:', error);
+    }
+  };
+
+  const handleToggle2FA = async () => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch('/api/security/2fa', {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enable: !account?.twoFactorEnabled }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setAccount({ ...account!, twoFactorEnabled: data.twoFactorEnabled });
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
+      }
+    } catch (error) {
+      console.error('Failed to toggle 2FA:', error);
+    }
+  };
+
+  const handleLogoutAllDevices = async () => {
+    if (!window.confirm('Logout all devices?')) return;
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch('/api/security/sessions', {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (response.ok) {
+        setSessions([]);
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
+      }
+    } catch (error) {
+      console.error('Failed to logout devices:', error);
+    }
+  };
+
+  const handleQuietHoursUpdate = async () => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch('/api/preferences/quiet-hours', {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(quietHours),
+      });
+      if (response.ok) {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
+      }
+    } catch (error) {
+      console.error('Failed to update quiet hours:', error);
+    }
+  };
+
+  const handleLanguageChange = (newLang: string) => {
+    setLanguage(newLang);
+    localStorage.setItem('language', newLang);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
+  };
+
+  const handleMediaAutoplayChange = (newAutoplay: string) => {
+    setMediaAutoplay(newAutoplay);
+    localStorage.setItem('mediaAutoplay', newAutoplay);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
   };
 
   const toggleDarkMode = () => {
@@ -238,14 +424,24 @@ export default function Settings() {
 
                 <div className="card-surface p-6 space-y-4">
                   <h3 className="font-headline font-semibold">Change Email</h3>
-                  <input type="email" placeholder="New email" className="w-full bg-surface-container-highest px-4 py-2 rounded border border-outline-variant/50" />
-                  <button className="btn-secondary">Update Email</button>
+                  <input
+                    type="email"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    className="w-full bg-surface-container-highest px-4 py-2 rounded border border-outline-variant/50"
+                  />
+                  <button onClick={handleEmailUpdate} className="btn-secondary">Update Email</button>
                 </div>
 
                 <div className="card-surface p-6 space-y-4">
                   <h3 className="font-headline font-semibold">Change Phone Number</h3>
-                  <input type="tel" placeholder="New phone number" className="w-full bg-surface-container-highest px-4 py-2 rounded border border-outline-variant/50" />
-                  <button className="btn-secondary">Update Phone</button>
+                  <input
+                    type="tel"
+                    value={newPhone}
+                    onChange={(e) => setNewPhone(e.target.value)}
+                    className="w-full bg-surface-container-highest px-4 py-2 rounded border border-outline-variant/50"
+                  />
+                  <button onClick={handlePhoneUpdate} className="btn-secondary">Update Phone</button>
                 </div>
 
                 <div className="card-surface p-6 space-y-4">
@@ -394,9 +590,20 @@ export default function Settings() {
                   <h3 className="font-headline font-semibold mb-4">Do Not Disturb</h3>
                   <p className="text-sm text-on-surface-variant mb-4">Set quiet hours for notifications</p>
                   <div className="flex gap-4">
-                    <input type="time" placeholder="Start" className="flex-1 bg-surface-container-highest px-3 py-2 rounded border border-outline-variant/50" />
-                    <input type="time" placeholder="End" className="flex-1 bg-surface-container-highest px-3 py-2 rounded border border-outline-variant/50" />
+                    <input
+                      type="time"
+                      value={quietHours.start}
+                      onChange={(e) => setQuietHours({ ...quietHours, start: e.target.value })}
+                      className="flex-1 bg-surface-container-highest px-3 py-2 rounded border border-outline-variant/50"
+                    />
+                    <input
+                      type="time"
+                      value={quietHours.end}
+                      onChange={(e) => setQuietHours({ ...quietHours, end: e.target.value })}
+                      className="flex-1 bg-surface-container-highest px-3 py-2 rounded border border-outline-variant/50"
+                    />
                   </div>
+                  <button onClick={handleQuietHoursUpdate} className="btn-secondary w-full">Save Quiet Hours</button>
                 </div>
               </div>
             )}
@@ -411,24 +618,41 @@ export default function Settings() {
                   <p className="text-sm text-on-surface-variant mb-4">
                     {account?.twoFactorEnabled ? '✓ Enabled' : 'Disabled'}
                   </p>
-                  <button className="btn-secondary">
+                  <button onClick={handleToggle2FA} className="btn-secondary">
                     {account?.twoFactorEnabled ? 'Disable 2FA' : 'Enable 2FA'}
                   </button>
                 </div>
 
                 <div className="card-surface p-6 space-y-4">
-                  <h3 className="font-headline font-semibold mb-4">Active Sessions</h3>
-                  <div className="text-sm text-on-surface-variant">
-                    <p>Current session: Active</p>
-                    <p className="text-xs mt-2">IP: (hidden for privacy)</p>
+                  <h3 className="font-headline font-semibold mb-4">Active Sessions ({sessions.length})</h3>
+                  <div className="space-y-3 max-h-48 overflow-y-auto">
+                    {sessions.length === 0 ? (
+                      <p className="text-sm text-on-surface-variant">No active sessions</p>
+                    ) : (
+                      sessions.map(s => (
+                        <div key={s.id} className="text-sm bg-surface-container-highest p-3 rounded">
+                          <p className="font-semibold">{new Date(s.lastActivityAt).toLocaleString()}</p>
+                          <p className="text-xs text-on-surface-variant">{s.ipAddress || 'Unknown IP'}</p>
+                        </div>
+                      ))
+                    )}
                   </div>
-                  <button className="btn-secondary">Logout All Devices</button>
+                  <button onClick={handleLogoutAllDevices} className="btn-secondary w-full mt-4">Logout All Devices</button>
                 </div>
 
                 <div className="card-surface p-6 space-y-4">
                   <h3 className="font-headline font-semibold mb-4">Login History</h3>
-                  <div className="text-sm text-on-surface-variant text-center py-8">
-                    Login history will appear here
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {loginHistory.length === 0 ? (
+                      <p className="text-sm text-on-surface-variant text-center py-4">No login history</p>
+                    ) : (
+                      loginHistory.map((record, i) => (
+                        <div key={i} className="text-sm bg-surface-container-highest p-3 rounded">
+                          <p className="font-semibold">{new Date(record.timestamp).toLocaleString()}</p>
+                          <p className="text-xs text-on-surface-variant">{record.device} • {record.ip}</p>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
 
@@ -478,20 +702,28 @@ export default function Settings() {
 
                 <div className="card-surface p-6 space-y-4">
                   <h3 className="font-headline font-semibold mb-4">Language</h3>
-                  <select className="w-full bg-surface-container-highest px-4 py-2 rounded border border-outline-variant/50">
-                    <option>English</option>
-                    <option>Spanish</option>
-                    <option>French</option>
-                    <option>German</option>
+                  <select
+                    value={language}
+                    onChange={(e) => handleLanguageChange(e.target.value)}
+                    className="w-full bg-surface-container-highest px-4 py-2 rounded border border-outline-variant/50"
+                  >
+                    <option value="en">English</option>
+                    <option value="es">Spanish</option>
+                    <option value="fr">French</option>
+                    <option value="de">German</option>
                   </select>
                 </div>
 
                 <div className="card-surface p-6 space-y-4">
                   <h3 className="font-headline font-semibold mb-4">Media Autoplay</h3>
-                  <select className="w-full bg-surface-container-highest px-4 py-2 rounded border border-outline-variant/50">
-                    <option>Always</option>
-                    <option>Wi-Fi only</option>
-                    <option>Never</option>
+                  <select
+                    value={mediaAutoplay}
+                    onChange={(e) => handleMediaAutoplayChange(e.target.value)}
+                    className="w-full bg-surface-container-highest px-4 py-2 rounded border border-outline-variant/50"
+                  >
+                    <option value="always">Always</option>
+                    <option value="wifi">Wi-Fi only</option>
+                    <option value="never">Never</option>
                   </select>
                 </div>
               </div>
