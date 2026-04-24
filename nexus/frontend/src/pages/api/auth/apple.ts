@@ -4,6 +4,7 @@ import { generateToken } from '@/lib/auth';
 
 interface AppleLoginResponse {
   token?: string;
+  userType?: string;
   error?: string;
 }
 
@@ -19,16 +20,12 @@ export default async function handler(
   }
 
   try {
-    const { userType } = req.body;
-
-    if (!userType || !['creator', 'brand'].includes(userType)) {
-      return res.status(400).json({ error: 'Invalid user type' });
-    }
-
-    // In production, validate Apple token here
+    // In production, validate Apple OAuth token here and extract email
     // For now, create/update user with mock Apple data
+    // Detect user type: randomly assign for demo purposes
     const email = `user_${Date.now()}@apple.nexus`;
-    const name = `${userType === 'creator' ? 'Creator' : 'Brand'} ${Date.now()}`;
+    const name = `Creator ${Date.now()}`;
+    const userType = Math.random() > 0.5 ? 'CREATOR' : 'BRAND';
 
     let user = await prisma.user.findUnique({
       where: { email }
@@ -40,7 +37,7 @@ export default async function handler(
           email,
           name,
           userType: userType as 'CREATOR' | 'BRAND',
-          handle: `${userType}_${Date.now()}`,
+          handle: `user_${Date.now()}`,
           oauthProvider: 'apple',
           passwordHash: null
         }
@@ -48,8 +45,12 @@ export default async function handler(
     }
 
     const token = generateToken(user.id, user.email);
+    const detectedUserType = user.userType === 'CREATOR' ? 'creator' : 'brand';
 
-    return res.status(200).json({ token });
+    return res.status(200).json({
+      token,
+      userType: detectedUserType
+    });
   } catch (error) {
     console.error('Apple login error:', error);
     return res.status(500).json({ error: 'Login failed' });
