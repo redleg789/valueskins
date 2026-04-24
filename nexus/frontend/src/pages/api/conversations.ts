@@ -8,7 +8,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const token = req.headers.authorization?.replace('Bearer ', '');
   const decoded = token ? verifyToken(token) : null;
-  const userId = decoded && typeof decoded !== 'string' ? decoded.sub : null;
+  const userId = decoded && typeof decoded !== 'string' ? decoded.userId : null;
 
   if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
