@@ -356,6 +356,23 @@ export default function Settings() {
     }
   };
 
+  const handleLogout = async () => {
+    if (!window.confirm('Logout from this device?')) return;
+    try {
+      const token = localStorage.getItem('auth_token');
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      localStorage.removeItem('auth_token');
+      router.push('/auth/login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+      localStorage.removeItem('auth_token');
+      router.push('/auth/login');
+    }
+  };
+
   if (!ready || !settings) {
     return (
       <div className="min-h-screen bg-surface flex items-center justify-center">
@@ -761,6 +778,12 @@ export default function Settings() {
             {activeSection === 'danger' && (
               <div className="space-y-6">
                 <h2 className="text-2xl font-headline font-bold text-red-500">Danger Zone</h2>
+
+                <div className="card-surface p-6 space-y-4 border border-yellow-500/20 bg-yellow-500/5">
+                  <h3 className="font-headline font-semibold text-yellow-500">Logout</h3>
+                  <p className="text-sm text-on-surface-variant">Sign out from this device</p>
+                  <button onClick={handleLogout} className="bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-100 px-4 py-2 rounded transition-colors">Logout</button>
+                </div>
 
                 <div className="card-surface p-6 space-y-4 border border-red-500/20 bg-red-500/5">
                   <h3 className="font-headline font-semibold text-red-500">Download My Data</h3>
