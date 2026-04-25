@@ -29,9 +29,12 @@ export default function Signup() {
   const [userType, setUserType] = useState<'CREATOR' | 'BRAND'>('CREATOR');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [success, setSuccess] = useState(false);
   const [signupData, setSignupData] = useState<SignupResponse['data']>(null);
   const [devToken, setDevToken] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -47,6 +50,7 @@ export default function Signup() {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setFieldErrors({});
 
     if (password !== confirmPassword) {
       setError('Passwords do not match');
@@ -83,6 +87,9 @@ export default function Signup() {
         }
         // Don't auto-login, require email verification first
       } else {
+        if (data.errors) {
+          setFieldErrors(data.errors);
+        }
         setError(data.error || 'Signup failed');
       }
     } catch (err) {
@@ -229,8 +236,15 @@ export default function Signup() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="your@email.com"
                 required
-                className="w-full bg-surface-container-highest px-4 py-3 rounded border border-outline-variant/50 focus:border-primary focus:ring-0"
+                className={`w-full bg-surface-container-highest px-4 py-3 rounded border focus:ring-0 ${
+                  fieldErrors.email
+                    ? 'border-red-500/50 focus:border-red-500'
+                    : 'border-outline-variant/50 focus:border-primary'
+                }`}
               />
+              {fieldErrors.email && (
+                <p className="text-xs text-red-400 mt-1">{fieldErrors.email}</p>
+              )}
             </div>
 
             <div>
@@ -241,34 +255,64 @@ export default function Signup() {
                 onChange={(e) => setHandle(e.target.value.toLowerCase().replace(/\s+/g, '_'))}
                 placeholder="your_handle"
                 required
-                className="w-full bg-surface-container-highest px-4 py-3 rounded border border-outline-variant/50 focus:border-primary focus:ring-0"
+                className={`w-full bg-surface-container-highest px-4 py-3 rounded border focus:ring-0 ${
+                  fieldErrors.handle
+                    ? 'border-red-500/50 focus:border-red-500'
+                    : 'border-outline-variant/50 focus:border-primary'
+                }`}
               />
-              <p className="text-xs text-on-surface-variant mt-1">3-30 characters, letters, numbers, underscore</p>
+              {fieldErrors.handle ? (
+                <p className="text-xs text-red-400 mt-1">{fieldErrors.handle}</p>
+              ) : (
+                <p className="text-xs text-on-surface-variant mt-1">3-30 characters, letters, numbers, underscore</p>
+              )}
             </div>
 
             <div>
               <label className="block text-sm font-headline mb-2">Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                className="w-full bg-surface-container-highest px-4 py-3 rounded border border-outline-variant/50 focus:border-primary focus:ring-0"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  className="w-full bg-surface-container-highest px-4 py-3 rounded border border-outline-variant/50 focus:border-primary focus:ring-0 pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-3 text-on-surface-variant hover:text-primary transition-colors"
+                >
+                  <span className="material-symbols-outlined text-xl">
+                    {showPassword ? 'visibility' : 'visibility_off'}
+                  </span>
+                </button>
+              </div>
               <p className="text-xs text-on-surface-variant mt-1">At least 8 characters, with uppercase, lowercase, number, and special character</p>
             </div>
 
             <div>
               <label className="block text-sm font-headline mb-2">Confirm Password</label>
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                className="w-full bg-surface-container-highest px-4 py-3 rounded border border-outline-variant/50 focus:border-primary focus:ring-0"
-              />
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  className="w-full bg-surface-container-highest px-4 py-3 rounded border border-outline-variant/50 focus:border-primary focus:ring-0 pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-3 text-on-surface-variant hover:text-primary transition-colors"
+                >
+                  <span className="material-symbols-outlined text-xl">
+                    {showConfirmPassword ? 'visibility' : 'visibility_off'}
+                  </span>
+                </button>
+              </div>
             </div>
 
             <button
