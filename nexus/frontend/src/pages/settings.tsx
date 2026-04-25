@@ -8,14 +8,13 @@ interface Settings {
   pushNotifications: boolean;
   inAppNotifications: boolean;
   allowMessages: string;
-  adultContent: boolean;
+  allowComments: boolean;
   weeklyDigest: boolean;
 }
 
 interface UserAccount {
   name: string;
   email: string;
-  phone?: string;
   twoFactorEnabled: boolean;
 }
 
@@ -42,9 +41,7 @@ export default function Settings() {
   const [saved, setSaved] = useState(false);
   const [showPasswordChange, setShowPasswordChange] = useState(false);
   const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' });
-  const [darkMode, setDarkMode] = useState(false);
   const [newEmail, setNewEmail] = useState('');
-  const [newPhone, setNewPhone] = useState('');
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loginHistory, setLoginHistory] = useState<LoginRecord[]>([]);
   const [quietHours, setQuietHours] = useState({ start: '', end: '' });
@@ -52,10 +49,6 @@ export default function Settings() {
   const [mediaAutoplay, setMediaAutoplay] = useState('always');
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setDarkMode(localStorage.getItem('theme') === 'dark');
-    }
-
     setReady(true);
     const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
 
@@ -65,7 +58,7 @@ export default function Settings() {
         pushNotifications: false,
         inAppNotifications: false,
         allowMessages: 'everyone',
-        adultContent: false,
+        allowComments: true,
         weeklyDigest: false,
       });
       return;
@@ -92,9 +85,8 @@ export default function Settings() {
         });
         if (response.ok) {
           const data = await response.json();
-          setAccount({ name: data.name, email: data.email, phone: data.phone, twoFactorEnabled: data.twoFactorEnabled });
+          setAccount({ name: data.name, email: data.email, twoFactorEnabled: data.twoFactorEnabled });
           setNewEmail(data.email);
-          setNewPhone(data.phone || '');
         }
       } catch (error) {
         console.error('Failed to fetch account:', error);
@@ -233,26 +225,6 @@ export default function Settings() {
     }
   };
 
-  const handlePhoneUpdate = async () => {
-    try {
-      const token = localStorage.getItem('auth_token');
-      const response = await fetch('/api/users/phone', {
-        method: 'PUT',
-        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: newPhone }),
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setAccount({ ...account!, phone: data.phone });
-        setSaved(true);
-        setTimeout(() => setSaved(false), 3000);
-      } else {
-        alert('Failed to update phone');
-      }
-    } catch (error) {
-      console.error('Failed to update phone:', error);
-    }
-  };
 
   const handleToggle2FA = async () => {
     try {
@@ -322,12 +294,6 @@ export default function Settings() {
     setTimeout(() => setSaved(false), 3000);
   };
 
-  const toggleDarkMode = () => {
-    const newDarkMode = !darkMode;
-    setDarkMode(newDarkMode);
-    localStorage.setItem('theme', newDarkMode ? 'dark' : 'light');
-    document.documentElement.classList.toggle('dark', newDarkMode);
-  };
 
   const handleDeleteAccount = async () => {
     if (!window.confirm('Are you sure? This action cannot be undone. All your data will be permanently deleted.')) return;
@@ -339,10 +305,14 @@ export default function Settings() {
       });
       if (response.ok) {
         localStorage.removeItem('auth_token');
+        alert('Account deleted successfully');
         router.push('/auth/login');
+      } else {
+        alert('Failed to delete account. Report a problem at valueskinsfounder@gmail.com');
       }
     } catch (error) {
       console.error('Failed to delete account:', error);
+      alert('Failed to delete account. Report a problem at valueskinsfounder@gmail.com');
     }
   };
 
@@ -485,17 +455,6 @@ export default function Settings() {
                     className="w-full bg-surface-container-highest px-4 py-2 rounded border border-outline-variant/50"
                   />
                   <button onClick={handleEmailUpdate} className="btn-secondary">Update Email</button>
-                </div>
-
-                <div className="card-surface p-6 space-y-4">
-                  <h3 className="font-headline font-semibold">Change Phone Number</h3>
-                  <input
-                    type="tel"
-                    value={newPhone}
-                    onChange={(e) => setNewPhone(e.target.value)}
-                    className="w-full bg-surface-container-highest px-4 py-2 rounded border border-outline-variant/50"
-                  />
-                  <button onClick={handlePhoneUpdate} className="btn-secondary">Update Phone</button>
                 </div>
 
                 <div className="card-surface p-6 space-y-4">
@@ -725,31 +684,19 @@ export default function Settings() {
                 <h2 className="text-2xl font-headline font-bold">Content & Feed</h2>
 
                 <div className="card-surface p-6 space-y-4">
-                  <h3 className="font-headline font-semibold mb-4">Dark Mode</h3>
-                  <button
-                    onClick={toggleDarkMode}
-                    className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${
-                      darkMode ? 'bg-primary' : 'bg-surface-container-highest'
-                    }`}
-                  >
-                    <span className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${darkMode ? 'translate-x-7' : 'translate-x-1'}`} />
-                  </button>
-                </div>
-
-                <div className="card-surface p-6 space-y-4">
-                  <h3 className="font-headline font-semibold mb-4">Content Preferences</h3>
+                  <h3 className="font-headline font-semibold mb-4">Post Settings</h3>
                   <div className="flex items-center justify-between mb-4">
                     <div>
-                      <p className="font-semibold">Adult Content</p>
-                      <p className="text-sm text-on-surface-variant">Show content marked as adult</p>
+                      <p className="font-semibold">Allow Comments on Your Posts</p>
+                      <p className="text-sm text-on-surface-variant">Let others comment on your posts</p>
                     </div>
                     <button
-                      onClick={() => handleToggle('adultContent')}
+                      onClick={() => handleToggle('allowComments')}
                       className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${
-                        settings.adultContent ? 'bg-primary' : 'bg-surface-container-highest'
+                        settings?.allowComments ? 'bg-primary' : 'bg-surface-container-highest'
                       }`}
                     >
-                      <span className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${settings.adultContent ? 'translate-x-7' : 'translate-x-1'}`} />
+                      <span className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${settings?.allowComments ? 'translate-x-7' : 'translate-x-1'}`} />
                     </button>
                   </div>
                 </div>
