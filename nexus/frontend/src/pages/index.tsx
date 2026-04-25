@@ -29,16 +29,14 @@ export default function Home() {
   const [showComments, setShowComments] = useState(false);
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
 
-  const [isGuest, setIsGuest] = useState(true);
-
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('auth_token');
       const storedUserType = localStorage.getItem('user_type');
-      if (token && storedUserType) {
-        setIsGuest(false);
-      } else {
-        setIsGuest(true);
+      if (!token || !storedUserType) {
+        // Redirect to login if not authenticated
+        router.push('/auth/login');
+        return;
       }
     }
 
@@ -136,59 +134,6 @@ export default function Home() {
     return (
       <div className="min-h-screen bg-surface flex items-center justify-center">
         <div className="text-primary">Loading...</div>
-      </div>
-    );
-  }
-
-  // Guest landing page
-  if (isGuest) {
-    return (
-      <div className="min-h-screen bg-surface text-on-surface flex flex-col items-center justify-center px-4">
-        <div className="text-center max-w-2xl">
-          <h1 className="text-7xl font-black italic -rotate-2 tracking-tighter text-primary bg-surface-container-highest px-8 py-4 rounded-sm shadow-[8px_8px_0px_0px_rgba(213,0,249,0.3)] font-headline inline-block mb-8">
-            Nexus
-          </h1>
-          <p className="text-3xl font-headline font-bold mb-4">Where Creators Meet Opportunities</p>
-          <p className="text-lg text-on-surface-variant mb-12">
-            Connect with creators and brands. Build your digital presence. Create collaborations that matter.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button
-              onClick={() => router.push('/auth/signup')}
-              className="bg-primary hover:bg-primary-dim text-surface font-headline font-bold py-4 px-8 rounded-sm transition-all text-lg"
-            >
-              Create Account
-            </button>
-            <button
-              onClick={() => router.push('/auth/login')}
-              className="border-2 border-primary text-primary hover:bg-primary/10 font-headline font-bold py-4 px-8 rounded-sm transition-all text-lg"
-            >
-              Sign In
-            </button>
-          </div>
-
-          <div className="mt-16 pt-8 border-t border-outline-variant/20">
-            <h3 className="font-headline font-bold text-lg mb-8">Features</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
-              <div className="text-center">
-                <div className="text-4xl mb-2">✨</div>
-                <p className="font-headline font-bold mb-2">Discover</p>
-                <p className="text-sm text-on-surface-variant">Find creators and opportunities in your niche</p>
-              </div>
-              <div className="text-center">
-                <div className="text-4xl mb-2">💬</div>
-                <p className="font-headline font-bold mb-2">Connect</p>
-                <p className="text-sm text-on-surface-variant">Message creators and brands directly</p>
-              </div>
-              <div className="text-center">
-                <div className="text-4xl mb-2">🤝</div>
-                <p className="font-headline font-bold mb-2">Collaborate</p>
-                <p className="text-sm text-on-surface-variant">Build partnerships that grow your reach</p>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     );
   }
