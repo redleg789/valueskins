@@ -2,6 +2,8 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { prisma } from '@/lib/prisma';
 import { verifyPassword, generateToken, isValidEmail, extractToken } from '@/lib/auth';
 import { validateInput } from '@/lib/validation';
+import { checkRateLimit, getResetTimeString } from '@/lib/rateLimit';
+import { checkAccountLockout, recordFailedLogin, recordSuccessfulLogin } from '@/lib/accountLockout';
 import { z } from 'zod';
 
 const loginSchema = z.object({
@@ -41,6 +43,9 @@ export default async function handler(
   }
 
   try {
+    const ipAddress = req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || 'unknown';
+    const userAgent = req.headers['user-agent'] as string || '';
+
     // Validate input
     const validationResult = await validateInput(loginSchema, req.body);
     if (!validationResult.valid) {
@@ -61,6 +66,16 @@ export default async function handler(
       });
     }
 
+    // Check rate limit by IP + email
+    const rateLimitResult = await checkRateLimit(email, 'login');
+    if (!rateLimitResult.allowed) {
+      const resetTime = getResetTimeString(rateLimitResult.resetTime);
+      return res.status(429).json({
+        success: false,
+        error: `Too many login attempts. Try again in ${resetTime}.`,
+      });
+    }
+
     // Find user by email
     const user = await prisma.user.findUnique({
       where: { email: email.toLowerCase() },
@@ -72,14 +87,24 @@ export default async function handler(
         data: {
           action: 'login_failed_user_not_found',
           entityType: 'auth',
-          ipAddress: req.headers['x-forwarded-for'] as string || req.socket.remoteAddress,
-          userAgent: req.headers['user-agent'],
+          ipAddress,
+          userAgent,
         },
       }).catch((e: any) => console.error('Failed to log error:', e));
 
       return res.status(401).json({
         success: false,
         error: 'Invalid email or password',
+      });
+    }
+
+    // Check account lockout status
+    const lockoutStatus = await checkAccountLockout(user.id);
+    if (lockoutStatus.isLocked) {
+      const resetTime = getResetTimeString(lockoutStatus.lockedUntil!);
+      return res.status(403).json({
+        success: false,
+        error: `Account is locked due to too many failed login attempts. Try again in ${resetTime}.`,
       });
     }
 
@@ -102,6 +127,9 @@ export default async function handler(
     const passwordValid = await verifyPassword(password, user.passwordHash);
 
     if (!passwordValid) {
+      // Record failed login and check for lockout
+      await recordFailedLogin(user.id);
+
       // Log failed login attempt
       await prisma.auditLog.create({
         data: {
@@ -109,8 +137,8 @@ export default async function handler(
           action: 'login_failed_invalid_password',
           entityType: 'auth',
           entityId: user.id,
-          ipAddress: req.headers['x-forwarded-for'] as string || req.socket.remoteAddress,
-          userAgent: req.headers['user-agent'],
+          ipAddress,
+          userAgent,
         },
       }).catch((e: any) => console.error('Failed to log error:', e));
 
@@ -134,8 +162,8 @@ export default async function handler(
         userId: user.id,
         token,
         expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
-        ipAddress: req.headers['x-forwarded-for'] as string || req.socket.remoteAddress,
-        userAgent: req.headers['user-agent'],
+        ipAddress,
+        userAgent,
       },
     });
 
@@ -145,6 +173,9 @@ export default async function handler(
       data: { lastLoginAt: new Date() },
     });
 
+    // Record successful login and clear lockout
+    await recordSuccessfulLogin(user.id);
+
     // Log successful login
     await prisma.auditLog.create({
       data: {
@@ -152,8 +183,8 @@ export default async function handler(
         action: 'user_login',
         entityType: 'user',
         entityId: user.id,
-        ipAddress: req.headers['x-forwarded-for'] as string || req.socket.remoteAddress,
-        userAgent: req.headers['user-agent'],
+        ipAddress,
+        userAgent,
       },
     });
 

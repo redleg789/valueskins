@@ -4,7 +4,7 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useEffect } from 'react';
 
-const PUBLIC_ROUTES = ['/auth/login'];
+const PUBLIC_ROUTES = ['/auth/login', '/auth/signup'];
 
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();

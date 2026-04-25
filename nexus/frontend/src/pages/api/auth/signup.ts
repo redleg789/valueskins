@@ -2,6 +2,8 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { prisma } from '@/lib/prisma';
 import { hashPassword, generateToken, isValidEmail, isStrongPassword, isValidHandle } from '@/lib/auth';
 import { validateInput } from '@/lib/validation';
+import { checkRateLimit, getResetTimeString } from '@/lib/rateLimit';
+import { createEmailVerificationToken } from '@/lib/emailVerification';
 import { z } from 'zod';
 
 const signupSchema = z.object({
@@ -45,6 +47,9 @@ export default async function handler(
   }
 
   try {
+    const ipAddress = req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || 'unknown';
+    const userAgent = req.headers['user-agent'] as string || '';
+
     // Validate input schema
     const validationResult = await validateInput(signupSchema, req.body);
     if (!validationResult.valid) {
@@ -56,6 +61,16 @@ export default async function handler(
     }
 
     const { email, password, name, handle, userType } = validationResult.data as SignupRequest;
+
+    // Check rate limit by IP (prevent bot signup spam)
+    const rateLimitResult = await checkRateLimit(ipAddress, 'signup');
+    if (!rateLimitResult.allowed) {
+      const resetTime = getResetTimeString(rateLimitResult.resetTime);
+      return res.status(429).json({
+        success: false,
+        error: `Too many signup attempts from this IP. Try again in ${resetTime}.`,
+      });
+    }
 
     // Validate email format
     if (!isValidEmail(email)) {
@@ -132,17 +147,20 @@ export default async function handler(
       },
     });
 
-    // Generate token
-    const token = generateToken(user.id, user.email);
+    // Create email verification token
+    const { token: verificationToken, expiresAt } = await createEmailVerificationToken(user.id, user.email);
+
+    // Generate session token
+    const sessionToken = generateToken(user.id, user.email);
 
     // Create session
     await prisma.session.create({
       data: {
         userId: user.id,
-        token,
+        token: sessionToken,
         expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
-        ipAddress: req.headers['x-forwarded-for'] as string || req.socket.remoteAddress,
-        userAgent: req.headers['user-agent'],
+        ipAddress,
+        userAgent,
       },
     });
 
@@ -153,8 +171,8 @@ export default async function handler(
         action: 'user_signup',
         entityType: 'user',
         entityId: user.id,
-        ipAddress: req.headers['x-forwarded-for'] as string || req.socket.remoteAddress,
-        userAgent: req.headers['user-agent'],
+        ipAddress,
+        userAgent,
       },
     });
 
@@ -166,8 +184,10 @@ export default async function handler(
         name: user.name,
         handle: user.handle,
         userType: user.userType,
-        token,
+        token: sessionToken,
       },
+      requiresEmailVerification: true,
+      verificationTokenExpiresAt: expiresAt,
     });
   } catch (error) {
     console.error('Signup error:', error);

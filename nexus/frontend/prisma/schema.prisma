@@ -25,8 +25,8 @@ model User {
   userType          UserType    @default(CREATOR) // CREATOR or BRAND
   verified          Boolean     @default(false)
   verifiedAt        DateTime?
-  followers         Int         @default(0)
-  following         Int         @default(0)
+  followerCount     Int         @default(0)
+  followingCount    Int         @default(0)
 
   // Authentication
   emailVerified     Boolean     @default(false)
@@ -81,6 +81,12 @@ model User {
   followers         Follows[] @relation("Follower")
   following         Follows[] @relation("Following")
   auditLogs         AuditLog[]
+  sessions          Session[]
+  accountLockout    AccountLockout?
+  emailVerificationTokens EmailVerificationToken[]
+  passwordResetTokens PasswordResetToken[]
+  reviewsGiven      Review[]     @relation("ReviewedBy")
+  reviewsReceived   Review[]     @relation("ReviewFor")
 
   @@index([email])
   @@index([handle])
@@ -681,10 +687,10 @@ enum ResolutionType {
 model Review {
   id                String      @id @default(cuid())
   reviewerId        String
-  reviewer          User        @relation(fields: [reviewerId], references: [id], onDelete: Cascade)
+  reviewer          User        @relation("ReviewedBy", fields: [reviewerId], references: [id], onDelete: Cascade)
 
   revieweeId        String? // creator being reviewed
-  reviewee          User? @relation(fields: [revieweeId], references: [id], onDelete: SetNull)
+  reviewee          User? @relation("ReviewFor", fields: [revieweeId], references: [id], onDelete: SetNull)
 
   rating            Int // 1-5 stars
   comment           String?
@@ -836,4 +842,107 @@ model Session {
 
   @@index([userId])
   @@index([expiresAt])
+}
+
+// ============ LOGIN ATTEMPT TRACKING ============
+
+model LoginAttempt {
+  id                String      @id @default(cuid())
+
+  // Track by email or IP
+  email             String?
+  ipAddress         String?
+
+  // Attempt info
+  success           Boolean     @default(false)
+  failureReason     String? // invalid_password, user_not_found, account_locked, account_deleted
+
+  userAgent         String?
+
+  createdAt         DateTime    @default(now())
+
+  @@index([email, createdAt])
+  @@index([ipAddress, createdAt])
+}
+
+// ============ ACCOUNT LOCKOUT ============
+
+model AccountLockout {
+  id                String      @id @default(cuid())
+  userId            String      @unique
+  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  lockedUntil       DateTime
+  reason            String // too_many_failed_attempts, manual_admin_lock, suspicious_activity
+  failedAttempts    Int         @default(5)
+
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  @@index([userId])
+  @@index([lockedUntil])
+}
+
+// ============ EMAIL VERIFICATION ============
+
+model EmailVerificationToken {
+  id                String      @id @default(cuid())
+  userId            String
+  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  email             String
+  token             String      @unique // hashed token
+  expiresAt         DateTime
+
+  isUsed            Boolean     @default(false)
+  usedAt            DateTime?
+
+  createdAt         DateTime    @default(now())
+
+  @@index([userId])
+  @@index([email])
+  @@index([expiresAt])
+}
+
+// ============ PASSWORD RESET ============
+
+model PasswordResetToken {
+  id                String      @id @default(cuid())
+  userId            String
+  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  token             String      @unique // hashed token
+  expiresAt         DateTime
+
+  isUsed            Boolean     @default(false)
+  usedAt            DateTime?
+  ipAddress         String?
+
+  createdAt         DateTime    @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+// ============ RATE LIMITING ============
+
+model RateLimitLog {
+  id                String      @id @default(cuid())
+
+  // Identifier (email for signup, IP for general)
+  identifier        String // email, IP, or user_id
+  action            String // login, signup, password_reset, contact_support
+
+  // Window tracking
+  windowStart       DateTime
+  attemptCount      Int         @default(1)
+
+  // Last attempt
+  lastAttemptAt     DateTime    @updatedAt
+
+  createdAt         DateTime    @default(now())
+
+  @@unique([identifier, action, windowStart])
+  @@index([identifier, action])
+  @@index([lastAttemptAt])
 }

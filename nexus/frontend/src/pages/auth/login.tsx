@@ -1,19 +1,33 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
+
+interface LoginResponse {
+  success: boolean;
+  data?: {
+    userId: string;
+    email: string;
+    name: string;
+    handle: string;
+    userType: string;
+    avatar?: string;
+    token: string;
+  };
+  error?: string;
+  errors?: Record<string, string>;
+}
 
 export default function Login() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
-  const [connectingWith, setConnectingWith] = useState<string | null>(null);
-  const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('auth_token');
-      const userType = localStorage.getItem('user_type');
-
-      if (token && userType) {
+      if (token) {
         router.push('/');
         return;
       }
@@ -21,49 +35,33 @@ export default function Login() {
     setReady(true);
   }, [router]);
 
-  const handleGoogleSuccess = async (credentialResponse: any) => {
-    setConnectingWith('google');
-    try {
-      const response = await fetch('/api/auth/google', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ credential: credentialResponse.credential })
-      });
-      const data = await response.json();
-      if (data.token && data.userType) {
-        localStorage.setItem('user_type', data.userType);
-        localStorage.setItem('auth_token', data.token);
-        router.push('/');
-      } else {
-        console.error('Invalid response:', data);
-      }
-    } catch (error) {
-      console.error('Google login failed:', error);
-    } finally {
-      setConnectingWith(null);
-    }
-  };
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
 
-  const handleOAuthLogin = async (provider: 'apple') => {
-    setConnectingWith(provider);
     try {
-      const response = await fetch(`/api/auth/${provider}`, {
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({})
+        body: JSON.stringify({ email, password })
       });
-      const data = await response.json();
-      if (data.token && data.userType) {
-        localStorage.setItem('user_type', data.userType);
-        localStorage.setItem('auth_token', data.token);
+
+      const data: LoginResponse = await response.json();
+
+      if (response.ok && data.success && data.data?.token) {
+        localStorage.setItem('auth_token', data.data.token);
+        localStorage.setItem('user_id', data.data.userId);
+        localStorage.setItem('user_name', data.data.name);
         router.push('/');
       } else {
-        console.error('Invalid response:', data);
+        setError(data.error || 'Login failed');
       }
-    } catch (error) {
-      console.error(`${provider} login failed:`, error);
+    } catch (err) {
+      setError('Connection error. Please try again.');
+      console.error('Login error:', err);
     } finally {
-      setConnectingWith(null);
+      setLoading(false);
     }
   };
 
@@ -76,48 +74,75 @@ export default function Login() {
   }
 
   return (
-    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-      <div className="min-h-screen bg-surface flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          <div className="text-center mb-12">
-            <h1 className="text-6xl font-black italic -rotate-2 tracking-tighter text-primary bg-surface-container-highest px-6 py-2 rounded-sm shadow-[8px_8px_0px_0px_rgba(213,0,249,0.3)] font-headline inline-block">
-              Nexus
-            </h1>
-            <p className="text-xl text-on-surface-variant mt-6 font-body">Where creators meet opportunities</p>
-          </div>
-
-          <div className="card-surface p-8">
-            <h2 className="text-2xl font-headline font-bold mb-8 text-center">How do you want to sign in?</h2>
-
-            <div className="space-y-3">
-              <div className="w-full flex justify-center">
-                <GoogleLogin
-                  onSuccess={handleGoogleSuccess}
-                  onError={() => {
-                    console.error('Google login failed');
-                    setConnectingWith(null);
-                  }}
-                  theme="filled_black"
-                  size="large"
-                  width="100%"
-                />
-              </div>
-              <button
-                onClick={() => handleOAuthLogin('apple')}
-                disabled={connectingWith !== null}
-                className="w-full bg-black hover:bg-gray-900 text-white font-headline font-bold py-4 px-6 rounded-sm transition-all flex items-center justify-center gap-3 disabled:opacity-50"
-              >
-                <span className="material-symbols-outlined">apple</span>
-                {connectingWith === 'apple' ? 'Connecting...' : 'Continue with Apple'}
-              </button>
-            </div>
-          </div>
-
-          <p className="text-xs text-center text-on-surface-variant mt-6">
-            By continuing, you agree to our <a href="/terms" className="text-primary hover:underline">Terms of Service</a>
-          </p>
+    <div className="min-h-screen bg-surface flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-12">
+          <h1 className="text-6xl font-black italic -rotate-2 tracking-tighter text-primary bg-surface-container-highest px-6 py-2 rounded-sm shadow-[8px_8px_0px_0px_rgba(213,0,249,0.3)] font-headline inline-block">
+            Nexus
+          </h1>
+          <p className="text-xl text-on-surface-variant mt-6 font-body">Where creators meet opportunities</p>
         </div>
+
+        <div className="card-surface p-8">
+          <h2 className="text-2xl font-headline font-bold mb-8 text-center">Sign In</h2>
+
+          {error && (
+            <div className="bg-red-500/20 border border-red-500/50 rounded px-4 py-3 text-red-100 text-sm mb-6">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="block text-sm font-headline mb-2">Email</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="your@email.com"
+                required
+                className="w-full bg-surface-container-highest px-4 py-3 rounded border border-outline-variant/50 focus:border-primary focus:ring-0"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-headline mb-2">Password</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+                className="w-full bg-surface-container-highest px-4 py-3 rounded border border-outline-variant/50 focus:border-primary focus:ring-0"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-primary hover:bg-primary-dim text-surface font-headline font-bold py-3 px-6 rounded-sm transition-all disabled:opacity-50"
+            >
+              {loading ? 'Signing in...' : 'Sign In'}
+            </button>
+          </form>
+
+          <div className="mt-6 text-center">
+            <p className="text-on-surface-variant">
+              Don't have an account?{' '}
+              <button
+                onClick={() => router.push('/auth/signup')}
+                className="text-primary hover:underline font-headline font-bold"
+              >
+                Sign Up
+              </button>
+            </p>
+          </div>
+        </div>
+
+        <p className="text-xs text-center text-on-surface-variant mt-6">
+          By continuing, you agree to our <a href="#" className="text-primary hover:underline">Terms of Service</a>
+        </p>
       </div>
-    </GoogleOAuthProvider>
+    </div>
   );
 }
