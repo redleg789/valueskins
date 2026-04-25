@@ -198,24 +198,33 @@ export default async function handler(
       },
     });
   } catch (error) {
-    console.error('Login error:', error);
+    const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
+    console.error('Login error - Details:', {
+      message: errorMessage,
+      stack: error instanceof Error ? error.stack : null,
+      type: error instanceof Error ? error.constructor.name : typeof error,
+    });
 
     // Log error
-    await prisma.auditLog.create({
-      data: {
-        action: 'login_error',
-        entityType: 'auth',
-        ipAddress: req.headers['x-forwarded-for'] as string || req.socket.remoteAddress,
-        userAgent: req.headers['user-agent'],
-        changes: {
-          error: error instanceof Error ? error.message : 'Unknown error',
+    try {
+      await prisma.auditLog.create({
+        data: {
+          action: 'login_error',
+          entityType: 'auth',
+          ipAddress: req.headers['x-forwarded-for'] as string || req.socket.remoteAddress,
+          userAgent: req.headers['user-agent'],
+          changes: {
+            error: errorMessage,
+          },
         },
-      },
-    }).catch((e: any) => console.error('Failed to log error:', e));
+      });
+    } catch (logError) {
+      console.error('Failed to log error to audit log:', logError);
+    }
 
     return res.status(500).json({
       success: false,
-      error: 'Login failed. Please try again.',
+      error: 'Connection error. Please try again. Report a problem at valueskinsfounder@gmail.com',
     });
   }
 }
