@@ -128,7 +128,7 @@ export default async function handler(
 
     if (!passwordValid) {
       // Record failed login and check for lockout
-      await recordFailedLogin(user.id);
+      await recordFailedLogin(user.id, email);
 
       // Log failed login attempt
       await prisma.auditLog.create({

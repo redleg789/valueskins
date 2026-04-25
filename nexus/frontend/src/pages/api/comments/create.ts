@@ -52,7 +52,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Extract mentions
     const mentions = content.match(/@[\w-]+/g) || [];
-    const uniqueMentions = [...new Set(mentions.map(m => m.slice(1)))];
+    const uniqueMentions = [...new Set(mentions.map(m => m.slice(1)))] as string[];
 
     const comment = await prisma.comment.create({
       data: {

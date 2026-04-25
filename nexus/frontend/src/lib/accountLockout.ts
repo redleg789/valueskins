@@ -36,22 +36,23 @@ export async function checkAccountLockout(userId: string): Promise<LockoutStatus
   };
 }
 
-export async function recordFailedLogin(userId: string): Promise<LockoutStatus> {
-  const loginAttempt = await prisma.loginAttempt.create({
+export async function recordFailedLogin(userId: string, email?: string): Promise<LockoutStatus> {
+  // Log the failed attempt
+  await prisma.loginAttempt.create({
     data: {
-      userId: userId,
+      email,
       success: false,
       failureReason: 'invalid_password',
     },
   });
 
-  // Count failed attempts in last 15 minutes
+  // Count failed attempts in last 15 minutes via rate limit log
   const fifteenMinutesAgo = new Date(Date.now() - LOCKOUT_DURATION_MS);
-  const failedAttemptsCount = await prisma.loginAttempt.count({
+  const failedAttemptsCount = await prisma.rateLimitLog.count({
     where: {
-      userId,
-      success: false,
-      createdAt: {
+      identifier: userId,
+      action: 'login',
+      lastAttemptAt: {
         gte: fifteenMinutesAgo,
       },
     },
@@ -99,7 +100,6 @@ export async function recordSuccessfulLogin(userId: string): Promise<void> {
   // Log successful attempt
   await prisma.loginAttempt.create({
     data: {
-      email: undefined, // will be added via the email in login endpoint
       success: true,
     },
   });

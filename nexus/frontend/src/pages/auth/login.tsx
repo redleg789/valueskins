@@ -115,6 +115,13 @@ export default function Login() {
                 required
                 className="w-full bg-surface-container-highest px-4 py-3 rounded border border-outline-variant/50 focus:border-primary focus:ring-0"
               />
+              <button
+                type="button"
+                onClick={() => router.push('/auth/forgot-password')}
+                className="text-xs text-primary hover:underline mt-2"
+              >
+                Forgot password?
+              </button>
             </div>
 
             <button

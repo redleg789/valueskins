@@ -28,6 +28,8 @@ interface SignupResponse {
     userType: string;
     token: string;
   };
+  requiresEmailVerification?: boolean;
+  verificationTokenExpiresAt?: Date;
   error?: string;
   errors?: Record<string, string>;
 }
