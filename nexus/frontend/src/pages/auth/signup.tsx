@@ -11,6 +11,9 @@ interface SignupResponse {
     userType: string;
     token: string;
   };
+  requiresEmailVerification?: boolean;
+  verificationTokenExpiresAt?: string;
+  _devToken?: string;
   error?: string;
   errors?: Record<string, string>;
 }
@@ -26,6 +29,9 @@ export default function Signup() {
   const [userType, setUserType] = useState<'CREATOR' | 'BRAND'>('CREATOR');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+  const [signupData, setSignupData] = useState<SignupResponse['data']>(null);
+  const [devToken, setDevToken] = useState('');
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -68,12 +74,14 @@ export default function Signup() {
 
       const data: SignupResponse = await response.json();
 
-      if (response.ok && data.success && data.data?.token) {
-        localStorage.setItem('auth_token', data.data.token);
-        localStorage.setItem('user_id', data.data.userId);
-        localStorage.setItem('user_name', data.data.name);
-        localStorage.setItem('user_type', data.data.userType);
-        router.push('/');
+      if (response.ok && data.success && data.data) {
+        // Store signup data for verification step
+        setSignupData(data.data);
+        setSuccess(true);
+        if (data._devToken) {
+          setDevToken(data._devToken);
+        }
+        // Don't auto-login, require email verification first
       } else {
         setError(data.error || 'Signup failed');
       }
@@ -89,6 +97,66 @@ export default function Signup() {
     return (
       <div className="min-h-screen bg-surface flex items-center justify-center">
         <div className="text-primary">Loading...</div>
+      </div>
+    );
+  }
+
+  // Success screen after signup
+  if (success && signupData) {
+    return (
+      <div className="min-h-screen bg-surface flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-12">
+            <h1 className="text-6xl font-black italic -rotate-2 tracking-tighter text-primary bg-surface-container-highest px-6 py-2 rounded-sm shadow-[8px_8px_0px_0px_rgba(213,0,249,0.3)] font-headline inline-block">
+              Nexus
+            </h1>
+            <p className="text-xl text-on-surface-variant mt-6 font-body">Where creators meet opportunities</p>
+          </div>
+
+          <div className="card-surface p-8">
+            <div className="text-center mb-8">
+              <div className="text-6xl mb-4">✓</div>
+              <h2 className="text-2xl font-headline font-bold mb-4">Account Created!</h2>
+              <p className="text-on-surface-variant mb-6">
+                Welcome, <span className="font-bold text-primary">{signupData.name}</span>
+              </p>
+            </div>
+
+            <div className="bg-surface-container-highest p-4 rounded mb-8 text-sm">
+              <p className="text-on-surface-variant mb-4">
+                To complete setup, verify your email address:
+              </p>
+              <p className="text-on-surface font-mono text-xs bg-surface px-3 py-2 rounded mb-4 break-all">
+                {signupData.email}
+              </p>
+              {devToken && (
+                <div className="bg-primary/20 border border-primary/50 p-3 rounded text-xs">
+                  <p className="text-primary font-bold mb-2">Dev Mode: Verification Token</p>
+                  <p className="text-primary/80 font-mono break-all mb-3">{devToken}</p>
+                  <button
+                    onClick={() => router.push(`/auth/verify-email?userId=${signupData.userId}&token=${devToken}`)}
+                    className="w-full bg-primary hover:bg-primary-dim text-surface font-headline font-bold py-2 px-4 rounded text-sm"
+                  >
+                    Verify Email Now
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <button
+              onClick={() => router.push('/auth/login')}
+              className="w-full bg-primary hover:bg-primary-dim text-surface font-headline font-bold py-3 px-6 rounded-sm transition-all"
+            >
+              Go to Login
+            </button>
+
+            <div className="mt-6 text-center">
+              <p className="text-xs text-on-surface-variant">
+                Email sent to {signupData.email}
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

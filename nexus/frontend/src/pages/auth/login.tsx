@@ -85,7 +85,10 @@ export default function Login() {
         </div>
 
         <div className="card-surface p-8">
-          <h2 className="text-2xl font-headline font-bold mb-8 text-center">Sign In</h2>
+          <h2 className="text-2xl font-headline font-bold mb-2 text-center">Sign In</h2>
+          <p className="text-xs text-on-surface-variant text-center mb-6 italic">
+            We only use email/password for full privacy control—no third-party data tracking.
+          </p>
 
           {error && (
             <div className="bg-red-500/20 border border-red-500/50 rounded px-4 py-3 text-red-100 text-sm mb-6">
