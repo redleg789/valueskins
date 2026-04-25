@@ -158,7 +158,14 @@ export default function Home() {
             <button className="hover:text-primary hover:bg-zinc-800/50 transition-all p-2 rounded-full">
               <span className="material-symbols-outlined text-2xl">notifications</span>
             </button>
-            <button onClick={() => router.push('/profile')} className="hover:text-primary hover:bg-zinc-800/50 transition-all p-2 rounded-full">
+            <button onClick={() => {
+              const token = localStorage.getItem('auth_token');
+              if (!token) {
+                router.push('/auth/login');
+              } else {
+                router.push('/profile');
+              }
+            }} className="hover:text-primary hover:bg-zinc-800/50 transition-all p-2 rounded-full">
               <span className="material-symbols-outlined text-2xl">account_circle</span>
             </button>
           </div>
