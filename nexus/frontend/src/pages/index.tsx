@@ -30,14 +30,22 @@ export default function Home() {
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('auth_token');
-      const storedUserType = localStorage.getItem('user_type');
-      if (!token || !storedUserType) {
-        // Redirect to login if not authenticated
-        router.push('/auth/login');
-        return;
+    const checkAuth = () => {
+      if (typeof window !== 'undefined') {
+        const token = localStorage.getItem('auth_token');
+        const storedUserType = localStorage.getItem('user_type');
+        if (!token || !storedUserType) {
+          // Redirect to login if not authenticated
+          router.push('/auth/login');
+          return false;
+        }
+        return true;
       }
+      return false;
+    };
+
+    if (!checkAuth()) {
+      return;
     }
 
     // Fetch initial posts
