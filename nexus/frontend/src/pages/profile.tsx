@@ -30,12 +30,20 @@ interface Post {
   mediaUrls?: string[];
 }
 
+interface ValueSkinsEarnings {
+  totalEarned: number;
+  pendingPayment: number;
+  completedDeals: number;
+  activeDeals: number;
+}
+
 export default function Profile() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [activeTab, setActiveTab] = useState<'posts' | 'media' | 'likes' | 'saved'>('posts');
+  const [valueSkinseEarnings, setValueSkinsEarnings] = useState<ValueSkinsEarnings | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({
     name: '',
@@ -90,8 +98,30 @@ export default function Profile() {
         }
       };
 
+      const fetchValueSkinsEarnings = async () => {
+        try {
+          const response = await fetch('/api/integrations/valueskins-sync', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'fetch_earnings' }),
+          });
+          if (response.ok) {
+            const data = await response.json();
+            setValueSkinsEarnings({
+              totalEarned: data.totalEarnings || 0,
+              pendingPayment: data.pendingPayment || 0,
+              completedDeals: data.completedDeals || 0,
+              activeDeals: data.activeDeals || 0,
+            });
+          }
+        } catch (error) {
+          console.error('Failed to fetch ValueSkins earnings:', error);
+        }
+      };
+
       fetchProfile();
       fetchUserPosts();
+      fetchValueSkinsEarnings();
     }
   }, [router]);
 
@@ -235,6 +265,36 @@ export default function Profile() {
                   </button>
                 </div>
               </div>
+
+              {/* ValueSkins Earnings Section */}
+              {valueSkinseEarnings && (
+                <div className="card-surface p-6 mb-8">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-headline font-bold">ValueSkins Earnings</h2>
+                    <button onClick={() => router.push('/opportunities')} className="text-sm text-primary hover:underline">
+                      View Opportunities →
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="bg-surface-container-high p-4 rounded">
+                      <p className="text-xs text-on-surface-variant mb-1">Total Earned</p>
+                      <p className="text-2xl font-bold text-primary">₹{valueSkinseEarnings.totalEarned.toLocaleString()}</p>
+                    </div>
+                    <div className="bg-surface-container-high p-4 rounded">
+                      <p className="text-xs text-on-surface-variant mb-1">Pending Payment</p>
+                      <p className="text-2xl font-bold text-secondary">₹{valueSkinseEarnings.pendingPayment.toLocaleString()}</p>
+                    </div>
+                    <div className="bg-surface-container-high p-4 rounded">
+                      <p className="text-xs text-on-surface-variant mb-1">Active Deals</p>
+                      <p className="text-2xl font-bold text-primary">{valueSkinseEarnings.activeDeals}</p>
+                    </div>
+                    <div className="bg-surface-container-high p-4 rounded">
+                      <p className="text-xs text-on-surface-variant mb-1">Completed</p>
+                      <p className="text-2xl font-bold text-primary">{valueSkinseEarnings.completedDeals}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Edit Form */}
               {isEditing && (
