@@ -60,7 +60,7 @@ export default function Login() {
         setError(data.error || 'Login failed');
       }
     } catch (err) {
-      setError('Connection error. Please try again.');
+      setError('Connection error. Please try again. Report a problem at valueskinsfounder@gmail.com');
       console.error('Login error:', err);
     } finally {
       setLoading(false);

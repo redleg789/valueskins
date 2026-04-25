@@ -93,7 +93,7 @@ export default function Signup() {
         setError(data.error || 'Signup failed');
       }
     } catch (err) {
-      setError('Connection error. Please try again.');
+      setError('Connection error. Please try again. Report a problem at valueskinsfounder@gmail.com');
       console.error('Signup error:', err);
     } finally {
       setLoading(false);

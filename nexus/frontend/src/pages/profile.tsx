@@ -177,11 +177,11 @@ export default function Profile() {
         setAvatarPreview(null);
         setAvatarFile(null);
       } else {
-        alert('Failed to upload avatar');
+        alert('Failed to upload avatar. Report a problem at valueskinsfounder@gmail.com');
       }
     } catch (error) {
       console.error('Upload error:', error);
-      alert('Failed to upload avatar');
+      alert('Failed to upload avatar. Report a problem at valueskinsfounder@gmail.com');
     } finally {
       setUploading(false);
     }
@@ -205,6 +205,7 @@ export default function Profile() {
       }
     } catch (error) {
       console.error('Failed to update profile:', error);
+      alert('Failed to save profile. Report a problem at valueskinsfounder@gmail.com');
     }
   };
 

@@ -34,7 +34,7 @@ export default function ForgotPassword() {
         setError(data.error || 'Failed to send reset email');
       }
     } catch (err) {
-      setError('Connection error. Please try again.');
+      setError('Connection error. Please try again. Report a problem at valueskinsfounder@gmail.com');
       console.error('Forgot password error:', err);
     } finally {
       setLoading(false);

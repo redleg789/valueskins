@@ -61,6 +61,7 @@ export default function Home() {
         }
       } catch (error) {
         console.error('Failed to fetch posts:', error);
+        alert('Failed to load posts. Report a problem at valueskinsfounder@gmail.com');
       }
     };
 
