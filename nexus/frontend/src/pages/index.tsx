@@ -160,11 +160,15 @@ export default function Home() {
               <span className="material-symbols-outlined text-2xl">notifications</span>
             </button>
             <button onClick={() => {
-              const token = localStorage.getItem('auth_token');
-              if (!token) {
-                router.push('/auth/login');
+              if (typeof window !== 'undefined') {
+                const token = localStorage.getItem('auth_token');
+                if (!token) {
+                  router.push('/auth/login');
+                } else {
+                  router.push('/profile');
+                }
               } else {
-                router.push('/profile');
+                router.push('/auth/login');
               }
             }} className="hover:text-primary hover:bg-zinc-800/50 transition-all p-2 rounded-full">
               <span className="material-symbols-outlined text-2xl">account_circle</span>
