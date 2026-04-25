@@ -7,7 +7,7 @@ import { checkAccountLockout, recordFailedLogin, recordSuccessfulLogin } from '@
 import { z } from 'zod';
 
 const loginSchema = z.object({
-  email: z.string().email('Invalid email format').toLowerCase(),
+  emailOrHandle: z.string().min(1, 'Email or username is required').toLowerCase(),
   password: z.string().min(1, 'Password is required'),
 });
 
@@ -56,18 +56,10 @@ export default async function handler(
       });
     }
 
-    const { email, password } = validationResult.data as LoginRequest;
+    const { emailOrHandle, password } = validationResult.data as LoginRequest;
 
-    // Validate email format
-    if (!isValidEmail(email)) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid email or password',
-      });
-    }
-
-    // Check rate limit by IP + email
-    const rateLimitResult = await checkRateLimit(email, 'login');
+    // Check rate limit by IP + emailOrHandle
+    const rateLimitResult = await checkRateLimit(emailOrHandle, 'login');
     if (!rateLimitResult.allowed) {
       const resetTime = getResetTimeString(rateLimitResult.resetTime);
       return res.status(429).json({
@@ -76,9 +68,14 @@ export default async function handler(
       });
     }
 
-    // Find user by email
-    const user = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
+    // Find user by email or handle
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: emailOrHandle.toLowerCase() },
+          { handle: emailOrHandle.toLowerCase() },
+        ],
+      },
     });
 
     if (!user) {
@@ -128,7 +125,7 @@ export default async function handler(
 
     if (!passwordValid) {
       // Record failed login and check for lockout
-      await recordFailedLogin(user.id, email);
+      await recordFailedLogin(user.id, user.email);
 
       // Log failed login attempt
       await prisma.auditLog.create({

@@ -19,7 +19,7 @@ interface LoginResponse {
 export default function Login() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
-  const [email, setEmail] = useState('');
+  const [emailOrHandle, setEmailOrHandle] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -45,7 +45,7 @@ export default function Login() {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ emailOrHandle, password })
       });
 
       const data: LoginResponse = await response.json();
@@ -99,12 +99,12 @@ export default function Login() {
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-sm font-headline mb-2">Email</label>
+              <label className="block text-sm font-headline mb-2">Email or Username</label>
               <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="your@email.com"
+                type="text"
+                value={emailOrHandle}
+                onChange={(e) => setEmailOrHandle(e.target.value)}
+                placeholder="your@email.com or username"
                 required
                 className="w-full bg-surface-container-highest px-4 py-3 rounded border border-outline-variant/50 focus:border-primary focus:ring-0"
               />

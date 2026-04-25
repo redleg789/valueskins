@@ -131,13 +131,13 @@ export default function Signup() {
 
             <div className="bg-surface-container-highest p-4 rounded mb-8 text-sm">
               <p className="text-on-surface-variant mb-4">
-                To complete setup, verify your email address:
+                Verify your email address:
               </p>
               <p className="text-on-surface font-mono text-xs bg-surface px-3 py-2 rounded mb-4 break-all">
                 {signupData.email}
               </p>
               {devToken && (
-                <div className="bg-primary/20 border border-primary/50 p-3 rounded text-xs">
+                <div className="bg-primary/20 border border-primary/50 p-3 rounded text-xs mb-4">
                   <p className="text-primary font-bold mb-2">Dev Mode: Verification Token</p>
                   <p className="text-primary/80 font-mono break-all mb-3">{devToken}</p>
                   <button
@@ -148,18 +148,29 @@ export default function Signup() {
                   </button>
                 </div>
               )}
+              <p className="text-xs text-on-surface-variant italic">
+                A verification email has been sent. Check your spam folder if you don't see it.
+              </p>
             </div>
 
-            <button
-              onClick={() => router.push('/auth/login')}
-              className="w-full bg-primary hover:bg-primary-dim text-surface font-headline font-bold py-3 px-6 rounded-sm transition-all"
-            >
-              Go to Login
-            </button>
+            <div className="flex gap-4">
+              <button
+                onClick={() => router.push('/auth/login')}
+                className="flex-1 bg-primary hover:bg-primary-dim text-surface font-headline font-bold py-3 px-6 rounded-sm transition-all"
+              >
+                Verify & Login
+              </button>
+              <button
+                onClick={() => router.push('/auth/login')}
+                className="flex-1 bg-surface-container-high hover:bg-surface-container text-primary font-headline font-bold py-3 px-6 rounded-sm border border-outline-variant/50 transition-all"
+              >
+                Skip for Now
+              </button>
+            </div>
 
-            <div className="mt-6 text-center">
+            <div className="mt-4 text-center">
               <p className="text-xs text-on-surface-variant">
-                Email sent to {signupData.email}
+                You can verify your email anytime from your account settings.
               </p>
             </div>
           </div>
