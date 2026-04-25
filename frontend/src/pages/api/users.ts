@@ -59,7 +59,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   const { action, userId, targetUserId } = req.query;
   const userToken = req.headers.authorization?.replace('Bearer ', '');
   const demoSession = validateDemoToken(userToken);
-  const currentUserId = demoSession?.sub ?? null;
+  const currentUserId = demoSession?.userId ?? null;
 
   if (!isDemoModeEnabled()) {
     return res.status(403).json({ error: 'Demo API disabled' });

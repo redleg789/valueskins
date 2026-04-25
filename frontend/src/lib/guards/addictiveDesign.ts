@@ -1,0 +1,3 @@
+export const MAX_FEED_POSTS_PER_PAGE = 20;
+export const INFINITE_SCROLL_THRESHOLD = 5;
+export const MIN_TIME_BETWEEN_NOTIFICATIONS = 60000; // 1 minute

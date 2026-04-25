@@ -165,7 +165,7 @@ export default function Chat() {
                       })}
                     </p>
                   </div>
-                  {conversation.unreadCount && conversation.unreadCount[currentUserId] > 0 && (
+                  {currentUserId && conversation.unreadCount && conversation.unreadCount[currentUserId] > 0 && (
                     <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
                   )}
                 </div>

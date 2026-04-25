@@ -67,7 +67,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   if (!demoSession) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
-  const userId = demoSession.sub;
+  const userId = demoSession.userId;
 
   if (req.method === 'GET') {
     // Get notifications for current user

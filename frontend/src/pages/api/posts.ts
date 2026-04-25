@@ -75,7 +75,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     if (!demoSession) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
-    const userId = demoSession.sub;
+    const userId = demoSession.userId;
 
     if (action === 'like' && postId) {
       const post = posts.find(p => p.id === String(postId));
