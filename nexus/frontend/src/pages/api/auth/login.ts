@@ -103,11 +103,14 @@ export default async function handler(
     const token = generateToken(user.id, user.email);
 
     // Update last login time
-    await supabase
-      .from('User')
-      .update({ lastLoginAt: new Date().toISOString() })
-      .eq('id', user.id)
-      .catch((e: any) => console.error('Failed to update lastLoginAt:', e));
+    try {
+      await supabase
+        .from('User')
+        .update({ lastLoginAt: new Date().toISOString() })
+        .eq('id', user.id);
+    } catch (e: any) {
+      console.error('Failed to update lastLoginAt:', e);
+    }
 
     return res.status(200).json({
       success: true,
