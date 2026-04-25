@@ -28,7 +28,7 @@ export default function Login() {
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('auth_token');
       if (token) {
-        router.push('/');
+        router.push('/wall');
         return;
       }
     }
@@ -54,7 +54,7 @@ export default function Login() {
         localStorage.setItem('user_id', data.data.userId);
         localStorage.setItem('user_name', data.data.name);
         localStorage.setItem('user_type', data.data.userType);
-        router.push('/');
+        router.push('/wall');
       } else {
         setError(data.error || 'Login failed');
       }
