@@ -53,9 +53,12 @@ export default function Profile() {
     phone: '',
     portfolioUrl: '',
   });
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [showFollowersList, setShowFollowersList] = useState(false);
   const [followerType, setFollowerType] = useState<'followers' | 'following'>('followers');
   const [saved, setSaved] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
@@ -131,6 +134,62 @@ export default function Profile() {
     }
   }, [router]);
 
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File size must be less than 5MB');
+      return;
+    }
+
+    // Show preview
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setAvatarPreview(event.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+
+    setAvatarFile(file);
+  };
+
+  const uploadAvatar = async () => {
+    if (!avatarFile) return;
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', avatarFile);
+
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch('/api/uploads/avatar', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setEditForm({ ...editForm, avatar: data.url });
+        setAvatarPreview(null);
+        setAvatarFile(null);
+      } else {
+        alert('Failed to upload avatar');
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      alert('Failed to upload avatar');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleSaveProfile = async () => {
     try {
       const token = localStorage.getItem('auth_token');
@@ -150,6 +209,12 @@ export default function Profile() {
     } catch (error) {
       console.error('Failed to update profile:', error);
     }
+  };
+
+  const removeAvatar = () => {
+    setEditForm({ ...editForm, avatar: '' });
+    setAvatarPreview(null);
+    setAvatarFile(null);
   };
 
   if (!ready) {
@@ -328,13 +393,50 @@ export default function Profile() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-headline mb-2">Avatar URL</label>
-                    <input
-                      type="url"
-                      value={editForm.avatar}
-                      onChange={(e) => setEditForm({ ...editForm, avatar: e.target.value })}
-                      className="w-full bg-surface-container-highest px-4 py-2 rounded-sm border border-outline-variant/50 focus:border-primary focus:ring-0"
-                    />
+                    <label className="block text-sm font-headline mb-2">Profile Picture</label>
+                    {avatarPreview && (
+                      <div className="mb-4">
+                        <img src={avatarPreview} alt="Preview" className="w-24 h-24 rounded-full object-cover border-2 border-primary" />
+                        <div className="flex gap-2 mt-2">
+                          <button
+                            type="button"
+                            onClick={uploadAvatar}
+                            disabled={uploading}
+                            className="text-xs bg-primary hover:bg-primary-dim text-surface px-3 py-1 rounded font-headline font-bold disabled:opacity-50"
+                          >
+                            {uploading ? 'Uploading...' : 'Confirm'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { setAvatarPreview(null); setAvatarFile(null); }}
+                            className="text-xs bg-surface-container hover:bg-surface-container-high text-on-surface px-3 py-1 rounded border border-outline-variant/50"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    <div className="flex gap-2">
+                      <label className="flex-1 cursor-pointer bg-surface-container-highest px-4 py-2 rounded-sm border border-outline-variant/50 hover:border-primary transition-colors text-center text-sm font-headline">
+                        Choose Photo
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleAvatarChange}
+                          className="hidden"
+                        />
+                      </label>
+                      {editForm.avatar && (
+                        <button
+                          type="button"
+                          onClick={removeAvatar}
+                          className="bg-red-500/20 hover:bg-red-500/30 text-red-400 px-4 py-2 rounded-sm border border-red-500/50 text-sm font-headline transition-colors"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-xs text-on-surface-variant mt-2">Max 5MB, JPG/PNG/GIF</p>
                   </div>
 
                   <div>
