@@ -5,7 +5,7 @@
   "description": "Nexus: The anti-Meta social platform. 100% human-created, no AI, ethical by design.",
   "scripts": {
     "dev": "next dev -p 3000",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
     "test": "jest",
