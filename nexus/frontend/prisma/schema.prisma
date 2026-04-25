@@ -2,8 +2,7 @@
 // All tables for production marketplace + social platform
 
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -76,8 +75,6 @@ model User {
   notifications     Notification[]
   sentPayments      Payment[]   @relation("Payer")
   receivedPayments  Payment[]   @relation("Payee")
-  disputes          Dispute[]
-  reviews           Review[]
   followers         Follows[] @relation("Follower")
   following         Follows[] @relation("Following")
   auditLogs         AuditLog[]
@@ -87,12 +84,13 @@ model User {
   passwordResetTokens PasswordResetToken[]
   reviewsGiven      Review[]     @relation("ReviewedBy")
   reviewsReceived   Review[]     @relation("ReviewFor")
+  payouts           Payout[]
+  creatorVerification CreatorVerification?
 
   @@index([email])
   @@index([handle])
   @@index([userType])
   @@index([createdAt])
-  @@fulltext([name, handle, bio]) // full-text search
 }
 
 enum UserType {
@@ -138,7 +136,6 @@ model Post {
   @@index([userId])
   @@index([createdAt])
   @@index([hashtags])
-  @@fulltext([content])
 }
 
 enum PostVisibility {
@@ -174,7 +171,6 @@ model GrimoireEntry {
 
   @@index([userId])
   @@index([createdAt])
-  @@fulltext([title, content])
 }
 
 model Like {
@@ -222,7 +218,6 @@ model Comment {
   @@index([postId])
   @@index([userId])
   @@index([parentCommentId])
-  @@fulltext([content])
 }
 
 enum CommentStatus {
@@ -307,7 +302,6 @@ model Deal {
   @@index([state])
   @@index([createdAt])
   @@index([niche])
-  @@fulltext([title, description])
 }
 
 enum DealState {
@@ -431,7 +425,6 @@ model Message {
   @@index([senderId])
   @@index([recipientId])
   @@index([createdAt])
-  @@fulltext([content])
 }
 
 enum MessageStatus {
@@ -625,7 +618,7 @@ enum PayoutStatus {
 
 model Dispute {
   id                String      @id @default(cuid())
-  paymentId         String?
+  paymentId         String?     @unique
   payment           Payment?    @relation(fields: [paymentId], references: [id], onDelete: Cascade)
 
   dealId            String?
