@@ -72,6 +72,7 @@ export default function Signup() {
         localStorage.setItem('auth_token', data.data.token);
         localStorage.setItem('user_id', data.data.userId);
         localStorage.setItem('user_name', data.data.name);
+        localStorage.setItem('user_type', data.data.userType);
         router.push('/');
       } else {
         setError(data.error || 'Signup failed');
