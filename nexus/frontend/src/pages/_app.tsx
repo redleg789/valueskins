@@ -18,7 +18,7 @@ export default function App({ Component, pageProps }: AppProps) {
     if (!token && !isPublicRoute) {
       router.push('/auth/login');
     } else if (token && router.pathname === '/auth/login') {
-      router.push('/');
+      router.push('/wall');
     }
   }, [router.pathname, router]);
 
