@@ -12,13 +12,8 @@ export default function Login() {
       const userType = localStorage.getItem('user_type');
 
       if (token && userType) {
-        if (userType === 'creator') {
-          router.push('/creator/dashboard');
-          return;
-        } else if (userType === 'brand') {
-          router.push('/brand/dashboard');
-          return;
-        }
+        router.push('/');
+        return;
       }
     }
     setReady(true);
@@ -36,11 +31,7 @@ export default function Login() {
       if (data.token && data.userType) {
         localStorage.setItem('user_type', data.userType);
         localStorage.setItem('auth_token', data.token);
-        if (data.userType === 'creator') {
-          router.push('/creator/dashboard');
-        } else if (data.userType === 'brand') {
-          router.push('/brand/dashboard');
-        }
+        router.push('/');
       } else {
         console.error('Invalid response:', data);
       }
