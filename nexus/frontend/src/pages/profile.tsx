@@ -68,10 +68,7 @@ export default function Profile() {
       return;
     }
 
-    setReady(true);
-
-    if (token) {
-      const fetchProfile = async () => {
+    const fetchProfile = async () => {
         try {
           const response = await fetch('/api/users/profile', {
             headers: { 'Authorization': `Bearer ${token}` },
@@ -128,10 +125,10 @@ export default function Profile() {
         }
       };
 
-      fetchProfile();
-      fetchUserPosts();
-      fetchValueSkinsEarnings();
-    }
+    fetchProfile();
+    fetchUserPosts();
+    fetchValueSkinsEarnings();
+    setReady(true);
   }, [router]);
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
