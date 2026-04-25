@@ -57,16 +57,6 @@ export default async function handler(
 
     const { emailOrHandle, password } = validationResult.data as LoginRequest;
 
-    // Check rate limit by IP + emailOrHandle
-    const rateLimitResult = await checkRateLimit(emailOrHandle, 'login');
-    if (!rateLimitResult.allowed) {
-      const resetTime = getResetTimeString(rateLimitResult.resetTime);
-      return res.status(429).json({
-        success: false,
-        error: `Too many login attempts. Try again in ${resetTime}.`,
-      });
-    }
-
     // Find user by email or handle
     const { data: users, error: queryError } = await supabase
       .from('User')

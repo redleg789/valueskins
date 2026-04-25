@@ -64,16 +64,6 @@ export default async function handler(
 
     const { email, password, name, handle, userType } = validationResult.data as SignupRequest;
 
-    // Check rate limit by IP (prevent bot signup spam)
-    const rateLimitResult = await checkRateLimit(ipAddress, 'signup');
-    if (!rateLimitResult.allowed) {
-      const resetTime = getResetTimeString(rateLimitResult.resetTime);
-      return res.status(429).json({
-        success: false,
-        error: `Too many signup attempts from this IP. Try again in ${resetTime}.`,
-      });
-    }
-
     // Validate email format
     if (!isValidEmail(email)) {
       return res.status(400).json({
