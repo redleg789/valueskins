@@ -58,8 +58,14 @@ export default function Profile() {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    setReady(true);
     const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+
+    if (!token) {
+      router.push('/auth/login');
+      return;
+    }
+
+    setReady(true);
 
     if (token) {
       const fetchProfile = async () => {
