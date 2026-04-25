@@ -53,17 +53,26 @@ export default function Settings() {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('auth_token');
-      if (!token) {
-        router.push('/auth/login');
-        return;
-      }
       setDarkMode(localStorage.getItem('theme') === 'dark');
+    }
+
+    setReady(true);
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+
+    if (!token) {
+      setSettings({
+        emailNotifications: false,
+        pushNotifications: false,
+        inAppNotifications: false,
+        allowMessages: 'everyone',
+        adultContent: false,
+        weeklyDigest: false,
+      });
+      return;
     }
 
     const fetchSettings = async () => {
       try {
-        const token = localStorage.getItem('auth_token');
         const response = await fetch('/api/settings', {
           headers: { 'Authorization': `Bearer ${token}` },
         });
@@ -78,7 +87,6 @@ export default function Settings() {
 
     const fetchAccount = async () => {
       try {
-        const token = localStorage.getItem('auth_token');
         const response = await fetch('/api/users/profile', {
           headers: { 'Authorization': `Bearer ${token}` },
         });
@@ -138,14 +146,15 @@ export default function Settings() {
       }
     };
 
-    fetchSettings();
-    fetchAccount();
-    fetchSessions();
-    fetchLoginHistory();
-    fetchQuietHours();
+    if (token) {
+      fetchSettings();
+      fetchAccount();
+      fetchSessions();
+      fetchLoginHistory();
+      fetchQuietHours();
+    }
     setLanguage(localStorage.getItem('language') || 'en');
     setMediaAutoplay(localStorage.getItem('mediaAutoplay') || 'always');
-    setReady(true);
   }, [router]);
 
   const handleToggle = (field: keyof Settings) => {
@@ -373,10 +382,38 @@ export default function Settings() {
     }
   };
 
-  if (!ready || !settings) {
+  if (!ready) {
     return (
       <div className="min-h-screen bg-surface flex items-center justify-center">
         <div className="text-primary">Loading...</div>
+      </div>
+    );
+  }
+
+  const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+
+  if (!token) {
+    return (
+      <div className="min-h-screen bg-surface text-on-surface">
+        <header className="fixed top-0 w-full z-50 bg-surface-container/80 backdrop-blur-xl border-b border-outline-variant/20">
+          <div className="flex justify-between items-center px-6 h-20">
+            <button onClick={() => router.push('/profile')} className="text-primary hover:text-primary-dim transition-colors">
+              <span className="material-symbols-outlined text-2xl">arrow_back</span>
+            </button>
+            <span className="text-3xl font-black italic text-primary font-headline">Settings</span>
+            <div className="w-10"></div>
+          </div>
+        </header>
+        <div className="pt-20 flex items-center justify-center min-h-screen">
+          <div className="text-center space-y-6">
+            <div className="text-6xl">⚙️</div>
+            <h2 className="text-2xl font-headline font-bold">Sign in to customize settings</h2>
+            <p className="text-on-surface-variant">Log in to manage your preferences, security, and notifications.</p>
+            <button onClick={() => router.push('/auth/login')} className="btn-primary">
+              Sign In
+            </button>
+          </div>
+        </div>
       </div>
     );
   }

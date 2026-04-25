@@ -50,55 +50,49 @@ export default function Profile() {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('auth_token');
-      if (!token) {
-        router.push('/auth/login');
-        return;
-      }
-    }
-
-    const fetchProfile = async () => {
-      try {
-        const token = localStorage.getItem('auth_token');
-        const response = await fetch('/api/users/profile', {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setUser(data);
-          setEditForm({
-            name: data.name,
-            bio: data.bio || '',
-            avatar: data.avatar || '',
-            banner: data.banner || '',
-            phone: data.phone || '',
-            portfolioUrl: data.portfolioUrl || '',
-          });
-        }
-      } catch (error) {
-        console.error('Failed to fetch profile:', error);
-      }
-    };
-
-    const fetchUserPosts = async () => {
-      try {
-        const token = localStorage.getItem('auth_token');
-        const response = await fetch('/api/posts', {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setPosts(data.posts || []);
-        }
-      } catch (error) {
-        console.error('Failed to fetch posts:', error);
-      }
-    };
-
     setReady(true);
-    fetchProfile();
-    fetchUserPosts();
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+
+    if (token) {
+      const fetchProfile = async () => {
+        try {
+          const response = await fetch('/api/users/profile', {
+            headers: { 'Authorization': `Bearer ${token}` },
+          });
+          if (response.ok) {
+            const data = await response.json();
+            setUser(data);
+            setEditForm({
+              name: data.name,
+              bio: data.bio || '',
+              avatar: data.avatar || '',
+              banner: data.banner || '',
+              phone: data.phone || '',
+              portfolioUrl: data.portfolioUrl || '',
+            });
+          }
+        } catch (error) {
+          console.error('Failed to fetch profile:', error);
+        }
+      };
+
+      const fetchUserPosts = async () => {
+        try {
+          const response = await fetch('/api/posts', {
+            headers: { 'Authorization': `Bearer ${token}` },
+          });
+          if (response.ok) {
+            const data = await response.json();
+            setPosts(data.posts || []);
+          }
+        } catch (error) {
+          console.error('Failed to fetch posts:', error);
+        }
+      };
+
+      fetchProfile();
+      fetchUserPosts();
+    }
   }, [router]);
 
   const handleSaveProfile = async () => {
@@ -126,6 +120,32 @@ export default function Profile() {
     return (
       <div className="min-h-screen bg-surface flex items-center justify-center">
         <div className="text-primary">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-surface text-on-surface">
+        <header className="fixed top-0 w-full z-50 bg-surface-container/80 backdrop-blur-xl border-b border-outline-variant/20">
+          <div className="flex justify-between items-center px-6 h-20">
+            <button onClick={() => router.push('/')} className="text-primary hover:text-primary-dim transition-colors">
+              <span className="material-symbols-outlined text-2xl">arrow_back</span>
+            </button>
+            <span className="text-3xl font-black italic text-primary font-headline">Profile</span>
+            <div className="w-10"></div>
+          </div>
+        </header>
+        <div className="pt-20 flex items-center justify-center min-h-screen">
+          <div className="text-center space-y-6">
+            <div className="text-6xl">👤</div>
+            <h2 className="text-2xl font-headline font-bold">Sign in to view your profile</h2>
+            <p className="text-on-surface-variant">Log in to see your profile, posts, and manage your account.</p>
+            <button onClick={() => router.push('/auth/login')} className="btn-primary">
+              Sign In
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
