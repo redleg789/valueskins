@@ -54,7 +54,8 @@ export default function Login() {
         localStorage.setItem('user_id', data.data.userId);
         localStorage.setItem('user_name', data.data.name);
         localStorage.setItem('user_type', data.data.userType);
-        router.push('/');
+        // Small delay to ensure localStorage is synced before redirect
+        setTimeout(() => router.push('/'), 100);
       } else {
         setError(data.error || 'Login failed');
       }
