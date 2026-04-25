@@ -31,10 +31,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           handle: true,
           avatar: true,
           verified: true,
-          followers: true,
+          followerCount: true,
           bio: true,
         },
-        orderBy: { followers: 'desc' },
+        orderBy: { followerCount: 'desc' },
         skip,
         take: limit,
       });

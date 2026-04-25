@@ -42,8 +42,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           { state: { in: ['PUBLISHED', 'ACTIVE'] } },
           {
             OR: [
-              { title: { search: query } },
-              { description: { search: query } },
+              { title: { contains: query, mode: 'insensitive' } },
+              { description: { contains: query, mode: 'insensitive' } },
             ],
           },
           { budget: { gte: minBudget, lte: maxBudget } },
@@ -73,9 +73,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             { status: 'ACTIVE' },
             {
               OR: [
-                { name: { search: query } },
-                { handle: { search: query } },
-                { bio: { search: query } },
+                { name: { contains: query, mode: 'insensitive' } },
+                { handle: { contains: query, mode: 'insensitive' } },
+                { bio: { contains: query, mode: 'insensitive' } },
               ],
             },
           ],
@@ -86,10 +86,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           handle: true,
           avatar: true,
           verified: true,
-          followers: true,
+          followerCount: true,
           creatorNiche: true,
         },
-        orderBy: { followers: 'desc' },
+        orderBy: { followerCount: 'desc' },
         take: limit,
         skip: cursor ? 1 : 0,
         cursor: cursor ? { id: cursor } : undefined,
@@ -103,7 +103,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           AND: [
             { visibility: 'PUBLIC' },
             { status: 'PUBLISHED' },
-            { content: { search: query } },
+            { content: { contains: query, mode: 'insensitive' } },
           ],
         },
         include: {

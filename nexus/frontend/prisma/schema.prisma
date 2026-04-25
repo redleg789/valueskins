@@ -510,7 +510,7 @@ model Payment {
 
   // Razorpay integration
   razorpayOrderId   String?
-  razorpayPaymentId String?
+  razorpayPaymentId String? @unique
   razorpaySignature String?
 
   // Payment method
@@ -582,7 +582,7 @@ model Payout {
   currency          String      @default("INR")
 
   // Razorpay payout
-  razorpayPayoutId  String?
+  razorpayPayoutId  String? @unique
   razorpayTransferId String?
 
   // Status
