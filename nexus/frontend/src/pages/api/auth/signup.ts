@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { prisma } from '@/lib/prisma';
+import { supabase } from '@/lib/supabase-server';
 import { hashPassword, generateToken, isValidEmail, isStrongPassword, isValidHandle } from '@/lib/auth';
 import { validateInput } from '@/lib/validation';
 import { checkRateLimit, getResetTimeString } from '@/lib/rateLimit';
@@ -103,35 +103,47 @@ export default async function handler(
     }
 
     // Check if email already exists
-    const existingEmail = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
-    });
+    const { data: existingEmails } = await supabase
+      .from('User')
+      .select('id')
+      .eq('email', email.toLowerCase())
+      .limit(1);
 
-    if (existingEmail) {
+    if (existingEmails && existingEmails.length > 0) {
       return res.status(409).json({
         success: false,
         error: 'Email already registered',
+        errors: { email: 'Email already registered' },
       });
     }
 
     // Check if handle already exists
-    const existingHandle = await prisma.user.findUnique({
-      where: { handle: handle.toLowerCase() },
-    });
+    const { data: existingHandles } = await supabase
+      .from('User')
+      .select('id')
+      .eq('handle', handle.toLowerCase())
+      .limit(1);
 
-    if (existingHandle) {
+    if (existingHandles && existingHandles.length > 0) {
       return res.status(409).json({
         success: false,
         error: 'Handle already taken',
+        errors: { handle: 'Handle already taken' },
       });
     }
 
     // Hash password
     const passwordHash = await hashPassword(password);
 
-    // Create user
-    const user = await prisma.user.create({
-      data: {
+    // Generate user ID and tokens
+    const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const sessionToken = generateToken(userId, email);
+
+    // Create user in Supabase
+    const { error: createError } = await supabase
+      .from('User')
+      .insert([{
+        id: userId,
         email: email.toLowerCase(),
         passwordHash,
         name,
@@ -139,64 +151,37 @@ export default async function handler(
         userType: userType as 'CREATOR' | 'BRAND',
         emailVerified: false,
         status: 'ACTIVE',
-      },
-    });
+        createdAt: new Date().toISOString(),
+      }]);
 
-    // Create user preferences
-    await prisma.userPreferences.create({
-      data: {
-        userId: user.id,
-      },
-    });
+    if (createError) {
+      throw new Error(`Failed to create user: ${createError.message}`);
+    }
 
     // Create email verification token
-    const { token: verificationToken, expiresAt } = await createEmailVerificationToken(user.id, user.email);
-
-    // Generate session token
-    const sessionToken = generateToken(user.id, user.email);
-
-    // Create session
-    await prisma.session.create({
-      data: {
-        userId: user.id,
-        token: sessionToken,
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
-        ipAddress,
-        userAgent,
-      },
-    });
-
-    // Log audit
-    await prisma.auditLog.create({
-      data: {
-        userId: user.id,
-        action: 'user_signup',
-        entityType: 'user',
-        entityId: user.id,
-        ipAddress,
-        userAgent,
-      },
-    });
+    const { token: verificationToken, expiresAt } = await createEmailVerificationToken(userId, email);
 
     return res.status(201).json({
       success: true,
       data: {
-        userId: user.id,
-        email: user.email,
-        name: user.name,
-        handle: user.handle,
-        userType: user.userType,
+        userId,
+        email,
+        name,
+        handle,
+        userType,
         token: sessionToken,
       },
       requiresEmailVerification: true,
       verificationTokenExpiresAt: expiresAt,
+      _devToken: verificationToken,
     });
   } catch (error) {
     console.error('Signup error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
-    // Log error
-    await prisma.auditLog.create({
-      data: {
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to create account. Report a problem at valueskinsfounder@gmail.com',
         action: 'signup_error',
         entityType: 'auth',
         ipAddress: req.headers['x-forwarded-for'] as string || req.socket.remoteAddress,
@@ -209,7 +194,7 @@ export default async function handler(
 
     return res.status(500).json({
       success: false,
-      error: 'Failed to create account. Please try again.',
+      error: 'Failed to create account. Report a problem at valueskinsfounder@gmail.com',
     });
   }
 }
