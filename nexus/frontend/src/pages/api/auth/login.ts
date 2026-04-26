@@ -1,9 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { db, auth } from '@/lib/firebase-server';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { verifyPassword, generateToken, isValidEmail, extractToken } from '@/lib/auth';
+import { verifyPassword, generateToken, isValidEmail } from '@/lib/auth';
 import { validateInput } from '@/lib/validation';
-import { checkRateLimit, getResetTimeString } from '@/lib/rateLimit';
 import { z } from 'zod';
 
 const loginSchema = z.object({
@@ -58,47 +55,75 @@ export default async function handler(
     }
 
     const { emailOrHandle, password } = validationResult.data as LoginRequest;
+    const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+    const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
 
-    // Find user by email or handle in Firebase
-    let usersRef, q, querySnapshot;
+    if (!projectId || !apiKey) {
+      throw new Error('Firebase config missing');
+    }
+
+    // Query using Firestore REST API
+    const queryUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/users?pageSize=1`;
+
+    let response;
     try {
-      usersRef = collection(db, 'users');
-      q = query(usersRef, where('email', '==', emailOrHandle.toLowerCase()));
-      querySnapshot = await getDocs(q);
-    } catch (queryErr) {
-      console.error('Firestore query error:', {
-        error: queryErr instanceof Error ? queryErr.message : String(queryErr),
-        code: (queryErr as any)?.code,
-        db: db ? 'initialized' : 'null',
+      response = await fetch(queryUrl, {
+        method: 'GET',
+        headers: {
+          'X-Goog-Api-Key': apiKey,
+        },
       });
-      throw new Error(`Firestore query failed: ${queryErr instanceof Error ? queryErr.message : String(queryErr)}`);
+    } catch (fetchErr) {
+      console.error('Fetch error:', fetchErr);
+      throw new Error(`REST API fetch failed: ${fetchErr instanceof Error ? fetchErr.message : String(fetchErr)}`);
     }
 
-    if (querySnapshot.empty) {
-      const q2 = query(usersRef, where('handle', '==', emailOrHandle.toLowerCase()));
-      querySnapshot = await getDocs(q2);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Firestore REST error:', response.status, errorText);
+      throw new Error(`Firestore query failed: ${response.status}`);
     }
 
-    if (querySnapshot.empty) {
+    const data = await response.json();
+    let user = null;
+
+    // Search in documents for matching email or handle
+    if (data.documents && Array.isArray(data.documents)) {
+      user = data.documents.find((doc: any) => {
+        const fields = doc.fields || {};
+        const docEmail = fields.email?.stringValue || '';
+        const docHandle = fields.handle?.stringValue || '';
+        return docEmail.toLowerCase() === emailOrHandle.toLowerCase() ||
+               docHandle.toLowerCase() === emailOrHandle.toLowerCase();
+      });
+    }
+
+    if (!user) {
       return res.status(401).json({
         success: false,
         error: 'Invalid email or password',
       });
     }
 
-    const user = querySnapshot.docs[0].data() as any;
-    user.id = querySnapshot.docs[0].id;
-
+    const userData = user.fields;
+    const userId = user.name.split('/').pop();
+    const userEmail = userData.email?.stringValue;
+    const userName = userData.name?.stringValue;
+    const userHandle = userData.handle?.stringValue;
+    const userType = userData.userType?.stringValue;
+    const userAvatar = userData.avatar?.stringValue;
+    const userStatus = userData.status?.stringValue;
+    const passwordHash = userData.passwordHash?.stringValue;
 
     // Check if account is active
-    if (user.status === 'DELETED') {
+    if (userStatus === 'DELETED') {
       return res.status(403).json({
         success: false,
         error: 'Account has been deleted',
       });
     }
 
-    if (user.status === 'SUSPENDED') {
+    if (userStatus === 'SUSPENDED') {
       return res.status(403).json({
         success: false,
         error: 'Account has been suspended',
@@ -106,7 +131,7 @@ export default async function handler(
     }
 
     // Verify password
-    const passwordValid = await verifyPassword(password, user.passwordHash);
+    const passwordValid = await verifyPassword(password, passwordHash || '');
 
     if (!passwordValid) {
       return res.status(401).json({
@@ -116,17 +141,17 @@ export default async function handler(
     }
 
     // Generate new token
-    const token = generateToken(user.id, user.email);
+    const token = generateToken(userId, userEmail);
 
     return res.status(200).json({
       success: true,
       data: {
-        userId: user.id,
-        email: user.email,
-        name: user.name,
-        handle: user.handle,
-        userType: user.userType,
-        avatar: user.avatar || undefined,
+        userId,
+        email: userEmail,
+        name: userName,
+        handle: userHandle,
+        userType: userType,
+        avatar: userAvatar,
         token,
       },
     });
@@ -138,7 +163,6 @@ export default async function handler(
       code: errorCode,
       stack: error instanceof Error ? error.stack : null,
       type: error instanceof Error ? error.constructor.name : typeof error,
-      fullError: JSON.stringify(error),
     };
 
     console.error('Login error - Details:', errorDetails);
