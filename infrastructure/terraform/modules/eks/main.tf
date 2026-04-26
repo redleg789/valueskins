@@ -1,136 +1,200 @@
-# EKS — Kubernetes cluster with managed node groups
-# Auto-scaling, multi-AZ, IRSA for pod-level AWS permissions
+# Terraform AWS EKS Cluster Configuration
+# For 100K concurrent users with auto-scaling
 
-variable "environment" { type = string }
-variable "cluster_name" { type = string }
-variable "vpc_id" { type = string }
-variable "subnet_ids" { type = list(string) }
-variable "node_min" { type = number }
-variable "node_max" { type = number }
-variable "node_instance" { type = string }
-
-resource "aws_eks_cluster" "main" {
-  name     = var.cluster_name
-  role_arn = aws_iam_role.cluster.arn
-  version  = "1.29"
-
-  vpc_config {
-    subnet_ids              = var.subnet_ids
-    endpoint_private_access = true
-    endpoint_public_access  = true
-    security_group_ids      = [aws_security_group.cluster.id]
-  }
-
-  encryption_config {
-    provider {
-      key_arn = aws_kms_key.eks.arn
+terraform {
+  required_version = ">= 1.0"
+  
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
     }
-    resources = ["secrets"]
-  }
-
-  enabled_cluster_log_types = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
-}
-
-resource "aws_eks_node_group" "main" {
-  cluster_name    = aws_eks_cluster.main.name
-  node_group_name = "${var.cluster_name}-main"
-  node_role_arn   = aws_iam_role.node.arn
-  subnet_ids      = var.subnet_ids
-  instance_types  = [var.node_instance]
-
-  scaling_config {
-    desired_size = var.node_min
-    min_size     = var.node_min
-    max_size     = var.node_max
-  }
-
-  update_config {
-    max_unavailable = 1
-  }
-
-  labels = {
-    role = "general"
-  }
-
-  tags = { Name = "${var.cluster_name}-node" }
-}
-
-# Cluster encryption key
-resource "aws_kms_key" "eks" {
-  description         = "EKS secrets encryption for ${var.cluster_name}"
-  enable_key_rotation = true
-}
-
-# Security groups
-resource "aws_security_group" "cluster" {
-  name_prefix = "${var.cluster_name}-cluster-"
-  vpc_id      = var.vpc_id
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "~> 2.20"
+    }
   }
 }
 
-# IAM roles
-resource "aws_iam_role" "cluster" {
-  name = "${var.cluster_name}-cluster"
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Action    = "sts:AssumeRole"
-      Effect    = "Allow"
-      Principal = { Service = "eks.amazonaws.com" }
-    }]
-  })
+provider "aws" {
+  region = var.aws_region
+  
+  default_tags {
+    tags = {
+      Environment = var.environment
+      Project    = "valueskins"
+      ManagedBy = "terraform"
+    }
+  }
 }
 
-resource "aws_iam_role_policy_attachment" "cluster_policy" {
-  role       = aws_iam_role.cluster.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
+# EKS Cluster
+module "eks" {
+  source  = "terraform-aws-modules/eks/aws"
+  version = "~> 19.0"
+  
+  cluster_name    = "valueskins-${var.environment}"
+  cluster_version = "1.28"
+  
+  vpc_id                   = module.vpc.vpc_id
+  subnet_ids              = module.vpc.private_subnets
+  cluster_security_group = module.eks.cluster_security_group_id
+  
+  # EKS Managed Node Groups
+  managed_node_groups = {
+    api_gateway = {
+      name           = "api-gateway"
+      instance_types = ["m7i.xlarge"]
+      capacity_type  = "ON_DEMAND"
+      
+      min_size     = 3
+      max_size     = 50
+      desired_size = 3
+      
+      # High memory for Rust services
+      labels = {
+        tier = "backend"
+        app  = "api-gateway"
+      }
+      
+      tags = {
+        "k8s.io/cluster-autoscaler/enabled" = "true"
+        "k8s.io/cluster-autoscaler"         = "valueskins-${var.environment}"
+      }
+    }
+    
+    frontend = {
+      name           = "frontend"
+      instance_types = ["m7i.large"]
+      capacity_type  = "ON_DEMAND"
+      
+      min_size     = 2
+      max_size     = 30
+      desired_size = 3
+      
+      labels = {
+        tier = "frontend"
+        app  = "frontend"
+      }
+    }
+    
+    redis = {
+      name           = "redis"
+      instance_types = ["r7i.xlarge"]
+      capacity_type  = "ON_DEMAND"
+      
+      min_size     = 3
+      max_size     = 10
+      desired_size = 3
+      
+      labels = {
+        tier = "cache"
+        app  = "redis"
+      }
+    }
+    
+    pgbouncer = {
+      name           = "pgbouncer"
+      instance_types = ["m7i.large"]
+      capacity_type  = "ON_DEMAND"
+      
+      min_size     = 2
+      max_size     = 6
+      desired_size = 2
+      
+      labels = {
+        tier = "database"
+        app  = "pgbouncer"
+      }
+    }
+  }
+  
+  # Enable cluster autoscaler
+  clusterAutoscaler = {
+    expander = "least-waste"
+  }
+  
+  # Manage kubeconfig
+  manage_aws_auth_configmap = true
+  
+  # CoreDNS
+  enable_cluster_dns = true
+  cluster_dns = "10.100.0.10"
+  
+  # Metrics Server
+  enable_metrics_server = true
+  
+  tags = var.common_tags
 }
 
-resource "aws_iam_role" "node" {
-  name = "${var.cluster_name}-node"
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Action    = "sts:AssumeRole"
-      Effect    = "Allow"
-      Principal = { Service = "ec2.amazonaws.com" }
-    }]
-  })
+# AWS Auth ConfigMap for kubectl
+resource "aws_eks_cluster_auth" "this" {
+  name = module.eks.cluster_name
 }
 
-resource "aws_iam_role_policy_attachment" "node_worker" {
-  role       = aws_iam_role.node.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
+provider "kubernetes" {
+  host                   = module.eks.cluster_endpoint
+  cluster_ca_certificate = module.eks.cluster_certificate_authority_data
+  token                  = aws_eks_cluster_auth.this.token
+  
+  load_config_file = false
 }
 
-resource "aws_iam_role_policy_attachment" "node_cni" {
-  role       = aws_iam_role.node.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
+# Karpenter - Next-gen node auto-scaling
+module "karpenter" {
+  source  = "terraform-aws-modules/karpenter/aws"
+  version = "~> 0.4"
+  
+  cluster_name = module.eks.cluster_name
+  irsa_role_name = "valueskins-karpenter"
+  
+  # Node templates for different workloads
+  node_templates = {
+    api_gateway = {
+      name = "api-gateway"
+      ami_family = "AL2023"
+      instance_types = ["m7i.xlarge", "m7i.2xlarge"]
+      
+      labels = {
+        tier = "backend"
+        app  = "api-gateway"
+      }
+      
+      requirements = {
+        cpu = { min = 2, max = 8 }
+        memory = { min = "4Gi", max = "32Gi" }
+      }
+    }
+    
+    frontend = {
+      name = "frontend"
+      ami_family = "AL2023"
+      instance_types = ["m7i.large", "m7i.xlarge"]
+      
+      labels = {
+        tier = "frontend"
+        app  = "frontend"
+      }
+      
+      requirements = {
+        cpu = { min = 1, max = 4 }
+        memory = { min = "2Gi", max = "16Gi" }
+      }
+    }
+  }
+  
+  # Default provisioner
+  provisioner = {
+    name = "default"
+    
+    requirements = {
+      cpu = { min = 1, max = 64 }
+      memory = { min = "1Gi", max = "256Gi" }
+    }
+    
+    limits = {
+      cpu = "1000"
+      memory = "1000Gi"
+    }
+  }
 }
-
-resource "aws_iam_role_policy_attachment" "node_ecr" {
-  role       = aws_iam_role.node.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
-}
-
-# OIDC provider for IRSA (pod-level AWS permissions)
-data "tls_certificate" "eks" {
-  url = aws_eks_cluster.main.identity[0].oidc[0].issuer
-}
-
-resource "aws_iam_openid_connect_provider" "eks" {
-  client_id_list  = ["sts.amazonaws.com"]
-  thumbprint_list = [data.tls_certificate.eks.certificates[0].sha1_fingerprint]
-  url             = aws_eks_cluster.main.identity[0].oidc[0].issuer
-}
-
-output "cluster_endpoint" { value = aws_eks_cluster.main.endpoint }
-output "cluster_name" { value = aws_eks_cluster.main.name }
-output "node_security_group_id" { value = aws_security_group.cluster.id }
-output "oidc_provider_arn" { value = aws_iam_openid_connect_provider.eks.arn }

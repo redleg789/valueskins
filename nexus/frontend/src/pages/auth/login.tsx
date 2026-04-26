@@ -27,13 +27,6 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('auth_token');
-      if (token) {
-        router.push('/wall');
-        return;
-      }
-    }
     setReady(true);
   }, [router]);
 
@@ -56,7 +49,10 @@ export default function Login() {
         localStorage.setItem('user_id', data.data.userId);
         localStorage.setItem('user_name', data.data.name);
         localStorage.setItem('user_type', data.data.userType);
-        router.push('/wall');
+        // TODO: PRODUCTION - Backend should set httpOnly, Secure, SameSite=Strict cookie
+        // Remove localStorage token storage and rely on cookies instead.
+        // Cookies persist across tab closes and are more secure than localStorage.
+        router.push('/');
       } else {
         setError(data.error || 'Login failed');
       }

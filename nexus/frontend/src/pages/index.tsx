@@ -33,6 +33,8 @@ export default function Home() {
   useEffect(() => {
     const checkAuth = () => {
       if (typeof window !== 'undefined') {
+        // TODO: PRODUCTION - Read token from httpOnly cookie instead of localStorage
+        // This will automatically persist across tab closes and restarts.
         const token = localStorage.getItem('auth_token');
         const storedUserType = localStorage.getItem('user_type');
         if (!token || !storedUserType) {
