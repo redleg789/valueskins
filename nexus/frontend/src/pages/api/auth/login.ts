@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { verifyPassword, generateToken, isValidEmail } from '@/lib/auth';
 import { validateInput } from '@/lib/validation';
 import { z } from 'zod';
+import { checkRateLimit, recordFailedAttempt } from '@/lib/rateLimit';
 
 const loginSchema = z.object({
   emailOrHandle: z.string().min(1, 'Email or username is required').toLowerCase(),
@@ -30,7 +31,6 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<LoginResponse>
 ) {
-  // Security headers
   res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
@@ -41,10 +41,18 @@ export default async function handler(
   }
 
   try {
-    const ipAddress = req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || 'unknown';
-    const userAgent = req.headers['user-agent'] as string || '';
+    const ipAddress = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.socket.remoteAddress || 'unknown';
 
-    // Validate input
+    // Check rate limiting (20 login attempts per hour per IP)
+    const rateLimitKey = `login:${ipAddress}`;
+    const isAllowed = await checkRateLimit(rateLimitKey, 20, 3600);
+    if (!isAllowed) {
+      return res.status(429).json({
+        success: false,
+        error: 'Too many login attempts. Try again in 15 minutes.',
+      });
+    }
+
     const validationResult = await validateInput(loginSchema, req.body);
     if (!validationResult.valid) {
       return res.status(400).json({
@@ -62,43 +70,74 @@ export default async function handler(
       throw new Error('Firebase config missing');
     }
 
-    // Query using Firestore REST API
-    const queryUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/users?pageSize=1`;
+    // Query indexed by email OR handle (use structured query, not scan all)
+    const queryUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery`;
 
-    let response;
-    try {
-      response = await fetch(queryUrl, {
-        method: 'GET',
-        headers: {
-          'X-Goog-Api-Key': apiKey,
+    const query = {
+      structuredQuery: {
+        from: [{ collectionId: 'users' }],
+        where: {
+          fieldFilter: {
+            field: { fieldPath: 'email' },
+            op: 'EQUAL',
+            value: { stringValue: emailOrHandle.toLowerCase() },
+          },
         },
-      });
-    } catch (fetchErr) {
-      console.error('Fetch error:', fetchErr);
-      throw new Error(`REST API fetch failed: ${fetchErr instanceof Error ? fetchErr.message : String(fetchErr)}`);
-    }
+        limit: 1,
+      },
+    };
+
+    let response = await fetch(queryUrl, {
+      method: 'POST',
+      headers: {
+        'X-Goog-Api-Key': apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(query),
+    });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Firestore REST error:', response.status, errorText);
       throw new Error(`Firestore query failed: ${response.status}`);
     }
 
-    const data = await response.json();
+    let data = await response.json();
     let user = null;
 
-    // Search in documents for matching email or handle
-    if (data.documents && Array.isArray(data.documents)) {
-      user = data.documents.find((doc: any) => {
-        const fields = doc.fields || {};
-        const docEmail = fields.email?.stringValue || '';
-        const docHandle = fields.handle?.stringValue || '';
-        return docEmail.toLowerCase() === emailOrHandle.toLowerCase() ||
-               docHandle.toLowerCase() === emailOrHandle.toLowerCase();
+    if (data.document) {
+      user = data.document;
+    } else if (!user) {
+      // Fallback: try handle query
+      const handleQuery = {
+        structuredQuery: {
+          from: [{ collectionId: 'users' }],
+          where: {
+            fieldFilter: {
+              field: { fieldPath: 'handle' },
+              op: 'EQUAL',
+              value: { stringValue: emailOrHandle.toLowerCase() },
+            },
+          },
+          limit: 1,
+        },
+      };
+
+      response = await fetch(queryUrl, {
+        method: 'POST',
+        headers: {
+          'X-Goog-Api-Key': apiKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(handleQuery),
       });
+
+      if (response.ok) {
+        data = await response.json();
+        user = data.document;
+      }
     }
 
     if (!user) {
+      await recordFailedAttempt(`login:${ipAddress}:failed`);
       return res.status(401).json({
         success: false,
         error: 'Invalid email or password',
@@ -115,32 +154,23 @@ export default async function handler(
     const userStatus = userData.status?.stringValue;
     const passwordHash = userData.passwordHash?.stringValue;
 
-    // Check if account is active
-    if (userStatus === 'DELETED') {
+    if (userStatus === 'DELETED' || userStatus === 'SUSPENDED') {
+      await recordFailedAttempt(`login:${ipAddress}:failed`);
       return res.status(403).json({
         success: false,
-        error: 'Account has been deleted',
+        error: userStatus === 'DELETED' ? 'Account has been deleted' : 'Account has been suspended',
       });
     }
 
-    if (userStatus === 'SUSPENDED') {
-      return res.status(403).json({
-        success: false,
-        error: 'Account has been suspended',
-      });
-    }
-
-    // Verify password
     const passwordValid = await verifyPassword(password, passwordHash || '');
-
     if (!passwordValid) {
+      await recordFailedAttempt(`login:${ipAddress}:failed`);
       return res.status(401).json({
         success: false,
         error: 'Invalid email or password',
       });
     }
 
-    // Generate new token
     const token = generateToken(userId, userEmail);
 
     return res.status(200).json({
@@ -157,20 +187,12 @@ export default async function handler(
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
-    const errorCode = (error as any)?.code || 'unknown';
-    const errorDetails = {
-      message: errorMessage,
-      code: errorCode,
-      stack: error instanceof Error ? error.stack : null,
-      type: error instanceof Error ? error.constructor.name : typeof error,
-    };
-
-    console.error('Login error - Details:', errorDetails);
+    console.error('Login error:', errorMessage);
 
     return res.status(500).json({
       success: false,
-      error: 'Connection error. Please try again. Report a problem at valueskinsfounder@gmail.com',
-      _debug: process.env.NODE_ENV === 'development' ? errorDetails : undefined,
+      error: 'Connection error. Please try again.',
+      _debug: process.env.NODE_ENV === 'development' ? { message: errorMessage } : undefined,
     });
   }
 }

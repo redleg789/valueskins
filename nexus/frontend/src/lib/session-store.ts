@@ -1,11 +1,4 @@
-// Server-side session management for HTTP APIs
-// Client-side uses localStorage for guest sessions
-// Production: replace SESSION_STORE with Redis
-
-import { createHash, randomBytes, timingSafeEqual } from 'crypto';
-
-const SESSION_EXPIRY = 30 * 60 * 1000;
-const IDLE_TIMEOUT = 15 * 60 * 1000;
+import { createHash, randomBytes } from 'crypto';
 
 interface SessionData {
   userId: string;
@@ -15,6 +8,10 @@ interface SessionData {
   csrfToken: string;
 }
 
+const SESSION_EXPIRY = 30 * 60 * 1000;
+const IDLE_TIMEOUT = 15 * 60 * 1000;
+
+// In-memory fallback (production must use Redis)
 const SESSION_STORE = new Map<string, SessionData>();
 
 function hashSessionId(sessionId: string): string {
@@ -29,15 +26,6 @@ function generateSessionId(): string {
 
 function generateCsrfToken(): string {
   return randomBytes(32).toString('hex');
-}
-
-function timingSafeCompare(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  try {
-    return timingSafeEqual(Buffer.from(a), Buffer.from(b));
-  } catch {
-    return false;
-  }
 }
 
 export async function createSession(
@@ -59,6 +47,7 @@ export async function createSession(
   const hashedId = hashSessionId(sessionId);
   SESSION_STORE.set(hashedId, sessionData);
 
+  // Auto-cleanup expired session after 30 minutes
   setTimeout(() => {
     SESSION_STORE.delete(hashedId);
   }, SESSION_EXPIRY);
@@ -66,21 +55,26 @@ export async function createSession(
   return { sessionId, csrfToken };
 }
 
-export function getSession(sessionId: string): {
+export function getSession(
+  sessionId: string
+): {
   userId: string;
   userType: 'creator' | 'brand' | 'guest';
+  isExpired: boolean;
+  isIdleExpired: boolean;
 } | null {
   const hashedId = hashSessionId(sessionId);
   const sessionData = SESSION_STORE.get(hashedId);
 
-  if (!sessionData) return null;
-
-  const now = Date.now();
-  if (now > sessionData.createdAt + SESSION_EXPIRY) {
-    SESSION_STORE.delete(hashedId);
+  if (!sessionData) {
     return null;
   }
-  if (now > sessionData.lastActiveAt + IDLE_TIMEOUT) {
+
+  const now = Date.now();
+  const isExpired = now > sessionData.createdAt + SESSION_EXPIRY;
+  const isIdleExpired = now > sessionData.lastActiveAt + IDLE_TIMEOUT;
+
+  if (isExpired || isIdleExpired) {
     SESSION_STORE.delete(hashedId);
     return null;
   }
@@ -88,6 +82,8 @@ export function getSession(sessionId: string): {
   return {
     userId: sessionData.userId,
     userType: sessionData.userType,
+    isExpired,
+    isIdleExpired,
   };
 }
 
@@ -95,7 +91,9 @@ export function refreshSession(sessionId: string): boolean {
   const hashedId = hashSessionId(sessionId);
   const sessionData = SESSION_STORE.get(hashedId);
 
-  if (!sessionData) return false;
+  if (!sessionData) {
+    return false;
+  }
 
   sessionData.lastActiveAt = Date.now();
   sessionData.csrfToken = generateCsrfToken();
@@ -105,12 +103,17 @@ export function refreshSession(sessionId: string): boolean {
 }
 
 export function destroySession(sessionId: string): void {
-  SESSION_STORE.delete(hashSessionId(sessionId));
+  const hashedId = hashSessionId(sessionId);
+  SESSION_STORE.delete(hashedId);
 }
 
 export function validateCsrfToken(sessionId: string, token: string): boolean {
   const hashedId = hashSessionId(sessionId);
   const sessionData = SESSION_STORE.get(hashedId);
-  if (!sessionData) return false;
-  return timingSafeCompare(sessionData.csrfToken, token);
+
+  if (!sessionData) {
+    return false;
+  }
+
+  return sessionData.csrfToken === token;
 }

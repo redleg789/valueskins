@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { verifyToken, extractToken } from '@/lib/auth';
+import { destroySession } from '@/lib/security/session';
 import { prisma } from '@/lib/prisma';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -18,13 +19,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
+    destroySession(decoded.userId);
+
     await prisma.auditLog.create({
       data: {
         userId: decoded.userId,
         action: 'user_logout',
         entityType: 'auth',
         entityId: decoded.userId,
-        ipAddress: req.headers['x-forwarded-for'] as string || req.socket.remoteAddress,
+        ipAddress: (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.socket.remoteAddress,
         userAgent: req.headers['user-agent'],
       },
     });

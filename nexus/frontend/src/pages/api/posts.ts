@@ -1,6 +1,13 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
+
+const postCreateSchema = z.object({
+  content: z.string().min(1).max(2000),
+  action: z.enum(['like', 'unlike', 'create']).optional(),
+  postId: z.string().uuid().optional(),
+});
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   res.setHeader('Content-Type', 'application/json');
@@ -13,7 +20,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // GET - Fetch feed posts
   if (req.method === 'GET') {
     try {
-      const page = parseInt(req.query.page as string) || 1;
+      const page = Math.max(1, Math.min(parseInt(req.query.page as string) || 1, 1000));
       const limit = 20;
       const skip = (page - 1) * limit;
 
@@ -55,7 +62,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // POST - Create post or like/unlike
   if (req.method === 'POST') {
     try {
-      const { content, action, postId } = req.body;
+      const validation = postCreateSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ error: 'Invalid request', details: validation.error.issues });
+      }
+
+      const { content, action, postId } = validation.data;
 
       if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
@@ -81,13 +93,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       // Create post
-      if (content && typeof content === 'string' && content.trim()) {
+      if (!action && content) {
         const hashtags = (content.match(/#[\w]+/g) || []).map(t => t.toLowerCase());
+        const sanitized = content
+          .trim()
+          .slice(0, 2000)
+          .replace(/[<>]/g, '');
 
         const post = await prisma.post.create({
           data: {
             userId,
-            content,
+            content: sanitized,
             hashtags,
             status: 'PUBLISHED',
             visibility: 'PUBLIC',
