@@ -62,9 +62,15 @@ export default function Profile() {
 
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+    const userType = typeof window !== 'undefined' ? localStorage.getItem('user_type') : null;
 
     if (!token) {
       router.push('/auth/login');
+      return;
+    }
+
+    if (userType === 'GUEST') {
+      setReady(true);
       return;
     }
 
@@ -219,6 +225,34 @@ export default function Profile() {
     return (
       <div className="min-h-screen bg-surface flex items-center justify-center">
         <div className="text-primary">Loading...</div>
+      </div>
+    );
+  }
+
+  const userType = typeof window !== 'undefined' ? localStorage.getItem('user_type') : null;
+
+  if (userType === 'GUEST') {
+    return (
+      <div className="min-h-screen bg-surface text-on-surface">
+        <header className="fixed top-0 w-full z-50 bg-surface-container/80 backdrop-blur-xl border-b border-outline-variant/20">
+          <div className="flex justify-between items-center px-6 h-20">
+            <button onClick={() => router.push('/')} className="text-primary hover:text-primary-dim transition-colors">
+              <span className="material-symbols-outlined text-2xl">arrow_back</span>
+            </button>
+            <span className="text-3xl font-black italic text-primary font-headline">Profile</span>
+            <div className="w-10"></div>
+          </div>
+        </header>
+        <div className="pt-20 flex items-center justify-center min-h-screen">
+          <div className="text-center space-y-6">
+            <div className="text-6xl">👤</div>
+            <h2 className="text-2xl font-headline font-bold">Guest</h2>
+            <p className="text-on-surface-variant">You are browsing as a guest. Sign in to create your profile and connect with creators.</p>
+            <button onClick={() => router.push('/auth/login')} className="btn-primary">
+              Sign In
+            </button>
+          </div>
+        </div>
       </div>
     );
   }

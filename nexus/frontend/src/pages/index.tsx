@@ -98,6 +98,11 @@ export default function Home() {
   };
 
   const handleCreatePost = async () => {
+    const userType = localStorage.getItem('user_type');
+    if (userType === 'GUEST') {
+      alert('Login for this function');
+      return;
+    }
     if (!newPost.trim()) return;
     setLoading(true);
     try {
@@ -121,6 +126,11 @@ export default function Home() {
   };
 
   const handleLike = async (postId: string) => {
+    const userType = localStorage.getItem('user_type');
+    if (userType === 'GUEST') {
+      alert('Login for this function');
+      return;
+    }
     const token = localStorage.getItem('auth_token');
     const post = posts.find(p => p.id === postId);
     if (!post) return;
@@ -182,15 +192,27 @@ export default function Home() {
         {/* Side Navigation */}
         <nav className="hidden md:flex flex-col h-[calc(100vh-5rem)] w-64 bg-surface border-r border-zinc-800/20 fixed left-0 py-8 gap-6 z-40 overflow-y-auto">
           <div className="px-6 mb-4">
-            <div className="flex items-center gap-4 cursor-pointer">
-              <div className="avatar-ring">
-                <img alt="User Profile" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuClSH9Q7nncb6hIbYUZjvavwuAtTrOqvcMh1rAU_bc_EBBOCR0Nbjj6GfUAT2CPITYWbXop1eYqf24Xjqakqa3H_LUAwxtZoFCNT51e7pZhQqYIKaLjkgsGhDibrrYlOA03kM4AtoXG-cS3CDzpnVsFEXvG5TQpFj17eaJ1Hnn3QALMZWU9mCZyGu3tzamU5ZNi-LLeVmRYtXF0QwaFQCAQZtcq-Lk8VMKSApLxH7cKBonKEc174msDiUU6e2QjaQG4jdb921IsZiio" />
+            {typeof window !== 'undefined' && localStorage.getItem('user_type') === 'GUEST' ? (
+              <div className="flex items-center gap-4 cursor-pointer">
+                <div className="avatar-ring bg-surface-container-high flex items-center justify-center">
+                  <span className="material-symbols-outlined text-2xl text-on-surface-variant">person</span>
+                </div>
+                <div>
+                  <h3 className="font-headline font-bold text-on-surface">Guest</h3>
+                  <p className="text-xs text-primary font-label tracking-widest uppercase">Browse Only</p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-headline font-bold text-on-surface">The Voyager</h3>
-                <p className="text-xs text-primary font-label tracking-widest uppercase">Digital Alchemist</p>
+            ) : (
+              <div className="flex items-center gap-4 cursor-pointer">
+                <div className="avatar-ring">
+                  <img alt="User Profile" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuClSH9Q7nncb6hIbYUZjvavwuAtTrOqvcMh1rAU_bc_EBBOCR0Nbjj6GfUAT2CPITYWbXop1eYqf24Xjqakqa3H_LUAwxtZoFCNT51e7pZhQqYIKaLjkgsGhDibrrYlOA03kM4AtoXG-cS3CDzpnVsFEXvG5TQpFj17eaJ1Hnn3QALMZWU9mCZyGu3tzamU5ZNi-LLeVmRYtXF0QwaFQCAQZtcq-Lk8VMKSApLxH7cKBonKEc174msDiUU6e2QjaQG4jdb921IsZiio" />
+                </div>
+                <div>
+                  <h3 className="font-headline font-bold text-on-surface">The Voyager</h3>
+                  <p className="text-xs text-primary font-label tracking-widest uppercase">Digital Alchemist</p>
+                </div>
               </div>
-            </div>
+            )}
           </div>
           
           <div className="flex flex-col gap-2 font-label uppercase tracking-widest text-xs">
