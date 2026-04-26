@@ -1,9 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { supabase } from '@/lib/supabase-server';
-import { hashPassword, generateToken, isValidEmail, isStrongPassword, isValidHandle } from '@/lib/auth';
+import { adminAuth, adminDb } from '@/lib/firebase-admin';
+import { hashPassword, generateToken } from '@/lib/auth';
 import { validateInput } from '@/lib/validation';
-import { checkRateLimit, getResetTimeString } from '@/lib/rateLimit';
-import { createEmailVerificationToken } from '@/lib/emailVerification';
 import { z } from 'zod';
 
 const signupSchema = z.object({
@@ -29,14 +27,8 @@ interface SignupResponse {
     token: string;
   };
   requiresEmailVerification?: boolean;
-  verificationTokenExpiresAt?: Date;
   error?: string;
   errors?: Record<string, string>;
-  _devToken?: string;
-  action?: string;
-  entityType?: string;
-  ipAddress?: string | string[];
-  userAgent?: string;
 }
 
 export default async function handler(
@@ -54,10 +46,7 @@ export default async function handler(
   }
 
   try {
-    const ipAddress = req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || 'unknown';
-    const userAgent = req.headers['user-agent'] as string || '';
-
-    // Validate input schema
+    // Validate input
     const validationResult = await validateInput(signupSchema, req.body);
     if (!validationResult.valid) {
       return res.status(400).json({
@@ -69,119 +58,80 @@ export default async function handler(
 
     const { email, password, name, handle, userType } = validationResult.data as SignupRequest;
 
-    // Validate email format
-    if (!isValidEmail(email)) {
+    // Check if email already exists in Firestore
+    const existingEmail = await adminDb.collection('users').where('email', '==', email).limit(1).get();
+    if (!existingEmail.empty) {
       return res.status(400).json({
-        success: false,
-        error: 'Invalid email format',
-      });
-    }
-
-    // Validate password strength
-    const passwordCheck = isStrongPassword(password);
-    if (!passwordCheck.valid) {
-      return res.status(400).json({
-        success: false,
-        error: 'Password is not strong enough',
-        errors: { password: passwordCheck.errors.join('; ') },
-      });
-    }
-
-    // Validate handle format
-    const handleCheck = isValidHandle(handle);
-    if (!handleCheck.valid) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid handle',
-        errors: { handle: handleCheck.errors.join('; ') },
-      });
-    }
-
-    // Check if email already exists
-    const { data: existingEmails } = await supabase
-      .from('User')
-      .select('id')
-      .eq('email', email.toLowerCase())
-      .limit(1);
-
-    if (existingEmails && existingEmails.length > 0) {
-      return res.status(409).json({
         success: false,
         error: 'Email already registered',
-        errors: { email: 'Email already registered' },
       });
     }
 
-    // Check if handle already exists
-    const { data: existingHandles } = await supabase
-      .from('User')
-      .select('id')
-      .eq('handle', handle.toLowerCase())
-      .limit(1);
-
-    if (existingHandles && existingHandles.length > 0) {
-      return res.status(409).json({
+    // Check if handle already exists in Firestore
+    const existingHandle = await adminDb.collection('users').where('handle', '==', handle).limit(1).get();
+    if (!existingHandle.empty) {
+      return res.status(400).json({
         success: false,
         error: 'Handle already taken',
-        errors: { handle: 'Handle already taken' },
       });
     }
 
-    // Hash password
-    const passwordHash = await hashPassword(password);
-
-    // Generate user ID and tokens
-    const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const sessionToken = generateToken(userId, email);
-
-    // Create user in Supabase
-    const { error: createError } = await supabase
-      .from('User')
-      .insert([{
-        id: userId,
-        email: email.toLowerCase(),
-        passwordHash,
-        name,
-        handle: handle.toLowerCase(),
-        userType: userType as 'CREATOR' | 'BRAND',
-        emailVerified: false,
-        status: 'ACTIVE',
-        createdAt: new Date().toISOString(),
-      }]);
-
-    if (createError) {
-      throw new Error(`Failed to create user: ${createError.message}`);
+    // Create user in Firebase Authentication
+    let firebaseUser;
+    try {
+      firebaseUser = await adminAuth.createUser({
+        email,
+        password,
+        displayName: name,
+      });
+    } catch (authError: any) {
+      console.error('Firebase Auth error:', authError.message);
+      if (authError.code === 'auth/email-already-exists') {
+        return res.status(400).json({
+          success: false,
+          error: 'Email already registered',
+        });
+      }
+      throw authError;
     }
 
-    // Create email verification token
-    const { token: verificationToken, expiresAt } = await createEmailVerificationToken(userId, email);
+    // Hash password for Firestore (backup)
+    const passwordHash = await hashPassword(password);
+
+    // Create user document in Firestore
+    await adminDb.collection('users').doc(firebaseUser.uid).set({
+      email,
+      name,
+      handle,
+      userType,
+      passwordHash,
+      status: 'ACTIVE',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+
+    // Generate JWT token
+    const token = generateToken(firebaseUser.uid, email);
 
     return res.status(201).json({
       success: true,
       data: {
-        userId,
+        userId: firebaseUser.uid,
         email,
         name,
         handle,
         userType,
-        token: sessionToken,
+        token,
       },
       requiresEmailVerification: true,
-      verificationTokenExpiresAt: expiresAt,
-      _devToken: verificationToken,
     });
   } catch (error) {
-    console.error('Signup error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
+    console.error('Signup error:', errorMessage);
 
     return res.status(500).json({
       success: false,
-      error: 'Failed to create account. Report a problem at valueskinsfounder@gmail.com',
-    });
-
-    return res.status(500).json({
-      success: false,
-      error: 'Failed to create account. Report a problem at valueskinsfounder@gmail.com',
+      error: 'Failed to create account. Please try again.',
     });
   }
 }
