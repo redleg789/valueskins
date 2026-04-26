@@ -60,9 +60,19 @@ export default async function handler(
     const { emailOrHandle, password } = validationResult.data as LoginRequest;
 
     // Find user by email or handle in Firebase
-    const usersRef = collection(db, 'users');
-    const q = query(usersRef, where('email', '==', emailOrHandle.toLowerCase()));
-    let querySnapshot = await getDocs(q);
+    let usersRef, q, querySnapshot;
+    try {
+      usersRef = collection(db, 'users');
+      q = query(usersRef, where('email', '==', emailOrHandle.toLowerCase()));
+      querySnapshot = await getDocs(q);
+    } catch (queryErr) {
+      console.error('Firestore query error:', {
+        error: queryErr instanceof Error ? queryErr.message : String(queryErr),
+        code: (queryErr as any)?.code,
+        db: db ? 'initialized' : 'null',
+      });
+      throw new Error(`Firestore query failed: ${queryErr instanceof Error ? queryErr.message : String(queryErr)}`);
+    }
 
     if (querySnapshot.empty) {
       const q2 = query(usersRef, where('handle', '==', emailOrHandle.toLowerCase()));
