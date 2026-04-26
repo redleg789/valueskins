@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
+import { updateGuestActivityTime, isValidGuestToken } from '@/lib/guest-session';
 
 interface User {
   id: string;
@@ -70,6 +71,11 @@ export default function Profile() {
     }
 
     if (userType === 'GUEST') {
+      if (!isValidGuestToken(token)) {
+        router.push('/auth/login');
+        return;
+      }
+      updateGuestActivityTime();
       setReady(true);
       return;
     }

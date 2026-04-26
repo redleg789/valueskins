@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
+import { generateGuestToken } from '@/lib/guest-session';
 
 interface LoginResponse {
   success: boolean;
@@ -68,7 +69,8 @@ export default function Login() {
   };
 
   const handleGuestBrowse = () => {
-    localStorage.setItem('auth_token', 'guest_' + Date.now());
+    const guestToken = generateGuestToken();
+    localStorage.setItem('auth_token', guestToken);
     localStorage.setItem('user_type', 'GUEST');
     router.push('/');
   };

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
+import { updateGuestActivityTime, isValidGuestToken } from '@/lib/guest-session';
 
 interface Post {
   id: string;
@@ -39,6 +40,11 @@ export default function Home() {
           router.push('/auth/login');
           return false;
         }
+        // Validate guest session if guest user
+        if (storedUserType === 'GUEST' && !isValidGuestToken(token)) {
+          router.push('/auth/login');
+          return false;
+        }
         return true;
       }
       return false;
@@ -46,6 +52,12 @@ export default function Home() {
 
     if (!checkAuth()) {
       return;
+    }
+
+    // Track activity for guest users
+    const userType = localStorage.getItem('user_type');
+    if (userType === 'GUEST') {
+      updateGuestActivityTime();
     }
 
     // Fetch initial posts
