@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { supabase } from '@/lib/supabase-server';
+import { db, auth } from '@/lib/firebase-server';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { verifyPassword, generateToken, isValidEmail, extractToken } from '@/lib/auth';
 import { validateInput } from '@/lib/validation';
 import { checkRateLimit, getResetTimeString } from '@/lib/rateLimit';
@@ -57,21 +58,25 @@ export default async function handler(
 
     const { emailOrHandle, password } = validationResult.data as LoginRequest;
 
-    // Find user by email or handle
-    const { data: users, error: queryError } = await supabase
-      .from('User')
-      .select('*')
-      .or(`email.eq.${emailOrHandle.toLowerCase()},handle.eq.${emailOrHandle.toLowerCase()}`)
-      .limit(1);
+    // Find user by email or handle in Firebase
+    const usersRef = collection(db, 'users');
+    const q = query(usersRef, where('email', '==', emailOrHandle.toLowerCase()));
+    let querySnapshot = await getDocs(q);
 
-    if (queryError || !users || users.length === 0) {
+    if (querySnapshot.empty) {
+      const q2 = query(usersRef, where('handle', '==', emailOrHandle.toLowerCase()));
+      querySnapshot = await getDocs(q2);
+    }
+
+    if (querySnapshot.empty) {
       return res.status(401).json({
         success: false,
         error: 'Invalid email or password',
       });
     }
 
-    const user = users[0];
+    const user = querySnapshot.docs[0].data() as any;
+    user.id = querySnapshot.docs[0].id;
 
 
     // Check if account is active
@@ -101,16 +106,6 @@ export default async function handler(
 
     // Generate new token
     const token = generateToken(user.id, user.email);
-
-    // Update last login time
-    try {
-      await supabase
-        .from('User')
-        .update({ lastLoginAt: new Date().toISOString() })
-        .eq('id', user.id);
-    } catch (e: any) {
-      console.error('Failed to update lastLoginAt:', e);
-    }
 
     return res.status(200).json({
       success: true,
