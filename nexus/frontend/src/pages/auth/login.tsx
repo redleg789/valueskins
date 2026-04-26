@@ -67,6 +67,12 @@ export default function Login() {
     }
   };
 
+  const handleGuestBrowse = () => {
+    localStorage.setItem('auth_token', 'guest_' + Date.now());
+    localStorage.setItem('user_type', 'GUEST');
+    router.push('/');
+  };
+
   if (!ready) {
     return (
       <div className="min-h-screen bg-surface flex items-center justify-center">
@@ -149,16 +155,26 @@ export default function Login() {
             </button>
           </form>
 
-          <div className="mt-6 text-center">
-            <p className="text-on-surface-variant">
-              Don't have an account?{' '}
-              <button
-                onClick={() => router.push('/auth/signup')}
-                className="text-primary hover:underline font-headline font-bold"
-              >
-                Sign Up
-              </button>
-            </p>
+          <div className="mt-8 space-y-4">
+            <button
+              type="button"
+              onClick={handleGuestBrowse}
+              className="w-full bg-surface-container-high border border-outline-variant/50 hover:bg-surface-container text-on-surface font-headline font-bold py-3 px-6 rounded-sm transition-all"
+            >
+              Browse as Guest
+            </button>
+
+            <div className="text-center">
+              <p className="text-on-surface-variant">
+                Don't have an account?{' '}
+                <button
+                  onClick={() => router.push('/auth/signup')}
+                  className="text-primary hover:underline font-headline font-bold"
+                >
+                  Sign Up
+                </button>
+              </p>
+            </div>
           </div>
         </div>
 
