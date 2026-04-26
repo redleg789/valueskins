@@ -26,6 +26,7 @@ interface LoginResponse {
   };
   error?: string;
   errors?: Record<string, string>;
+  _debug?: any;
 }
 
 export default async function handler(
@@ -121,15 +122,21 @@ export default async function handler(
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
-    console.error('Login error - Details:', {
+    const errorCode = (error as any)?.code || 'unknown';
+    const errorDetails = {
       message: errorMessage,
+      code: errorCode,
       stack: error instanceof Error ? error.stack : null,
       type: error instanceof Error ? error.constructor.name : typeof error,
-    });
+      fullError: JSON.stringify(error),
+    };
+
+    console.error('Login error - Details:', errorDetails);
 
     return res.status(500).json({
       success: false,
       error: 'Connection error. Please try again. Report a problem at valueskinsfounder@gmail.com',
+      _debug: process.env.NODE_ENV === 'development' ? errorDetails : undefined,
     });
   }
 }

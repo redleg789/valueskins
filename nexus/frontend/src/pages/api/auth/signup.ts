@@ -32,6 +32,11 @@ interface SignupResponse {
   verificationTokenExpiresAt?: Date;
   error?: string;
   errors?: Record<string, string>;
+  _devToken?: string;
+  action?: string;
+  entityType?: string;
+  ipAddress?: string | string[];
+  userAgent?: string;
 }
 
 export default async function handler(
@@ -172,15 +177,7 @@ export default async function handler(
     return res.status(500).json({
       success: false,
       error: 'Failed to create account. Report a problem at valueskinsfounder@gmail.com',
-        action: 'signup_error',
-        entityType: 'auth',
-        ipAddress: req.headers['x-forwarded-for'] as string || req.socket.remoteAddress,
-        userAgent: req.headers['user-agent'],
-        changes: {
-          error: error instanceof Error ? error.message : 'Unknown error',
-        },
-      },
-    }).catch((e: any) => console.error('Failed to log error:', e));
+    });
 
     return res.status(500).json({
       success: false,
