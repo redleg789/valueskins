@@ -53,7 +53,6 @@ services:
       MAX_USER_CONNECTIONS: 200
     ports:
       - "6432:5432"
-    - "16432:6432"
     depends_on:
       postgres-primary:
         condition: service_healthy
@@ -122,22 +121,24 @@ services:
   # Frontend - connects to backend instead of Firebase
   frontend:
     build:
-      context: ../../frontend
+      context: ../../nexus/frontend
       dockerfile: Dockerfile
     ports:
       - "3000:3000"
     environment:
       NEXT_PUBLIC_API_URL: "http://localhost:8080"
       NEXT_PUBLIC_WS_URL: "ws://localhost:8081"
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: "${NEXT_PUBLIC_FIREBASE_PROJECT_ID}"
+      NEXT_PUBLIC_FIREBASE_API_KEY: "${NEXT_PUBLIC_FIREBASE_API_KEY}"
       NODE_ENV: production
     depends_on:
       - backend
     deploy:
-      replicas: 2
+      replicas: 1
       resources:
         limits:
           cpus: '1'
-          memory: 512M
+          memory: 1G
 
   # Prometheus
   prometheus:
