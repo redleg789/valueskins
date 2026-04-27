@@ -205,7 +205,7 @@ async fn main() -> std::io::Result<()> {
     };
 
     // Initialize circuit breaker
-    let circuit_breaker = shared::circuit_breaker::CircuitBreaker::new(pool.clone());
+    let circuit_breaker = shared::circuit_breaker::CircuitBreaker::new("database");
 
     // Initialize production services
     let feature_flags = shared::feature_flags::FeatureFlagService::new(pool.clone());

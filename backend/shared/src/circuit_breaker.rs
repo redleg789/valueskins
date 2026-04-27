@@ -136,7 +136,7 @@ impl CircuitBreaker {
     /// Execute a function with circuit breaker protection
     pub async fn execute<F, T, E>(&self, f: F) -> Result<T, CircuitError>
     where
-        F: std::future::Future<Output = Result<T, E>,
+        F: std::future::Future<Output = Result<T, E>>,
         E: std::fmt::Debug,
     {
         if !self.can_execute().await {
@@ -269,17 +269,17 @@ impl Drop for BulkheadPermit {
 
 /// Retry with exponential backoff
 pub async fn retry_with_backoff<F, T, E>(
-    mut f: F,
+    f: F,
     max_retries: u32,
     initial_delay: Duration,
     max_delay: Duration,
 ) -> Result<T, E>
 where
-    F: std::future::Future<Output = Result<T, E>>,
+    F: Fn() -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<T, E>>>>,
 {
     let mut delay = initial_delay;
     let mut last_error: Option<E> = None;
-    
+
     for attempt in 0..max_retries {
         match f().await {
             Ok(result) => return Ok(result),
@@ -294,18 +294,4 @@ where
     }
     
     Err(last_error.unwrap())
-}
-
-/// Timeout wrapper
-pub async fn with_timeout<T, F>(
-    duration: Duration,
-    f: F,
-) -> Result<T, CircuitError>
-where
-    F: std::future::Future<Output = Result<T, ()>,
-{
-    timeout(duration, f())
-        .await
-        .map_err(|_| CircuitError::Timeout { service: "unknown".to_string() })?
-        .map_err(|_| CircuitError::Timeout { service: "unknown".to_string() })
 }

@@ -5244,6 +5244,7 @@ dependencies = [
  "futures-util",
  "hex",
  "log",
+ "lru",
  "redis",
  "serde",
  "serde_json",
