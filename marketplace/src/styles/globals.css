@@ -1,0 +1,157 @@
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Epilogue:ital,wght@0,400;0,600;0,800;0,900;1,400;1,800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Be Vietnam Pro', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-surface text-on-surface min-h-screen selection:bg-secondary-container selection:text-on-secondary-container;
+  }
+}
+
+@layer components {
+  .marker-bleed {
+    position: relative;
+    display: inline-block;
+    z-index: 1;
+  }
+
+  .marker-bleed::before {
+    content: '';
+    position: absolute;
+    top: 10%;
+    left: -5%;
+    width: 110%;
+    height: 80%;
+    background: linear-gradient(135deg, #f183ff, #ec6aff);
+    z-index: -1;
+    transform: rotate(-2deg);
+    border-radius: 2px 8px 3px 6px;
+    opacity: 0.8;
+    filter: blur(1px);
+  }
+
+  .marker-bg {
+    clip-path: polygon(2% 4%, 98% 0%, 99% 96%, 1% 100%);
+  }
+
+  .scribble-border {
+    border: 2px solid #d97dff;
+    border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+  }
+
+  .glow-shadow {
+    box-shadow: 0 8px 32px rgba(241, 131, 255, 0.08);
+  }
+
+  .glow-shadow-lg {
+    box-shadow: 0 0 32px rgba(84, 0, 98, 0.2);
+  }
+
+  .text-glow-fuchsia {
+    text-shadow: 0 0 10px rgba(241, 131, 255, 0.5);
+  }
+
+  .anti-grid {
+    transform: rotate(-1deg);
+  }
+
+  .anti-grid-reverse {
+    transform: rotate(1.5deg);
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem 1.5rem;
+    color: #71717a;
+  }
+
+  .nav-item:hover {
+    color: #a1a1aa;
+    transform: translateX(0.25rem);
+  }
+
+  .nav-item-active {
+    color: #f183ff;
+    background-color: #201f1f;
+    transform: rotate(-1deg);
+    box-shadow: -4px 4px 0px 0px rgba(213,0,249,0.3);
+    border-left: 4px solid #f183ff;
+  }
+
+  .btn-primary {
+    @apply bg-primary text-on-primary font-headline font-bold italic py-4 px-6 rounded-sm hover:bg-primary-dim transition-colors -rotate-1 shadow-[4px_4px_0px_0px_rgba(213,0,249,0.3)] active:rotate-0;
+  }
+
+  .btn-secondary {
+    @apply scribble-border text-primary px-6 py-2 font-headline font-bold text-sm hover:bg-secondary/10 transition-colors;
+  }
+
+  .card-surface {
+    @apply bg-surface-container p-6 rounded-sm relative;
+  }
+
+  .card-surface-high {
+    @apply bg-surface-container-highest p-6 rounded-sm;
+  }
+
+  .card-glow {
+    background-color: #131313;
+    padding: 1.5rem;
+    position: relative;
+    box-shadow: 0 0 32px rgba(84, 0, 98, 0.2);
+  }
+
+  .avatar-ring {
+    @apply w-12 h-12 rounded-full bg-surface-container-highest overflow-hidden border border-outline-variant/30;
+  }
+
+  .tag-primary {
+    @apply bg-primary/20 text-primary px-2 py-1 text-xs rounded-full;
+  }
+
+  .tag-secondary {
+    @apply bg-secondary-container/30 text-secondary px-2 py-1 text-xs font-label rounded-full;
+  }
+}
+
+@layer utilities {
+  .text-headline {
+    font-family: 'Epilogue', sans-serif;
+  }
+
+  .text-label {
+    font-family: 'Epilogue', sans-serif;
+    @apply uppercase tracking-widest text-xs;
+  }
+
+  .animate-pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% {
+      box-shadow: 0 0 20px rgba(213, 0, 249, 0.15);
+    }
+    50% {
+      box-shadow: 0 0 40px rgba(213, 0, 249, 0.3);
+    }
+  }
+}
+
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+.material-symbols-filled {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}

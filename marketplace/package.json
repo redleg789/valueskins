@@ -1,0 +1,43 @@
+{
+  "name": "valueskins-marketplace",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ValueSkins Marketplace: Creator-Brand Deal Platform with Verified Credentials",
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.104.1",
+    "bcrypt": "^5.1.0",
+    "cors": "^2.8.5",
+    "dompurify": "^3.0.0",
+    "formidable": "^3.5.4",
+    "isomorphic-dompurify": "^2.0.0",
+    "jsonwebtoken": "^9.0.0",
+    "next": "14.2.0",
+    "razorpay": "^2.9.0",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "stripe": "^14.0.0",
+    "uuid": "^14.0.0",
+    "zod": "^3.21.0"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "@types/uuid": "^10.0.0",
+    "autoprefixer": "^10.4.0",
+    "eslint": "^8",
+    "eslint-config-next": "14.2.0",
+    "postcss": "^8.4.0",
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5"
+  }
+}
