@@ -12,11 +12,9 @@ export {
   getSession, 
   refreshSession, 
   destroySession, 
-  validateCsrfCookieToken,
-  requireAuth,
-  hashPassword,
-  verifyPassword,
+  validateCsrfToken as validateCsrfCookieToken,
 } from './session';
+export { hashPassword, verifyPassword } from '../auth';
 export { 
   logger, 
   createLogger, 
