@@ -99,7 +99,7 @@ export default function PrivacyDashboard({ user, onClose }: PrivacyDashboardProp
           </div>
 
           <div className="bg-gray-800 p-3 rounded text-xs text-gray-400">
-            Your privacy is a right, not a feature. Nexus doesn't profit from your data.
+            Your privacy is a right, not a feature. ValueSkins doesn't profit from your data.
           </div>
         </div>
       </div>

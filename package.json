@@ -2,18 +2,16 @@
   "name": "valueskins-monorepo",
   "version": "0.1.0",
   "private": true,
-  "description": "ValueSkins (creator economy) + Nexus (anti-Meta social) platform",
+  "description": "ValueSkins creator economy platform",
   "scripts": {
     "dev:valueskins": "npm run dev --prefix ./frontend",
-    "dev:nexus": "npm run dev --prefix ./nexus/frontend",
     "build:valueskins": "npm run build --prefix ./frontend",
-    "build:nexus": "npm run build --prefix ./nexus/frontend",
-    "install:all": "npm install && npm install --prefix ./frontend && npm install --prefix ./nexus/frontend",
-    "clean": "rm -rf frontend/node_modules frontend/.next nexus/frontend/node_modules nexus/frontend/.next && npm cache clean --force"
+    "install:all": "npm install && npm install --prefix ./frontend && npm install --prefix ./marketplace",
+    "clean": "rm -rf frontend/node_modules frontend/.next marketplace/node_modules marketplace/.next && npm cache clean --force"
   },
   "workspaces": [
     "frontend",
-    "nexus/frontend",
+    "marketplace",
     "backend"
   ],
   "keywords": [

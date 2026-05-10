@@ -46,7 +46,7 @@ export default function ForgotPassword() {
       <div className="w-full max-w-md">
         <div className="text-center mb-12">
           <h1 className="text-6xl font-black italic -rotate-2 tracking-tighter text-primary bg-surface-container-highest px-6 py-2 rounded-sm shadow-[8px_8px_0px_0px_rgba(213,0,249,0.3)] font-headline inline-block">
-            Nexus
+            ValueSkins
           </h1>
           <p className="text-xl text-on-surface-variant mt-6 font-body">Reset Your Password</p>
         </div>
