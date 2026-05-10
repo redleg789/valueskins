@@ -7,19 +7,17 @@ export * from './sanitize';
 
 export { securityMiddleware, withSecurityHeaders, getClientIP, checkRateLimit } from './headers';
 export { createCsrfToken, validateCsrfRequestToken, isSafeMethod, requireCsrfValidation } from './csrf';
-export { 
-  createSession, 
-  getSession, 
-  refreshSession, 
-  destroySession, 
-  validateCsrfCookieToken,
-  requireAuth,
-  hashPassword,
-  verifyPassword,
+export {
+  createSession,
+  getSession,
+  refreshSession,
+  destroySession,
+  validateCsrfToken as validateCsrfCookieToken,
 } from './session';
-export { 
-  logger, 
-  createLogger, 
+export { hashPassword, verifyPassword } from '../auth';
+export {
+  logger,
+  createLogger,
   logSecurityEvent,
   logAuthFailure,
   logAuthSuccess,
@@ -30,10 +28,10 @@ export {
   logXssAttempt,
   logSqlInjectionAttempt,
 } from './logger';
-export { 
-  sanitizeHtml, 
-  sanitizeText, 
-  sanitizeUrl, 
+export {
+  sanitizeHtml,
+  sanitizeText,
+  sanitizeUrl,
   sanitizeFilename,
   sanitizeEmail,
   detectMaliciousInput,
