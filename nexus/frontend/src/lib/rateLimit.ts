@@ -1,14 +1,16 @@
 import { prisma } from '@/lib/prisma';
 
 interface RateLimitConfig {
-  windowMs: number; // milliseconds
+  windowMs: number;
   maxAttempts: number;
 }
 
 const RATE_LIMIT_CONFIGS: Record<string, RateLimitConfig> = {
-  login: { windowMs: 60 * 60 * 1000, maxAttempts: 20 }, // 20 attempts per hour
-  signup: { windowMs: 60 * 60 * 1000, maxAttempts: 10 }, // 10 accounts per hour
-  passwordReset: { windowMs: 60 * 60 * 1000, maxAttempts: 5 }, // 5 reset requests per hour
+  login: { windowMs: 60 * 60 * 1000, maxAttempts: 20 },
+  signup: { windowMs: 60 * 60 * 1000, maxAttempts: 10 },
+  passwordReset: { windowMs: 60 * 60 * 1000, maxAttempts: 5 },
+  resendVerification: { windowMs: 60 * 60 * 1000, maxAttempts: 5 },
+  login_failed: { windowMs: 60 * 60 * 1000, maxAttempts: 20 },
 };
 
 export interface RateLimitResult {
@@ -17,17 +19,14 @@ export interface RateLimitResult {
   resetTime: Date;
 }
 
-export async function checkRateLimit(
+async function applyRateLimit(
   identifier: string,
   action: string,
-  config?: RateLimitConfig
+  config: RateLimitConfig
 ): Promise<RateLimitResult> {
-  const cfg = config || RATE_LIMIT_CONFIGS[action] || { windowMs: 60 * 60 * 1000, maxAttempts: 10 };
-
   const now = new Date();
-  const windowStart = new Date(now.getTime() - cfg.windowMs);
+  const windowStart = new Date(now.getTime() - config.windowMs);
 
-  // Get or create rate limit record
   let rateLimitLog = await prisma.rateLimitLog.findFirst({
     where: {
       identifier,
@@ -39,7 +38,6 @@ export async function checkRateLimit(
   });
 
   if (!rateLimitLog) {
-    // Create new log
     rateLimitLog = await prisma.rateLimitLog.create({
       data: {
         identifier,
@@ -49,7 +47,6 @@ export async function checkRateLimit(
       },
     });
   } else {
-    // Increment attempt count
     rateLimitLog = await prisma.rateLimitLog.update({
       where: { id: rateLimitLog.id },
       data: {
@@ -59,16 +56,48 @@ export async function checkRateLimit(
     });
   }
 
-  const allowed = rateLimitLog.attemptCount <= cfg.maxAttempts;
-  const remaining = Math.max(0, cfg.maxAttempts - rateLimitLog.attemptCount);
+  const allowed = rateLimitLog.attemptCount <= config.maxAttempts;
+  const remaining = Math.max(0, config.maxAttempts - rateLimitLog.attemptCount);
+  const resetTime = new Date(rateLimitLog.windowStart.getTime() + config.windowMs);
 
-  // Calculate reset time
-  const resetTime = new Date(rateLimitLog.windowStart.getTime() + cfg.windowMs);
-
-  // Clean old logs
   await cleanupOldRateLimits();
 
   return { allowed, remaining, resetTime };
+}
+
+export async function checkRateLimit(
+  identifier: string,
+  action: string,
+  config?: RateLimitConfig
+): Promise<RateLimitResult>;
+export async function checkRateLimit(
+  identifier: string,
+  maxAttempts: number,
+  windowSeconds: number
+): Promise<boolean>;
+export async function checkRateLimit(
+  identifier: string,
+  actionOrMaxAttempts: string | number,
+  configOrWindowSeconds?: RateLimitConfig | number
+): Promise<RateLimitResult | boolean> {
+  if (typeof actionOrMaxAttempts === 'number') {
+    const result = await applyRateLimit(identifier, 'login', {
+      maxAttempts: actionOrMaxAttempts,
+      windowMs: (typeof configOrWindowSeconds === 'number' ? configOrWindowSeconds : 3600) * 1000,
+    });
+    return result.allowed;
+  }
+
+  const config =
+    typeof configOrWindowSeconds === 'object' && configOrWindowSeconds
+      ? configOrWindowSeconds
+      : RATE_LIMIT_CONFIGS[actionOrMaxAttempts] || { windowMs: 60 * 60 * 1000, maxAttempts: 10 };
+
+  return applyRateLimit(identifier, actionOrMaxAttempts, config);
+}
+
+export async function recordFailedAttempt(identifier: string): Promise<void> {
+  await applyRateLimit(identifier, 'login_failed', RATE_LIMIT_CONFIGS.login_failed);
 }
 
 export async function resetRateLimit(identifier: string, action: string): Promise<void> {
@@ -81,7 +110,7 @@ export async function resetRateLimit(identifier: string, action: string): Promis
 }
 
 async function cleanupOldRateLimits(): Promise<void> {
-  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000); // 24 hours ago
+  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
   await prisma.rateLimitLog.deleteMany({
     where: {
